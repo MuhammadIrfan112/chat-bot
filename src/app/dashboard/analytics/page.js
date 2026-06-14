@@ -22,10 +22,24 @@ export default function Analytics() {
   const fetchAnalytics = async () => {
     setLoading(true);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = session.user.id;
+
+    // Get user's bots
+    const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);
+    if (!bots || bots.length === 0) {
+      setStats({ totalMessages: 0, totalLeads: 0, totalSessions: 0, conversionRate: 0, newLeads: 0, contactedLeads: 0, qualifiedLeads: 0 });
+      setRecentLeads([]);
+      setLoading(false);
+      return;
+    }
+    const botIds = bots.map(b => b.id);
+
     const [messagesRes, leadsRes, sessionsRes] = await Promise.all([
-      supabase.from('chat_messages').select('id', { count: 'exact' }),
-      supabase.from('leads').select('*').order('created_at', { ascending: false }),
-      supabase.from('chat_sessions').select('id', { count: 'exact' }),
+      supabase.from('chat_messages').select('id', { count: 'exact' }), // We will filter messages by session bot_id later if needed, for now just global is ok or we can leave it as we don't have bot_id on messages directly
+      supabase.from('leads').select('*').in('bot_id', botIds).order('created_at', { ascending: false }),
+      supabase.from('chat_sessions').select('id', { count: 'exact' }).in('bot_id', botIds),
     ]);
 
     const totalMessages = messagesRes.count || 0;

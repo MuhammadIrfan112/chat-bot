@@ -47,16 +47,30 @@ export default function LiveChat() {
     return () => supabase.removeChannel(msgSub);
   }, [activeSession]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+
 
   const fetchSessions = async () => {
-    const { data } = await supabase
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = session.user.id;
+
+    // Get user's bots
+    const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);
+    if (!bots || bots.length === 0) {
+      setSessions([]);
+      return;
+    }
+    const botIds = bots.map(b => b.id);
+
+    const { data, error } = await supabase
       .from('chat_sessions')
       .select('*')
-      .order('created_at', { ascending: false });
-    setSessions(data || []);
+      .in('bot_id', botIds)
+      .order('updated_at', { ascending: false });
+    
+    if (!error && data) {
+      setSessions(data);
+    }
   };
 
   const fetchMessages = async (sessionId) => {

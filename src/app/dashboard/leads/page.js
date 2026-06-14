@@ -18,13 +18,29 @@ export default function LeadsCRM() {
   }, []);
 
   const fetchLeads = async () => {
-    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const userId = session.user.id;
+
+    // Get user's bots
+    const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);
+    if (!bots || bots.length === 0) {
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
+    const botIds = bots.map(b => b.id);
+
+    // Fetch leads for those bots
     const { data, error } = await supabase
       .from('leads')
       .select('*')
+      .in('bot_id', botIds)
       .order('created_at', { ascending: false });
 
-    if (!error) setLeads(data || []);
+    if (!error && data) {
+      setLeads(data);
+    }
     setLoading(false);
   };
 
