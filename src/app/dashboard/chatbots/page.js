@@ -1,18 +1,222 @@
 'use client';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
-export default function ChatbotsPage() {
+export default function MyBots() {
+  const [bots, setBots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [embedBot, setEmbedBot] = useState(null);
+  const [userId, setUserId] = useState(null);
+
+  const [form, setForm] = useState({
+    name: '',
+    website_url: '',
+    calendly_link: '',
+    welcome_message: 'Hi there! 👋 How can I help you today?',
+  });
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    setUserId(session.user.id);
+    fetchBots(session.user.id);
+  };
+
+  const fetchBots = async (uid) => {
+    const { data } = await supabase
+      .from('bots')
+      .select('*')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false });
+    setBots(data || []);
+    setLoading(false);
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.website_url.trim()) return;
+    setCreating(true);
+
+    const { data, error } = await supabase.from('bots').insert({
+      user_id: userId,
+      name: form.name,
+      website_url: form.website_url,
+      calendly_link: form.calendly_link,
+      welcome_message: form.welcome_message,
+      status: 'Active',
+    }).select().single();
+
+    if (!error && data) {
+      setShowForm(false);
+      setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?' });
+      fetchBots(userId);
+      setEmbedBot(data); // Show embed code right away
+    }
+    setCreating(false);
+  };
+
+  const getEmbedCode = (bot) => {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://incandescent-lokum-c54955.netlify.app';
+    return `<!-- AI Chatbot by SaaS Platform -->
+<script>
+  window.CHATBOT_CONFIG = {
+    botId: "${bot.id}",
+    welcomeMessage: "${bot.welcome_message || 'Hi! How can I help you?'}"
+  };
+</script>
+<script src="${siteUrl}/chatbot-embed.js" async></script>`;
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#6B7280' }}>Loading...</div>;
+
   return (
     <div>
-      <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>🤖 My Chatbots</h1>
-      <p style={{ color: '#6B7280', marginBottom: '32px' }}>Manage your deployed chatbots and their configurations.</p>
-      
-      <div style={{ backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '16px', border: '1px solid #E5E7EB', textAlign: 'center', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🚀</div>
-        <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>Coming Soon</h2>
-        <p style={{ color: '#6B7280', maxWidth: '400px', margin: '0 auto' }}>
-          This section will allow you to create multiple chatbots for different websites, customize their branding colors, and setup unique welcome messages. Currently in development!
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+        <div>
+          <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>🤖 My Chatbots</h1>
+          <p style={{ color: '#6B7280' }}>Create and manage your AI chatbots. Get the embed code for your website.</p>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 24px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
+        >
+          + Create New Bot
+        </button>
       </div>
+
+      {/* Create Bot Form Modal */}
+      {showForm && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', padding: '40px', width: '100%', maxWidth: '560px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>🚀 Create New Chatbot</h2>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Bot Name *</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                  placeholder="e.g. My Business Bot"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Your Website URL *</label>
+                <input
+                  value={form.website_url}
+                  onChange={(e) => setForm({ ...form, website_url: e.target.value })}
+                  required
+                  placeholder="https://yourbusiness.com"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Calendly Link <span style={{ color: '#9CA3AF' }}>(optional)</span></label>
+                <input
+                  value={form.calendly_link}
+                  onChange={(e) => setForm({ ...form, calendly_link: e.target.value })}
+                  placeholder="https://calendly.com/your-link"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Welcome Message</label>
+                <input
+                  value={form.welcome_message}
+                  onChange={(e) => setForm({ ...form, welcome_message: e.target.value })}
+                  placeholder="Hi! How can I help you today?"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={creating}
+                style={{ backgroundColor: '#4F46E5', color: 'white', padding: '14px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: creating ? 'not-allowed' : 'pointer', fontSize: '16px', marginTop: '8px', opacity: creating ? 0.7 : 1 }}
+              >
+                {creating ? 'Creating...' : '🚀 Create Chatbot'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Embed Code Modal */}
+      {embedBot && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', padding: '40px', width: '100%', maxWidth: '640px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>🎉 Chatbot Created!</h2>
+              <button onClick={() => setEmbedBot(null)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+            </div>
+            <p style={{ color: '#6B7280', marginBottom: '20px' }}>Copy this code and paste it into your website's HTML (before the closing <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>&lt;/body&gt;</code> tag):</p>
+            <pre style={{ backgroundColor: '#1E293B', color: '#A3E635', padding: '20px', borderRadius: '12px', fontSize: '13px', overflowX: 'auto', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              {getEmbedCode(embedBot)}
+            </pre>
+            <button
+              onClick={() => copyToClipboard(getEmbedCode(embedBot))}
+              style={{ marginTop: '16px', width: '100%', padding: '12px', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
+            >
+              📋 Copy Embed Code
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bots List */}
+      {bots.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '80px 40px', backgroundColor: '#FFFFFF', borderRadius: '20px', border: '2px dashed #E5E7EB' }}>
+          <div style={{ fontSize: '56px', marginBottom: '16px' }}>🤖</div>
+          <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>No chatbots yet</h2>
+          <p style={{ color: '#6B7280', marginBottom: '24px' }}>Create your first chatbot to start capturing leads automatically.</p>
+          <button
+            onClick={() => setShowForm(true)}
+            style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 28px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
+          >
+            + Create First Chatbot
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '20px' }}>
+          {bots.map(bot => (
+            <div key={bot.id} style={{ backgroundColor: '#FFFFFF', padding: '28px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: 0 }}>{bot.name}</h3>
+                  <span style={{ backgroundColor: bot.status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: bot.status === 'Active' ? '#065F46' : '#B91C1C', padding: '3px 10px', borderRadius: '50px', fontSize: '12px', fontWeight: '700' }}>
+                    {bot.status === 'Active' ? '🟢 Active' : '🔴 Inactive'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '14px', color: '#6B7280' }}>🌐 {bot.website_url}</div>
+                {bot.calendly_link && <div style={{ fontSize: '14px', color: '#6B7280', marginTop: '4px' }}>📅 {bot.calendly_link}</div>}
+              </div>
+              <button
+                onClick={() => setEmbedBot(bot)}
+                style={{ backgroundColor: '#EEF2FF', color: '#4F46E5', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}
+              >
+                &lt;/&gt; Get Embed Code
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
