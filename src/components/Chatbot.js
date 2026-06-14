@@ -34,7 +34,7 @@ export default function Chatbot() {
 
   const botConfig = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
-    botName: 'BotSaaS AI',
+    botName: 'BotFlow AI',
     botAvatar: 'AI',
     primaryColor: '#4F46E5',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'

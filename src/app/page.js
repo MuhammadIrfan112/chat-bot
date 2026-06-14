@@ -10,7 +10,7 @@ export default function Home() {
       <header style={{ padding: '20px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #FFFFFF, #EEF2FF)', borderBottom: '1px solid #E5E7EB', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ fontSize: '28px' }}>🚀</div>
-          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotSaaS</h1>
+          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotFlow AI</h1>
         </div>
         <nav style={{ display: 'flex', gap: '32px', fontWeight: '600' }}>
           <span className={styles.navLink}>Features</span>

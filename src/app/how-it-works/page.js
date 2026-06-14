@@ -8,7 +8,7 @@ export default function HowItWorks() {
       <header style={{ padding: '20px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #FFFFFF, #EEF2FF)', borderBottom: '1px solid #E5E7EB', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
           <div style={{ fontSize: '28px' }}>🚀</div>
-          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotSaaS</h1>
+          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotFlow AI</h1>
         </Link>
         <Link href="/" style={{ fontWeight: '600', color: '#4B5563', textDecoration: 'none' }}>Back to Home</Link>
       </header>
@@ -16,7 +16,7 @@ export default function HowItWorks() {
       {/* Main Content */}
       <main style={{ padding: '80px 20px', maxWidth: '1000px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-          <h1 style={{ fontSize: '56px', fontWeight: '900', color: '#111827', marginBottom: '24px', letterSpacing: '-1.5px' }}>How <span style={{ color: '#4F46E5' }}>BotSaaS</span> Works</h1>
+          <h1 style={{ fontSize: '56px', fontWeight: '900', color: '#111827', marginBottom: '24px', letterSpacing: '-1.5px' }}>How <span style={{ color: '#4F46E5' }}>BotFlow AI</span> Works</h1>
           <p style={{ fontSize: '22px', color: '#6B7280', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
             A complete system designed to capture leads, answer questions, and grow your business on autopilot. Here is what happens after you sign up.
           </p>
