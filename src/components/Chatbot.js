@@ -58,10 +58,16 @@ export default function Chatbot() {
       setMessages([{ role: 'model', parts: [{ text: defaultWelcome }] }]);
     }
 
-    // Auto-open on the SaaS Landing Page after 1.5 seconds
+    // Auto-open on the SaaS Landing Page after 1.5 seconds, but ONLY ONCE per session
     if (!isClientSite) {
-      const timer = setTimeout(() => setIsOpen(true), 1500);
-      return () => clearTimeout(timer);
+      const hasOpened = sessionStorage.getItem('botflow_auto_opened');
+      if (!hasOpened) {
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+          sessionStorage.setItem('botflow_auto_opened', 'true');
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
     }
   }, []);
 

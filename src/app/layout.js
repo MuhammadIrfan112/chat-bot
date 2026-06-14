@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import Chatbot from '@/components/Chatbot';
 import "./globals.css";
 
 const inter = Inter({
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={inter.variable}>
       <body style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif', minHeight: '100vh', backgroundColor: '#F8F9FF' }}>
         {children}
+        <Chatbot />
       </body>
     </html>
   );

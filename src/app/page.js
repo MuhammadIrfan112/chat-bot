@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import Chatbot from '@/components/Chatbot';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -221,9 +220,6 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      {/* Chatbot */}
-      <Chatbot />
     </div>
   );
 }
