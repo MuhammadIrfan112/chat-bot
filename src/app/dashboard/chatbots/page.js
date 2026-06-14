@@ -127,15 +127,14 @@ export default function MyBots() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Calendly Link *</label>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Calendly Link <span style={{ color: '#9CA3AF', fontWeight: '400' }}>(optional)</span></label>
                 <input
                   value={form.calendly_link}
                   onChange={(e) => setForm({ ...form, calendly_link: e.target.value })}
-                  required
                   placeholder="https://calendly.com/your-name/30min"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
                 />
-                <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>Required — used for the "📅 Book a Free Call" button inside the chatbot.</div>
+                <div style={{ fontSize: '12px', color: '#F59E0B', marginTop: '6px', fontWeight: '500' }}>💡 Note: If you want the "📅 Book a Free Call" button to appear in your chatbot, you must provide your Calendly link here.</div>
               </div>
 
               <div>
