@@ -3,11 +3,13 @@ import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-async function getRelevantKnowledge(userQuery) {
+async function getRelevantKnowledge(userQuery, botId) {
+  if (!botId) return '';
   try {
     const { data } = await supabase
       .from('knowledge_base')
       .select('content')
+      .eq('bot_id', botId)
       .textSearch('content', userQuery.split(' ').slice(0, 5).join(' | '), {
         type: 'websearch',
         config: 'english'
@@ -18,6 +20,7 @@ async function getRelevantKnowledge(userQuery) {
       const { data: fallback } = await supabase
         .from('knowledge_base')
         .select('content')
+        .eq('bot_id', botId)
         .order('created_at', { ascending: false })
         .limit(3);
       return fallback ? fallback.map(d => d.content).join('\n---\n') : '';
@@ -30,7 +33,35 @@ async function getRelevantKnowledge(userQuery) {
 
 export async function POST(req) {
   try {
-    const { messages, session_id } = await req.json();
+    const { messages, session_id, bot_id } = await req.json();
+
+    // Fetch Bot Details to customize the AI
+    let botName = 'AI Assistant';
+    let websiteUrl = 'this website';
+    let calendlyLink = '';
+
+    if (bot_id) {
+      const { data: bot } = await supabase.from('bots').select('*').eq('id', bot_id).single();
+      if (bot) {
+        botName = bot.name;
+        websiteUrl = bot.website_url;
+        calendlyLink = bot.calendly_link || '';
+
+        // Domain Lock Check (Basic Security)
+        const origin = req.headers.get('origin') || req.headers.get('referer') || '';
+        // Allow localhost for testing, otherwise check if origin matches website_url
+        if (!origin.includes('localhost') && !origin.includes('netlify.app')) {
+          try {
+            const botDomain = new URL(websiteUrl).hostname;
+            if (!origin.includes(botDomain)) {
+              return Response.json({ reply: "This chatbot is not authorized to run on this domain. Please check your embed code." });
+            }
+          } catch (e) {
+            // Ignore URL parsing errors
+          }
+        }
+      }
+    }
 
     // Check if human has taken over
     if (session_id) {
@@ -54,18 +85,20 @@ export async function POST(req) {
 
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     const userQuery = lastUserMessage?.parts?.[0]?.text || '';
-    const knowledge = await getRelevantKnowledge(userQuery);
+    
+    // Fetch knowledge ONLY for this specific bot
+    const knowledge = await getRelevantKnowledge(userQuery, bot_id);
 
     const knowledgeSection = knowledge
-      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge}`
+      ? `\n\nRELEVANT BUSINESS KNOWLEDGE (Use this strictly to answer questions):\n${knowledge}`
       : '';
 
-    const systemInstruction = `You are a helpful, professional AI Sales Assistant for SocialMedia110, a social media marketing agency.
-Help visitors understand services, answer questions, and qualify leads.
-Services: Short Form Content Editing, Long Form Content Editing, Graphic Design & Thumbnails, Social Media Management, Content Strategy & Audit.
-Niches: SaaS, Tech & Apps, Personal Brands, E-commerce, Gaming, Real Estate, Finance & Crypto, Education.
-Key selling points: 24/7 Support, Daily Updates, 1-on-1 Consultation, Advanced Storytelling.
-Keep responses concise and friendly. Do not invent pricing.${knowledgeSection}`;
+    // DYNAMIC PROMPT based on the client's website
+    const systemInstruction = `You are a helpful, professional AI Sales Assistant for ${botName}, representing the website: ${websiteUrl}.
+Help visitors understand the services offered on this website, answer their questions, and qualify leads.
+If the user asks for a meeting or call, and this link is available: ${calendlyLink}, provide the link.
+Answer based strictly on the context of ${websiteUrl}. Do not invent pricing or services that are not mentioned in the knowledge base.
+Keep responses concise, friendly, and helpful.${knowledgeSection}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

@@ -148,10 +148,12 @@ export default function Chatbot() {
     messageCount.current += 1;
 
     try {
+      const botId = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG.botId : null;
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMsg], session_id: sessionId }),
+        body: JSON.stringify({ messages: [...messages, userMsg], session_id: sessionId, bot_id: botId }),
       });
 
       const data = await response.json();
