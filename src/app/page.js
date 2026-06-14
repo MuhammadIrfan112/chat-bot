@@ -218,6 +218,8 @@ export default function Home() {
               </ul>
               <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
             </div>
+          </div>
+        </div>
       </main>
 
       {/* Chatbot */}
