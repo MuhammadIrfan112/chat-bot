@@ -9,12 +9,15 @@ export default function MyBots() {
   const [showForm, setShowForm] = useState(false);
   const [embedBot, setEmbedBot] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [createError, setCreateError] = useState('');
 
   const [form, setForm] = useState({
     name: '',
     website_url: '',
     calendly_link: '',
     welcome_message: 'Hi there! 👋 How can I help you today?',
+    primary_color: '#4F46E5',
+    bot_avatar: 'AI',
   });
 
   useEffect(() => {
@@ -42,6 +45,7 @@ export default function MyBots() {
     e.preventDefault();
     if (!form.name.trim() || !form.website_url.trim()) return;
     setCreating(true);
+    setCreateError('');
 
     const { data, error } = await supabase.from('bots').insert({
       user_id: userId,
@@ -49,14 +53,23 @@ export default function MyBots() {
       website_url: form.website_url,
       calendly_link: form.calendly_link,
       welcome_message: form.welcome_message,
+      primary_color: form.primary_color,
+      bot_avatar: form.bot_avatar,
       status: 'Active',
     }).select().single();
 
-    if (!error && data) {
+    if (error) {
+      setCreateError('❌ Error: ' + error.message);
+      setCreating(false);
+      return;
+    }
+
+    if (data) {
       setShowForm(false);
-      setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?' });
+      setCreateError('');
+      setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: 'AI' });
       fetchBots(userId);
-      setEmbedBot(data); // Show embed code right away
+      setEmbedBot(data);
     }
     setCreating(false);
   };
@@ -146,6 +159,40 @@ export default function MyBots() {
                   style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
                 />
               </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Bot Avatar Text</label>
+                  <input
+                    value={form.bot_avatar}
+                    onChange={(e) => setForm({ ...form, bot_avatar: e.target.value.slice(0, 3) })}
+                    maxLength={3}
+                    placeholder="e.g. AI, Bot, SM"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                  />
+                  <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>Max 3 characters (shown in chat bubble)</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Primary Color</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input
+                      type="color"
+                      value={form.primary_color}
+                      onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
+                      style={{ width: '48px', height: '42px', borderRadius: '8px', border: '1px solid #D1D5DB', cursor: 'pointer', padding: '2px' }}
+                    />
+                    <span style={{ fontSize: '14px', color: '#374151', fontWeight: '500', backgroundColor: form.primary_color, color: 'white', padding: '6px 14px', borderRadius: '6px' }}>
+                      Preview
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {createError && (
+                <div style={{ backgroundColor: '#FEE2E2', color: '#B91C1C', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: '500' }}>
+                  {createError}
+                </div>
+              )}
 
               <button
                 type="submit"
