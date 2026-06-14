@@ -20,12 +20,12 @@ export default function AdminLayout({ children }) {
         return;
       }
 
-      if (session.user.email !== ADMIN_EMAIL) {
-        router.push('/dashboard');
-        return;
+      if (session.user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
       }
-
-      setIsAdmin(true);
+      
       setLoading(false);
     };
 
@@ -36,7 +36,17 @@ export default function AdminLayout({ children }) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Admin Panel...</div>;
   }
 
-  if (!isAdmin) return null;
+  if (!isAdmin) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' }}>
+        <h1 style={{ fontSize: '24px', color: '#DC2626', marginBottom: '16px' }}>Access Denied</h1>
+        <p style={{ color: '#4B5563', marginBottom: '24px' }}>You must be logged in as <strong>{ADMIN_EMAIL}</strong> to view this page.</p>
+        <Link href="/dashboard" style={{ padding: '10px 20px', backgroundColor: '#4F46E5', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: '600' }}>
+          Go to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F9FAFB' }}>
