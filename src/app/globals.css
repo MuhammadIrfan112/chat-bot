@@ -1,16 +1,66 @@
+/* ===== BotFlow AI - Global Design System ===== */
+/* Color Palette: Trust & Tech — Indigo + Sky Blue */
+/* Font: Inter (from Google Fonts) */
+
+:root {
+  --primary: #4F46E5;         /* Main Indigo */
+  --primary-dark: #3730A3;   /* Darker Indigo on hover */
+  --primary-light: #EEF2FF;  /* Light Indigo background */
+  --accent: #0EA5E9;          /* Sky Blue accent */
+  --success: #10B981;         /* Green for success states */
+  --warning: #F59E0B;         /* Amber for warnings */
+  --danger: #EF4444;          /* Red for errors/delete */
+  
+  --text-primary: #111827;    /* Almost black */
+  --text-secondary: #4B5563;  /* Medium gray */
+  --text-muted: #9CA3AF;      /* Light gray */
+  
+  --bg-page: #F8F9FF;         /* Slight blue-tinted page background */
+  --bg-card: #FFFFFF;         /* White cards */
+  --border: #E5E7EB;          /* Light border */
+  
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(79, 70, 229, 0.1);
+  --shadow-lg: 0 10px 30px rgba(79, 70, 229, 0.15);
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
 }
 
-html,
-body {
+html, body {
   max-width: 100vw;
   overflow-x: hidden;
+  font-family: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #C7D2FE;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }

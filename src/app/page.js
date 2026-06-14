@@ -5,78 +5,172 @@ import styles from './page.module.css';
 
 export default function Home() {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#FAFAFA', fontFamily: 'sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page)' }}>
       {/* Navbar */}
-      <header style={{ padding: '20px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #FFFFFF, #EEF2FF)', borderBottom: '1px solid #E5E7EB', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ fontSize: '28px' }}>🚀</div>
-          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotFlow AI</h1>
+      <header style={{
+        padding: '0 60px',
+        height: '70px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.85)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '38px', height: '38px',
+            background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+            borderRadius: '10px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '20px'
+          }}>🤖</div>
+          <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+            BotFlow <span style={{ color: 'var(--primary)' }}>AI</span>
+          </span>
         </div>
-        <nav style={{ display: 'flex', gap: '32px', fontWeight: '600' }}>
-          <span className={styles.navLink}>Features</span>
-          <span className={styles.navLink}>Pricing</span>
+
+        {/* Nav Links */}
+        <nav style={{ display: 'flex', gap: '36px' }}>
+          <Link href="#features" className={styles.navLink}>Features</Link>
+          <Link href="#pricing" className={styles.navLink}>Pricing</Link>
           <Link href="/how-it-works" className={styles.navLink}>How it Works</Link>
         </nav>
-        <Link href="/login" style={{ background: 'linear-gradient(to right, #4F46E5, #3B82F6)', color: 'white', padding: '10px 24px', borderRadius: '50px', fontWeight: '600', textDecoration: 'none', boxShadow: '0 4px 6px rgba(79, 70, 229, 0.2)' }}>
-          Dashboard / Login
+
+        {/* CTA */}
+        <Link href="/login" style={{
+          background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+          color: 'white',
+          padding: '10px 24px',
+          borderRadius: '50px',
+          fontWeight: '700',
+          fontSize: '14px',
+          boxShadow: 'var(--shadow-md)',
+          transition: 'all 0.2s',
+        }}>
+          Dashboard Login →
         </Link>
       </header>
 
       {/* Hero Section */}
-      <main style={{ padding: '80px 20px', maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
-        <div style={{ display: 'inline-block', backgroundColor: '#EEF2FF', color: '#4F46E5', padding: '6px 16px', borderRadius: '50px', fontSize: '14px', fontWeight: '700', marginBottom: '24px' }}>
+      <main style={{ padding: '100px 20px 80px', maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+
+        {/* Badge */}
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: 'var(--primary-light)',
+          color: 'var(--primary)',
+          padding: '8px 20px',
+          borderRadius: '50px',
+          fontSize: '13px',
+          fontWeight: '700',
+          marginBottom: '32px',
+          letterSpacing: '0.5px',
+          boxShadow: '0 2px 8px rgba(79,70,229,0.1)',
+        }}>
+          <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--primary)', boxShadow: '0 0 0 3px rgba(79,70,229,0.2)' }}></span>
           ✨ The Future of Customer Support
         </div>
-        
-        <h2 style={{ fontSize: '64px', fontWeight: '900', color: '#111827', lineHeight: '1.1', marginBottom: '24px', letterSpacing: '-2px' }}>
-          Grow Your Business with <br />
-          <span style={{ color: '#4F46E5' }}>AI-Powered Chatbots</span>
-        </h2>
-        
-        <p style={{ fontSize: '20px', color: '#6B7280', maxWidth: '600px', margin: '0 auto', marginBottom: '40px', lineHeight: '1.6' }}>
-          Turn your website visitors into paying customers. Train an AI on your website in 2 minutes, embed it anywhere, and watch your sales grow 24/7.
+
+        {/* Headline */}
+        <h1 style={{
+          fontSize: '68px',
+          fontWeight: '900',
+          color: 'var(--text-primary)',
+          lineHeight: '1.08',
+          marginBottom: '28px',
+          letterSpacing: '-2.5px',
+        }}>
+          Grow Your Business <br />
+          with <span style={{ background: 'linear-gradient(to right, var(--primary), var(--accent))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI-Powered Chatbots</span>
+        </h1>
+
+        <p style={{
+          fontSize: '20px',
+          color: 'var(--text-secondary)',
+          maxWidth: '580px',
+          margin: '0 auto 44px',
+          lineHeight: '1.7',
+          fontWeight: '400',
+        }}>
+          Turn your website visitors into paying customers. Train an AI in 2 minutes, embed it anywhere, and watch your sales grow 24/7.
         </p>
-        
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-          <Link href="/login" style={{ backgroundColor: '#4F46E5', color: 'white', padding: '16px 32px', borderRadius: '8px', fontSize: '18px', fontWeight: '700', textDecoration: 'none', boxShadow: '0 10px 20px rgba(79, 70, 229, 0.3)' }}>
-            Start Building for Free
+
+        {/* CTA Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <Link href="/login" style={{
+            background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+            color: 'white',
+            padding: '16px 36px',
+            borderRadius: '12px',
+            fontSize: '17px',
+            fontWeight: '700',
+            boxShadow: '0 12px 24px rgba(79,70,229,0.35)',
+            transition: 'all 0.3s',
+          }}>
+            Start Building for Free →
           </Link>
-          <Link href="#demo" style={{ backgroundColor: '#FFFFFF', color: '#111827', padding: '16px 32px', borderRadius: '8px', fontSize: '18px', fontWeight: '700', textDecoration: 'none', border: '1px solid #E5E7EB' }}>
-            Book a Demo
+          <Link href="/how-it-works" style={{
+            backgroundColor: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            padding: '16px 36px',
+            borderRadius: '12px',
+            fontSize: '17px',
+            fontWeight: '700',
+            border: '2px solid var(--border)',
+            transition: 'all 0.3s',
+          }}>
+            See How it Works
           </Link>
         </div>
 
-        {/* Features Preview */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginTop: '100px', textAlign: 'left' }}>
-          <div style={{ backgroundColor: '#FFFFFF', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚡</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px' }}>2-Minute Setup</h3>
-            <p style={{ color: '#6B7280', lineHeight: '1.5' }}>No coding required. Just paste your website link and we'll instantly generate your custom AI chatbot.</p>
-          </div>
-          <div style={{ backgroundColor: '#FFFFFF', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '40px', marginBottom: '16px' }}>🧠</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px' }}>Learns Your Business</h3>
-            <p style={{ color: '#6B7280', lineHeight: '1.5' }}>Upload your PDFs, pricing, and FAQs. The AI reads them and answers exactly like your best sales rep.</p>
-          </div>
-          <div style={{ backgroundColor: '#FFFFFF', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '40px', marginBottom: '16px' }}>👨‍💻</div>
-            <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px' }}>Live Human Takeover</h3>
-            <p style={{ color: '#6B7280', lineHeight: '1.5' }}>Monitor conversations in real-time and take over the chat manually whenever a high-ticket client arrives.</p>
-          </div>
+        {/* Features Section */}
+        <div id="features" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginTop: '100px', textAlign: 'left' }}>
+          {[
+            { icon: '⚡', title: '2-Minute Setup', desc: "No coding required. Just paste your website link and we'll instantly generate your custom AI chatbot." },
+            { icon: '🧠', title: 'Learns Your Business', desc: "Upload your PDFs, pricing, and FAQs. The AI reads them and answers exactly like your best sales rep." },
+            { icon: '👨‍💻', title: 'Live Human Takeover', desc: "Monitor conversations in real-time and jump in manually whenever a high-ticket client arrives." },
+          ].map((f, i) => (
+            <div key={i} style={{
+              backgroundColor: 'var(--bg-card)',
+              padding: '32px',
+              borderRadius: '20px',
+              border: '1px solid var(--border)',
+              boxShadow: 'var(--shadow-sm)',
+              transition: 'all 0.3s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = '#C7D2FE'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+            >
+              <div style={{ fontSize: '40px', marginBottom: '16px' }}>{f.icon}</div>
+              <h3 style={{ fontSize: '19px', fontWeight: '800', marginBottom: '10px', color: 'var(--text-primary)' }}>{f.title}</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '15px' }}>{f.desc}</p>
+            </div>
+          ))}
         </div>
 
         {/* Pricing Section */}
-        <div style={{ marginTop: '120px', marginBottom: '80px' }}>
-          <h2 style={{ fontSize: '48px', fontWeight: '900', color: '#111827', marginBottom: '16px', letterSpacing: '-1px' }}>Simple, Transparent Pricing</h2>
-          <p style={{ fontSize: '20px', color: '#6B7280', marginBottom: '48px' }}>Choose the plan that fits your business. Save more with longer commitments!</p>
-          
+        <div id="pricing" style={{ marginTop: '120px', marginBottom: '80px' }}>
+          <h2 style={{ fontSize: '44px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '12px', letterSpacing: '-1.5px' }}>
+            Simple, Transparent Pricing
+          </h2>
+          <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '56px' }}>
+            Choose the plan that fits your business. Save more with longer commitments!
+          </p>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', textAlign: 'left' }}>
-            
             {/* Monthly */}
             <div className={styles.pricingCard}>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Monthly</h3>
-              <div style={{ fontSize: '40px', fontWeight: '900', color: '#111827', marginBottom: '16px' }}>$25<span style={{ fontSize: '16px', fontWeight: '500', color: '#6B7280' }}>/mo</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#4B5563', lineHeight: '2' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>Monthly</h3>
+              <div style={{ fontSize: '42px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '20px', letterSpacing: '-1px' }}>$25<span style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-muted)' }}>/mo</span></div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2.2', fontSize: '14px' }}>
                 <li>✅ 1 Custom AI Chatbot</li>
                 <li>✅ Unlimited Knowledge Base</li>
                 <li>✅ Unlimited Leads</li>
@@ -85,50 +179,49 @@ export default function Home() {
               <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
             </div>
 
-            {/* 3 Months */}
-            <div className={styles.pricingCard}>
-              <div className={styles.badge} style={{ backgroundColor: '#4F46E5' }}>10% OFF</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>3 Months</h3>
-              <div style={{ fontSize: '40px', fontWeight: '900', color: '#111827', marginBottom: '16px' }}>$67.5<span style={{ fontSize: '16px', fontWeight: '500', color: '#6B7280' }}>/total</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#4B5563', lineHeight: '2' }}>
+            {/* 3 Months - Featured */}
+            <div className={styles.pricingCard} style={{ border: '2px solid var(--primary)', boxShadow: 'var(--shadow-lg)' }}>
+              <div className={styles.badge} style={{ backgroundColor: 'var(--primary)' }}>10% OFF</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px' }}>3 Months</h3>
+              <div style={{ fontSize: '42px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '20px', letterSpacing: '-1px' }}>$67.5<span style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-muted)' }}>/total</span></div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2.2', fontSize: '14px' }}>
                 <li>✅ Everything in Monthly</li>
                 <li>✅ Billed every 3 months</li>
-                <li>✅ $22.50 per month</li>
+                <li>🔥 Just $22.50 / month</li>
               </ul>
-              <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
+              <Link href="/login" className={styles.primaryBtn} style={{ backgroundColor: 'var(--primary)', color: 'white' }}>Get Started</Link>
             </div>
 
             {/* 6 Months */}
             <div className={styles.pricingCard}>
-              <div className={styles.badge} style={{ backgroundColor: '#10B981' }}>15% OFF</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>6 Months</h3>
-              <div style={{ fontSize: '40px', fontWeight: '900', color: '#111827', marginBottom: '16px' }}>$127.5<span style={{ fontSize: '16px', fontWeight: '500', color: '#6B7280' }}>/total</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#4B5563', lineHeight: '2' }}>
+              <div className={styles.badge} style={{ backgroundColor: 'var(--success)' }}>15% OFF</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>6 Months</h3>
+              <div style={{ fontSize: '42px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '20px', letterSpacing: '-1px' }}>$127.5<span style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-muted)' }}>/total</span></div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2.2', fontSize: '14px' }}>
                 <li>✅ Everything in Monthly</li>
                 <li>✅ Billed every 6 months</li>
-                <li>✅ $21.25 per month</li>
+                <li>🔥 Just $21.25 / month</li>
               </ul>
               <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
             </div>
 
             {/* 12 Months */}
             <div className={styles.pricingCard}>
-              <div className={styles.badge} style={{ backgroundColor: '#F59E0B' }}>25% OFF</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>12 Months</h3>
-              <div style={{ fontSize: '40px', fontWeight: '900', color: '#111827', marginBottom: '16px' }}>$225<span style={{ fontSize: '16px', fontWeight: '500', color: '#6B7280' }}>/total</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#4B5563', lineHeight: '2' }}>
+              <div className={styles.badge} style={{ backgroundColor: 'var(--warning)' }}>25% OFF</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>12 Months</h3>
+              <div style={{ fontSize: '42px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '20px', letterSpacing: '-1px' }}>$225<span style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-muted)' }}>/total</span></div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2.2', fontSize: '14px' }}>
                 <li>✅ Everything in Monthly</li>
                 <li>✅ Billed yearly</li>
-                <li>✅ $18.75 per month</li>
+                <li>🔥 Just $18.75 / month</li>
               </ul>
               <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
             </div>
-
           </div>
         </div>
       </main>
 
-      {/* The Chatbot */}
+      {/* Chatbot */}
       <Chatbot />
     </div>
   );
