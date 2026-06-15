@@ -17,8 +17,10 @@ export default function MyBots() {
     calendly_link: '',
     welcome_message: 'Hi there! 👋 How can I help you today?',
     primary_color: '#4F46E5',
-    bot_avatar: 'AI',
+    bot_avatar: '🤖',
   });
+
+  const avatarOptions = ['🤖', '👩', '👨', '👩‍💼', '👨‍💼', '🦸‍♀️', '🦸‍♂️', '🧠'];
 
   useEffect(() => {
     init();
@@ -67,7 +69,7 @@ export default function MyBots() {
     if (data) {
       setShowForm(false);
       setCreateError('');
-      setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: 'AI' });
+      setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
       fetchBots(userId);
       setEmbedBot(data);
     }
@@ -162,15 +164,31 @@ export default function MyBots() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Bot Avatar Text</label>
-                  <input
-                    value={form.bot_avatar}
-                    onChange={(e) => setForm({ ...form, bot_avatar: e.target.value.slice(0, 3) })}
-                    maxLength={3}
-                    placeholder="e.g. AI, Bot, SM"
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
-                  />
-                  <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>Max 3 characters (shown in chat bubble)</div>
+                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Choose Avatar Icon</label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {avatarOptions.map((icon, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setForm({ ...form, bot_avatar: icon })}
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          fontSize: '24px',
+                          borderRadius: '8px',
+                          border: form.bot_avatar === icon ? '2px solid #4F46E5' : '1px solid #D1D5DB',
+                          backgroundColor: form.bot_avatar === icon ? '#EEF2FF' : 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Primary Color</label>

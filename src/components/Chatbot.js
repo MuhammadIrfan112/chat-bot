@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import styles from './Chatbot.module.css';
 
 // Generate a unique visitor ID for this browser session
@@ -226,7 +228,23 @@ export default function Chatbot() {
           <div className={styles.messagesArea}>
             {messages.map((msg, idx) => (
               <div key={idx} className={`${styles.message} ${msg.role === 'user' ? styles.userMsg : styles.modelMsg}`}>
-                {msg.parts[0].text}
+                {msg.role === 'model' ? (
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({node, ...props}) => <p style={{ margin: '0 0 10px 0' }} {...props} />,
+                      ul: ({node, ...props}) => <ul style={{ paddingLeft: '20px', margin: '0 0 10px 0' }} {...props} />,
+                      ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '0 0 10px 0' }} {...props} />,
+                      li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
+                      a: ({node, ...props}) => <a style={{ color: 'var(--primary)', textDecoration: 'underline' }} target="_blank" {...props} />,
+                      strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />
+                    }}
+                  >
+                    {msg.parts[0].text}
+                  </ReactMarkdown>
+                ) : (
+                  msg.parts[0].text
+                )}
               </div>
             ))}
             {isLoading && (
