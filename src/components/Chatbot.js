@@ -47,6 +47,11 @@ export default function Chatbot() {
     if (isOpen && !sessionId) {
       initSession();
     }
+    
+    // Notify parent window (if in iframe) about size change
+    if (typeof window !== 'undefined' && window.parent) {
+      window.parent.postMessage({ type: 'CHATBOT_TOGGLE', isOpen }, '*');
+    }
   }, [isOpen]);
 
   useEffect(() => {
