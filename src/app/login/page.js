@@ -39,6 +39,22 @@ export default function Login() {
     }
   };
 
+  const handleOAuth = async (provider) => {
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`
+      }
+    });
+    
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6' }}>
       <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', width: '100%', maxWidth: '400px' }}>
@@ -92,6 +108,34 @@ export default function Login() {
             {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', margin: '4px 0' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }}></div>
+              <span style={{ padding: '0 10px', color: '#9CA3AF', fontSize: '14px' }}>OR</span>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }}></div>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => handleOAuth('google')}
+              disabled={loading}
+              style={{ width: '100%', padding: '12px', backgroundColor: 'white', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s' }}
+            >
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style={{ width: '20px', height: '20px' }} />
+              Continue with Google
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleOAuth('facebook')}
+              disabled={loading}
+              style={{ width: '100%', padding: '12px', backgroundColor: '#1877F2', color: 'white', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', transition: 'all 0.2s' }}
+            >
+              <img src="https://www.svgrepo.com/show/448224/facebook.svg" alt="Facebook" style={{ width: '20px', height: '20px', filter: 'brightness(0) invert(1)' }} />
+              Continue with Facebook
+            </button>
+          </div>
 
         <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#6B7280' }}>
           {isLogin ? "Don't have an account? " : "Already have an account? "}

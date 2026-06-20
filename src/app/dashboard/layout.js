@@ -25,7 +25,17 @@ export default function DashboardLayout({ children }) {
           .select('status')
           .eq('user_id', session.user.id)
           .single();
-        if (sub) setSubscriptionStatus(sub.status);
+        if (sub) {
+          setSubscriptionStatus(sub.status);
+        } else {
+          // Fallback for OAuth users: create a row if it doesn't exist
+          await supabase.from('users_subscription').insert({
+            user_id: session.user.id,
+            status: 'Inactive',
+            email: session.user.email
+          });
+          setSubscriptionStatus('Inactive');
+        }
         setLoading(false);
       }
     };
