@@ -77,7 +77,7 @@ export default function MyBots() {
   };
 
   const getEmbedCode = (bot) => {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://incandescent-lokum-c54955.netlify.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chat-bot-ruddy-one.vercel.app';
     return `<!-- AI Chatbot by SaaS Platform -->
 <script>
   window.CHATBOT_CONFIG = {

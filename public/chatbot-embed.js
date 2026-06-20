@@ -23,7 +23,7 @@
 
   if (!baseUrl) {
     // Fallback if we couldn't parse the script URL
-    baseUrl = 'https://incandescent-lokum-c54955.netlify.app';
+    baseUrl = 'https://chat-bot-ruddy-one.vercel.app';
   }
 
   // Create iframe

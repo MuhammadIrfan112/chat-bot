@@ -24,7 +24,7 @@ export async function GET() {
   }
 
   if (!baseUrl) {
-    baseUrl = 'https://incandescent-lokum-c54955.netlify.app';
+    baseUrl = 'https://chat-bot-ruddy-one.vercel.app';
   }
 
   // Create iframe
