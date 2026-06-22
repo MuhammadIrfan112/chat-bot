@@ -47,6 +47,17 @@ export async function POST(req) {
         websiteUrl = bot.website_url;
         calendlyLink = bot.calendly_link || '';
 
+        // ✅ SUBSCRIPTION CHECK: Block chatbot if user subscription is inactive
+        const { data: subscription } = await supabase
+          .from('users_subscription')
+          .select('status')
+          .eq('user_id', bot.user_id)
+          .single();
+
+        if (!subscription || subscription.status !== 'Active') {
+          return Response.json({ reply: "This chatbot is currently inactive. Please contact support." });
+        }
+
         // Domain Lock Check (Basic Security)
         const origin = req.headers.get('origin') || req.headers.get('referer') || '';
         // Allow localhost for testing, otherwise check if origin matches website_url
