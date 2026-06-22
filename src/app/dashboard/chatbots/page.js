@@ -137,60 +137,63 @@ export default function MyBots() {
 
       {/* Create Bot Form Modal */}
       {showForm && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '20px', padding: '40px', width: '100%', maxWidth: '560px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-              <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>🚀 Create New Chatbot</h2>
-              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}>
+            {/* Sticky Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid #F3F4F6', flexShrink: 0 }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: 0 }}>🚀 Create New Chatbot</h2>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6B7280', lineHeight: 1 }}>✕</button>
             </div>
 
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Scrollable Form Body */}
+            <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Bot Name *</label>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Bot Name *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                   placeholder="e.g. My Business Bot"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Your Website URL *</label>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Your Website URL *</label>
                 <input
                   value={form.website_url}
                   onChange={(e) => setForm({ ...form, website_url: e.target.value })}
                   required
                   placeholder="https://yourbusiness.com"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Calendly Link <span style={{ color: '#9CA3AF', fontWeight: '400' }}>(optional)</span></label>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Calendly Link <span style={{ color: '#9CA3AF', fontWeight: '400' }}>(optional)</span></label>
                 <input
                   value={form.calendly_link}
                   onChange={(e) => setForm({ ...form, calendly_link: e.target.value })}
                   placeholder="https://calendly.com/your-name/30min"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
                 />
-                <div style={{ fontSize: '12px', color: '#F59E0B', marginTop: '6px', fontWeight: '500' }}>💡 Note: If you want the "📅 Book a Free Call" button to appear in your chatbot, you must provide your Calendly link here.</div>
+                <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', fontWeight: '500' }}>💡 Note: If you want the "📅 Book a Free Call" button to appear in your chatbot, you must provide your Calendly link here.</div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Welcome Message</label>
+                <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Welcome Message</label>
                 <input
                   value={form.welcome_message}
                   onChange={(e) => setForm({ ...form, welcome_message: e.target.value })}
                   placeholder="Hi! How can I help you today?"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Choose Avatar Icon</label>
+                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Choose Avatar Icon</label>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {avatarOptions.map((icon, idx) => (
                       <button
@@ -198,9 +201,9 @@ export default function MyBots() {
                         type="button"
                         onClick={() => setForm({ ...form, bot_avatar: icon })}
                         style={{
-                          width: '44px',
-                          height: '44px',
-                          fontSize: '24px',
+                          width: '36px',
+                          height: '36px',
+                          fontSize: '20px',
                           borderRadius: '8px',
                           border: form.bot_avatar === icon ? '2px solid #4F46E5' : '1px solid #D1D5DB',
                           backgroundColor: form.bot_avatar === icon ? '#EEF2FF' : 'white',
@@ -217,7 +220,7 @@ export default function MyBots() {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#374151', fontSize: '14px' }}>Primary Color</label>
+                  <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Primary Color</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <input
                       type="color"
@@ -242,11 +245,12 @@ export default function MyBots() {
               <button
                 type="submit"
                 disabled={creating}
-                style={{ backgroundColor: '#4F46E5', color: 'white', padding: '14px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: creating ? 'not-allowed' : 'pointer', fontSize: '16px', marginTop: '8px', opacity: creating ? 0.7 : 1 }}
+                style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: creating ? 'not-allowed' : 'pointer', fontSize: '15px', opacity: creating ? 0.7 : 1 }}
               >
                 {creating ? 'Creating...' : '🚀 Create Chatbot'}
               </button>
             </form>
+            </div>
           </div>
         </div>
       )}
