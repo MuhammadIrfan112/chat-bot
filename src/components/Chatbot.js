@@ -110,7 +110,7 @@ export default function Chatbot() {
     const res = await fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitor_id })
+      body: JSON.stringify({ visitor_id, bot_id: botConfig.botId })
     });
     const data = await res.json();
     if (data.session) {
@@ -135,7 +135,7 @@ export default function Chatbot() {
     await fetch('/api/save-lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, chatbot_source: 'SocialMedia110' })
+      body: JSON.stringify({ name, email, chatbot_source: 'SocialMedia110', bot_id: botConfig.botId })
     });
     setLeadCaptured(true);
     setLeadStep(null);

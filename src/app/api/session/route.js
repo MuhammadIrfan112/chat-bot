@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 // Create or get a chat session
 export async function POST(req) {
   try {
-    const { visitor_id } = await req.json();
+    const { visitor_id, bot_id } = await req.json();
 
     // Check if session exists
     const { data: existing } = await supabase
@@ -19,9 +19,12 @@ export async function POST(req) {
     }
 
     // Create new session
+    const insertData = { visitor_id, is_human_takeover: false };
+    if (bot_id) insertData.bot_id = bot_id;
+
     const { data, error } = await supabase
       .from('chat_sessions')
-      .insert({ visitor_id, is_human_takeover: false })
+      .insert(insertData)
       .select()
       .single();
 
