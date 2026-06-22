@@ -53,6 +53,26 @@ export default function MyBots() {
     setCreating(true);
     setCreateError('');
 
+    // ✅ DOMAIN ABUSE CHECK: Check if this website is already registered anywhere
+    try {
+      const res = await fetch('/api/bot/check-domain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteUrl: form.website_url })
+      });
+      const checkData = await res.json();
+      
+      if (checkData.exists) {
+        setCreateError('❌ This website domain is already registered on our platform. You cannot create multiple accounts for the same website to abuse the free trial.');
+        setCreating(false);
+        return;
+      }
+    } catch (e) {
+      setCreateError('❌ Failed to verify website domain. Please try again.');
+      setCreating(false);
+      return;
+    }
+
     const { data, error } = await supabase.from('bots').insert({
       user_id: userId,
       name: form.name,
