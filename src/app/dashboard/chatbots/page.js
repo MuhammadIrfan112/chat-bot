@@ -233,8 +233,9 @@ export default function MyBots() {
               </div>
 
               {createError && (
-                <div style={{ backgroundColor: '#FEE2E2', color: '#B91C1C', padding: '12px', borderRadius: '8px', fontSize: '14px', fontWeight: '500' }}>
-                  {createError}
+                <div style={{ backgroundColor: '#FEE2E2', color: '#B91C1C', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', lineHeight: '1.4', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                  <span style={{ flexShrink: 0 }}>⚠️</span>
+                  <span>{createError.replace('❌ ', '')}</span>
                 </div>
               )}
 
