@@ -91,6 +91,13 @@ export default function MyBots() {
     }
 
     if (data) {
+      // Trigger background auto-scraping to train the bot
+      fetch('/api/bot/scrape-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: form.website_url, bot_id: data.id })
+      }).catch(err => console.error("Auto-scrape failed:", err));
+
       setShowForm(false);
       setCreateError('');
       setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
