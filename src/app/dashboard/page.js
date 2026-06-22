@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Plus, Users, Database, MessageSquare, ChevronRight, Inbox, Trash2, ShieldAlert } from 'lucide-react';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ leads: 0, knowledge: 0, chats: 0 });
@@ -19,7 +21,6 @@ export default function Dashboard() {
     
     const userId = session.user.id;
 
-    // First check if user has any bots
     const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);
     
     if (!bots || bots.length === 0) {
@@ -60,132 +61,157 @@ export default function Dashboard() {
     return new Date(dateStr).toLocaleDateString();
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
+  };
+
   return (
-    <div className="animate-fade-in">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.02em' }}>Overview</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Track your chatbot's performance and recent leads.</p>
+          <motion.h1 variants={itemVariants} style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>Overview</motion.h1>
+          <motion.p variants={itemVariants} style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>Track your chatbot's performance and recent leads.</motion.p>
         </div>
         
         {hasBot && (
-          <Link href="/dashboard/chatbots" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--primary)', color: 'white', padding: '10px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary-dark)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-            New Chatbot
-          </Link>
+          <motion.div variants={itemVariants}>
+            <Link href="/dashboard/chatbots" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #818CF8 0%, #4F46E5 100%)', color: 'white', padding: '10px 18px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)' }}>
+              <Plus size={18} />
+              New Chatbot
+            </Link>
+          </motion.div>
         )}
       </div>
 
       {!hasBot && !loading && (
-        <div className="animate-slide-up" style={{ backgroundColor: 'var(--primary-light)', padding: '32px', borderRadius: '16px', marginBottom: '40px', border: '1px solid #C7D2FE', display: 'flex', gap: '24px', alignItems: 'center' }}>
-          <div style={{ width: '64px', height: '64px', backgroundColor: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '40px', borderRadius: '24px', marginBottom: '40px', display: 'flex', gap: '32px', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.2, zIndex: 0 }}></div>
+          <div style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, rgba(129, 140, 248, 0.2), rgba(79, 70, 229, 0.2))', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--primary-glow)', position: 'relative', zIndex: 1 }}>
+            <ShieldAlert size={40} color="var(--primary)" />
           </div>
-          <div>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>Welcome to BotFlow AI</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '15px' }}>You don't have any chatbots yet. Create your first chatbot to start capturing leads instantly.</p>
-            <Link href="/dashboard/chatbots" style={{ backgroundColor: 'var(--primary)', color: 'white', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>Welcome to BotFlow AI</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>You don't have any chatbots yet. Create your first intelligent assistant in seconds to start capturing leads on autopilot.</p>
+            <Link href="/dashboard/chatbots" style={{ background: 'linear-gradient(90deg, #818CF8, #4F46E5)', color: 'white', padding: '12px 24px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)' }}>
               Create Your First Chatbot
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              <ChevronRight size={18} />
             </Link>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      <div className="animate-slide-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', animationDelay: '0.1s' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
         {/* Stat Card 1 */}
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid var(--success)', boxShadow: 'var(--shadow-sm)' }}>
+        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '24px', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: 'var(--success)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Leads Captured</div>
-              <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '8px', letterSpacing: '-0.02em' }}>{loading ? '...' : stats.leads}</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total Leads Captured</div>
+              {loading ? (
+                <div style={{ width: '40px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginTop: '8px', animation: 'pulse 1.5s infinite' }}></div>
+              ) : (
+                <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{stats.leads}</div>
+              )}
             </div>
-            <div style={{ padding: '8px', backgroundColor: '#ECFDF5', borderRadius: '8px', color: 'var(--success)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <div style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', color: 'var(--success)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+              <Users size={24} />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stat Card 2 */}
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid var(--primary)', boxShadow: 'var(--shadow-sm)' }}>
+        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '24px', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: 'var(--primary)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>AI Knowledge Items</div>
-              <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '8px', letterSpacing: '-0.02em' }}>{loading ? '...' : stats.knowledge}</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Knowledge Items</div>
+              {loading ? (
+                <div style={{ width: '40px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginTop: '8px', animation: 'pulse 1.5s infinite' }}></div>
+              ) : (
+                <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{stats.knowledge}</div>
+              )}
             </div>
-            <div style={{ padding: '8px', backgroundColor: 'var(--primary-light)', borderRadius: '8px', color: 'var(--primary)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            <div style={{ padding: '10px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '12px', color: 'var(--primary)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+              <Database size={24} />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stat Card 3 */}
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '24px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid var(--warning)', boxShadow: 'var(--shadow-sm)' }}>
+        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '24px', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: 'var(--warning)' }}></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Chat Sessions</div>
-              <div style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '8px', letterSpacing: '-0.02em' }}>{loading ? '...' : stats.chats}</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total Chat Sessions</div>
+              {loading ? (
+                <div style={{ width: '40px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginTop: '8px', animation: 'pulse 1.5s infinite' }}></div>
+              ) : (
+                <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{stats.chats}</div>
+              )}
             </div>
-            <div style={{ padding: '8px', backgroundColor: '#FFFBEB', borderRadius: '8px', color: 'var(--warning)' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <div style={{ padding: '10px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', color: 'var(--warning)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+              <MessageSquare size={24} />
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
       
-      <div className="animate-slide-up" style={{ marginTop: '32px', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden', animationDelay: '0.2s' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FDFBFF' }}>
+      <motion.div variants={itemVariants} className="glass-panel" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>Recent CRM Leads</h2>
           <Link href="/dashboard/leads" style={{ fontSize: '13px', fontWeight: '600', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
             View All
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <ChevronRight size={16} />
           </Link>
         </div>
         
         {recentLeads.length === 0 ? (
           <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-            <div style={{ width: '48px', height: '48px', backgroundColor: 'var(--bg-page)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--text-muted)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--text-muted)' }}>
+              <Inbox size={24} />
             </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: '500' }}>No leads captured yet.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '15px', fontWeight: '500' }}>No leads captured yet.</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ backgroundColor: 'var(--bg-page)', color: 'var(--text-secondary)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  <th style={{ padding: '12px 24px', fontWeight: '600' }}>Name</th>
-                  <th style={{ padding: '12px 24px', fontWeight: '600' }}>Email / Contact</th>
-                  <th style={{ padding: '12px 24px', fontWeight: '600' }}>Status</th>
-                  <th style={{ padding: '12px 24px', fontWeight: '600' }}>Time</th>
-                  <th style={{ padding: '12px 24px', fontWeight: '600', textAlign: 'right' }}>Action</th>
+                <tr style={{ background: 'rgba(0,0,0,0.2)', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Name</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Email / Contact</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Status</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Time</th>
+                  <th style={{ padding: '16px 24px', fontWeight: '700', textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {recentLeads.map((lead) => (
-                  <tr key={lead.id} style={{ borderTop: '1px solid var(--border)', fontSize: '14px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg-page)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '16px 24px', fontWeight: '600', color: 'var(--text-primary)' }}>{lead.name || '—'}</td>
-                    <td style={{ padding: '16px 24px', color: 'var(--text-secondary)' }}>{lead.email}</td>
-                    <td style={{ padding: '16px 24px' }}>
+                  <tr key={lead.id} style={{ borderTop: '1px solid var(--border)', fontSize: '14px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <td style={{ padding: '20px 24px', fontWeight: '600', color: 'var(--text-primary)' }}>{lead.name || '—'}</td>
+                    <td style={{ padding: '20px 24px', color: 'var(--text-secondary)' }}>{lead.email}</td>
+                    <td style={{ padding: '20px 24px' }}>
                       <span style={{ 
-                        backgroundColor: lead.status === 'New Lead' ? '#ECFDF5' : '#FFFBEB', 
-                        color: lead.status === 'New Lead' ? '#059669' : '#D97706', 
-                        padding: '4px 10px', borderRadius: '50px', fontSize: '12px', fontWeight: '600',
-                        border: lead.status === 'New Lead' ? '1px solid #A7F3D0' : '1px solid #FDE68A'
+                        background: lead.status === 'New Lead' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
+                        color: lead.status === 'New Lead' ? 'var(--success)' : 'var(--warning)', 
+                        padding: '6px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '700',
+                        border: lead.status === 'New Lead' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)'
                       }}>
                         {lead.status || 'New Lead'}
                       </span>
                     </td>
-                    <td style={{ padding: '16px 24px', color: 'var(--text-muted)', fontSize: '13px' }}>{timeAgo(lead.created_at)}</td>
-                    <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                      <button onClick={() => deleteLead(lead.id)} title="Delete Lead" style={{ backgroundColor: 'transparent', color: 'var(--text-muted)', border: 'none', padding: '6px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#FEE2E2'; e.currentTarget.style.color = 'var(--danger)'; }}
+                    <td style={{ padding: '20px 24px', color: 'var(--text-muted)', fontSize: '13px' }}>{timeAgo(lead.created_at)}</td>
+                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                      <button onClick={() => deleteLead(lead.id)} title="Delete Lead" style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = 'var(--danger)'; }}
                       onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <Trash2 size={18} />
                       </button>
                     </td>
                   </tr>
@@ -194,7 +220,8 @@ export default function Dashboard() {
             </table>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
+    </motion.div>
   );
 }

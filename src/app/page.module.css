@@ -1,3 +1,106 @@
+/* Hero & Buttons */
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--text-primary);
+  color: var(--bg-base);
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: var(--text-primary);
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
+  backdrop-filter: blur(8px);
+}
+
+.secondaryBtn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Navbar */
+.navLink {
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+}
+
+/* Bento Box Layout for Features */
+.bentoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: 24px;
+  margin-top: 80px;
+}
+
+.bentoItem {
+  background: var(--bg-card);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+.bentoItem::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.06), transparent 40%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.bentoItem:hover::before {
+  opacity: 1;
+}
+
+.bentoItem:hover {
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+}
+
+.bentoLarge {
+  grid-column: span 2;
+}
+
+/* Pricing Cards */
 .pricingCard {
   background-color: var(--bg-card);
   padding: 40px 32px;
@@ -7,32 +110,18 @@
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
-  cursor: pointer;
 }
 
 .pricingCard:hover {
-  border-color: #C7D2FE;
-  box-shadow: var(--shadow-xl);
+  border-color: rgba(255,255,255,0.2);
   transform: translateY(-8px);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
 }
 
-.pricingCard:hover .primaryBtn {
-  background-color: var(--primary);
-  color: white;
-}
-
-.primaryBtn {
-  display: block;
-  text-align: center;
-  background-color: #F1F5F9;
-  color: var(--text-primary);
-  padding: 16px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 15px;
-  text-decoration: none;
-  margin-top: auto;
-  transition: all 0.3s ease;
+.pricingPro {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%);
+  border: 1px solid var(--primary-glow);
+  box-shadow: 0 0 40px -10px var(--primary-glow);
 }
 
 .badge {
@@ -40,77 +129,43 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
+  background: linear-gradient(90deg, #818CF8, #C084FC);
   color: white;
-  padding: 6px 16px;
+  padding: 4px 16px;
   border-radius: 50px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.pricingCard:hover .badge {
-  transform: translateX(-50%) scale(1.05);
-}
-
-.navLink {
-  cursor: pointer;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 15px;
-  transition: color 0.2s ease;
-  position: relative;
-  padding-bottom: 2px;
-}
-
-.navLink::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--primary);
-  border-radius: 2px;
-  transform: scaleX(0);
-  transition: transform 0.2s ease;
-}
-
-.navLink:hover {
+.pricingBtn {
+  display: block;
+  text-align: center;
+  background-color: rgba(255,255,255,0.05);
   color: var(--text-primary);
-}
-
-.navLink:hover::after {
-  transform: scaleX(1);
-}
-
-.featureCard {
-  background-color: var(--bg-card);
-  padding: 32px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.featureCard:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-4px);
-  border-color: #E2E8F0;
-}
-
-.featureIconWrap {
-  width: 48px;
-  height: 48px;
-  background-color: var(--primary-light);
+  padding: 16px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  color: var(--primary);
-  font-size: 24px;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  margin-top: auto;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.pricingBtn:hover {
+  background-color: var(--text-primary);
+  color: var(--bg-base);
+}
+
+.pricingBtnPro {
+  background: linear-gradient(90deg, #818CF8, #C084FC);
+  color: white;
+  border: none;
+}
+.pricingBtnPro:hover {
+  opacity: 0.9;
+  background: linear-gradient(90deg, #818CF8, #C084FC);
+  color: white;
 }
