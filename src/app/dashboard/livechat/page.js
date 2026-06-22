@@ -66,7 +66,7 @@ export default function LiveChat() {
       .from('chat_sessions')
       .select('*')
       .in('bot_id', botIds)
-      .order('updated_at', { ascending: false });
+      .order('created_at', { ascending: false });
     
     if (!error && data) {
       setSessions(data);
