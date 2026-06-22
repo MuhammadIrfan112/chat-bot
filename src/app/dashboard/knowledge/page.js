@@ -43,7 +43,7 @@ export default function KnowledgeBase() {
     }
   };
 
-  const handleUpload = async () => {
+  const handleUploadText = async () => {
     if (!text.trim() || !botId) return;
     setLoading(true);
     setMessage('');
@@ -68,6 +68,38 @@ export default function KnowledgeBase() {
     setText('');
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !botId) return;
+    
+    setLoading(true);
+    setMessage('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bot_id', botId);
+
+    try {
+      const res = await fetch('/api/upload-file', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(`✅ File "${file.name}" successfully added to AI Brain!`);
+        fetchKnowledge();
+      } else {
+        setMessage('❌ Error: ' + data.error);
+      }
+    } catch (e) {
+      setMessage('❌ Error uploading file.');
+    }
+    
+    e.target.value = ''; // Reset input
+    setLoading(false);
+  };
+
   if (!hasBot) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', backgroundColor: '#FFF', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
@@ -90,13 +122,30 @@ export default function KnowledgeBase() {
           placeholder="Paste your business info here... (e.g., 'We offer video editing for $500/month. Our support email is help@socialmedia110.com')"
           style={{ width: '100%', height: '200px', padding: '16px', borderRadius: '8px', border: '1px solid #D1D5DB', marginBottom: '16px', resize: 'vertical', fontFamily: 'inherit', fontSize: '14px' }}
         />
-        <button 
-          onClick={handleUpload}
-          disabled={loading}
-          style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
-        >
-          {loading ? 'Training AI...' : 'Train Chatbot 🧠'}
-        </button>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <button 
+            onClick={handleUploadText}
+            disabled={loading}
+            style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Training AI...' : 'Train Text 🧠'}
+          </button>
+          
+          <div style={{ fontSize: '14px', color: '#6B7280', fontWeight: '600' }}>OR</div>
+          
+          <label style={{ 
+            backgroundColor: '#10B981', color: 'white', padding: '12px 24px', borderRadius: '8px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: '8px'
+          }}>
+            📁 Upload PDF / TXT
+            <input 
+              type="file" 
+              accept=".txt,.pdf" 
+              onChange={handleFileUpload}
+              disabled={loading}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
         {message && <p style={{ marginTop: '16px', fontWeight: '500', color: message.includes('Error') ? '#EF4444' : '#10B981' }}>{message}</p>}
       </div>
 
