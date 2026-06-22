@@ -40,6 +40,30 @@ export default function DashboardLayout({ children }) {
       }
     };
     checkAuthAndSub();
+
+    // ✅ AUTO SIGNOUT: Check every 30 seconds if user was deleted by admin
+    const interval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // Session ended - redirect to login
+        router.push('/login');
+        return;
+      }
+      // Check if user still exists in users_subscription
+      const { data: sub, error } = await supabase
+        .from('users_subscription')
+        .select('user_id')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (!sub || error) {
+        // User was deleted by admin - force signout
+        await supabase.auth.signOut();
+        router.push('/login');
+      }
+    }, 30000); // every 30 seconds
+
+    return () => clearInterval(interval);
   }, [router]);
 
   const handleSignOut = async () => {

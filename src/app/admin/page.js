@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 export default function AdminPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingUser, setDeletingUser] = useState(null);
   const [expandedUser, setExpandedUser] = useState(null);
   const [userBots, setUserBots] = useState({}); // { userId: [bots] }
   const [botsLoading, setBotsLoading] = useState({});
@@ -57,6 +58,32 @@ export default function AdminPage() {
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
     setUsers(users.map(u => u.user_id === userId ? { ...u, status: newStatus } : u));
     await supabase.from('users_subscription').update({ status: newStatus }).eq('user_id', userId);
+  };
+
+  const deleteUser = async (userId, email) => {
+    const confirmed = window.confirm(`⚠️ Are you sure you want to DELETE "${email || userId}"?\n\nThis will permanently delete:\n• All their chatbots\n• Their subscription\n• Their account\n\nThis action CANNOT be undone!`);
+    if (!confirmed) return;
+
+    setDeletingUser(userId);
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Remove from UI immediately
+        setUsers(prev => prev.filter(u => u.user_id !== userId));
+        setUserBots(prev => { const n = { ...prev }; delete n[userId]; return n; });
+        if (expandedUser === userId) setExpandedUser(null);
+      } else {
+        alert('Error: ' + (data.error || 'Could not delete user'));
+      }
+    } catch (e) {
+      alert('Network error. Please try again.');
+    }
+    setDeletingUser(null);
   };
 
   return (
@@ -114,6 +141,18 @@ export default function AdminPage() {
                     }}
                   >
                     {user.status === 'Active' ? 'Deactivate All' : 'Activate Account'}
+                  </button>
+                  <button
+                    onClick={() => deleteUser(user.user_id, user.email)}
+                    disabled={deletingUser === user.user_id}
+                    style={{
+                      padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: deletingUser === user.user_id ? 'not-allowed' : 'pointer', fontSize: '13px',
+                      backgroundColor: '#111827',
+                      color: 'white',
+                      opacity: deletingUser === user.user_id ? 0.6 : 1
+                    }}
+                  >
+                    {deletingUser === user.user_id ? '⏳ Deleting...' : '🗑️ Delete'}
                   </button>
                 </div>
               </div>
