@@ -45,6 +45,10 @@ export default function MyBots() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (bots.length >= 1) {
+      setCreateError('You can only create one chatbot per account. Please upgrade for more.');
+      return;
+    }
     if (!form.name.trim() || !form.website_url.trim()) return;
     setCreating(true);
     setCreateError('');
@@ -101,12 +105,14 @@ export default function MyBots() {
           <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>🤖 My Chatbots</h1>
           <p style={{ color: '#6B7280' }}>Create and manage your AI chatbots. Get the embed code for your website.</p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 24px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
-        >
-          + Create New Bot
-        </button>
+        {bots.length === 0 && (
+          <button
+            onClick={() => setShowForm(true)}
+            style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 24px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
+          >
+            + Create New Bot
+          </button>
+        )}
       </div>
 
       {/* Create Bot Form Modal */}
