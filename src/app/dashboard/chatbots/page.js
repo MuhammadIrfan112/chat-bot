@@ -252,22 +252,50 @@ export default function MyBots() {
 
       {/* Embed Code Modal */}
       {embedBot && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '20px', padding: '40px', width: '100%', maxWidth: '640px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '700px', boxShadow: '0 25px 50px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>🎉 Chatbot Created!</h2>
-              <button onClick={() => setEmbedBot(null)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+              <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', margin: 0 }}>🎉 Chatbot Created!</h2>
+              <button onClick={() => setEmbedBot(null)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
             </div>
-            <p style={{ color: '#6B7280', marginBottom: '20px' }}>Copy this code and paste it into your website's HTML (before the closing <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>&lt;/body&gt;</code> tag):</p>
-            <pre style={{ backgroundColor: '#1E293B', color: '#A3E635', padding: '20px', borderRadius: '12px', fontSize: '13px', overflowX: 'auto', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            
+            <p style={{ color: '#4B5563', marginBottom: '16px', fontSize: '15px' }}><strong>Option 1: Do it yourself</strong><br/>Copy this code and paste it into your website's HTML (before the closing <code style={{ backgroundColor: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>&lt;/body&gt;</code> tag):</p>
+            <pre style={{ backgroundColor: '#1E293B', color: '#A3E635', padding: '16px', borderRadius: '12px', fontSize: '13px', overflowX: 'auto', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
               {getEmbedCode(embedBot)}
             </pre>
             <button
               onClick={() => copyToClipboard(getEmbedCode(embedBot))}
-              style={{ marginTop: '16px', width: '100%', padding: '12px', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
+              style={{ marginTop: '12px', width: '100%', padding: '12px', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
             >
               📋 Copy Embed Code
             </button>
+
+            <div style={{ margin: '32px 0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }}></div>
+              <div style={{ color: '#9CA3AF', fontWeight: '600', fontSize: '14px', textTransform: 'uppercase' }}>OR</div>
+              <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }}></div>
+            </div>
+
+            {/* Premium Installation Upsell */}
+            <div style={{ background: 'linear-gradient(135deg, #1E1B4B, #312E81)', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ flex: 1, minWidth: '250px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>⭐ Option 2: Let us do it for you</div>
+                <h3 style={{ color: 'white', fontSize: '20px', fontWeight: '800', margin: '0 0 8px 0' }}>Professional Installation Service</h3>
+                <p style={{ color: '#C7D2FE', fontSize: '13px', margin: '0 0 12px 0', lineHeight: '1.5' }}>Don't know how to code? We will install and deploy the chatbot on your website perfectly within 24 hours.</p>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <span style={{ color: '#A5B4FC', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>✅ Zero Tech Skills Needed</span>
+                  <span style={{ color: '#A5B4FC', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>✅ Fully Tested</span>
+                </div>
+              </div>
+              <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', minWidth: '160px' }}>
+                <div style={{ fontSize: '36px', fontWeight: '900', color: 'white', lineHeight: '1' }}>$100</div>
+                <div style={{ color: '#A5B4FC', fontSize: '12px', marginBottom: '12px', marginTop: '4px' }}>One-time fee</div>
+                <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '10px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.2)' }}>
+                  💬 Order via WhatsApp
+                </a>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
