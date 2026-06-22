@@ -29,15 +29,26 @@ export default async function BotEmbedPage({ params }) {
   `;
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'transparent' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'transparent', backgroundColor: 'transparent' }}>
       <script dangerouslySetInnerHTML={{ __html: scriptContent }} />
       <Chatbot />
       
-      {/* Hide the default background that Chatbot might have, and force open if it's an iframe embed */}
+      {/* Force transparent background on all wrapper elements */}
       <style dangerouslySetInnerHTML={{ __html: `
-        body { background: transparent !important; margin: 0; overflow: hidden; }
-        .chatWindow { height: 100vh !important; border-radius: 20px !important; margin: 0 !important; width: 100vw !important; }
-        .chatbotContainer { bottom: 0 !important; right: 0 !important; width: 100%; height: 100%; }
+        html, body, #__next, [data-nextjs-scroll-focus-boundary] {
+          background: transparent !important;
+          background-color: transparent !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+        .chatbotContainer {
+          bottom: 0 !important;
+          right: 0 !important;
+          position: fixed !important;
+          width: auto !important;
+          height: auto !important;
+        }
       `}} />
     </div>
   );
