@@ -32,10 +32,19 @@ export default function Billing() {
   };
 
   const plans = [
-    { name: 'Monthly', price: '$25 /mo', total: '$25', features: ['1 Custom AI Chatbot', 'Unlimited Knowledge', 'Live Chat Takeover'] },
-    { name: '3 Months (10% OFF)', price: '$22.50 /mo', total: '$67.50', features: ['Billed every 3 months', 'Save $7.50', 'Live Chat Takeover'] },
-    { name: '6 Months (15% OFF)', price: '$21.25 /mo', total: '$127.50', features: ['Billed every 6 months', 'Save $22.50', 'Live Chat Takeover'] },
-    { name: '12 Months (25% OFF)', price: '$18.75 /mo', total: '$225', features: ['Billed yearly', 'Save $75', 'Live Chat Takeover'] }
+    { 
+      name: 'Standard', 
+      price: '$29 /mo', 
+      total: '$29', 
+      features: ['1 Custom AI Chatbot', 'Unlimited Knowledge Training', 'Capture up to 100 Leads', 'Standard Support'] 
+    },
+    { 
+      name: 'Pro', 
+      price: '$79 /mo', 
+      total: '$79', 
+      features: ['1 Custom AI Chatbot', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Remove Branding', 'Priority Support'],
+      recommended: true
+    }
   ];
 
   return (
@@ -86,20 +95,25 @@ export default function Billing() {
       )}
 
       {!selectedPlan ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', maxWidth: '800px', margin: '0 auto' }}>
           {plans.map((plan, idx) => (
-            <div key={idx} style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#4F46E5', marginBottom: '8px' }}>{plan.name}</h3>
-              <div style={{ fontSize: '32px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>{plan.total}</div>
-              <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '24px' }}>{plan.price}</div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', color: '#4B5563', lineHeight: '2' }}>
-                {plan.features.map((f, i) => <li key={i}>✅ {f}</li>)}
+            <div key={idx} style={{ backgroundColor: 'white', padding: '32px', borderRadius: '16px', border: plan.recommended ? '2px solid #4F46E5' : '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: plan.recommended ? '0 10px 25px rgba(79, 70, 229, 0.15)' : 'none' }}>
+              {plan.recommended && (
+                <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#4F46E5', color: 'white', padding: '4px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.05em' }}>
+                  RECOMMENDED
+                </div>
+              )}
+              <h3 style={{ fontSize: '20px', fontWeight: '700', color: plan.recommended ? '#4F46E5' : '#111827', marginBottom: '8px' }}>{plan.name}</h3>
+              <div style={{ fontSize: '40px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>{plan.total}</div>
+              <div style={{ fontSize: '14px', color: '#6B7280', marginBottom: '32px' }}>billed monthly</div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', color: '#4B5563', lineHeight: '2', flex: 1 }}>
+                {plan.features.map((f, i) => <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}><span style={{ color: '#10B981' }}>✅</span> {f}</li>)}
               </ul>
               <button 
                 onClick={() => setSelectedPlan(plan)}
-                style={{ marginTop: 'auto', width: '100%', padding: '12px', backgroundColor: '#4F46E5', color: 'white', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer' }}
+                style={{ width: '100%', padding: '14px', backgroundColor: plan.recommended ? '#4F46E5' : '#F3F4F6', color: plan.recommended ? 'white' : '#111827', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '16px', transition: 'all 0.2s' }}
               >
-                Buy this Plan
+                Choose {plan.name}
               </button>
             </div>
           ))}

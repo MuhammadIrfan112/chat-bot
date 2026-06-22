@@ -191,57 +191,34 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', textAlign: 'left' }}>
-            {/* Monthly */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', textAlign: 'left', maxWidth: '800px', margin: '0 auto' }}>
+            {/* Standard Plan */}
             <div className={styles.pricingCard}>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>Monthly</h3>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '20px' }}>$25<span style={{ fontSize: '18px', fontWeight: '500', color: 'var(--text-muted)' }}>/mo</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '16px' }}>
+              <h3 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>Standard</h3>
+              <div style={{ fontSize: '48px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '20px' }}>$29<span style={{ fontSize: '18px', fontWeight: '500', color: 'var(--text-muted)' }}>/mo</span></div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '16px', flex: 1 }}>
                 <li>✅ 1 Custom AI Chatbot</li>
-                <li>✅ Unlimited Knowledge</li>
-                <li>✅ Unlimited Leads</li>
-                <li>✅ Live Chat Takeover</li>
+                <li>✅ Unlimited Knowledge Training</li>
+                <li>✅ Capture up to 100 Leads</li>
+                <li>✅ Standard Email Support</li>
               </ul>
-              <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
+              <Link href="/login" className={styles.primaryBtn} style={{ width: '100%', textAlign: 'center', backgroundColor: '#F3F4F6', color: '#111827' }}>Choose Standard</Link>
             </div>
 
-            {/* 3 Months - Featured */}
-            <div className={styles.pricingCard} style={{ border: '2px solid var(--primary)', boxShadow: 'var(--shadow-md)' }}>
-              <div className={styles.badge} style={{ backgroundColor: 'var(--primary)' }}>10% OFF</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px' }}>3 Months</h3>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '20px' }}>$67.5<span style={{ fontSize: '18px', fontWeight: '500', color: 'var(--text-muted)' }}>/total</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '16px' }}>
-                <li>✅ Everything in Monthly</li>
-                <li>✅ Billed every 3 months</li>
-                <li>🔥 Just $22.50 / month</li>
+            {/* Pro Plan */}
+            <div className={styles.pricingCard} style={{ border: '2px solid var(--primary)', boxShadow: 'var(--shadow-lg)', position: 'relative' }}>
+              <div className={styles.badge} style={{ backgroundColor: 'var(--primary)', position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', margin: 0, padding: '6px 16px', fontSize: '14px' }}>RECOMMENDED</div>
+              <h3 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--primary)', marginBottom: '12px' }}>Pro</h3>
+              <div style={{ fontSize: '48px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '20px' }}>$79<span style={{ fontSize: '18px', fontWeight: '500', color: 'var(--text-muted)' }}>/mo</span></div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '16px', flex: 1 }}>
+                <li>✅ 1 Custom AI Chatbot</li>
+                <li>✅ Unlimited Knowledge Training</li>
+                <li>🔥 <strong style={{ color: 'var(--text-primary)' }}>Unlimited Leads Capture</strong></li>
+                <li>🔥 <strong style={{ color: 'var(--text-primary)' }}>Live Human Takeover</strong></li>
+                <li>🔥 <strong style={{ color: 'var(--text-primary)' }}>Remove Branding</strong></li>
+                <li>✅ Priority WhatsApp Support</li>
               </ul>
-              <Link href="/login" className={styles.primaryBtn} style={{ backgroundColor: 'var(--primary)', color: 'white' }}>Get Started</Link>
-            </div>
-
-            {/* 6 Months */}
-            <div className={styles.pricingCard}>
-              <div className={styles.badge} style={{ backgroundColor: 'var(--success)' }}>15% OFF</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>6 Months</h3>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '20px' }}>$127.5<span style={{ fontSize: '18px', fontWeight: '500', color: 'var(--text-muted)' }}>/total</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '16px' }}>
-                <li>✅ Everything in Monthly</li>
-                <li>✅ Billed every 6 months</li>
-                <li>🔥 Just $21.25 / month</li>
-              </ul>
-              <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
-            </div>
-
-            {/* 12 Months */}
-            <div className={styles.pricingCard}>
-              <div className={styles.badge} style={{ backgroundColor: 'var(--warning)' }}>25% OFF</div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '12px' }}>12 Months</h3>
-              <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '20px' }}>$225<span style={{ fontSize: '18px', fontWeight: '500', color: 'var(--text-muted)' }}>/total</span></div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', color: 'var(--text-secondary)', lineHeight: '2', fontSize: '16px' }}>
-                <li>✅ Everything in Monthly</li>
-                <li>✅ Billed yearly</li>
-                <li>🔥 Just $18.75 / month</li>
-              </ul>
-              <Link href="/login" className={styles.primaryBtn}>Get Started</Link>
+              <Link href="/login" className={styles.primaryBtn} style={{ width: '100%', textAlign: 'center' }}>Choose Pro</Link>
             </div>
           </div>
         </div>
