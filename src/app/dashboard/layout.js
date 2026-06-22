@@ -84,8 +84,7 @@ export default function DashboardLayout({ children }) {
       {/* Sidebar */}
       <aside style={{ width: '250px', backgroundColor: '#FFFFFF', borderRight: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '40px' }}>
-          <div style={{ width: '32px', height: '32px', backgroundColor: '#4F46E5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>S</div>
-          <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#111827', margin: 0 }}>SaaS Admin</h2>
+          <img src="/logo.jpg" alt="BotFlow AI" style={{ height: '36px', objectFit: 'contain' }} />
         </div>
         
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>

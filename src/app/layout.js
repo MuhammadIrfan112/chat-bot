@@ -10,7 +10,10 @@ const inter = Inter({
 
 export const metadata = {
   title: "BotFlow AI — Grow Your Business with AI Chatbots",
-  description: "Train an AI chatbot on your website in 2 minutes. Capture leads, automate sales, and watch your business grow 24/7.",
+  description: "Create AI chatbots trained on your business data to capture leads and boost sales.",
+  icons: {
+    icon: '/logo-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {

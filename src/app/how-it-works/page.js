@@ -7,8 +7,7 @@ export default function HowItWorks() {
       {/* Navbar */}
       <header style={{ padding: '20px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to right, #FFFFFF, #EEF2FF)', borderBottom: '1px solid #E5E7EB', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-          <div style={{ fontSize: '28px' }}>🚀</div>
-          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotFlow AI</h1>
+          <img src="/logo.jpg" alt="BotFlow AI" style={{ height: '44px', objectFit: 'contain' }} />
         </Link>
         <Link href="/" style={{ fontWeight: '600', color: '#4B5563', textDecoration: 'none' }}>Back to Home</Link>
       </header>

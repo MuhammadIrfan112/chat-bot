@@ -22,16 +22,9 @@ export default function Home() {
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '38px', height: '38px',
-            background: 'linear-gradient(135deg, var(--primary), var(--accent))',
-            borderRadius: '10px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '20px'
-          }}>🤖</div>
-          <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
-            BotFlow <span style={{ color: 'var(--primary)' }}>AI</span>
-          </span>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <img src="/logo.jpg" alt="BotFlow AI" style={{ height: '54px', objectFit: 'contain' }} />
+          </Link>
         </div>
 
         {/* Nav Links */}
