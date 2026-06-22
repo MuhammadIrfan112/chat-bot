@@ -165,6 +165,27 @@ export default function Home() {
             Choose the plan that fits your business. Save more with longer commitments!
           </p>
 
+          {/* Premium Installation Upsell */}
+          <div style={{ background: 'linear-gradient(135deg, #1E1B4B, #312E81)', borderRadius: '24px', padding: '32px 40px', marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', textAlign: 'left', boxShadow: '0 20px 40px rgba(49, 46, 129, 0.2)' }}>
+            <div style={{ flex: 1, minWidth: '300px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>⭐ Premium Add-On Service</div>
+              <h3 style={{ color: 'white', fontSize: '28px', fontWeight: '800', margin: '0 0 12px 0' }}>Professional Installation Service</h3>
+              <p style={{ color: '#C7D2FE', fontSize: '16px', margin: '0 0 20px 0', lineHeight: '1.6', maxWidth: '600px' }}>Don't know how to code? We will install and deploy the chatbot directly on your website. Fully tested and live within 24 hours. Zero technical knowledge needed!</p>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <span style={{ color: '#A5B4FC', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '6px' }}>✅ We do everything for you</span>
+                <span style={{ color: '#A5B4FC', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '6px' }}>✅ Live within 24 hours</span>
+                <span style={{ color: '#A5B4FC', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '6px' }}>✅ One-time fee</span>
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '24px 32px', borderRadius: '16px', minWidth: '200px' }}>
+              <div style={{ fontSize: '48px', fontWeight: '900', color: 'white', lineHeight: '1' }}>$100</div>
+              <div style={{ color: '#A5B4FC', fontSize: '14px', marginBottom: '20px', marginTop: '8px' }}>One-time payment</div>
+              <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '14px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '16px', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)', transition: 'all 0.2s' }}>
+                💬 Order via WhatsApp
+              </a>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', textAlign: 'left' }}>
             {/* Monthly */}
             <div className={styles.pricingCard}>
