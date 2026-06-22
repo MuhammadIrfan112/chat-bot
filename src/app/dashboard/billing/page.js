@@ -70,13 +70,18 @@ export default function Billing() {
               <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ One-time fee</span>
             </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '42px', fontWeight: '900', color: 'white' }}>$100</div>
-            <div style={{ color: '#A5B4FC', fontSize: '13px', marginBottom: '16px' }}>One-time payment</div>
-            <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'inline-block', backgroundColor: '#25D366', color: 'white', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '15px' }}>
-              💬 Order via WhatsApp
-            </a>
-          </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '42px', fontWeight: '900', color: 'white' }}>$100</div>
+              <div style={{ color: '#A5B4FC', fontSize: '13px', marginBottom: '16px' }}>One-time payment</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '10px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px' }}>
+                  💬 Order via WhatsApp
+                </a>
+                <a href="mailto:irfangull2288@gmail.com?subject=Order: Professional Installation Service ($100)&body=Hi, I would like to order the chatbot installation service. My website is: [Your Website URL]" style={{ display: 'block', backgroundColor: '#4F46E5', color: 'white', padding: '10px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px' }}>
+                  📧 Order via Email
+                </a>
+              </div>
+            </div>
         </div>
       )}
 

@@ -290,9 +290,14 @@ export default function MyBots() {
               <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', minWidth: '160px' }}>
                 <div style={{ fontSize: '36px', fontWeight: '900', color: 'white', lineHeight: '1' }}>$100</div>
                 <div style={{ color: '#A5B4FC', fontSize: '12px', marginBottom: '12px', marginTop: '4px' }}>One-time fee</div>
-                <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '10px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.2)' }}>
-                  💬 Order via WhatsApp
-                </a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '10px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.2)' }}>
+                    💬 WhatsApp
+                  </a>
+                  <a href="mailto:irfangull2288@gmail.com?subject=Order: Professional Installation Service ($100)&body=Hi, I would like to order the chatbot installation service. My website is: [Your Website URL]" style={{ display: 'block', backgroundColor: '#4F46E5', color: 'white', padding: '10px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)' }}>
+                    📧 Email Us
+                  </a>
+                </div>
               </div>
             </div>
 

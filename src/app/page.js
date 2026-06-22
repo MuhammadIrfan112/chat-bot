@@ -177,12 +177,17 @@ export default function Home() {
                 <span style={{ color: '#A5B4FC', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '6px' }}>✅ One-time fee</span>
               </div>
             </div>
-            <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '24px 32px', borderRadius: '16px', minWidth: '200px' }}>
+            <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '24px 32px', borderRadius: '16px', minWidth: '240px' }}>
               <div style={{ fontSize: '48px', fontWeight: '900', color: 'white', lineHeight: '1' }}>$100</div>
               <div style={{ color: '#A5B4FC', fontSize: '14px', marginBottom: '20px', marginTop: '8px' }}>One-time payment</div>
-              <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '14px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '16px', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)', transition: 'all 0.2s' }}>
-                💬 Order via WhatsApp
-              </a>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '12px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '15px', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)', transition: 'all 0.2s' }}>
+                  💬 Order via WhatsApp
+                </a>
+                <a href="mailto:irfangull2288@gmail.com?subject=Order: Professional Installation Service ($100)&body=Hi, I would like to order the chatbot installation service. My website is: [Your Website URL]" style={{ display: 'block', backgroundColor: '#4F46E5', color: 'white', padding: '12px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '15px', boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)', transition: 'all 0.2s' }}>
+                  📧 Order via Email
+                </a>
+              </div>
             </div>
           </div>
 
