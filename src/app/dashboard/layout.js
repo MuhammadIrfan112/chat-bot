@@ -83,8 +83,9 @@ export default function DashboardLayout({ children }) {
     <div className={inter.className} style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F9FAFB', color: '#111827' }}>
       {/* Sidebar */}
       <aside style={{ width: '250px', backgroundColor: '#FFFFFF', borderRight: '1px solid #E5E7EB', padding: '24px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '40px' }}>
-          <img src="/logo.jpg" alt="BotFlow AI" style={{ height: '36px', objectFit: 'contain' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
+          <img src="/logo-icon.png" alt="BotFlow AI Icon" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
+          <h2 style={{ fontSize: '20px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>BotFlow AI</h2>
         </div>
         
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>

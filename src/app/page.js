@@ -23,7 +23,7 @@ export default function Home() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            <img src="/logo.jpg" alt="BotFlow AI" style={{ height: '54px', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="BotFlow AI" style={{ height: '54px', objectFit: 'contain' }} />
           </Link>
         </div>
 
