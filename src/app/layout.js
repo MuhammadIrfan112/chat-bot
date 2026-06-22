@@ -16,7 +16,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif', minHeight: '100vh', backgroundColor: '#F8F9FF' }}>
+      <body style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif', minHeight: '100vh', backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }}>
         {children}
         <Chatbot />
       </body>

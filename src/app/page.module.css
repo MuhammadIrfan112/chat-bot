@@ -1,127 +1,147 @@
-/* Hero & Buttons */
-.primaryBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--text-primary);
-  color: var(--bg-base);
-  padding: 14px 28px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 15px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-}
+/* ===== BotFlow AI — Page Module Styles ===== */
 
-.primaryBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-}
-
-.secondaryBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  color: var(--text-primary);
-  padding: 14px 28px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 15px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: 1px solid var(--border-light);
-  backdrop-filter: blur(8px);
-}
-
-.secondaryBtn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-/* Navbar */
+/* ─── Nav Links ─── */
 .navLink {
-  cursor: pointer;
   text-decoration: none;
   color: var(--text-secondary);
   font-weight: 500;
   font-size: 14px;
   transition: color 0.2s ease;
+  position: relative;
+  padding-bottom: 2px;
 }
-
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #818CF8, #C084FC);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
 .navLink:hover {
   color: var(--text-primary);
 }
+.navLink:hover::after {
+  transform: scaleX(1);
+}
 
-/* Bento Box Layout for Features */
+/* ─── Buttons ─── */
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: white;
+  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+.primaryBtn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  transition: background 0.2s;
+}
+.primaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.55);
+}
+.primaryBtn:hover::after {
+  background: rgba(255, 255, 255, 0.08);
+}
+.primaryBtn:active {
+  transform: translateY(0);
+}
+
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+}
+.secondaryBtn:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* ─── Bento Grid ─── */
 .bentoGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto auto;
+  grid-auto-rows: auto;
   gap: 24px;
-  margin-top: 80px;
 }
 
 .bentoItem {
-  background: var(--bg-card);
-  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 20px;
   border: 1px solid var(--border);
   padding: 32px;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.3s ease, transform 0.3s ease;
+  cursor: default;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
-
-.bentoItem::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.06), transparent 40%);
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.bentoItem:hover::before {
-  opacity: 1;
-}
-
 .bentoItem:hover {
-  border-color: var(--border-light);
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
 
 .bentoLarge {
   grid-column: span 2;
 }
 
-/* Pricing Cards */
+/* ─── Pricing Cards ─── */
 .pricingCard {
-  background-color: var(--bg-card);
-  padding: 40px 32px;
+  background: var(--bg-card);
+  padding: 40px 36px;
   border-radius: 24px;
   border: 1px solid var(--border);
   position: relative;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
 }
-
 .pricingCard:hover {
-  border-color: rgba(255,255,255,0.2);
+  border-color: rgba(255, 255, 255, 0.18);
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
 }
 
 .pricingPro {
-  background: linear-gradient(180deg, rgba(30, 41, 59, 1) 0%, rgba(15, 23, 42, 1) 100%);
-  border: 1px solid var(--primary-glow);
-  box-shadow: 0 0 40px -10px var(--primary-glow);
+  background: linear-gradient(180deg, rgba(30, 27, 60, 1) 0%, rgba(15, 23, 42, 1) 100%);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.15);
 }
 
 .badge {
@@ -131,18 +151,23 @@
   transform: translateX(-50%);
   background: linear-gradient(90deg, #818CF8, #C084FC);
   color: white;
-  padding: 4px 16px;
+  padding: 5px 18px;
   border-radius: 50px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
 }
 
 .pricingBtn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
-  background-color: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
   padding: 16px;
   border-radius: 12px;
@@ -151,21 +176,54 @@
   text-decoration: none;
   margin-top: auto;
   border: 1px solid var(--border);
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  font-family: inherit;
 }
-
 .pricingBtn:hover {
-  background-color: var(--text-primary);
+  background: var(--text-primary);
   color: var(--bg-base);
+  border-color: transparent;
+  transform: translateY(-2px);
 }
 
 .pricingBtnPro {
-  background: linear-gradient(90deg, #818CF8, #C084FC);
+  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
   color: white;
   border: none;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
 }
 .pricingBtnPro:hover {
-  opacity: 0.9;
-  background: linear-gradient(90deg, #818CF8, #C084FC);
+  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
   color: white;
+  opacity: 0.92;
+}
+
+/* ─── Feature Icon Box ─── */
+.featureIconWrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .bentoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bentoLarge {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .bentoGrid {
+    grid-template-columns: 1fr;
+  }
+  .bentoLarge {
+    grid-column: span 1;
+  }
 }
