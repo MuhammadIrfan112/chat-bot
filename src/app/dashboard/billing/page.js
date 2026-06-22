@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 export default function Billing() {
   const [status, setStatus] = useState('Loading...');
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [trialDaysLeft, setTrialDaysLeft] = useState(null);
 
   useEffect(() => {
     fetchStatus();
@@ -15,11 +16,15 @@ export default function Billing() {
     if (session) {
       const { data } = await supabase
         .from('users_subscription')
-        .select('status')
+        .select('status, trial_ends_at')
         .eq('user_id', session.user.id)
         .single();
       if (data) {
         setStatus(data.status);
+        if (data.trial_ends_at) {
+          const daysLeft = Math.ceil((new Date(data.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
+          setTrialDaysLeft(daysLeft > 0 ? daysLeft : 0);
+        }
       } else {
         setStatus('Inactive');
       }
@@ -40,10 +45,40 @@ export default function Billing() {
           <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', margin: 0 }}>Billing & Plans</h1>
           <p style={{ color: '#6B7280', marginTop: '4px' }}>Manage your subscription and payments.</p>
         </div>
-        <div style={{ padding: '8px 16px', borderRadius: '50px', backgroundColor: status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: status === 'Active' ? '#065F46' : '#991B1B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {status === 'Active' ? '🟢 Active Plan' : '🔴 Inactive (Payment Required)'}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+          <div style={{ padding: '8px 16px', borderRadius: '50px', backgroundColor: status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: status === 'Active' ? '#065F46' : '#991B1B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {status === 'Active' ? '🟢 Active Plan' : '🔴 Inactive (Payment Required)'}
+          </div>
+          {trialDaysLeft !== null && (
+            <div style={{ fontSize: '12px', fontWeight: '600', color: trialDaysLeft <= 3 ? '#EF4444' : trialDaysLeft <= 7 ? '#F59E0B' : '#10B981' }}>
+              {trialDaysLeft > 0 ? `⏰ Free Trial: ${trialDaysLeft} days remaining` : '⛔ Free Trial Expired — Please upgrade!'}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* $100 Professional Installation Service */}
+      {!selectedPlan && (
+        <div style={{ background: 'linear-gradient(135deg, #1E1B4B, #312E81)', borderRadius: '16px', padding: '28px 32px', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#A5B4FC', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>⭐ Premium Add-On Service</div>
+            <h2 style={{ color: 'white', fontSize: '22px', fontWeight: '800', margin: '0 0 8px 0' }}>🚀 Professional Installation Service</h2>
+            <p style={{ color: '#C7D2FE', fontSize: '14px', margin: 0, lineHeight: '1.6' }}>We install & deploy your chatbot directly on your website — fully tested & live within 24 hours. Zero technical knowledge needed!</p>
+            <div style={{ marginTop: '12px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ We do everything for you</span>
+              <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ Live within 24 hours</span>
+              <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ One-time fee</span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '42px', fontWeight: '900', color: 'white' }}>$100</div>
+            <div style={{ color: '#A5B4FC', fontSize: '13px', marginBottom: '16px' }}>One-time payment</div>
+            <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'inline-block', backgroundColor: '#25D366', color: 'white', padding: '12px 24px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '15px' }}>
+              💬 Order via WhatsApp
+            </a>
+          </div>
+        </div>
+      )}
 
       {!selectedPlan ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>

@@ -52,6 +52,26 @@ export async function POST(req) {
           return Response.json({ reply: "This chatbot is currently inactive. Please contact the website owner." });
         }
 
+        // ✅ TRIAL EXPIRY CHECK: Check if user's free trial has expired
+        const { data: subscription } = await supabase
+          .from('users_subscription')
+          .select('status, trial_ends_at')
+          .eq('user_id', bot.user_id)
+          .single();
+
+        if (subscription && subscription.trial_ends_at) {
+          const trialEnd = new Date(subscription.trial_ends_at);
+          const now = new Date();
+          if (now > trialEnd && subscription.status !== 'Active') {
+            // Update status to Inactive automatically
+            await supabase
+              .from('users_subscription')
+              .update({ status: 'Inactive' })
+              .eq('user_id', bot.user_id);
+            return Response.json({ reply: "⏰ Your 15-day free trial has ended. Please upgrade your plan to continue using this chatbot. Contact the website owner for more details." });
+          }
+        }
+
         // Domain Lock Check (Basic Security)
         const origin = req.headers.get('origin') || req.headers.get('referer') || '';
         // Allow localhost for testing, otherwise check if origin matches website_url

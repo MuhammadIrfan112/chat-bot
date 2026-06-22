@@ -28,13 +28,17 @@ export default function DashboardLayout({ children }) {
         if (sub) {
           setSubscriptionStatus(sub.status);
         } else {
-          // Fallback for OAuth users: create a row if it doesn't exist
+          // New user: automatically start 15-day free trial
+          const trialEndsAt = new Date();
+          trialEndsAt.setDate(trialEndsAt.getDate() + 15);
+          
           await supabase.from('users_subscription').insert({
             user_id: session.user.id,
-            status: 'Inactive',
-            email: session.user.email
+            status: 'Active',
+            email: session.user.email,
+            trial_ends_at: trialEndsAt.toISOString()
           });
-          setSubscriptionStatus('Inactive');
+          setSubscriptionStatus('Active');
         }
         setLoading(false);
       }
