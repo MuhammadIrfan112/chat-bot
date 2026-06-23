@@ -10,6 +10,7 @@ export default function MyBots() {
   const [embedBot, setEmbedBot] = useState(null);
   const [userId, setUserId] = useState(null);
   const [createError, setCreateError] = useState('');
+  const [editingBotId, setEditingBotId] = useState(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -43,68 +44,98 @@ export default function MyBots() {
     setLoading(false);
   };
 
-  const handleCreate = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (bots.length >= 1) {
-      setCreateError('You can only create one chatbot per account. Please upgrade for more.');
-      return;
-    }
     if (!form.name.trim() || !form.website_url.trim()) return;
     setCreating(true);
     setCreateError('');
 
-    // ✅ DOMAIN ABUSE CHECK: Check if this website is already registered anywhere
-    try {
-      const res = await fetch('/api/bot/check-domain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ websiteUrl: form.website_url })
-      });
-      const checkData = await res.json();
-      
-      if (checkData.exists) {
-        setCreateError('❌ This website domain is already registered on our platform. You cannot create multiple accounts for the same website to abuse the free trial.');
+    if (editingBotId) {
+      // UPDATE EXISTING BOT
+      const { data, error } = await supabase.from('bots').update({
+        name: form.name,
+        website_url: form.website_url,
+        calendly_link: form.calendly_link,
+        welcome_message: form.welcome_message,
+        primary_color: form.primary_color,
+        bot_avatar: form.bot_avatar,
+      }).eq('id', editingBotId).select().single();
+
+      if (error) {
+        setCreateError('❌ Error: ' + error.message);
         setCreating(false);
         return;
       }
-    } catch (e) {
-      setCreateError('❌ Failed to verify website domain. Please try again.');
+
+      if (data) {
+        setShowForm(false);
+        setEditingBotId(null);
+        setCreateError('');
+        setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
+        fetchBots(userId);
+      }
       setCreating(false);
-      return;
-    }
+    } else {
+      // CREATE NEW BOT
+      if (bots.length >= 1) {
+        setCreateError('You can only create one chatbot per account. Please upgrade for more.');
+        setCreating(false);
+        return;
+      }
 
-    const { data, error } = await supabase.from('bots').insert({
-      user_id: userId,
-      name: form.name,
-      website_url: form.website_url,
-      calendly_link: form.calendly_link,
-      welcome_message: form.welcome_message,
-      primary_color: form.primary_color,
-      bot_avatar: form.bot_avatar,
-      status: 'Active',
-    }).select().single();
+      // ✅ DOMAIN ABUSE CHECK
+      try {
+        const res = await fetch('/api/bot/check-domain', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ websiteUrl: form.website_url })
+        });
+        const checkData = await res.json();
+        
+        if (checkData.exists) {
+          setCreateError('❌ This website domain is already registered on our platform. You cannot create multiple accounts for the same website to abuse the free trial.');
+          setCreating(false);
+          return;
+        }
+      } catch (e) {
+        setCreateError('❌ Failed to verify website domain. Please try again.');
+        setCreating(false);
+        return;
+      }
 
-    if (error) {
-      setCreateError('❌ Error: ' + error.message);
+      const { data, error } = await supabase.from('bots').insert({
+        user_id: userId,
+        name: form.name,
+        website_url: form.website_url,
+        calendly_link: form.calendly_link,
+        welcome_message: form.welcome_message,
+        primary_color: form.primary_color,
+        bot_avatar: form.bot_avatar,
+        status: 'Active',
+      }).select().single();
+
+      if (error) {
+        setCreateError('❌ Error: ' + error.message);
+        setCreating(false);
+        return;
+      }
+
+      if (data) {
+        // Trigger background auto-scraping to train the bot
+        fetch('/api/bot/scrape-website', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: form.website_url, bot_id: data.id })
+        }).catch(err => console.error("Auto-scrape failed:", err));
+
+        setShowForm(false);
+        setCreateError('');
+        setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
+        fetchBots(userId);
+        setEmbedBot(data);
+      }
       setCreating(false);
-      return;
     }
-
-    if (data) {
-      // Trigger background auto-scraping to train the bot
-      fetch('/api/bot/scrape-website', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: form.website_url, bot_id: data.id })
-      }).catch(err => console.error("Auto-scrape failed:", err));
-
-      setShowForm(false);
-      setCreateError('');
-      setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
-      fetchBots(userId);
-      setEmbedBot(data);
-    }
-    setCreating(false);
   };
 
   const getEmbedCode = (bot) => {
@@ -134,7 +165,7 @@ export default function MyBots() {
         </div>
         {bots.length === 0 && (
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => { setEditingBotId(null); setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' }); setShowForm(true); }}
             style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 24px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
           >
             + Create New Bot
@@ -148,13 +179,13 @@ export default function MyBots() {
           <div style={{ backgroundColor: 'white', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 60px rgba(0,0,0,0.25)' }}>
             {/* Sticky Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px 16px', borderBottom: '1px solid #F3F4F6', flexShrink: 0 }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: 0 }}>🚀 Create New Chatbot</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: 0 }}>{editingBotId ? '✏️ Edit Chatbot' : '🚀 Create New Chatbot'}</h2>
               <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6B7280', lineHeight: 1 }}>✕</button>
             </div>
 
             {/* Scrollable Form Body */}
             <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Bot Name *</label>
                 <input
@@ -254,7 +285,7 @@ export default function MyBots() {
                 disabled={creating}
                 style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: creating ? 'not-allowed' : 'pointer', fontSize: '15px', opacity: creating ? 0.7 : 1 }}
               >
-                {creating ? 'Creating...' : '🚀 Create Chatbot'}
+                {creating ? 'Saving...' : (editingBotId ? '💾 Update Chatbot' : '🚀 Create Chatbot')}
               </button>
             </form>
             </div>
@@ -324,7 +355,7 @@ export default function MyBots() {
           <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>No chatbots yet</h2>
           <p style={{ color: '#6B7280', marginBottom: '24px' }}>Create your first chatbot to start capturing leads automatically.</p>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => { setEditingBotId(null); setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' }); setShowForm(true); }}
             style={{ backgroundColor: '#4F46E5', color: 'white', padding: '12px 28px', borderRadius: '10px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
           >
             + Create First Chatbot
@@ -344,12 +375,31 @@ export default function MyBots() {
                 <div style={{ fontSize: '14px', color: '#6B7280' }}>🌐 {bot.website_url}</div>
                 {bot.calendly_link && <div style={{ fontSize: '14px', color: '#6B7280', marginTop: '4px' }}>📅 {bot.calendly_link}</div>}
               </div>
-              <button
-                onClick={() => setEmbedBot(bot)}
-                style={{ backgroundColor: '#EEF2FF', color: '#4F46E5', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}
-              >
-                &lt;/&gt; Get Embed Code
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    setEditingBotId(bot.id);
+                    setForm({
+                      name: bot.name,
+                      website_url: bot.website_url,
+                      calendly_link: bot.calendly_link || '',
+                      welcome_message: bot.welcome_message || '',
+                      primary_color: bot.primary_color || '#4F46E5',
+                      bot_avatar: bot.bot_avatar || '🤖'
+                    });
+                    setShowForm(true);
+                  }}
+                  style={{ backgroundColor: '#F3F4F6', color: '#374151', padding: '10px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => setEmbedBot(bot)}
+                  style={{ backgroundColor: '#EEF2FF', color: '#4F46E5', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}
+                >
+                  &lt;/&gt; Get Embed Code
+                </button>
+              </div>
             </div>
           ))}
         </div>
