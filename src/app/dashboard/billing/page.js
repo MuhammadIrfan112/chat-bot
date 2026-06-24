@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { Building2, Globe, Smartphone, Send, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Billing() {
   const [status, setStatus] = useState('Loading...');
-  const [selectedPlan, setSelectedPlan] = useState(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
 
   useEffect(() => {
@@ -32,90 +33,148 @@ export default function Billing() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '60px' }}>
+      
+      {/* Header Section */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#111827', margin: 0 }}>Billing & Payments</h1>
-          <p style={{ color: '#6B7280', marginTop: '4px' }}>Manage your active subscription and payment methods.</p>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 8px 0' }}>Billing & Payments</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '16px', margin: 0 }}>Manage your active subscription and payment methods.</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-          <div style={{ padding: '8px 16px', borderRadius: '50px', backgroundColor: status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: status === 'Active' ? '#065F46' : '#991B1B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {status === 'Active' ? '🟢 Active Plan' : '🔴 Inactive (Payment Required)'}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+          <div style={{ 
+            padding: '8px 20px', borderRadius: '100px', 
+            background: status === 'Active' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+            color: status === 'Active' ? 'var(--success)' : 'var(--danger)', 
+            border: status === 'Active' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+            fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' 
+          }}>
+            {status === 'Active' ? <><ShieldCheck size={16} /> Active Plan</> : '🔴 Payment Required'}
           </div>
           {trialDaysLeft !== null && (
-            <div style={{ fontSize: '12px', fontWeight: '600', color: trialDaysLeft <= 3 ? '#EF4444' : trialDaysLeft <= 7 ? '#F59E0B' : '#10B981' }}>
-              {trialDaysLeft > 0 ? `⏰ Free Trial: ${trialDaysLeft} days remaining` : '⛔ Free Trial Expired — Please upgrade!'}
+            <div style={{ fontSize: '13px', fontWeight: '600', color: trialDaysLeft <= 3 ? 'var(--danger)' : trialDaysLeft <= 7 ? '#F59E0B' : 'var(--success)' }}>
+              {trialDaysLeft > 0 ? `Free Trial: ${trialDaysLeft} days remaining` : 'Free Trial Expired — Please upgrade'}
             </div>
           )}
         </div>
       </div>
 
-      {/* $100 Professional Installation Service */}
-      <div style={{ background: 'linear-gradient(135deg, #1E1B4B, #312E81)', borderRadius: '16px', padding: '28px 32px', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: '#A5B4FC', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>⭐ Premium Add-On Service</div>
-          <h2 style={{ color: 'white', fontSize: '22px', fontWeight: '800', margin: '0 0 8px 0' }}>🚀 Professional Installation Service</h2>
-          <p style={{ color: '#C7D2FE', fontSize: '14px', margin: 0, lineHeight: '1.6' }}>We install & deploy your chatbot directly on your website — fully tested & live within 24 hours. Zero technical knowledge needed!</p>
-          <div style={{ marginTop: '12px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ We do everything for you</span>
-            <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ Live within 24 hours</span>
-            <span style={{ color: '#A5B4FC', fontSize: '13px' }}>✅ One-time fee</span>
+      {/* Professional Installation Add-on */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel" style={{ 
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.2))', 
+        border: '1px solid rgba(99, 102, 241, 0.3)',
+        borderRadius: '24px', padding: '32px', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' 
+      }}>
+        <div style={{ flex: '1 1 400px' }}>
+          <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px', display: 'inline-block', background: 'rgba(99, 102, 241, 0.15)', padding: '6px 14px', borderRadius: '100px' }}>
+            ⭐ Premium Add-On
           </div>
-        </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '42px', fontWeight: '900', color: 'white' }}>$100</div>
-            <div style={{ color: '#A5B4FC', fontSize: '13px', marginBottom: '16px' }}>One-time payment</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '10px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px' }}>
-                💬 Order via WhatsApp
-              </a>
-              <a href="https://mail.google.com/mail/?view=cm&fs=1&to=irfangull2288@gmail.com&su=Order%3A%20Professional%20Installation%20Service%20(%24100)&body=Hi%2C%20I%20would%20like%20to%20order%20the%20chatbot%20Professional%20Installation%20Service%20(%24100).%0A%0APlease%20find%20my%20details%20below%3A%0A%0A1.%20My%20Website%20URL%3A%20%5BEnter%20your%20website%20link%5D%0A2.%20Website%20Platform%3A%20%5Be.g.%2C%20WordPress%2C%20Shopify%2C%20Wix%5D%0A%0A---%20Installation%20Access%20(Provide%20One)%20---%0AOption%20A%3A%20Website%20Admin%20Login%20(Temporary)%0AUsername%3A%20%5BEnter%20username%5D%0APassword%3A%20%5BEnter%20password%5D%0A%0AOption%20B%3A%20Google%20Tag%20Manager%0AI%20have%20invited%20irfangull2288%40gmail.com%20to%20my%20GTM.%0A%0AHow%20should%20I%20proceed%20with%20the%20payment%3F" target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#4F46E5', color: 'white', padding: '10px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer' }}>
-                📧 Order via Email
-              </a>
-            </div>
-          </div>
-      </div>
-
-      <div style={{ backgroundColor: 'white', padding: '32px', borderRadius: '16px', border: '1px solid #E5E7EB', maxWidth: '800px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '16px', color: '#111827' }}>Manual Payment Instructions</h2>
-        <p style={{ color: '#4B5563', marginBottom: '24px', lineHeight: '1.6' }}>
-          To pay for your selected subscription plan or installation service, please send the exact amount to one of the payment methods below:
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-          <div style={{ backgroundColor: '#F8F9FF', padding: '20px', borderRadius: '12px', border: '1px solid #C7D2FE' }}>
-            <h4 style={{ fontWeight: '700', color: '#4F46E5', marginBottom: '12px' }}>🏦 Local Bank Transfer (Pakistan)</h4>
-            <div style={{ marginBottom: '4px' }}><strong>Bank Name:</strong> UBL (United Bank Limited)</div>
-            <div style={{ marginBottom: '4px' }}><strong>Account Title:</strong> [Your Name Here]</div>
-            <div><strong>IBAN / Account Number:</strong> 0000 0000 0000</div>
-          </div>
-
-          <div style={{ backgroundColor: '#FFFBEB', padding: '20px', borderRadius: '12px', border: '1px solid #FDE68A' }}>
-            <h4 style={{ fontWeight: '700', color: '#D97706', marginBottom: '12px' }}>🌍 Payoneer (International)</h4>
-            <div style={{ marginBottom: '4px' }}><strong>Payoneer Email:</strong> [your-email@example.com]</div>
-            <div style={{ fontSize: '13px', color: '#92400E', marginTop: '8px' }}>* Perfect for clients in USA, UK, and Europe.</div>
-          </div>
-
-          <div style={{ backgroundColor: '#F0FDF4', padding: '20px', borderRadius: '12px', border: '1px solid #BBF7D0', gridColumn: '1 / -1' }}>
-            <h4 style={{ fontWeight: '700', color: '#16A34A', marginBottom: '12px' }}>📱 SadaPay / JazzCash (Local Wallets)</h4>
-            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-              <div><strong>SadaPay Number:</strong> 0300 0000000</div>
-              <div><strong>JazzCash Number:</strong> 0300 0000000</div>
-              <div><strong>Account Title:</strong> [Your Name Here]</div>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ borderTop: '1px solid #E5E7EB', marginTop: '32px', paddingTop: '24px', textAlign: 'center' }}>
-          <h3 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '16px' }}>Step 2: Send Proof of Payment</h3>
-          <p style={{ color: '#4B5563', marginBottom: '24px', lineHeight: '1.6', maxWidth: '600px', margin: '0 auto 24px' }}>
-            After sending the payment, please take a screenshot and send it to our official WhatsApp number. Please include your account email address so we can upgrade your account instantly.
+          <h2 style={{ color: 'var(--text-primary)', fontSize: '24px', fontWeight: '800', margin: '0 0 12px 0' }}>Professional Installation Service</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', margin: 0, lineHeight: '1.6', maxWidth: '500px' }}>
+            We install & deploy your chatbot directly on your website. Fully tested & live within 24 hours. Zero technical knowledge needed from your side.
           </p>
-          <a href="https://wa.me/923000000000" target="_blank" rel="noreferrer" style={{ display: 'inline-block', backgroundColor: '#25D366', color: 'white', padding: '16px 32px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '18px', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.3)' }}>
-            💬 Send Screenshot on WhatsApp
+        </div>
+        <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', padding: '24px', borderRadius: '20px', border: '1px solid var(--border)', minWidth: '250px' }}>
+          <div style={{ fontSize: '48px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '8px' }}>$100</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '500', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>One-time payment</div>
+          <a href="https://wa.me/923000000000" target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'linear-gradient(90deg, #818CF8, #4F46E5)', color: 'white', padding: '14px 20px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '15px', transition: 'all 0.2s', boxShadow: '0 4px 15px rgba(79, 70, 229, 0.4)' }}>
+            <Send size={16} /> Order Service
           </a>
         </div>
+      </motion.div>
+
+      {/* Manual Payment Section */}
+      <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '24px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        Payment Methods <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', background: 'var(--border)', padding: '4px 12px', borderRadius: '100px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Manual Options</span>
+      </h2>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+        
+        {/* Bank Transfer */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-panel" style={{ padding: '24px', borderRadius: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', borderRadius: '12px' }}><Building2 size={24} /></div>
+            <div>
+              <h4 style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-primary)', margin: 0 }}>Local Bank Transfer</h4>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Pakistan only</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Bank</span>
+              <strong style={{ color: 'var(--text-primary)' }}>United Bank Limited (UBL)</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Title</span>
+              <strong style={{ color: 'var(--text-primary)' }}>Your Name Here</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>IBAN</span>
+              <strong style={{ color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '0.5px' }}>PK00 UBL0 0000 0000</strong>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Payoneer */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel" style={{ padding: '24px', borderRadius: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', borderRadius: '12px' }}><Globe size={24} /></div>
+            <div>
+              <h4 style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-primary)', margin: 0 }}>Payoneer</h4>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>International Clients</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800' }}>Send USD To Email</span>
+              <strong style={{ color: 'var(--text-primary)', fontSize: '16px' }}>payments@botflow.ai</strong>
+            </div>
+            <p style={{ fontSize: '13px', margin: 0, color: 'var(--text-muted)', lineHeight: '1.5' }}>
+              For clients in USA, UK, and Europe. Send the exact USD amount to the email address above.
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Mobile Wallets */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-panel" style={{ padding: '24px', borderRadius: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '12px' }}><Smartphone size={24} /></div>
+            <div>
+              <h4 style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-primary)', margin: 0 }}>Mobile Wallets</h4>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>SadaPay / JazzCash</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>SadaPay</span>
+              <strong style={{ color: 'var(--text-primary)' }}>0300 0000000</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>JazzCash</span>
+              <strong style={{ color: 'var(--text-primary)' }}>0300 0000000</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Account Title</span>
+              <strong style={{ color: 'var(--text-primary)' }}>Your Name</strong>
+            </div>
+          </div>
+        </motion.div>
+
       </div>
+
+      {/* Verification Steps */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="glass-panel" style={{ padding: '40px', borderRadius: '24px', textAlign: 'center', border: '1px dashed var(--primary)' }}>
+        <h3 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>Paid? Verify Your Account</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '600px', margin: '0 auto 24px', lineHeight: '1.6' }}>
+          Take a screenshot of your transaction and send it to our WhatsApp team. We will manually upgrade your account and activate your chatbots within 10 minutes.
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <a href="https://wa.me/923000000000" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#25D366', color: 'white', padding: '14px 28px', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '15px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)' }}>
+            <Send size={18} /> Send Proof on WhatsApp
+          </a>
+        </div>
+      </motion.div>
+
     </div>
   );
 }
