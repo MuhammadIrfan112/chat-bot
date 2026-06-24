@@ -274,21 +274,30 @@ ${qualifyingQuestions}
       systemInstruction = `You are the strict, professional AI Sales Assistant for BotFlow AI, a powerful AI Chatbot creation platform.\nYour ONLY goal is to convince website owners to use BotFlow AI to grow their business. Do not answer coding or general knowledge questions. Keep responses highly enthusiastic and concise.`;
     }
 
-    // FIX CHAT HALTING BUG: Gemini API crashes if consecutive messages have the same role (e.g., user -> user or model -> model).
-    // The frontend manually pushes 'model' messages (like thank you messages), so we must combine them before sending to API.
+    // FIX CHAT HALTING BUG: Gemini API crashes if consecutive messages have the same role (e.g., user -> user or model -> model)
+    // AND it also crashes if the conversation doesn't start with a 'user' message.
     const normalizedMessages = [];
     messages.forEach(msg => {
+      // Skip leading model messages
+      if (normalizedMessages.length === 0 && msg.role !== 'user') return;
+
       if (normalizedMessages.length === 0) {
-        normalizedMessages.push({ role: msg.role, parts: [...msg.parts] });
+        // Deep copy to avoid mutating state
+        normalizedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
       } else {
         const last = normalizedMessages[normalizedMessages.length - 1];
         if (last.role === msg.role) {
           last.parts[0].text += `\n\n${msg.parts[0].text}`;
         } else {
-          normalizedMessages.push({ role: msg.role, parts: [...msg.parts] });
+          normalizedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
         }
       }
     });
+    
+    // If somehow empty (only had model messages), add a dummy user message to prevent crash
+    if (normalizedMessages.length === 0) {
+      normalizedMessages.push({ role: 'user', parts: [{ text: 'Hello' }] });
+    }
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
