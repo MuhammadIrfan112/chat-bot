@@ -252,7 +252,15 @@ export async function POST(req) {
     const isEcommerce = botIndustry === 'E-Commerce';
     
     const qualifyingQuestions = isRealEstate
-      ? `   - Step 1: Ask preferred location/city/area\n   - Step 2: Ask how many bedrooms they need\n   - Step 3: Ask how many bathrooms they need\n   - Step 4: Ask the size in sqft or marla/kanal they prefer\n   - Step 5: Ask their budget range\n   - Step 6: ONLY NOW show the best matching property from inventory with full details and image.\n   CRITICAL: You MUST ask these questions STRICTLY one at a time in this exact order. DO NOT skip to budget. DO NOT combine questions.`
+      ? `You are now in PROPERTY QUALIFICATION MODE. Follow these 5 steps STRICTLY, ONE AT A TIME, IN ORDER. Do NOT show any property until ALL 5 answers are collected:
+   STEP 1 - LOCATION: If the user has not yet told you a location/area, ask it now. Move to Step 2 only after they answer.
+   STEP 2 - BEDROOMS: Ask how many bedrooms they need. Move to Step 3 only after they answer.
+   STEP 3 - BATHROOMS: Ask how many bathrooms they need. Move to Step 4 only after they answer.
+   STEP 4 - SIZE: Ask the size they prefer (sqft, marla, kanal, etc). Move to Step 5 only after they answer.
+   STEP 5 - BUDGET: Ask their budget range. Move to Step 6 only after they answer.
+   STEP 6 - SHOW PROPERTY: ONLY after collecting ALL 5 answers, show the best matching property from inventory with full details (image, address, beds, baths, size, price) and website link.
+   
+   ABSOLUTE RULE: Even if you already know a matching property from the inventory, you MUST NEVER show it before completing ALL 5 steps. Never ask 2 questions at once. Never skip a step.`
       : isEcommerce
       ? `   - First ask: what type of product they need (e.g., category, color, size)\n   - Then ask: their budget range\n   - Only AFTER gathering these details, recommend the best matching product from inventory.`
       : `   - Ask 1-2 qualifying questions about their specific needs and budget\n   - Only AFTER gathering these details, recommend the best matching item.`;
@@ -261,14 +269,15 @@ export async function POST(req) {
 Your ONLY goal is to help visitors find the right ${isRealEstate ? 'property' : 'product'} and convert them into qualified leads.
 
 CRITICAL RULES:
-1. TYPO TOLERANCE: Users may write with spelling mistakes or broken English. You MUST intelligently understand what they mean and respond naturally. NEVER ask them to rephrase or correct spelling.
-2. STRICT TOPIC: You MUST NOT answer general knowledge, coding, math, or personal questions. Only answer about the business.
-3. LEAD QUALIFICATION (MOST IMPORTANT): If a user shows interest in ${isRealEstate ? 'buying, renting, or viewing a property' : 'buying or inquiring about a product'}, do NOT immediately show a ${isRealEstate ? 'property' : 'product'}. First, act like a professional consultant and ask ONE qualifying question at a time:
-${qualifyingQuestions}
-4. SMART FALLBACKS: If the user's exact requirement is not in inventory, say "I'm sorry, we don't currently have an exact match, but here is the closest available option:" and show the nearest match by price or features. NEVER say "I can't help" or leave them empty-handed.
-5. IMAGES: When recommending a ${isRealEstate ? 'property' : 'product'}, you MUST include its image using markdown: ![Item Title](ImageURL).
-6. LINKS: Always include the website URL (${websiteUrl}) when directing users to see more details.
-7. Keep responses warm, friendly, concise, and helpful. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
+1. TYPO TOLERANCE: Users may write with spelling mistakes or broken English. You MUST intelligently understand what they mean and respond naturally. NEVER ask them to rephrase.
+2. STRICT TOPIC: Only answer about this business. Refuse all general knowledge, coding, math, or personal questions.
+3. ${isRealEstate ? `MANDATORY 5-STEP QUALIFICATION — THIS IS NON-NEGOTIABLE:
+${qualifyingQuestions}` : `LEAD QUALIFICATION: If a user shows interest in buying or inquiring about a product, do NOT immediately show a product. Ask ONE qualifying question at a time:
+${qualifyingQuestions}`}
+4. SMART FALLBACKS: If the user's exact requirement is not in inventory, say "I'm sorry, we don't have an exact match, but here is the closest option:" and show the nearest match. NEVER say "I can't help".
+5. IMAGES: When showing a ${isRealEstate ? 'property' : 'product'}, ALWAYS include its image using markdown: ![Title](ImageURL).
+6. LINKS: Always include the website URL (${websiteUrl}) for more details.
+7. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
       systemInstruction = `You are the strict, professional AI Sales Assistant for BotFlow AI, a powerful AI Chatbot creation platform.\nYour ONLY goal is to convince website owners to use BotFlow AI to grow their business. Do not answer coding or general knowledge questions. Keep responses highly enthusiastic and concise.`;
