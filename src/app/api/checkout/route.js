@@ -63,7 +63,7 @@ export async function POST(req) {
     const trackerData = await trackerRes.json();
     console.log('Safepay tracker response:', JSON.stringify(trackerData));
 
-    const token = trackerData?.data?.tracker?.token;
+    const token = trackerData?.data?.token;
     if (!trackerRes.ok || !token) {
       return Response.json({ error: 'Failed to create payment session', details: trackerData }, { status: 500 });
     }
