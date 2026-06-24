@@ -10,61 +10,108 @@ async function liveScrapeWebsite(url) {
     let targetUrl = url.trim();
     if (!targetUrl.endsWith('/')) targetUrl += '/';
     
-    // Attempt to find catalog pages
-    const urlsToTry = [
-      targetUrl + 'products.html',
-      targetUrl + 'properties.html',
-      targetUrl, 
-      targetUrl + 'ecommerce/products.html',
-      targetUrl + 'ecommerce/index.html'
-    ];
-
-    let html = '';
-    let fetchedUrl = '';
-    
-    for (const u of urlsToTry) {
-      try {
-        const res = await fetch(u, { headers: { 'User-Agent': 'BotFlow-AI-Scraper' }, next: { revalidate: 300 } });
-        if (res.ok) {
-          html = await res.text();
-          fetchedUrl = u;
-          if (html.includes('product-card') || html.includes('property-card')) {
-            break; // Found a catalog page
-          }
-        }
-      } catch(e) {}
-    }
-
-    if (!html) return '';
-
-    const $ = cheerio.load(html);
     const items = [];
-    const baseUrl = new URL(fetchedUrl).origin;
-    const baseDir = fetchedUrl.substring(0, fetchedUrl.lastIndexOf('/') + 1);
+    const baseUrl = new URL(targetUrl).origin;
+    const baseDir = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
 
     const resolveImg = (img) => {
       if (!img) return '';
       if (img.startsWith('http')) return img;
+      if (img.startsWith('//')) return 'https:' + img;
       if (img.startsWith('/')) return baseUrl + img;
       return baseDir + img;
     };
 
-    // Scrape Property Cards
-    $('.property-card').each((i, el) => {
-      const title = $(el).find('.property-title').text().trim();
-      const price = $(el).find('.property-price').text().trim();
-      const img = resolveImg($(el).find('.property-img').attr('src'));
-      const specs = $(el).find('.property-specs').text().replace(/\s+/g, ' ').trim();
-      if (title) items.push({ type: 'Property', title, price, img, specs });
-    });
+    // 1. SHOPIFY DIRECTORY CHECK
+    try {
+      const shopifyRes = await fetch(targetUrl + 'products.json?limit=20', { headers: { 'User-Agent': 'BotFlow-AI' }});
+      if (shopifyRes.ok) {
+        const shopifyData = await shopifyRes.json();
+        if (shopifyData?.products?.length > 0) {
+          shopifyData.products.forEach(p => {
+            const title = p.title;
+            const price = p.variants?.[0]?.price ? '$' + p.variants[0].price : '';
+            const img = p.images?.[0]?.src || '';
+            if (title) items.push({ type: 'Product', title, price, img: resolveImg(img) });
+          });
+        }
+      }
+    } catch(e) {}
 
-    // Scrape Product Cards
-    $('.product-card').each((i, el) => {
-      const title = $(el).find('.product-name').text().trim();
-      const price = $(el).find('.product-price').text().trim();
-      const img = resolveImg($(el).find('.product-img').attr('src'));
-      if (title) items.push({ type: 'Product', title, price, img });
-    });
+    // 2. HTML SCRAPING (JSON-LD & DOM)
+    if (items.length === 0) {
+      const urlsToTry = [
+        targetUrl + 'products.html',
+        targetUrl + 'properties.html',
+        targetUrl, 
+        targetUrl + 'ecommerce/products.html',
+        targetUrl + 'ecommerce/index.html'
+      ];
+
+      let html = '';
+      let fetchedUrl = '';
+      
+      for (const u of urlsToTry) {
+        try {
+          const res = await fetch(u, { headers: { 'User-Agent': 'BotFlow-AI' }, next: { revalidate: 300 } });
+          if (res.ok) {
+            html = await res.text();
+            fetchedUrl = u;
+            // Stop if we find indicators of products/properties or if it's the root
+            if (html.includes('product') || html.includes('property') || html.includes('application/ld+json')) break;
+          }
+        } catch(e) {}
+      }
+
+      if (html) {
+        const $ = cheerio.load(html);
+
+        // A. JSON-LD SCHEMA (Universal for WP, Wix, standard SEO)
+        $('script[type="application/ld+json"]').each((i, el) => {
+          try {
+            const jsonData = JSON.parse($(el).html());
+            const processLd = (obj) => {
+              if (!obj) return;
+              if (obj['@type'] === 'Product' || obj['@type'] === 'RealEstateListing' || obj['@type'] === 'Offer') {
+                const title = obj.name || obj.title || '';
+                const price = obj.offers?.price ? (obj.offers?.priceCurrency || '$') + obj.offers.price : '';
+                let img = '';
+                if (typeof obj.image === 'string') img = obj.image;
+                else if (Array.isArray(obj.image)) img = obj.image[0];
+                else if (obj.image?.url) img = obj.image.url;
+                
+                if (title && !items.find(item => item.title === title)) {
+                  items.push({ type: obj['@type'], title, price, img: resolveImg(img) });
+                }
+              }
+            };
+            if (Array.isArray(jsonData)) jsonData.forEach(processLd);
+            else if (jsonData['@graph']) jsonData['@graph'].forEach(processLd);
+            else processLd(jsonData);
+          } catch(e) {}
+        });
+
+        // B. CUSTOM FALLBACKS (For our demo & generic classes)
+        if (items.length === 0) {
+          // Property Cards
+          $('.property-card').each((i, el) => {
+            const title = $(el).find('.property-title').text().trim();
+            const price = $(el).find('.property-price').text().trim();
+            const img = resolveImg($(el).find('.property-img').attr('src'));
+            const specs = $(el).find('.property-specs').text().replace(/\s+/g, ' ').trim();
+            if (title && !items.find(item => item.title === title)) items.push({ type: 'Property', title, price, img, specs });
+          });
+
+          // Product Cards
+          $('.product-card').each((i, el) => {
+            const title = $(el).find('.product-name').text().trim();
+            const price = $(el).find('.product-price').text().trim();
+            const img = resolveImg($(el).find('.product-img').attr('src'));
+            if (title && !items.find(item => item.title === title)) items.push({ type: 'Product', title, price, img });
+          });
+        }
+      }
+    }
 
     if (items.length === 0) return '';
 
@@ -75,7 +122,7 @@ async function liveScrapeWebsite(url) {
 
     return scrapedText;
   } catch (error) {
-    console.error("Scraping error:", error);
+    console.error("Universal Scraping error:", error);
     return '';
   }
 }
