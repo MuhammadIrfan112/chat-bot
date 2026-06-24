@@ -30,9 +30,18 @@ export default function LeadsCRM() {
     if (!session) return;
     const userId = session.user.id;
 
-    // Get user's bots with name and industry info
-    const { data: bots } = await supabase.from('bots').select('id, name, industry').eq('user_id', userId);
-    if (!bots || bots.length === 0) {
+    // Get user's bots with name and industry info (with fallback for missing industry column)
+    let bots = [];
+    const { data: botsWithInd, error: indError } = await supabase.from('bots').select('id, name, industry').eq('user_id', userId);
+    
+    if (indError) {
+      const { data: fallbackBots } = await supabase.from('bots').select('id, name').eq('user_id', userId);
+      bots = fallbackBots || [];
+    } else {
+      bots = botsWithInd || [];
+    }
+    
+    if (bots.length === 0) {
       setLeads([]);
       setLoading(false);
       return;

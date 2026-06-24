@@ -5,11 +5,19 @@ export async function POST(req) {
   try {
     const { visitor_id, bot_id } = await req.json();
 
-    // Check if session exists
-    const { data: existing } = await supabase
+    // Check if session exists for this specific bot (or landing page if no bot_id)
+    let query = supabase
       .from('chat_sessions')
       .select('*')
-      .eq('visitor_id', visitor_id)
+      .eq('visitor_id', visitor_id);
+      
+    if (bot_id) {
+      query = query.eq('bot_id', bot_id);
+    } else {
+      query = query.is('bot_id', null);
+    }
+
+    const { data: existing } = await query
       .order('created_at', { ascending: false })
       .limit(1)
       .single();

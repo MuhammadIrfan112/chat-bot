@@ -237,8 +237,13 @@ export async function POST(req) {
     // Build dynamic prompt based on bot industry
     let botData = null;
     if (bot_id) {
-      const { data: b } = await supabase.from('bots').select('name, industry').eq('id', bot_id).single();
-      botData = b;
+      const { data: b, error } = await supabase.from('bots').select('name, industry').eq('id', bot_id).single();
+      if (error) {
+        const { data: fallback } = await supabase.from('bots').select('name').eq('id', bot_id).single();
+        botData = fallback;
+      } else {
+        botData = b;
+      }
     }
     
     // Determine industry from database column, fallback to generic if missing
