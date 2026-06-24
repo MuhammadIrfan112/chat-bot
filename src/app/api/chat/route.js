@@ -1,7 +1,84 @@
 import { supabase } from '@/lib/supabaseClient';
 import { GoogleGenAI } from '@google/genai';
+import * as cheerio from 'cheerio';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+async function liveScrapeWebsite(url) {
+  if (!url) return '';
+  try {
+    let targetUrl = url.trim();
+    if (!targetUrl.endsWith('/')) targetUrl += '/';
+    
+    // Attempt to find catalog pages
+    const urlsToTry = [
+      targetUrl + 'products.html',
+      targetUrl + 'properties.html',
+      targetUrl, 
+      targetUrl + 'ecommerce/products.html',
+      targetUrl + 'ecommerce/index.html'
+    ];
+
+    let html = '';
+    let fetchedUrl = '';
+    
+    for (const u of urlsToTry) {
+      try {
+        const res = await fetch(u, { headers: { 'User-Agent': 'BotFlow-AI-Scraper' }, next: { revalidate: 300 } });
+        if (res.ok) {
+          html = await res.text();
+          fetchedUrl = u;
+          if (html.includes('product-card') || html.includes('property-card')) {
+            break; // Found a catalog page
+          }
+        }
+      } catch(e) {}
+    }
+
+    if (!html) return '';
+
+    const $ = cheerio.load(html);
+    const items = [];
+    const baseUrl = new URL(fetchedUrl).origin;
+    const baseDir = fetchedUrl.substring(0, fetchedUrl.lastIndexOf('/') + 1);
+
+    const resolveImg = (img) => {
+      if (!img) return '';
+      if (img.startsWith('http')) return img;
+      if (img.startsWith('/')) return baseUrl + img;
+      return baseDir + img;
+    };
+
+    // Scrape Property Cards
+    $('.property-card').each((i, el) => {
+      const title = $(el).find('.property-title').text().trim();
+      const price = $(el).find('.property-price').text().trim();
+      const img = resolveImg($(el).find('.property-img').attr('src'));
+      const specs = $(el).find('.property-specs').text().replace(/\s+/g, ' ').trim();
+      if (title) items.push({ type: 'Property', title, price, img, specs });
+    });
+
+    // Scrape Product Cards
+    $('.product-card').each((i, el) => {
+      const title = $(el).find('.product-name').text().trim();
+      const price = $(el).find('.product-price').text().trim();
+      const img = resolveImg($(el).find('.product-img').attr('src'));
+      if (title) items.push({ type: 'Product', title, price, img });
+    });
+
+    if (items.length === 0) return '';
+
+    let scrapedText = "\n\nLIVE WEBSITE INVENTORY (Use these to recommend to users. MUST include markdown images `![title](img_url)` when recommending an item):\n";
+    items.slice(0, 20).forEach(item => {
+      scrapedText += `- **${item.title}** | Price: ${item.price} | ImageURL: ${item.img} ${item.specs ? '| Details: ' + item.specs : ''}\n`;
+    });
+
+    return scrapedText;
+  } catch (error) {
+    console.error("Scraping error:", error);
+    return '';
+  }
+}
 
 async function getRelevantKnowledge(userQuery, botId) {
   if (!botId) return '';
@@ -35,10 +112,10 @@ export async function POST(req) {
   try {
     const { messages, session_id, bot_id } = await req.json();
 
-    // Fetch Bot Details to customize the AI
     let botName = 'AI Assistant';
     let websiteUrl = 'this website';
     let calendlyLink = '';
+    let liveInventory = '';
 
     if (bot_id) {
       const { data: bot } = await supabase.from('bots').select('*').eq('id', bot_id).single();
@@ -47,12 +124,10 @@ export async function POST(req) {
         websiteUrl = bot.website_url;
         calendlyLink = bot.calendly_link || '';
 
-        // ✅ BOT LEVEL STATUS CHECK: Block if this specific bot is Inactive
         if (bot.status !== 'Active') {
           return Response.json({ reply: "This chatbot is currently inactive. Please contact the website owner." });
         }
 
-        // ✅ TRIAL EXPIRY CHECK: Check if user's free trial has expired
         const { data: subscription } = await supabase
           .from('users_subscription')
           .select('status, trial_ends_at')
@@ -63,32 +138,21 @@ export async function POST(req) {
           const trialEnd = new Date(subscription.trial_ends_at);
           const now = new Date();
           if (now > trialEnd && subscription.status !== 'Active') {
-            // Update status to Inactive automatically
             await supabase
               .from('users_subscription')
               .update({ status: 'Inactive' })
               .eq('user_id', bot.user_id);
-            return Response.json({ reply: "⏰ Your 15-day free trial has ended. Please upgrade your plan to continue using this chatbot. Contact the website owner for more details." });
+            return Response.json({ reply: "⏰ Your 15-day free trial has ended. Please upgrade your plan to continue using this chatbot." });
           }
         }
-
-        // Domain Lock Check (Basic Security)
-        const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-        // Allow localhost for testing, otherwise check if origin matches website_url
-        if (!origin.includes('localhost') && !origin.includes('netlify.app')) {
-          try {
-            const botDomain = new URL(websiteUrl).hostname;
-            if (!origin.includes(botDomain)) {
-              return Response.json({ reply: "This chatbot is not authorized to run on this domain. Please check your embed code." });
-            }
-          } catch (e) {
-            // Ignore URL parsing errors
-          }
+        
+        // 🔥 TRIGGER LIVE SCRAPING
+        if (websiteUrl) {
+          liveInventory = await liveScrapeWebsite(websiteUrl);
         }
       }
     }
 
-    // Check if human has taken over
     if (session_id) {
       const { data: session } = await supabase
         .from('chat_sessions')
@@ -97,7 +161,6 @@ export async function POST(req) {
         .single();
 
       if (session?.is_human_takeover) {
-        // Save user message but don't generate AI reply
         const lastMsg = messages[messages.length - 1];
         await supabase.from('chat_messages').insert({
           session_id,
@@ -111,50 +174,25 @@ export async function POST(req) {
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     const userQuery = lastUserMessage?.parts?.[0]?.text || '';
     
-    // Fetch knowledge ONLY for this specific bot
     const knowledge = await getRelevantKnowledge(userQuery, bot_id);
 
     const knowledgeSection = knowledge
-      ? `\n\nRELEVANT BUSINESS KNOWLEDGE (Use this strictly to answer questions):\n${knowledge}`
+      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge}`
       : '';
 
-    // DYNAMIC PROMPT based on the client's website
     let systemInstruction = `You are a strict, professional AI Sales Assistant for ${botName}, representing the website: ${websiteUrl}.
-Your ONLY goal is to help visitors understand the services offered, answer their questions based on the provided knowledge, and qualify leads.
-If the user asks for a meeting or call, and this link is available: ${calendlyLink}, provide the link.
+Your ONLY goal is to help visitors understand the services offered, recommend properties/products, and qualify leads.
+If the user asks for a meeting, provide this link: ${calendlyLink}.
 
 CRITICAL RULES:
 1. You MUST NOT answer general knowledge, coding, math, or personal questions. 
-2. If a user asks something unrelated to ${botName} or ${websiteUrl}, politely reply: "I am an AI assistant for ${botName}. I can only answer questions related to our business and services. How can I help you with that?"
-3. Answer based strictly on the provided RELEVANT BUSINESS KNOWLEDGE. Do not invent pricing, features, or services.
-4. Keep responses concise, friendly, and helpful.${knowledgeSection}`;
+2. Answer based strictly on the provided RELEVANT BUSINESS KNOWLEDGE and LIVE WEBSITE INVENTORY. Do not invent items.
+3. When recommending a property or product from the inventory, you MUST include its image using standard markdown format: ![Item Title](ImageURL). 
+4. Keep responses friendly, concise, and helpful.${knowledgeSection}${liveInventory}`;
 
-    // If NO bot_id is provided, it means this is running on the main SaaS Landing Page!
     if (!bot_id) {
       systemInstruction = `You are the strict, professional AI Sales Assistant for BotFlow AI, a powerful AI Chatbot creation platform.
-Your ONLY goal is to convince website owners to use BotFlow AI to grow their business.
-
-CRITICAL RULES:
-1. You MUST NOT answer general knowledge, coding, math, or personal questions.
-2. If asked something unrelated to BotFlow AI, politely reply: "I am an AI assistant for BotFlow AI. I can only answer questions related to our chatbot platform. How can I help you grow your business?"
-3. Do not invent features or pricing. Stick strictly to the details below.
-
-If they ask how to create a chatbot, explain this simple 3-step process:
-1. Click 'Start Building for Free' to sign up for an account.
-2. Go to 'My Chatbots' in the dashboard, click '+ Create New Bot', and enter your website URL.
-3. Copy the generated embed code and paste it into your website. It takes less than 2 minutes!
-
-Key selling points of BotFlow AI:
-- Train the AI on your own business data (PDFs, URLs).
-- Capture leads automatically 24/7.
-- Live human takeover (monitor and jump into chats).
-- Built-in Calendar Booking.
-
-Pricing:
-- Starter: $29/month
-- Pro: $79/month
-
-Keep your responses highly enthusiastic, professional, and concise. Convince them to sign up!`;
+Your ONLY goal is to convince website owners to use BotFlow AI to grow their business. Do not answer coding or general knowledge questions. Keep responses highly enthusiastic and concise.`;
     }
 
     const response = await ai.models.generateContent({
@@ -165,7 +203,6 @@ Keep your responses highly enthusiastic, professional, and concise. Convince the
 
     const replyText = response.text;
 
-    // Save messages to DB for live chat visibility
     if (session_id) {
       await supabase.from('chat_messages').insert([
         { session_id, role: 'user', content: userQuery },
