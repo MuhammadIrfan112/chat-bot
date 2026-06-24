@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -206,7 +206,8 @@ export default function DashboardLayout({ children }) {
             color: pathname.includes('/dashboard/billing') ? 'white' : 'var(--text-secondary)', 
             backgroundColor: pathname.includes('/dashboard/billing') ? 'rgba(255,255,255,0.03)' : 'transparent', 
             textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: pathname.includes('/dashboard/billing') ? '600' : '500',
-            border: pathname.includes('/dashboard/billing') ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent'
+            border: pathname.includes('/dashboard/billing') ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
+            marginBottom: '4px'
           }}
           onMouseEnter={(e) => { if (!pathname.includes('/dashboard/billing')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; } }}
           onMouseLeave={(e) => { if (!pathname.includes('/dashboard/billing')) { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
@@ -217,7 +218,26 @@ export default function DashboardLayout({ children }) {
             <span style={{ color: pathname.includes('/dashboard/billing') ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
               <CreditCard size={20} />
             </span>
-            <span style={{ fontSize: '14px' }}>Billing & Plans</span>
+            <span style={{ fontSize: '14px' }}>Billing</span>
+          </Link>
+
+          <Link href="/dashboard/plans" style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
+            color: pathname.includes('/dashboard/plans') ? 'white' : 'var(--text-secondary)', 
+            backgroundColor: pathname.includes('/dashboard/plans') ? 'rgba(255,255,255,0.03)' : 'transparent', 
+            textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: pathname.includes('/dashboard/plans') ? '600' : '500',
+            border: pathname.includes('/dashboard/plans') ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent'
+          }}
+          onMouseEnter={(e) => { if (!pathname.includes('/dashboard/plans')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; } }}
+          onMouseLeave={(e) => { if (!pathname.includes('/dashboard/plans')) { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
+          >
+             {pathname.includes('/dashboard/plans') && (
+                  <motion.div layoutId="active-nav" style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '3px', background: 'var(--primary)', borderRadius: '0 4px 4px 0', boxShadow: '0 0 10px var(--primary)' }} />
+             )}
+            <span style={{ color: pathname.includes('/dashboard/plans') ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
+              <Zap size={20} />
+            </span>
+            <span style={{ fontSize: '14px' }}>Subscription Plans</span>
           </Link>
         </div>
 
