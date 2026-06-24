@@ -27,9 +27,10 @@ export async function POST(req) {
     }
 
     const priceUSD = planDetails[cycle];
-    // Safepay uses PKR paisa (1 PKR = 100 paisa). $1 ≈ 278 PKR
+    // Safepay expects the exact amount in PKR. $1 ≈ 278 PKR
     const priceInPKR = Math.round(priceUSD * 278);
-    const amountInPaisa = priceInPKR * 100;
+    // Use priceInPKR directly (no need to multiply by 100 for paisas based on the UI screenshot)
+    const amount = priceInPKR;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://chat-bot-ruddy-one.vercel.app';
     const orderId = `botflow-${userId.slice(0,8)}-${plan}-${Date.now()}`;
@@ -48,7 +49,7 @@ export async function POST(req) {
         intent: 'CYBERSOURCE',
         mode: 'payment',
         currency: 'PKR',
-        amount: amountInPaisa,
+        amount: amount,
         order_id: orderId,
         metadata: {
           user_id: userId,
