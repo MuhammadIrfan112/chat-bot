@@ -120,9 +120,8 @@ export default function Chatbot() {
   };
 
   const checkLeadTrigger = (count, currentMessages) => {
-    // Trigger lead capture ONLY after 6 messages (property requirements fully gathered)
-    if (count >= 6 && !leadCaptured && leadStep === null) {
-      // Extract property interest from the conversation
+    // Trigger lead capture immediately after the FIRST user message gets a reply
+    if (count >= 1 && !leadCaptured && leadStep === null) {
       const conversationText = currentMessages
         .filter(m => m.role === 'user')
         .map(m => m.parts[0].text)
@@ -132,7 +131,7 @@ export default function Chatbot() {
         setLeadData(prev => ({ ...prev, property_interest: conversationText.slice(0, 300) }));
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: "😊 Great! To send you more details and match you with the best options, may I get your name?" }]
+          parts: [{ text: "Before we continue, may I get your name so I can assist you better? 😊" }]
         }]);
         setLeadStep('name');
       }, 800);
@@ -156,7 +155,7 @@ export default function Chatbot() {
     setLeadStep(null);
     setMessages(prev => [...prev, {
       role: 'model',
-      parts: [{ text: `Thank you, ${name}! 🎉 We have your details and our team will reach out to you at ${email} or ${phone} very soon. Is there anything else I can help you with?` }]
+      parts: [{ text: `Thank you, ${name}! 🎉 We have saved your contact details.\n\nNow, let me help you find your perfect home! Could you tell me **what area or city** you are looking for a property in?` }]
     }]);
   };
 
