@@ -2,13 +2,19 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(req) {
   try {
-    const { name, email, chatbot_source, bot_id } = await req.json();
+    const { name, email, phone_number, property_interest, chatbot_source, bot_id } = await req.json();
 
     if (!email) {
       return Response.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const insertData = { name, email, chatbot_source: chatbot_source || 'SocialMedia110' };
+    const insertData = { 
+      name, 
+      email, 
+      phone_number: phone_number || null,
+      property_interest: property_interest || null,
+      chatbot_source: chatbot_source || 'Website'
+    };
     if (bot_id) insertData.bot_id = bot_id;
 
     const { error } = await supabase

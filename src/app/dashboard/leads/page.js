@@ -100,7 +100,7 @@ export default function LeadsCRM() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                {['Name', 'Email', 'Source', 'Status', 'Received', 'Actions'].map(h => (
+                {['Name', 'Phone', 'Email', 'Property Interest', 'Status', 'Received', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase' }}>{h}</th>
                 ))}
               </tr>
@@ -109,11 +109,14 @@ export default function LeadsCRM() {
               {leads.map((lead, i) => {
                 const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
                 return (
-                  <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                   <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
                     <td style={{ padding: '16px 20px', fontWeight: '600', color: '#111827' }}>{lead.name || '—'}</td>
+                    <td style={{ padding: '16px 20px', color: '#059669', fontWeight: '500' }}>{lead.phone_number || '—'}</td>
                     <td style={{ padding: '16px 20px', color: '#4F46E5', fontWeight: '500' }}>{lead.email}</td>
-                    <td style={{ padding: '16px 20px' }}>
-                      <span style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', padding: '4px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '600' }}>{lead.chatbot_source}</span>
+                    <td style={{ padding: '16px 20px', color: '#374151', fontSize: '13px', maxWidth: '200px' }}>
+                      <span title={lead.property_interest || ''} style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
+                        {lead.property_interest || '—'}
+                      </span>
                     </td>
                     <td style={{ padding: '16px 20px' }}>
                       <select

@@ -25,8 +25,8 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadStep, setLeadStep] = useState(null); // 'name' | 'email'
-  const [leadData, setLeadData] = useState({ name: '', email: '' });
+  const [leadStep, setLeadStep] = useState(null); // 'name' | 'phone' | 'email'
+  const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
@@ -119,29 +119,44 @@ export default function Chatbot() {
     }
   };
 
-  const checkLeadTrigger = (count) => {
-    if (count >= 3 && !leadCaptured && leadStep === null) {
+  const checkLeadTrigger = (count, currentMessages) => {
+    // Trigger lead capture ONLY after 6 messages (property requirements fully gathered)
+    if (count >= 6 && !leadCaptured && leadStep === null) {
+      // Extract property interest from the conversation
+      const conversationText = currentMessages
+        .filter(m => m.role === 'user')
+        .map(m => m.parts[0].text)
+        .join(', ');
+      
       setTimeout(() => {
+        setLeadData(prev => ({ ...prev, property_interest: conversationText.slice(0, 300) }));
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: "😊 You seem interested! May I get your name so I can assist you better?" }]
+          parts: [{ text: "😊 Great! To send you more details and match you with the best options, may I get your name?" }]
         }]);
         setLeadStep('name');
       }, 800);
     }
   };
 
-  const saveLead = async (name, email) => {
+  const saveLead = async (name, phone, email, property_interest) => {
     await fetch('/api/save-lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, chatbot_source: 'SocialMedia110', bot_id: botConfig.botId })
+      body: JSON.stringify({ 
+        name, 
+        email, 
+        phone_number: phone,
+        property_interest,
+        chatbot_source: botConfig.botName || 'Website Chatbot', 
+        bot_id: botConfig.botId 
+      })
     });
     setLeadCaptured(true);
     setLeadStep(null);
     setMessages(prev => [...prev, {
       role: 'model',
-      parts: [{ text: `Thanks ${name}! 🎉 Our team will reach out to ${email} soon. Is there anything else I can help with?` }]
+      parts: [{ text: `Thank you, ${name}! 🎉 We have your details and our team will reach out to you at ${email} or ${phone} very soon. Is there anything else I can help you with?` }]
     }]);
   };
 
@@ -156,8 +171,20 @@ export default function Chatbot() {
     // Lead capture flow
     if (leadStep === 'name') {
       setLeadData(prev => ({ ...prev, name: msg }));
+      setLeadStep('phone');
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Nice to meet you, ${msg}! 👋 What is your phone number so we can contact you quickly?` }] }]);
+      return;
+    }
+
+    if (leadStep === 'phone') {
+      const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
+      if (!phoneRegex.test(msg.trim())) {
+        setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Please enter a valid phone number (e.g. 0300-1234567 or +92 300 1234567):" }] }]);
+        return;
+      }
+      setLeadData(prev => ({ ...prev, phone: msg }));
       setLeadStep('email');
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Nice to meet you, ${msg}! 👋 What's the best email to reach you?` }] }]);
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Perfect! 📧 And what's the best email address to reach you?` }] }]);
       return;
     }
 
@@ -167,7 +194,7 @@ export default function Chatbot() {
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "That doesn't look like a valid email. Please try again (e.g. name@example.com):" }] }]);
         return;
       }
-      await saveLead(leadData.name, msg);
+      await saveLead(leadData.name, leadData.phone, msg, leadData.property_interest);
       return;
     }
 
@@ -205,7 +232,10 @@ export default function Chatbot() {
       setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Sorry, something went wrong." }] }]);
     } finally {
       setIsLoading(false);
-      checkLeadTrigger(messageCount.current);
+      setMessages(prev => {
+        checkLeadTrigger(messageCount.current, prev);
+        return prev;
+      });
     }
   };
 
@@ -318,7 +348,7 @@ export default function Chatbot() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-              placeholder={leadStep === 'name' ? "Enter your name..." : leadStep === 'email' ? "Enter your email..." : isHumanTakeover ? "Message live agent..." : "Type your message..."}
+              placeholder={leadStep === 'name' ? "Enter your name..." : leadStep === 'phone' ? "Enter your phone number..." : leadStep === 'email' ? "Enter your email..." : isHumanTakeover ? "Message live agent..." : "Type your message..."}
               className={styles.input}
             />
             <button onClick={() => handleSend()} className={styles.sendBtn}>Send</button>
