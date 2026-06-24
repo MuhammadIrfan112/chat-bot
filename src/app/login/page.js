@@ -10,7 +10,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [websiteType, setWebsiteType] = useState('real-estate');
+  const [websiteType, setWebsiteType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
@@ -160,10 +160,11 @@ export default function Login() {
                 <select
                   value={websiteType}
                   onChange={(e) => setWebsiteType(e.target.value)}
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', transition: 'all 0.2s', outline: 'none', appearance: 'none' }}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: websiteType ? 'white' : 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.03)', transition: 'all 0.2s', outline: 'none', appearance: 'none' }}
                   onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
                   onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
                 >
+                  <option value="" disabled style={{ color: '#888' }}>Select your website type</option>
                   <option value="real-estate" style={{ color: 'black' }}>Real Estate</option>
                   <option value="ecommerce" style={{ color: 'black' }}>E-commerce</option>
                   <option value="other" style={{ color: 'black' }}>Other</option>

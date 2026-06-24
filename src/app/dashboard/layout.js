@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }) {
   const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
   const [userEmail, setUserEmail] = useState('');
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [websiteType, setWebsiteType] = useState('real-estate');
+  const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -106,8 +106,9 @@ export default function DashboardLayout({ children }) {
             <select
               value={websiteType}
               onChange={(e) => setWebsiteType(e.target.value)}
-              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', outline: 'none' }}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: websiteType ? 'white' : 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.03)', outline: 'none' }}
             >
+              <option value="" disabled style={{ color: '#888' }}>Select your website type</option>
               <option value="real-estate" style={{ color: 'black' }}>Real Estate</option>
               <option value="ecommerce" style={{ color: 'black' }}>E-commerce</option>
               <option value="other" style={{ color: 'black' }}>Other</option>
