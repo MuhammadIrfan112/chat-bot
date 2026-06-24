@@ -9,15 +9,10 @@ const STATUS_COLORS = {
   'Closed': { bg: '#F3F4F6', text: '#374151' },
 };
 
-// Detect bot industry from its name/source
-const getInterestLabel = (botName = '', chatbotSource = '') => {
-  const combined = (botName + ' ' + chatbotSource).toLowerCase();
-  if (combined.includes('real estate') || combined.includes('realty') || combined.includes('property') || combined.includes('luxe')) {
-    return 'Property Interest';
-  }
-  if (combined.includes('ecommerce') || combined.includes('e-commerce') || combined.includes('shop') || combined.includes('store') || combined.includes('product') || combined.includes('fashion')) {
-    return 'Product Interest';
-  }
+// Return the correct label based on bot industry
+const getInterestLabel = (industry = 'Other') => {
+  if (industry === 'Real Estate') return 'Property Interest';
+  if (industry === 'E-Commerce') return 'Product Interest';
   return 'Customer Inquiry';
 };
 
@@ -35,8 +30,8 @@ export default function LeadsCRM() {
     if (!session) return;
     const userId = session.user.id;
 
-    // Get user's bots with name info
-    const { data: bots } = await supabase.from('bots').select('id, name').eq('user_id', userId);
+    // Get user's bots with name and industry info
+    const { data: bots } = await supabase.from('bots').select('id, name, industry').eq('user_id', userId);
     if (!bots || bots.length === 0) {
       setLeads([]);
       setLoading(false);
@@ -129,7 +124,7 @@ export default function LeadsCRM() {
                 {leads.map((lead, i) => {
                   const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
                   const bot = botsMap[lead.bot_id];
-                  const interestLabel = getInterestLabel(bot?.name, lead.chatbot_source);
+                  const interestLabel = getInterestLabel(bot?.industry || 'Other');
                   const isRealEstate = interestLabel === 'Property Interest';
                   const isEcommerce = interestLabel === 'Product Interest';
 

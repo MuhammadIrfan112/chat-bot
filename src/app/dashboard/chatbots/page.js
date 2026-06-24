@@ -14,6 +14,7 @@ export default function MyBots() {
 
   const [form, setForm] = useState({
     name: '',
+    industry: 'Real Estate',
     website_url: '',
     calendly_link: '',
     welcome_message: 'Hi there! 👋 How can I help you today?',
@@ -106,6 +107,7 @@ export default function MyBots() {
       const { data, error } = await supabase.from('bots').insert({
         user_id: userId,
         name: form.name,
+        industry: form.industry,
         website_url: form.website_url,
         calendly_link: form.calendly_link,
         welcome_message: form.welcome_message,
@@ -187,18 +189,19 @@ export default function MyBots() {
             <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1 }}>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Bot Name *</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                  placeholder="e.g. My Business Bot"
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }}
-                />
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Chatbot Name</label>
+                <input required type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #E5E7EB', backgroundColor: '#F9FAFB' }} placeholder="e.g. Acme Support" />
               </div>
-
-              <div>
-                <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#374151', fontSize: '13px' }}>Your Website URL *</label>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Industry / Website Type</label>
+                <select value={form.industry} onChange={e => setForm({...form, industry: e.target.value})} style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #E5E7EB', backgroundColor: '#F9FAFB' }}>
+                  <option value="Real Estate">Real Estate</option>
+                  <option value="E-Commerce">E-Commerce</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Target Website URL</label>
                 <input
                   value={form.website_url}
                   onChange={(e) => setForm({ ...form, website_url: e.target.value })}

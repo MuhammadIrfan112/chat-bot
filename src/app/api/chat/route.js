@@ -237,12 +237,14 @@ export async function POST(req) {
     // Build dynamic prompt based on bot industry
     let botData = null;
     if (bot_id) {
-      const { data: b } = await supabase.from('bots').select('name').eq('id', bot_id).single();
+      const { data: b } = await supabase.from('bots').select('name, industry').eq('id', bot_id).single();
       botData = b;
     }
-    const botNameLower = (botData?.name || botName).toLowerCase();
-    const isRealEstate = botNameLower.includes('real estate') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
-    const isEcommerce = botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
+    
+    // Determine industry from database column, fallback to generic if missing
+    const botIndustry = botData?.industry || 'Other';
+    const isRealEstate = botIndustry === 'Real Estate';
+    const isEcommerce = botIndustry === 'E-Commerce';
     
     const qualifyingQuestions = isRealEstate
       ? `   - Step 1: Ask preferred location/city/area\n   - Step 2: Ask how many bedrooms they need\n   - Step 3: Ask how many bathrooms they need\n   - Step 4: Ask the size in sqft or marla/kanal they prefer\n   - Step 5: Ask their budget range\n   - Step 6: ONLY NOW show the best matching property from inventory with full details and image.\n   Ask STRICTLY one question at a time. Do NOT skip any step.`
@@ -267,9 +269,25 @@ ${qualifyingQuestions}
       systemInstruction = `You are the strict, professional AI Sales Assistant for BotFlow AI, a powerful AI Chatbot creation platform.\nYour ONLY goal is to convince website owners to use BotFlow AI to grow their business. Do not answer coding or general knowledge questions. Keep responses highly enthusiastic and concise.`;
     }
 
+    // FIX CHAT HALTING BUG: Gemini API crashes if consecutive messages have the same role (e.g., user -> user or model -> model).
+    // The frontend manually pushes 'model' messages (like thank you messages), so we must combine them before sending to API.
+    const normalizedMessages = [];
+    messages.forEach(msg => {
+      if (normalizedMessages.length === 0) {
+        normalizedMessages.push({ role: msg.role, parts: [...msg.parts] });
+      } else {
+        const last = normalizedMessages[normalizedMessages.length - 1];
+        if (last.role === msg.role) {
+          last.parts[0].text += `\n\n${msg.parts[0].text}`;
+        } else {
+          normalizedMessages.push({ role: msg.role, parts: [...msg.parts] });
+        }
+      }
+    });
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: messages,
+      contents: normalizedMessages,
       config: { systemInstruction, temperature: 0.7 }
     });
 
