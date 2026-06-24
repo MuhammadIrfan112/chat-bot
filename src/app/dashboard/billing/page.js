@@ -117,7 +117,10 @@ export default function Billing() {
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '8px' }}>${price} <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500' }}>/ month</span></div>
+              <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '12px' }}>${price} <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500' }}>/ month</span></div>
+              <a href="/dashboard/plans" style={{ display: 'inline-block', fontSize: '13px', fontWeight: '700', color: '#EF4444', background: 'rgba(239, 68, 68, 0.1)', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', border: '1px solid rgba(239, 68, 68, 0.2)', transition: 'all 0.2s' }}>
+                ✕ Cancel & Change Plan
+              </a>
             </div>
           </motion.div>
 
