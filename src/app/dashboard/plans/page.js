@@ -9,16 +9,15 @@ export default function PlansPage() {
   const plans = [
     {
       name: 'Starter',
-      description: 'Perfect for small businesses getting started with AI.',
-      monthlyPrice: '29',
-      yearlyPrice: '24',
+      description: 'Perfect for simple websites and basic chatbot needs.',
+      monthlyPrice: '49',
+      yearlyPrice: '39',
       icon: <Star size={24} color="#818CF8" />,
       features: [
-        '1 Chatbot',
-        '1,000 Messages / month',
+        '1 AI Chatbot',
         'Standard Website Scraping',
-        'Basic Analytics',
-        'Community Support'
+        'Basic Analytics & Lead Capture',
+        'Standard Support'
       ],
       buttonText: 'Current Plan',
       isCurrent: true,
@@ -26,39 +25,21 @@ export default function PlansPage() {
     },
     {
       name: 'Pro',
-      description: 'Advanced features for growing businesses.',
+      description: 'Advanced AI features for Real Estate and E-commerce.',
       monthlyPrice: '79',
       yearlyPrice: '65',
       icon: <Zap size={24} color="#FBBF24" />,
       features: [
-        '5 Chatbots',
-        '10,000 Messages / month',
-        'Real-time Universal Scraping',
+        '1 AI Chatbot',
+        'Real Estate Listings Scraping',
+        'E-commerce Product Syncing',
+        'Advanced CRM Lead Mapping',
         'Live Human Takeover',
-        'Custom Chatbot Branding',
-        'Priority Support'
+        'Priority WhatsApp Support'
       ],
       buttonText: 'Upgrade to Pro',
       isCurrent: false,
       popular: true
-    },
-    {
-      name: 'Enterprise',
-      description: 'Dedicated infrastructure for large-scale operations.',
-      monthlyPrice: '299',
-      yearlyPrice: '249',
-      icon: <Shield size={24} color="#10B981" />,
-      features: [
-        'Unlimited Chatbots',
-        'Unlimited Messages',
-        'WhatsApp & Instagram Integration',
-        'Dedicated Account Manager',
-        'Custom API Access',
-        'SLA 99.9% Uptime'
-      ],
-      buttonText: 'Contact Sales',
-      isCurrent: false,
-      popular: false
     }
   ];
 
