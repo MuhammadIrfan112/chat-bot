@@ -1,13 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Building2, Globe, Smartphone, Send, ShieldCheck, ShoppingCart } from 'lucide-react';
+import { Building2, Globe, Smartphone, Send, ShieldCheck, ShoppingCart, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 
 export default function Billing() {
   const [status, setStatus] = useState('Loading...');
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState(null);
   
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan');
@@ -35,6 +37,37 @@ export default function Billing() {
       } else {
         setStatus('Inactive');
       }
+    }
+  };
+
+  const handlePayNow = async () => {
+    setPaying(true);
+    setPayError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setPayError('Please login first.'); setPaying(false); return; }
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          cycle: billingCycle,
+          userId: session.user.id,
+          userEmail: session.user.email
+        })
+      });
+
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setPayError('Could not start payment. Please try again.');
+        setPaying(false);
+      }
+    } catch (err) {
+      setPayError('Payment error. Please try again.');
+      setPaying(false);
     }
   };
 
@@ -83,8 +116,22 @@ export default function Billing() {
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1 }}>${price}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '500', marginTop: '8px' }}>Total Amount to Pay</div>
+            <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '8px' }}>${price} <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500' }}>/ month</span></div>
+            {payError && <div style={{ color: 'var(--danger)', fontSize: '13px', marginBottom: '8px' }}>{payError}</div>}
+            <button
+              onClick={handlePayNow}
+              disabled={paying}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '10px',
+                background: paying ? 'rgba(255,255,255,0.1)' : 'linear-gradient(90deg, #10B981, #059669)',
+                color: 'white', padding: '14px 28px', borderRadius: '12px', border: 'none',
+                fontWeight: '700', fontSize: '16px', cursor: paying ? 'not-allowed' : 'pointer',
+                boxShadow: paying ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.4)', transition: 'all 0.2s'
+              }}
+            >
+              {paying ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</> : <><Lock size={18} /> Pay Now — ${price}</>}
+            </button>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>🔒 Secured by Safepay</div>
           </div>
         </motion.div>
       )}
