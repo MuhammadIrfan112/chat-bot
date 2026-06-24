@@ -84,7 +84,7 @@ export default function Home() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(99,102,241,0.12)', padding: '6px 16px', borderRadius: '50px', fontSize: '13px', fontWeight: '700', marginBottom: '32px', border: '1px solid rgba(129,140,248,0.25)', color: '#A5B4FC', letterSpacing: '0.02em' }}
           >
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', flexShrink: 0, display: 'inline-block' }} />
-            NEW — BotFlow AI v2.0 is now live
+            The #1 AI Chatbot for Sales & Support
           </motion.div>
 
           {/* Headline */}
@@ -92,7 +92,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 80 }}
-            style={{ fontSize: 'clamp(44px, 6.5vw, 84px)', fontWeight: '900', lineHeight: 1.07, marginBottom: '28px', letterSpacing: '-0.05em', color: '#F8FAFC' }}
+            style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: '900', lineHeight: 1.07, marginBottom: '28px', letterSpacing: '-0.03em', color: '#F8FAFC' }}
           >
             Turn website visitors <br />
             into <span className="text-gradient-primary">paying customers.</span>
