@@ -122,6 +122,15 @@
   border: 1px solid #E5E7EB;
 }
 
+.modelMsg img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 8px;
+  display: block;
+  object-fit: cover;
+}
+
 .userMsg {
   background-color: var(--primary, #4F46E5);
   color: white;

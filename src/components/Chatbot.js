@@ -242,7 +242,14 @@ export default function Chatbot() {
                       ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '0 0 10px 0' }} {...props} />,
                       li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
                       a: ({node, ...props}) => <a style={{ color: 'var(--primary)', textDecoration: 'underline' }} target="_blank" {...props} />,
-                      strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />
+                      strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />,
+                      img: ({node, src, alt, ...props}) => (
+                        <img 
+                          src={src} alt={alt || 'Property'} 
+                          style={{ maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '8px', display: 'block' }} 
+                          {...props} 
+                        />
+                      )
                     }}
                   >
                     {msg.parts[0].text}
