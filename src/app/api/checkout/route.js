@@ -43,6 +43,8 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         merchant_api_key: process.env.SAFEPAY_PUBLISHABLE_KEY,
+        client: process.env.SAFEPAY_PUBLISHABLE_KEY,
+        environment: isSandbox ? 'sandbox' : 'production',
         intent: 'CYBERSOURCE',
         mode: 'payment',
         currency: 'PKR',
