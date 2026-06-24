@@ -131,7 +131,7 @@ export default function Chatbot() {
         setLeadData(prev => ({ ...prev, property_interest: conversationText.slice(0, 300) }));
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: "Before we continue, may I get your name so I can assist you better? 😊" }]
+          parts: [{ text: "To help you find the best options, I need a little bit of information from you first. May I get your name? 😊" }]
         }]);
         setLeadStep('name');
       }, 800);

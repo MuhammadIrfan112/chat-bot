@@ -247,7 +247,7 @@ export async function POST(req) {
     const isEcommerce = botIndustry === 'E-Commerce';
     
     const qualifyingQuestions = isRealEstate
-      ? `   - Step 1: Ask preferred location/city/area\n   - Step 2: Ask how many bedrooms they need\n   - Step 3: Ask how many bathrooms they need\n   - Step 4: Ask the size in sqft or marla/kanal they prefer\n   - Step 5: Ask their budget range\n   - Step 6: ONLY NOW show the best matching property from inventory with full details and image.\n   Ask STRICTLY one question at a time. Do NOT skip any step.`
+      ? `   - Step 1: Ask preferred location/city/area\n   - Step 2: Ask how many bedrooms they need\n   - Step 3: Ask how many bathrooms they need\n   - Step 4: Ask the size in sqft or marla/kanal they prefer\n   - Step 5: Ask their budget range\n   - Step 6: ONLY NOW show the best matching property from inventory with full details and image.\n   CRITICAL: You MUST ask these questions STRICTLY one at a time in this exact order. DO NOT skip to budget. DO NOT combine questions.`
       : isEcommerce
       ? `   - First ask: what type of product they need (e.g., category, color, size)\n   - Then ask: their budget range\n   - Only AFTER gathering these details, recommend the best matching product from inventory.`
       : `   - Ask 1-2 qualifying questions about their specific needs and budget\n   - Only AFTER gathering these details, recommend the best matching item.`;
