@@ -170,6 +170,13 @@ export async function POST(req) {
         botName = bot.name;
         websiteUrl = bot.website_url;
         calendlyLink = bot.calendly_link || '';
+        
+        // Detect industry from bot name
+        const botNameLower = bot.name.toLowerCase();
+        const isRealEstate = botNameLower.includes('real estate') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
+        const isEcommerce = botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
+        // Store for use in prompt
+        if (bot) bot._industry = isRealEstate ? 'real_estate' : isEcommerce ? 'ecommerce' : 'general';
 
         if (bot.status !== 'Active') {
           return Response.json({ reply: "This chatbot is currently inactive. Please contact the website owner." });
@@ -227,19 +234,32 @@ export async function POST(req) {
       ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge}`
       : '';
 
+    // Build dynamic prompt based on bot industry
+    let botData = null;
+    if (bot_id) {
+      const { data: b } = await supabase.from('bots').select('name').eq('id', bot_id).single();
+      botData = b;
+    }
+    const botNameLower = (botData?.name || botName).toLowerCase();
+    const isRealEstate = botNameLower.includes('real estate') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
+    const isEcommerce = botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
+    
+    const qualifyingQuestions = isRealEstate
+      ? `   - First ask: preferred location/area\n   - Then ask: budget range\n   - Then ask: number of bedrooms and bathrooms needed\n   - Only AFTER gathering these details, recommend the best matching property from inventory.`
+      : isEcommerce
+      ? `   - First ask: what type of product they need (e.g., category, color, size)\n   - Then ask: their budget range\n   - Only AFTER gathering these details, recommend the best matching product from inventory.`
+      : `   - Ask 1-2 qualifying questions about their specific needs and budget\n   - Only AFTER gathering these details, recommend the best matching item.`;
+    
     let systemInstruction = `You are an expert, professional AI Sales Consultant for ${botName}, representing the website: ${websiteUrl}.
-Your ONLY goal is to help visitors find the right property/product and convert them into qualified leads.
+Your ONLY goal is to help visitors find the right ${isRealEstate ? 'property' : 'product'} and convert them into qualified leads.
 
 CRITICAL RULES:
-1. TYPO TOLERANCE: Users may write with spelling mistakes or broken English (e.g., "i wan buy hose", "i wana huse"). You MUST intelligently understand what they mean and respond naturally. NEVER ask them to rephrase or correct spelling.
+1. TYPO TOLERANCE: Users may write with spelling mistakes or broken English. You MUST intelligently understand what they mean and respond naturally. NEVER ask them to rephrase or correct spelling.
 2. STRICT TOPIC: You MUST NOT answer general knowledge, coding, math, or personal questions. Only answer about the business.
-3. LEAD QUALIFICATION (MOST IMPORTANT): If a user shows interest in buying, renting, or purchasing ANYTHING, do NOT immediately show a property. First, act like a professional consultant and ask ONE qualifying question at a time:
-   - First ask: preferred location/area
-   - Then ask: budget range
-   - Then ask: size (bedrooms, rooms, sq ft) if applicable
-   Only AFTER gathering these details, recommend the best matching item from inventory.
+3. LEAD QUALIFICATION (MOST IMPORTANT): If a user shows interest in ${isRealEstate ? 'buying, renting, or viewing a property' : 'buying or inquiring about a product'}, do NOT immediately show a ${isRealEstate ? 'property' : 'product'}. First, act like a professional consultant and ask ONE qualifying question at a time:
+${qualifyingQuestions}
 4. SMART FALLBACKS: If the user's exact requirement is not in inventory, say "I'm sorry, we don't currently have an exact match, but here is the closest available option:" and show the nearest match by price or features. NEVER say "I can't help" or leave them empty-handed.
-5. IMAGES: When recommending a property or product, you MUST include its image using markdown: ![Item Title](ImageURL).
+5. IMAGES: When recommending a ${isRealEstate ? 'property' : 'product'}, you MUST include its image using markdown: ![Item Title](ImageURL).
 6. LINKS: Always include the website URL (${websiteUrl}) when directing users to see more details.
 7. Keep responses warm, friendly, concise, and helpful. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 

@@ -9,8 +9,21 @@ const STATUS_COLORS = {
   'Closed': { bg: '#F3F4F6', text: '#374151' },
 };
 
+// Detect bot industry from its name/source
+const getInterestLabel = (botName = '', chatbotSource = '') => {
+  const combined = (botName + ' ' + chatbotSource).toLowerCase();
+  if (combined.includes('real estate') || combined.includes('realty') || combined.includes('property') || combined.includes('luxe')) {
+    return 'Property Interest';
+  }
+  if (combined.includes('ecommerce') || combined.includes('e-commerce') || combined.includes('shop') || combined.includes('store') || combined.includes('product') || combined.includes('fashion')) {
+    return 'Product Interest';
+  }
+  return 'Customer Inquiry';
+};
+
 export default function LeadsCRM() {
   const [leads, setLeads] = useState([]);
+  const [botsMap, setBotsMap] = useState({}); // bot_id -> bot
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,13 +35,19 @@ export default function LeadsCRM() {
     if (!session) return;
     const userId = session.user.id;
 
-    // Get user's bots
-    const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);
+    // Get user's bots with name info
+    const { data: bots } = await supabase.from('bots').select('id, name').eq('user_id', userId);
     if (!bots || bots.length === 0) {
       setLeads([]);
       setLoading(false);
       return;
     }
+
+    // Build a map of bot_id -> bot for quick lookup
+    const map = {};
+    bots.forEach(b => { map[b.id] = b; });
+    setBotsMap(map);
+
     const botIds = bots.map(b => b.id);
 
     // Fetch leads for those bots
@@ -97,45 +116,83 @@ export default function LeadsCRM() {
             <p>When visitors share their info in the chatbot, they will appear here.</p>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                {['Name', 'Phone', 'Email', 'Property Interest', 'Status', 'Received', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {leads.map((lead, i) => {
-                const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
-                return (
-                   <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                    <td style={{ padding: '16px 20px', fontWeight: '600', color: '#111827' }}>{lead.name || '—'}</td>
-                    <td style={{ padding: '16px 20px', color: '#059669', fontWeight: '500' }}>{lead.phone_number || '—'}</td>
-                    <td style={{ padding: '16px 20px', color: '#4F46E5', fontWeight: '500' }}>{lead.email}</td>
-                    <td style={{ padding: '16px 20px', color: '#374151', fontSize: '13px', maxWidth: '200px' }}>
-                      <span title={lead.property_interest || ''} style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
-                        {lead.property_interest || '—'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px 20px' }}>
-                      <select
-                        value={lead.status}
-                        onChange={(e) => updateStatus(lead.id, e.target.value)}
-                        style={{ backgroundColor: sc.bg, color: sc.text, padding: '4px 8px', borderRadius: '6px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-                      >
-                        {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </td>
-                    <td style={{ padding: '16px 20px', color: '#6B7280', fontSize: '14px' }}>{timeAgo(lead.created_at)}</td>
-                    <td style={{ padding: '16px 20px' }}>
-                      <button onClick={() => deleteLead(lead.id)} style={{ backgroundColor: '#FEE2E2', color: '#DC2626', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Delete</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                  {['Name', 'Phone', 'Email', 'Inquiry / Interest', 'Bot', 'Status', 'Received', 'Actions'].map(h => (
+                    <th key={h} style={{ padding: '14px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {leads.map((lead, i) => {
+                  const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
+                  const bot = botsMap[lead.bot_id];
+                  const interestLabel = getInterestLabel(bot?.name, lead.chatbot_source);
+                  const isRealEstate = interestLabel === 'Property Interest';
+                  const isEcommerce = interestLabel === 'Product Interest';
+
+                  return (
+                    <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                      {/* Name */}
+                      <td style={{ padding: '16px 20px', fontWeight: '600', color: '#111827', whiteSpace: 'nowrap' }}>{lead.name || '—'}</td>
+                      
+                      {/* Phone */}
+                      <td style={{ padding: '16px 20px', whiteSpace: 'nowrap' }}>
+                        {lead.phone_number ? (
+                          <a href={`tel:${lead.phone_number}`} style={{ color: '#059669', fontWeight: '600', textDecoration: 'none' }}>
+                            📞 {lead.phone_number}
+                          </a>
+                        ) : '—'}
+                      </td>
+
+                      {/* Email */}
+                      <td style={{ padding: '16px 20px', whiteSpace: 'nowrap' }}>
+                        <a href={`mailto:${lead.email}`} style={{ color: '#4F46E5', fontWeight: '500', textDecoration: 'none' }}>{lead.email}</a>
+                      </td>
+
+                      {/* Inquiry/Interest — label and icon changes based on bot type */}
+                      <td style={{ padding: '16px 20px', color: '#374151', fontSize: '13px', maxWidth: '220px' }}>
+                        <div style={{ marginBottom: '2px', fontSize: '11px', fontWeight: '700', color: isRealEstate ? '#7C3AED' : isEcommerce ? '#0369A1' : '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {isRealEstate ? '🏠 ' : isEcommerce ? '🛍️ ' : '💬 '}{interestLabel}
+                        </div>
+                        <span title={lead.property_interest || ''} style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>
+                          {lead.property_interest || '—'}
+                        </span>
+                      </td>
+
+                      {/* Bot Name */}
+                      <td style={{ padding: '16px 20px' }}>
+                        <span style={{ backgroundColor: '#EFF6FF', color: '#1D4ED8', padding: '4px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                          {bot?.name || lead.chatbot_source || '—'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '16px 20px' }}>
+                        <select
+                          value={lead.status}
+                          onChange={(e) => updateStatus(lead.id, e.target.value)}
+                          style={{ backgroundColor: sc.bg, color: sc.text, padding: '4px 8px', borderRadius: '6px', border: 'none', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+                        >
+                          {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </td>
+
+                      {/* Time */}
+                      <td style={{ padding: '16px 20px', color: '#6B7280', fontSize: '14px', whiteSpace: 'nowrap' }}>{timeAgo(lead.created_at)}</td>
+
+                      {/* Actions */}
+                      <td style={{ padding: '16px 20px' }}>
+                        <button onClick={() => deleteLead(lead.id)} style={{ backgroundColor: '#FEE2E2', color: '#DC2626', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Delete</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
