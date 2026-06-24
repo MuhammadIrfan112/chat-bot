@@ -184,6 +184,23 @@ export default function DashboardLayout({ children }) {
           
           <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', paddingLeft: '12px' }}>Settings</div>
           
+          <Link href="/dashboard/settings" style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
+            color: pathname.includes('/dashboard/settings') ? 'white' : 'var(--text-secondary)', 
+            backgroundColor: pathname.includes('/dashboard/settings') ? 'rgba(255,255,255,0.03)' : 'transparent', 
+            textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: pathname.includes('/dashboard/settings') ? '600' : '500',
+            border: pathname.includes('/dashboard/settings') ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
+            marginBottom: '4px'
+          }}
+          onMouseEnter={(e) => { if (!pathname.includes('/dashboard/settings')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; } }}
+          onMouseLeave={(e) => { if (!pathname.includes('/dashboard/settings')) { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
+          >
+            <span style={{ color: pathname.includes('/dashboard/settings') ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
+              <Settings size={20} />
+            </span>
+            <span style={{ fontSize: '14px' }}>Workspace Settings</span>
+          </Link>
+
           <Link href="/dashboard/billing" style={{ 
             display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
             color: pathname.includes('/dashboard/billing') ? 'white' : 'var(--text-secondary)', 
