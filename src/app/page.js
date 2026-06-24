@@ -395,7 +395,7 @@ export default function Home() {
 
               {/* CTA */}
               <div style={{ padding: '0 28px 28px' }}>
-                <a href="https://real-state-nbje.vercel.app/ecommerce/index.html" target="_blank" rel="noopener noreferrer"
+                <a href="https://real-state-nbje.vercel.app" target="_blank" rel="noopener noreferrer"
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', color: 'white', fontWeight: '800', fontSize: '14px', textDecoration: 'none', transition: 'all 0.3s', letterSpacing: '0.02em' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
