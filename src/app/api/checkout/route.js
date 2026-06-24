@@ -71,7 +71,7 @@ export async function POST(req) {
     // Step 2: Build the hosted checkout URL
     const redirectUrl = encodeURIComponent(`${appUrl}/dashboard/billing/success?plan=${plan}&cycle=${cycle}`);
     const cancelUrl = encodeURIComponent(`${appUrl}/dashboard/billing?plan=${plan}&cycle=${cycle}&price=${priceUSD}&cancelled=true`);
-    const checkoutUrl = `${SAFEPAY_API_BASE}/checkout/pay?beacon=${token}&source=custom&redirect_url=${redirectUrl}&cancel_url=${cancelUrl}`;
+    const checkoutUrl = `${SAFEPAY_API_BASE}/checkout/pay?env=${isSandbox ? 'sandbox' : 'production'}&beacon=${token}&source=custom&redirect_url=${redirectUrl}&cancel_url=${cancelUrl}`;
 
     return Response.json({ checkoutUrl, token });
 
