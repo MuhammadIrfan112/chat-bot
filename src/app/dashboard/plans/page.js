@@ -1,10 +1,12 @@
 'use client';
 import { useState } from 'react';
-import { Check, Zap, Shield, Star } from 'lucide-react';
+import { Check, Zap, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 export default function PlansPage() {
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const router = useRouter();
 
   const plans = [
     {
@@ -21,7 +23,8 @@ export default function PlansPage() {
       ],
       buttonText: 'Current Plan',
       isCurrent: true,
-      popular: false
+      popular: false,
+      planId: 'starter'
     },
     {
       name: 'Pro',
@@ -39,7 +42,8 @@ export default function PlansPage() {
       ],
       buttonText: 'Upgrade to Pro',
       isCurrent: false,
-      popular: true
+      popular: true,
+      planId: 'pro'
     }
   ];
 
@@ -77,7 +81,7 @@ export default function PlansPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap' }}>
         {plans.map((plan, index) => (
           <motion.div 
             key={plan.name}
@@ -86,7 +90,7 @@ export default function PlansPage() {
             transition={{ delay: index * 0.1 }}
             className="glass-panel"
             style={{ 
-              padding: '32px', borderRadius: '24px', position: 'relative', display: 'flex', flexDirection: 'column',
+              padding: '32px', borderRadius: '24px', position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '380px',
               border: plan.popular ? '2px solid var(--primary)' : '1px solid var(--border)',
               transform: plan.popular ? 'scale(1.02)' : 'scale(1)',
               zIndex: plan.popular ? 2 : 1
@@ -126,12 +130,15 @@ export default function PlansPage() {
             </div>
             
             <div style={{ marginTop: 'auto' }}>
-              <button style={{ 
-                width: '100%', padding: '14px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s',
-                background: plan.isCurrent ? 'rgba(255,255,255,0.05)' : plan.popular ? 'linear-gradient(90deg, #818CF8, #4F46E5)' : 'white',
-                color: plan.isCurrent ? 'var(--text-muted)' : plan.popular ? 'white' : 'black',
-                border: plan.isCurrent ? '1px solid var(--border)' : 'none'
-              }}>
+              <button 
+                onClick={() => router.push(`/dashboard/billing?plan=${plan.planId}&cycle=${billingCycle}&price=${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}`)}
+                style={{ 
+                  width: '100%', padding: '14px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s',
+                  background: plan.isCurrent ? 'rgba(255,255,255,0.05)' : plan.popular ? 'linear-gradient(90deg, #818CF8, #4F46E5)' : 'white',
+                  color: plan.isCurrent ? 'var(--text-muted)' : plan.popular ? 'white' : 'black',
+                  border: plan.isCurrent ? '1px solid var(--border)' : 'none'
+                }}
+              >
                 {plan.buttonText}
               </button>
             </div>
