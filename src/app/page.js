@@ -281,7 +281,97 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── Industry Demo Section ─── */}
+      <section style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '64px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(203,168,118,0.1)', padding: '5px 16px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', color: '#cba876', marginBottom: '20px', border: '1px solid rgba(203,168,118,0.25)' }}>
+              <Sparkles size={13} /> Live Industry Demos
+            </div>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F8FAFC' }}>
+              See BotFlow AI <span className="text-gradient-primary">working live</span>
+            </h2>
+            <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '520px', margin: '0 auto' }}>
+              Real chatbots, deployed on real websites. Click to experience the bot yourself.
+            </p>
+          </motion.div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
+            {/* Real Estate Demo Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 80 }}
+              style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(203,168,118,0.2)', borderRadius: '22px', overflow: 'hidden', transition: 'all 0.3s' }}
+              whileHover={{ y: -8, borderColor: 'rgba(203,168,118,0.5)', boxShadow: '0 20px 60px rgba(203,168,118,0.1)' }}
+            >
+              {/* Preview Banner */}
+              <div style={{ height: '180px', background: 'linear-gradient(135deg, #0f1115 0%, #1a1208 50%, #0f1115 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(203,168,118,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(203,168,118,0.04) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '200px', background: '#cba876', filter: 'blur(80px)', opacity: 0.12 }} />
+                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
+                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>🏠</div>
+                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'white', letterSpacing: '2px' }}>LUXE<span style={{ color: '#cba876' }}>REALTY</span></div>
+                  <div style={{ fontSize: '11px', color: '#cba876', letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>Luxury Real Estate</div>
+                </div>
+                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '50px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', display: 'inline-block' }} />
+                  <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700' }}>LIVE DEMO</span>
+                </div>
+              </div>
+
+              {/* Card Content */}
+              <div style={{ padding: '24px 28px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ background: 'rgba(203,168,118,0.12)', border: '1px solid rgba(203,168,118,0.25)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '700', color: '#cba876', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Real Estate
+                  </div>
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#F1F5F9', marginBottom: '8px', letterSpacing: '-0.02em' }}>Luxe Realty — Property Assistant</h3>
+                <p style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.7', marginBottom: '24px' }}>
+                  AI trained on 24 luxury property listings, agent bios, and company info. Answers buyer questions, qualifies leads, and books viewings automatically.
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {['Property Search', 'Lead Capture', 'Agent Info'].map((tag, i) => (
+                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#94A3B8' }}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div style={{ padding: '0 28px 28px' }}>
+                <a href="https://real-state-smoky.vercel.app" target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #cba876, #b3915f)', color: '#0f1115', fontWeight: '800', fontSize: '14px', textDecoration: 'none', transition: 'all 0.3s', letterSpacing: '0.02em' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <Globe size={16} /> Visit Live Demo
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Placeholder - Coming Soon Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 80 }}
+              style={{ background: 'rgba(15,23,42,0.5)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '22px', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '420px', padding: '40px', textAlign: 'center' }}
+            >
+              <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.4 }}>🏪</div>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#334155', marginBottom: '10px' }}>E-Commerce Demo</h3>
+              <p style={{ color: '#334155', fontSize: '14px', lineHeight: '1.6' }}>Coming soon. A live bot helping customers find products, track orders, and convert visits into sales.</p>
+              <div style={{ marginTop: '24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '50px', padding: '6px 16px', fontSize: '12px', color: '#475569', fontWeight: '600' }}>
+                🔜 Coming Soon
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Pricing ─── */}
+
       <section id="pricing" style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
         <div style={{ maxWidth: '820px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '56px' }}>
