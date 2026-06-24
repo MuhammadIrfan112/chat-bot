@@ -78,7 +78,7 @@ export default function MyBots() {
     } else {
       // CREATE NEW BOT
       if (bots.length >= 1) {
-        setCreateError('You can only create one chatbot per account. Please upgrade for more.');
+        setCreateError('You have reached the maximum limit of 1 chatbot for your account.');
         setCreating(false);
         return;
       }
