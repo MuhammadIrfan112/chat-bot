@@ -210,7 +210,7 @@ export default function Chatbot() {
   };
 
   const quickReplies = botConfig.botId 
-    ? ["What services do you offer?", "Can I see your pricing?", "Book a Free Call 📅"]
+    ? [] // Dynamic client bots don't have hardcoded generic options
     : ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
 
   return (
