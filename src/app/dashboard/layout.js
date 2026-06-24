@@ -13,6 +13,9 @@ export default function DashboardLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
   const [userEmail, setUserEmail] = useState('');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [websiteType, setWebsiteType] = useState('real-estate');
+  const [onboardingLoading, setOnboardingLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -23,6 +26,10 @@ export default function DashboardLayout({ children }) {
         router.push('/login');
       } else {
         setUserEmail(session.user.email);
+        
+        if (!session.user.user_metadata?.website_type) {
+          setShowOnboarding(true);
+        }
         const { data: sub } = await supabase
           .from('users_subscription')
           .select('status')
@@ -77,6 +84,45 @@ export default function DashboardLayout({ children }) {
       <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid var(--border-light)', borderTopColor: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
       <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
     </div>;
+  }
+
+  const handleSaveWebsiteType = async () => {
+    setOnboardingLoading(true);
+    await supabase.auth.updateUser({ data: { website_type: websiteType } });
+    setShowOnboarding(false);
+    setOnboardingLoading(false);
+  };
+
+  if (showOnboarding) {
+    return (
+      <div className={inter.className} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-page)', padding: '20px' }}>
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '40px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '16px' }}>Welcome to BotFlow! 👋</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '32px' }}>
+            Before you start, please tell us what kind of website you have so we can set up your dashboard correctly.
+          </p>
+          <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>Industry / Website Type</label>
+            <select
+              value={websiteType}
+              onChange={(e) => setWebsiteType(e.target.value)}
+              style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', outline: 'none' }}
+            >
+              <option value="real-estate" style={{ color: 'black' }}>Real Estate</option>
+              <option value="ecommerce" style={{ color: 'black' }}>E-commerce</option>
+              <option value="other" style={{ color: 'black' }}>Other</option>
+            </select>
+          </div>
+          <button
+            onClick={handleSaveWebsiteType}
+            disabled={onboardingLoading}
+            style={{ width: '100%', padding: '14px', background: 'linear-gradient(90deg, #818CF8, #4F46E5)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: onboardingLoading ? 'not-allowed' : 'pointer' }}
+          >
+            {onboardingLoading ? 'Saving...' : 'Continue to Dashboard'}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const navItems = [
