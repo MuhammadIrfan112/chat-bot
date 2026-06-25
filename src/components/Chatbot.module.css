@@ -122,6 +122,10 @@
   border: 1px solid #E5E7EB;
 }
 
+.modelMsg p, .modelMsg h1, .modelMsg h2, .modelMsg h3, .modelMsg li, .modelMsg strong, .modelMsg span {
+  color: #111827 !important;
+}
+
 .modelMsg img {
   max-width: 100%;
   height: auto;

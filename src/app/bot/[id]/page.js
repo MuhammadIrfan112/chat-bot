@@ -41,6 +41,7 @@ export default async function BotEmbedPage({ params }) {
           margin: 0 !important;
           padding: 0 !important;
           overflow: hidden !important;
+          color-scheme: light !important;
         }
         .chatbotContainer {
           bottom: 0 !important;
