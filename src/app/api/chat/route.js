@@ -310,7 +310,7 @@ ${qualifyingQuestions}`}
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama3-70b-8192', // Or llama-3.3-70b-versatile
+        model: 'llama-3.3-70b-versatile',
         messages: groqMessages,
         temperature: 0.7
       })
