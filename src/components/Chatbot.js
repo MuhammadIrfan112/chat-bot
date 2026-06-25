@@ -44,8 +44,9 @@ export default function Chatbot() {
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
   const [propData, setPropData] = useState({});
   const [propStepIndex, setPropStepIndex] = useState(0);
-  const [propLoopActive, setPropLoopActive] = useState(false); // restarts qualification after each result
-  const [botIndustry, setBotIndustry] = useState('Other');
+  const [propLoopActive, setPropLoopActive] = useState(false);
+  const [propStartPending, setPropStartPending] = useState(false); // start steps once industry loads
+  const [botIndustry, setBotIndustry] = useState('Loading');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
@@ -62,8 +63,12 @@ export default function Chatbot() {
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
 
-  // Determine which steps to use
-  const propSteps = botIndustry === 'Real Estate' ? RE_STEPS : botIndustry === 'E-Commerce' ? EC_STEPS : [];
+  // Determine which steps to use based on industry
+  // Default: client bots (with botId) use RE_STEPS unless E-Commerce
+  const propSteps = botIndustry === 'E-Commerce' ? EC_STEPS
+    : (botIndustry === 'Real Estate' || (!!botConfig.botId && botIndustry !== 'Other')) ? RE_STEPS
+    : botIndustry === 'Other' && !!botConfig.botId ? RE_STEPS  // default client bots to RE
+    : [];  // SaaS landing page
 
   useEffect(() => {
     if (isOpen && !sessionId) initSession();
@@ -87,18 +92,35 @@ export default function Chatbot() {
         return () => clearTimeout(timer);
       }
     }
-    // Fetch bot industry
+    // Fetch bot industry IMMEDIATELY on mount
     if (botConfig.botId) {
       fetch(`/api/bot-info?bot_id=${botConfig.botId}`)
         .then(r => r.json())
-        .then(d => { if (d.industry) setBotIndustry(d.industry); })
-        .catch(() => {});
+        .then(d => { setBotIndustry(d.industry || 'Real Estate'); }) // default to RE if missing
+        .catch(() => { setBotIndustry('Real Estate'); }); // fallback on error
+    } else {
+      setBotIndustry('Other'); // SaaS landing page
     }
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // When industry loads after saveLead already ran, start prop steps now
+  useEffect(() => {
+    if (propStartPending && propSteps.length > 0 && botIndustry !== 'Loading') {
+      setPropStartPending(false);
+      setPropStepIndex(0);
+      setPropData({});
+      setLeadStep('prop_0');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: propSteps[0].question }],
+        inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
+      }]);
+    }
+  }, [botIndustry, propStartPending]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -178,7 +200,15 @@ export default function Chatbot() {
         parts: [{ text: propSteps[0].question }],
         inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
       }]);
+    } else if (botIndustry === 'Loading') {
+      // Industry not yet loaded — mark pending, useEffect will start steps when it loads
+      setPropStartPending(true);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved. One moment while I prepare your search...` }]
+      }]);
     } else {
+      // Industry is 'Other' (SaaS page) — just open AI chat
       setLeadStep(null);
       setMessages(prev => [...prev, {
         role: 'model',
