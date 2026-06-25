@@ -357,8 +357,10 @@ export default function Chatbot() {
       } else {
         throw new Error("Empty response from AI");
       }
-    } catch {
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Sorry, something went wrong." }] }]);
+    } catch (e) {
+      console.error("Chat error:", e);
+      const errMsg = e.message ? `Error: ${e.message}` : "Sorry, something went wrong.";
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: errMsg }] }]);
     } finally {
       setIsLoading(false);
       setMessages(prev => {
