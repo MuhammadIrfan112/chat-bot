@@ -217,41 +217,49 @@ export default function Chatbot() {
     }
   };
 
-  // Send a composed property/product query to the AI
+  // Send a composed property/product query to the AI (fresh clean conversation)
   const sendPropertyQuery = async (finalPropData) => {
     setIsLoading(true);
-    const itemLabel = botIndustry === 'Real Estate' ? 'property' : botIndustry === 'E-Commerce' ? 'product' : 'item';
-    const parts = Object.entries(finalPropData)
-      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
-      .join(', ');
-    const composedQuery = `I am looking for a ${itemLabel} with the following requirements — ${parts}. Please show me the best matching ${itemLabel} from your inventory with full details and image.`;
+    const itemLabel = botIndustry === 'E-Commerce' ? 'product' : 'property';
+    
+    // Build a human-readable summary of requirements
+    const reqLines = Object.entries(finalPropData)
+      .map(([k, v]) => `• ${k.replace(/_/g, ' ')}: ${v}`)
+      .join('\n');
 
-    const queryMsg = { role: 'user', parts: [{ text: composedQuery }] };
-    // We keep conversation clean — don't add raw composed msg to UI, just send to AI
+    const composedQuery = `Please find me the best matching ${itemLabel} based on these requirements:\n${reqLines}\n\nShow full details: image, address, price, beds/baths/size, and a link to view more.`;
+
+    // Send ONLY this single query — no messy history. AI has system prompt + inventory.
+    const cleanMessages = [{ role: 'user', parts: [{ text: composedQuery }] }];
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, queryMsg],
+          messages: cleanMessages,
           session_id: sessionId,
           bot_id: botConfig.botId
         }),
       });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
       const data = await response.json();
       if (data.reply) {
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
-        // Mark loop active so next user message restarts qualification
         setPropLoopActive(true);
         setTimeout(() => {
           setMessages(prev => [...prev, {
             role: 'model',
             parts: [{ text: "Would you like to search with **different requirements**? Just type anything and I'll guide you through again! 😊" }]
           }]);
-        }, 500);
+        }, 600);
+      } else {
+        setMessages(prev => [...prev, { role: 'model', parts: [{ text: "I couldn't find an exact match, but please browse our listings on our website for more options!" }] }]);
       }
-    } catch {
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Sorry, something went wrong fetching properties." }] }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: "⚠️ Sorry, something went wrong while searching. Please try again in a moment." }] }]);
     } finally {
       setIsLoading(false);
     }
