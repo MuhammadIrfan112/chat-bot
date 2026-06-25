@@ -60,7 +60,9 @@ export default function Chatbot() {
 
   // Whether this is a client bot that should do property/product qualification
   const isClientBot = !!botConfig.botId;
-  const isQualifyingBot = isClientBot && botIndustry !== 'Other' && botIndustry !== 'Loading';
+  // Default to qualifying bot for all client bots, even if industry is 'Other' or missing.
+  // It will use Real Estate logic by default.
+  const isQualifyingBot = isClientBot && botIndustry !== 'Loading';
 
   // Helper to show the combined requirements question
   const showRequirementsQuestion = (setMsgs) => {
@@ -342,12 +344,18 @@ export default function Chatbot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [...messages, userMsg], session_id: sessionId, bot_id: botConfig.botId }),
       });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed");
+      }
       const data = await response.json();
       if (data.human_takeover) {
         setIsHumanTakeover(true);
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "🔄 You've been connected to a live agent. Please wait for their response..." }] }]);
       } else if (data.reply) {
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
+      } else {
+        throw new Error("Empty response from AI");
       }
     } catch {
       setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Sorry, something went wrong." }] }]);

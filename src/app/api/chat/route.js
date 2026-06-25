@@ -246,10 +246,10 @@ export async function POST(req) {
       }
     }
     
-    // Determine industry from database column, fallback to generic if missing
-    const botIndustry = botData?.industry || 'Other';
-    const isRealEstate = botIndustry === 'Real Estate';
+    // Determine industry from database column, fallback to Real Estate if missing
+    const botIndustry = botData?.industry || 'Real Estate';
     const isEcommerce = botIndustry === 'E-Commerce';
+    const isRealEstate = !isEcommerce; // Default all others to Real Estate
     
     const qualifyingQuestions = isRealEstate
       ? `You are now in PROPERTY QUALIFICATION MODE. Follow this process STRICTLY:
@@ -325,6 +325,6 @@ ${qualifyingQuestions}`}
     return Response.json({ reply: replyText });
   } catch (error) {
     console.error("Chat API Error:", error);
-    return Response.json({ error: "Failed to generate response." }, { status: 500 });
+    return Response.json({ error: error.message || "Failed to generate response." }, { status: 500 });
   }
 }
