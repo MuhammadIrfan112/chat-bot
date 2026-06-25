@@ -16,8 +16,23 @@ const getVisitorId = () => {
   return id;
 };
 
-// Calendly URL - replace with actual client Calendly link
 const CALENDLY_URL = 'https://calendly.com/dariaodum1/30min';
+
+// Property qualification steps config (Real Estate)
+const RE_STEPS = [
+  { key: 'bedrooms',  icon: '🛏️', question: 'How many **bedrooms** are you looking for?',               placeholder: 'e.g. 3, 4, 5 bedrooms...' },
+  { key: 'bathrooms', icon: '🚿', question: 'Great! And how many **bathrooms** do you need?',            placeholder: 'e.g. 2, 3 bathrooms...'  },
+  { key: 'size',      icon: '📐', question: 'What **size** property are you looking for?',               placeholder: 'e.g. 2000 sqft, 5 marla...' },
+  { key: 'area',      icon: '📍', question: 'Which **area or city** are you interested in?',             placeholder: 'e.g. Beverly Hills, Lahore...' },
+  { key: 'budget',    icon: '💰', question: 'And finally, what is your **budget** for this property?',   placeholder: 'e.g. $500,000 or PKR 2 crore...' },
+];
+
+// E-Commerce qualification steps
+const EC_STEPS = [
+  { key: 'product_type', icon: '🛍️', question: 'What type of **product** are you looking for?',        placeholder: 'e.g. shoes, jacket, phone...' },
+  { key: 'size_color',   icon: '🎨', question: 'Any preference on **size or color**?',                  placeholder: 'e.g. Large, Red, XL...' },
+  { key: 'budget',       icon: '💰', question: 'What is your **budget** for this product?',              placeholder: 'e.g. $100, $500...' },
+];
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,14 +40,18 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadStep, setLeadStep] = useState(null); // 'name' | 'phone' | 'email'
+  const [leadStep, setLeadStep] = useState(null);
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
+  const [propData, setPropData] = useState({});
+  const [propStepIndex, setPropStepIndex] = useState(0);
+  const [botIndustry, setBotIndustry] = useState('Other');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
-  
+
   const messagesEndRef = useRef(null);
   const messageCount = useRef(0);
+  const pollRef = useRef(null);
 
   const botConfig = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
@@ -41,31 +60,22 @@ export default function Chatbot() {
     primaryColor: '#4F46E5',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
-  const pollRef = useRef(null);
+
+  // Determine which steps to use
+  const propSteps = botIndustry === 'Real Estate' ? RE_STEPS : botIndustry === 'E-Commerce' ? EC_STEPS : [];
 
   useEffect(() => {
-    if (isOpen && !sessionId) {
-      initSession();
-    }
-    
-    // Notify parent window (if in iframe) about size change
+    if (isOpen && !sessionId) initSession();
     if (typeof window !== 'undefined' && window.parent) {
       window.parent.postMessage({ type: 'CHATBOT_TOGGLE', isOpen }, '*');
     }
   }, [isOpen]);
 
   useEffect(() => {
-    // Determine configuration on load
-    const isClientSite = !!botConfig.botId;
-    
-    // Set Welcome Message
-    const defaultWelcome = botConfig.welcomeMessage;
-      
     if (messages.length === 0) {
-      setMessages([{ role: 'model', parts: [{ text: defaultWelcome }] }]);
+      setMessages([{ role: 'model', parts: [{ text: botConfig.welcomeMessage }] }]);
     }
-
-    // Auto-open on the SaaS Landing Page after 1.5 seconds, but ONLY ONCE per session
+    const isClientSite = !!botConfig.botId;
     if (!isClientSite) {
       const hasOpened = sessionStorage.getItem('botflow_auto_opened');
       if (!hasOpened) {
@@ -76,16 +86,21 @@ export default function Chatbot() {
         return () => clearTimeout(timer);
       }
     }
+    // Fetch bot industry
+    if (botConfig.botId) {
+      fetch(`/api/bot-info?bot_id=${botConfig.botId}`)
+        .then(r => r.json())
+        .then(d => { if (d.industry) setBotIndustry(d.industry); })
+        .catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Poll for admin messages when human takeover is active
   useEffect(() => {
     if (!sessionId) return;
-
     pollRef.current = setInterval(async () => {
       const res = await fetch(`/api/poll-messages?session_id=${sessionId}&last_count=${messages.length}`);
       const data = await res.json();
@@ -96,11 +111,8 @@ export default function Chatbot() {
           }
         });
       }
-      if (data.is_human_takeover !== undefined) {
-        setIsHumanTakeover(data.is_human_takeover);
-      }
+      if (data.is_human_takeover !== undefined) setIsHumanTakeover(data.is_human_takeover);
     }, 3000);
-
     return () => clearInterval(pollRef.current);
   }, [sessionId, messages.length]);
 
@@ -120,18 +132,18 @@ export default function Chatbot() {
   };
 
   const checkLeadTrigger = (count, currentMessages) => {
-    // Trigger lead capture immediately after the FIRST user message gets a reply
     if (count >= 1 && !leadCaptured && leadStep === null) {
       const conversationText = currentMessages
         .filter(m => m.role === 'user')
         .map(m => m.parts[0].text)
         .join(', ');
-      
+
       setTimeout(() => {
         setLeadData(prev => ({ ...prev, property_interest: conversationText.slice(0, 300) }));
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: "To help you find the best options, I need a little bit of information from you first. May I get your name? 😊" }]
+          parts: [{ text: "To assist you better, I need a few details first. 😊" }],
+          inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
         }]);
         setLeadStep('name');
       }, 800);
@@ -142,21 +154,74 @@ export default function Chatbot() {
     await fetch('/api/save-lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        name, 
-        email, 
+      body: JSON.stringify({
+        name, email,
         phone_number: phone,
         property_interest,
-        chatbot_source: botConfig.botName || 'Website Chatbot', 
-        bot_id: botConfig.botId 
+        chatbot_source: botConfig.botName || 'Website Chatbot',
+        bot_id: botConfig.botId
       })
     });
     setLeadCaptured(true);
-    setLeadStep(null);
-    setMessages(prev => [...prev, {
-      role: 'model',
-      parts: [{ text: `Thank you, ${name}! 🎉 We have saved your contact details.\n\nNow, let me help you find your perfect home! Could you tell me **what area or city** you are looking for a property in?` }]
-    }]);
+
+    // If we have property steps, start them; otherwise open AI loop
+    if (propSteps.length > 0) {
+      setPropStepIndex(0);
+      setPropData({});
+      setLeadStep('prop_0');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved. Now let me help you find exactly what you're looking for!` }]
+      }, {
+        role: 'model',
+        parts: [{ text: propSteps[0].question }],
+        inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
+      }]);
+    } else {
+      setLeadStep(null);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thank you, ${name}! 🎉 Details saved. How can I help you further?` }]
+      }]);
+    }
+  };
+
+  // Send a composed property query to the AI
+  const sendPropertyQuery = async (finalPropData) => {
+    setIsLoading(true);
+    const parts = Object.entries(finalPropData)
+      .map(([k, v]) => `${k.replace('_', ' ')}: ${v}`)
+      .join(', ');
+    const composedQuery = `I am looking for a property with the following requirements — ${parts}. Please show me the best matching property from your inventory with full details and image.`;
+
+    const queryMsg = { role: 'user', parts: [{ text: composedQuery }] };
+    // We keep conversation clean — don't add raw composed msg to UI, just send to AI
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, queryMsg],
+          session_id: sessionId,
+          bot_id: botConfig.botId
+        }),
+      });
+      const data = await response.json();
+      if (data.reply) {
+        setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
+        // Add a natural follow-up prompt so the user knows the loop continues
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{ text: "Would you like to search with **different requirements**? Just tell me what you'd like to change! 😊" }]
+          }]);
+        }, 500);
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Sorry, something went wrong fetching properties." }] }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSend = async (text) => {
@@ -167,37 +232,78 @@ export default function Chatbot() {
     const userMsg = { role: 'user', parts: [{ text: msg }] };
     setMessages(prev => [...prev, userMsg]);
 
-    // Lead capture flow
+    // ── Lead info collection ──────────────────────────────────────
     if (leadStep === 'name') {
       setLeadData(prev => ({ ...prev, name: msg }));
       setLeadStep('phone');
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Nice to meet you, ${msg}! 👋 What is your phone number so we can contact you quickly?` }] }]);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Nice to meet you, ${msg}! 👋` }],
+        inputCard: { icon: '📞', label: 'Phone Number', placeholder: 'e.g. 0300-1234567 or +92 300 1234567...' }
+      }]);
       return;
     }
 
     if (leadStep === 'phone') {
       const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
       if (!phoneRegex.test(msg.trim())) {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: "Please enter a valid phone number (e.g. 0300-1234567 or +92 300 1234567):" }] }]);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: "Please enter a valid phone number:" }],
+          inputCard: { icon: '📞', label: 'Phone Number', placeholder: 'e.g. 0300-1234567...' }
+        }]);
         return;
       }
       setLeadData(prev => ({ ...prev, phone: msg }));
       setLeadStep('email');
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: `Perfect! 📧 And what's the best email address to reach you?` }] }]);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Perfect! 📧` }],
+        inputCard: { icon: '✉️', label: 'Email Address', placeholder: 'e.g. name@example.com...' }
+      }]);
       return;
     }
 
     if (leadStep === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(msg)) {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: "That doesn't look like a valid email. Please try again (e.g. name@example.com):" }] }]);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: "That doesn't look like a valid email. Please try again:" }],
+          inputCard: { icon: '✉️', label: 'Email Address', placeholder: 'e.g. name@example.com...' }
+        }]);
         return;
       }
       await saveLead(leadData.name, leadData.phone, msg, leadData.property_interest);
       return;
     }
 
-    // If human has taken over, just show waiting message
+    // ── Property/Product qualification steps ─────────────────────
+    if (leadStep && leadStep.startsWith('prop_')) {
+      const idx = parseInt(leadStep.split('_')[1]);
+      const currentStep = propSteps[idx];
+      const updatedPropData = { ...propData, [currentStep.key]: msg };
+      setPropData(updatedPropData);
+
+      const nextIdx = idx + 1;
+      if (nextIdx < propSteps.length) {
+        // Ask next question
+        setPropStepIndex(nextIdx);
+        setLeadStep(`prop_${nextIdx}`);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: propSteps[nextIdx].question }],
+          inputCard: { icon: propSteps[nextIdx].icon, label: propSteps[nextIdx].key, placeholder: propSteps[nextIdx].placeholder }
+        }]);
+      } else {
+        // All steps done — send to AI
+        setLeadStep(null);
+        await sendPropertyQuery(updatedPropData);
+      }
+      return;
+    }
+
+    // ── Human takeover ────────────────────────────────────────────
     if (isHumanTakeover) {
       await fetch('/api/send-message', {
         method: 'POST',
@@ -207,19 +313,16 @@ export default function Chatbot() {
       return;
     }
 
-    // Normal AI chat
+    // ── Normal AI chat (property loop after qualification) ────────
     setIsLoading(true);
     messageCount.current += 1;
 
     try {
-      const botId = botConfig.botId;
-
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMsg], session_id: sessionId, bot_id: botId }),
+        body: JSON.stringify({ messages: [...messages, userMsg], session_id: sessionId, bot_id: botConfig.botId }),
       });
-
       const data = await response.json();
       if (data.human_takeover) {
         setIsHumanTakeover(true);
@@ -238,8 +341,21 @@ export default function Chatbot() {
     }
   };
 
-  const quickReplies = botConfig.botId 
-    ? [] // Dynamic client bots don't have hardcoded generic options
+  // Input placeholder text based on current step
+  const getPlaceholder = () => {
+    if (leadStep === 'name') return 'Enter your full name...';
+    if (leadStep === 'phone') return 'Enter your phone number...';
+    if (leadStep === 'email') return 'Enter your email address...';
+    if (leadStep && leadStep.startsWith('prop_')) {
+      const idx = parseInt(leadStep.split('_')[1]);
+      return propSteps[idx]?.placeholder || 'Type your answer...';
+    }
+    if (isHumanTakeover) return 'Message live agent...';
+    return 'Type your message...';
+  };
+
+  const quickReplies = botConfig.botId
+    ? []
     : ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
 
   return (
@@ -263,26 +379,49 @@ export default function Chatbot() {
             {messages.map((msg, idx) => (
               <div key={idx} className={`${styles.message} ${msg.role === 'user' ? styles.userMsg : styles.modelMsg}`}>
                 {msg.role === 'model' ? (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({node, ...props}) => <p style={{ margin: '0 0 10px 0' }} {...props} />,
-                      ul: ({node, ...props}) => <ul style={{ paddingLeft: '20px', margin: '0 0 10px 0' }} {...props} />,
-                      ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '0 0 10px 0' }} {...props} />,
-                      li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
-                      a: ({node, ...props}) => <a style={{ color: 'var(--primary)', textDecoration: 'underline' }} target="_blank" {...props} />,
-                      strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />,
-                      img: ({node, src, alt, ...props}) => (
-                        <img 
-                          src={src} alt={alt || 'Property'} 
-                          style={{ maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '8px', display: 'block' }} 
-                          {...props} 
-                        />
-                      )
-                    }}
-                  >
-                    {msg.parts[0].text}
-                  </ReactMarkdown>
+                  <>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({node, ...props}) => <p style={{ margin: '0 0 8px 0' }} {...props} />,
+                        ul: ({node, ...props}) => <ul style={{ paddingLeft: '20px', margin: '0 0 8px 0' }} {...props} />,
+                        ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '0 0 8px 0' }} {...props} />,
+                        li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
+                        a: ({node, ...props}) => <a style={{ color: 'var(--primary)', textDecoration: 'underline' }} target="_blank" {...props} />,
+                        strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />,
+                        img: ({node, src, alt, ...props}) => (
+                          <img
+                            src={src} alt={alt || 'Property'}
+                            style={{ maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '8px', display: 'block' }}
+                            {...props}
+                          />
+                        )
+                      }}
+                    >
+                      {msg.parts[0].text}
+                    </ReactMarkdown>
+
+                    {/* Styled Input Card shown inside chat bubble */}
+                    {msg.inputCard && (
+                      <div style={{
+                        marginTop: '10px',
+                        backgroundColor: 'rgba(255,255,255,0.15)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '13px',
+                        color: 'inherit',
+                        opacity: 0.8
+                      }}>
+                        <span style={{ fontSize: '18px' }}>{msg.inputCard.icon}</span>
+                        <span style={{ flex: 1, fontStyle: 'italic' }}>{msg.inputCard.placeholder}</span>
+                        <span style={{ fontSize: '11px', opacity: 0.6, whiteSpace: 'nowrap' }}>↓ Type below</span>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   msg.parts[0].text
                 )}
@@ -296,7 +435,7 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Calendly Booking Popup */}
+          {/* Calendly Popup */}
           {showCalendly && (
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff', zIndex: 10, display: 'flex', flexDirection: 'column', borderRadius: '16px', overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', backgroundColor: '#12213B', color: 'white' }}>
@@ -317,9 +456,9 @@ export default function Chatbot() {
                 <button key={idx} onClick={() => {
                   if (reply === 'Book a Free Call 📅') {
                     setShowCalendly(true);
-                    setMessages(prev => [...prev, 
+                    setMessages(prev => [...prev,
                       { role: 'user', parts: [{ text: reply }] },
-                      { role: 'model', parts: [{ text: "Great! Opening the booking calendar for you right now. Pick a time that works best for you! 📅" }] }
+                      { role: 'model', parts: [{ text: "Great! Opening the booking calendar for you right now. Pick a time that works best! 📅" }] }
                     ]);
                   } else {
                     handleSend(reply);
@@ -329,7 +468,6 @@ export default function Chatbot() {
             </div>
           )}
 
-          {/* Book a Call Button (always visible) */}
           {!showCalendly && messages.length > 1 && (
             <div style={{ padding: '6px 12px', borderTop: '1px solid #F3F4F6' }}>
               <button
@@ -347,7 +485,7 @@ export default function Chatbot() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-              placeholder={leadStep === 'name' ? "Enter your name..." : leadStep === 'phone' ? "Enter your phone number..." : leadStep === 'email' ? "Enter your email..." : isHumanTakeover ? "Message live agent..." : "Type your message..."}
+              placeholder={getPlaceholder()}
               className={styles.input}
             />
             <button onClick={() => handleSend()} className={styles.sendBtn}>Send</button>
