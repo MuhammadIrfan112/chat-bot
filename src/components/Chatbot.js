@@ -18,21 +18,19 @@ const getVisitorId = () => {
 
 const CALENDLY_URL = 'https://calendly.com/dariaodum1/30min';
 
-// Property qualification steps config (Real Estate)
-const RE_STEPS = [
-  { key: 'bedrooms',  icon: '🛏️', question: 'How many **bedrooms** are you looking for?',               placeholder: 'e.g. 3, 4, 5 bedrooms...' },
-  { key: 'bathrooms', icon: '🚿', question: 'Great! And how many **bathrooms** do you need?',            placeholder: 'e.g. 2, 3 bathrooms...'  },
-  { key: 'size',      icon: '📐', question: 'What **size** property are you looking for?',               placeholder: 'e.g. 2000 sqft, 5 marla...' },
-  { key: 'area',      icon: '📍', question: 'Which **area or city** are you interested in?',             placeholder: 'e.g. Beverly Hills, Lahore...' },
-  { key: 'budget',    icon: '💰', question: 'And finally, what is your **budget** for this property?',   placeholder: 'e.g. $500,000 or PKR 2 crore...' },
-];
-
-// E-Commerce qualification steps
-const EC_STEPS = [
-  { key: 'product_type', icon: '🛍️', question: 'What type of **product** are you looking for?',        placeholder: 'e.g. shoes, jacket, phone...' },
-  { key: 'size_color',   icon: '🎨', question: 'Any preference on **size or color**?',                  placeholder: 'e.g. Large, Red, XL...' },
-  { key: 'budget',       icon: '💰', question: 'What is your **budget** for this product?',              placeholder: 'e.g. $100, $500...' },
-];
+// Combined requirements question per industry
+const getRequirementsQuestion = (industry) => {
+  if (industry === 'E-Commerce') {
+    return {
+      text: `Please tell me what you're looking for — all in **one message**: 🛍️\n\n- What **type of product**? (e.g. shoes, jacket, phone)\n- Any **size or color** preference?\n- What is your **budget**?\n\n*Example: "Red Nike shoes, size 10, budget $150"*`,
+      placeholder: 'e.g. Red Nike shoes, size 10, budget $150...'
+    };
+  }
+  return {
+    text: `Great! To find your perfect home, please tell me all your requirements **in one message**: 🏡\n\n- How many **bedrooms**?\n- How many **bathrooms**?\n- What **size**? (sqft / marla / kanal)\n- Which **area or city**?\n- What is your **budget**?\n\n*Example: "3 beds, 2 baths, 2000 sqft, Beverly Hills, $1.5M"*`,
+    placeholder: 'e.g. 3 beds, 2 baths, 2000 sqft, Beverly Hills, $1.5M...'
+  };
+};
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,12 +38,9 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadStep, setLeadStep] = useState(null);
+  const [leadStep, setLeadStep] = useState(null); // null | 'name' | 'phone' | 'email' | 'requirements'
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
-  const [propData, setPropData] = useState({});
-  const [propStepIndex, setPropStepIndex] = useState(0);
   const [propLoopActive, setPropLoopActive] = useState(false);
-  const [propStartPending, setPropStartPending] = useState(false); // start steps once industry loads
   const [botIndustry, setBotIndustry] = useState('Loading');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
@@ -63,12 +58,19 @@ export default function Chatbot() {
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
 
-  // Determine which steps to use based on industry
-  // Default: client bots (with botId) use RE_STEPS unless E-Commerce
-  const propSteps = botIndustry === 'E-Commerce' ? EC_STEPS
-    : (botIndustry === 'Real Estate' || (!!botConfig.botId && botIndustry !== 'Other')) ? RE_STEPS
-    : botIndustry === 'Other' && !!botConfig.botId ? RE_STEPS  // default client bots to RE
-    : [];  // SaaS landing page
+  // Whether this is a client bot that should do property/product qualification
+  const isClientBot = !!botConfig.botId;
+  const isQualifyingBot = isClientBot && botIndustry !== 'Other' && botIndustry !== 'Loading';
+
+  // Helper to show the combined requirements question
+  const showRequirementsQuestion = (setMsgs) => {
+    const q = getRequirementsQuestion(botIndustry);
+    setMsgs(prev => [...prev, {
+      role: 'model',
+      parts: [{ text: q.text }],
+      inputCard: { icon: '🏡', label: 'Your Requirements', placeholder: q.placeholder }
+    }]);
+  };
 
   useEffect(() => {
     if (isOpen && !sessionId) initSession();
@@ -107,20 +109,12 @@ export default function Chatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // When industry loads after saveLead already ran, start prop steps now
+  // When industry loads, if we were waiting to show requirements question, show it now
   useEffect(() => {
-    if (propStartPending && propSteps.length > 0 && botIndustry !== 'Loading') {
-      setPropStartPending(false);
-      setPropStepIndex(0);
-      setPropData({});
-      setLeadStep('prop_0');
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: propSteps[0].question }],
-        inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
-      }]);
+    if (isQualifyingBot && leadCaptured && leadStep === 'requirements') {
+      // re-trigger message if industry just became known
     }
-  }, [botIndustry, propStartPending]);
+  }, [botIndustry]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -187,32 +181,21 @@ export default function Chatbot() {
     });
     setLeadCaptured(true);
 
-    // If we have property steps, start them; otherwise open AI loop
-    if (propSteps.length > 0) {
-      setPropStepIndex(0);
-      setPropData({});
-      setLeadStep('prop_0');
+    if (botIndustry === 'Loading' || isQualifyingBot) {
+      // Show combined requirements question
+      setLeadStep('requirements');
+      const q = getRequirementsQuestion(botIndustry === 'Loading' ? 'Real Estate' : botIndustry);
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved. Now let me help you find exactly what you're looking for!` }]
-      }, {
-        role: 'model',
-        parts: [{ text: propSteps[0].question }],
-        inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
-      }]);
-    } else if (botIndustry === 'Loading') {
-      // Industry not yet loaded — mark pending, useEffect will start steps when it loads
-      setPropStartPending(true);
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved. One moment while I prepare your search...` }]
+        parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved.\n\n${q.text}` }],
+        inputCard: { icon: '🏡', label: 'Your Requirements', placeholder: q.placeholder }
       }]);
     } else {
-      // Industry is 'Other' (SaaS page) — just open AI chat
+      // SaaS landing page — open AI chat
       setLeadStep(null);
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Thank you, ${name}! 🎉 Details saved. How can I help you further?` }]
+        parts: [{ text: `Thank you, ${name}! 🎉 Details saved. How can I help you?` }]
       }]);
     }
   };
@@ -319,28 +302,10 @@ export default function Chatbot() {
       return;
     }
 
-    // ── Property/Product qualification steps ─────────────────────
-    if (leadStep && leadStep.startsWith('prop_')) {
-      const idx = parseInt(leadStep.split('_')[1]);
-      const currentStep = propSteps[idx];
-      const updatedPropData = { ...propData, [currentStep.key]: msg };
-      setPropData(updatedPropData);
-
-      const nextIdx = idx + 1;
-      if (nextIdx < propSteps.length) {
-        // Ask next question
-        setPropStepIndex(nextIdx);
-        setLeadStep(`prop_${nextIdx}`);
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: [{ text: propSteps[nextIdx].question }],
-          inputCard: { icon: propSteps[nextIdx].icon, label: propSteps[nextIdx].key, placeholder: propSteps[nextIdx].placeholder }
-        }]);
-      } else {
-        // All steps done — send to AI
-        setLeadStep(null);
-        await sendPropertyQuery(updatedPropData);
-      }
+    // ── Requirements (all-at-once) step ─────────────────────────
+    if (leadStep === 'requirements') {
+      setLeadStep(null);
+      await sendRequirementsToAI(msg);
       return;
     }
 
@@ -354,17 +319,15 @@ export default function Chatbot() {
       return;
     }
 
-    // ── Normal AI chat (property loop after qualification) ────────
-    // If property loop is active, restart qualification steps instead of free AI
-    if (propLoopActive && propSteps.length > 0) {
+    // ── Loop: re-show combined question after each result ─────────
+    if (propLoopActive && isQualifyingBot) {
       setPropLoopActive(false);
-      setPropData({});
-      setPropStepIndex(0);
-      setLeadStep('prop_0');
+      setLeadStep('requirements');
+      const q = getRequirementsQuestion(botIndustry);
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: propSteps[0].question }],
-        inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
+        parts: [{ text: q.text }],
+        inputCard: { icon: '🔄', label: 'New Requirements', placeholder: q.placeholder }
       }]);
       return;
     }
@@ -402,9 +365,9 @@ export default function Chatbot() {
     if (leadStep === 'name') return 'Enter your full name...';
     if (leadStep === 'phone') return 'Enter your phone number...';
     if (leadStep === 'email') return 'Enter your email address...';
-    if (leadStep && leadStep.startsWith('prop_')) {
-      const idx = parseInt(leadStep.split('_')[1]);
-      return propSteps[idx]?.placeholder || 'Type your answer...';
+    if (leadStep === 'requirements') {
+      const q = getRequirementsQuestion(botIndustry);
+      return q.placeholder;
     }
     if (isHumanTakeover) return 'Message live agent...';
     return 'Type your message...';

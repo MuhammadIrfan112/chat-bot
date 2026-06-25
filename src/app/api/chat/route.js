@@ -252,17 +252,16 @@ export async function POST(req) {
     const isEcommerce = botIndustry === 'E-Commerce';
     
     const qualifyingQuestions = isRealEstate
-      ? `You are now in PROPERTY QUALIFICATION MODE. Follow these 5 steps STRICTLY, ONE AT A TIME, IN ORDER. Do NOT show any property until ALL 5 answers are collected:
-   STEP 1 - LOCATION: If the user has not yet told you a location/area, ask it now. Move to Step 2 only after they answer.
-   STEP 2 - BEDROOMS: Ask how many bedrooms they need. Move to Step 3 only after they answer.
-   STEP 3 - BATHROOMS: Ask how many bathrooms they need. Move to Step 4 only after they answer.
-   STEP 4 - SIZE: Ask the size they prefer (sqft, marla, kanal, etc). Move to Step 5 only after they answer.
-   STEP 5 - BUDGET: Ask their budget range. Move to Step 6 only after they answer.
-   STEP 6 - SHOW PROPERTY: ONLY after collecting ALL 5 answers, show the best matching property from inventory with full details (image, address, beds, baths, size, price) and website link.
+      ? `You are now in PROPERTY QUALIFICATION MODE. Follow this process STRICTLY:
+   STEP 1: The user will provide their requirements (Location, Bedrooms, Bathrooms, Size, Budget).
+   STEP 2: Review their message. If ANY of these 5 requirements are missing, ask them specifically for the missing information in a friendly way.
+   STEP 3: ONLY AFTER you have collected ALL 5 requirements (Location, Bedrooms, Bathrooms, Size, Budget), show the best matching property from your inventory with full details (image, address, beds, baths, size, price) and website link.
    
-   ABSOLUTE RULE: Even if you already know a matching property from the inventory, you MUST NEVER show it before completing ALL 5 steps. Never ask 2 questions at once. Never skip a step.`
+   ABSOLUTE RULE: Never show a property if you do not have all 5 requirements. If they provided 3, ask for the remaining 2.`
       : isEcommerce
-      ? `   - First ask: what type of product they need (e.g., category, color, size)\n   - Then ask: their budget range\n   - Only AFTER gathering these details, recommend the best matching product from inventory.`
+      ? `   - The user will provide their requirements. Ensure you have: product type, size/color preference, and budget.
+   - If any of these are missing, ask specifically for the missing details.
+   - Only AFTER gathering all details, recommend the best matching product from inventory.`
       : `   - Ask 1-2 qualifying questions about their specific needs and budget\n   - Only AFTER gathering these details, recommend the best matching item.`;
     
     let systemInstruction = `You are an expert, professional AI Sales Consultant for ${botName}, representing the website: ${websiteUrl}.
