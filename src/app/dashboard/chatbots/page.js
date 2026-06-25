@@ -153,7 +153,31 @@ export default function MyBots() {
   };
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Embed code copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    } else {
+      // Fallback for HTTP or older browsers
+      let textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        alert('Embed code copied to clipboard!');
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+        alert('Failed to copy. Please copy the code manually.');
+      }
+      textArea.remove();
+    }
   };
 
   if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#6B7280' }}>Loading...</div>;
