@@ -44,6 +44,7 @@ export default function Chatbot() {
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
   const [propData, setPropData] = useState({});
   const [propStepIndex, setPropStepIndex] = useState(0);
+  const [propLoopActive, setPropLoopActive] = useState(false); // restarts qualification after each result
   const [botIndustry, setBotIndustry] = useState('Other');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
@@ -209,11 +210,12 @@ export default function Chatbot() {
       const data = await response.json();
       if (data.reply) {
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
-        // Add a natural follow-up prompt so the user knows the loop continues
+        // Mark loop active so next user message restarts qualification
+        setPropLoopActive(true);
         setTimeout(() => {
           setMessages(prev => [...prev, {
             role: 'model',
-            parts: [{ text: "Would you like to search with **different requirements**? Just tell me what you'd like to change! 😊" }]
+            parts: [{ text: "Would you like to search with **different requirements**? Just type anything and I'll guide you through again! 😊" }]
           }]);
         }, 500);
       }
@@ -314,6 +316,21 @@ export default function Chatbot() {
     }
 
     // ── Normal AI chat (property loop after qualification) ────────
+    // If property loop is active, restart qualification steps instead of free AI
+    if (propLoopActive && propSteps.length > 0) {
+      setPropLoopActive(false);
+      setPropData({});
+      setPropStepIndex(0);
+      setLeadStep('prop_0');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: propSteps[0].question }],
+        inputCard: { icon: propSteps[0].icon, label: propSteps[0].key, placeholder: propSteps[0].placeholder }
+      }]);
+      return;
+    }
+
+    // Normal AI chat
     setIsLoading(true);
     messageCount.current += 1;
 
