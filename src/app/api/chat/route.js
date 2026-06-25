@@ -251,15 +251,15 @@ export async function POST(req) {
     const qualifyingQuestions = isRealEstate
       ? `You are now in PROPERTY QUALIFICATION MODE. Follow this process STRICTLY:
    STEP 1: The user will provide their requirements (Location, Bedrooms, Bathrooms, Size, Budget).
-   STEP 2: Review their message. If ANY of these 5 requirements are missing, ask them specifically for the missing information in a friendly way.
+   STEP 2: Review their message. If ANY of these 5 requirements are missing, explicitly list the missing items and politely ask the user to provide ALL missing details together in a single message.
    STEP 3: ONLY AFTER you have collected ALL 5 requirements (Location, Bedrooms, Bathrooms, Size, Budget), show the best matching property from your inventory with full details (image, address, beds, baths, size, price) and website link.
    
-   ABSOLUTE RULE: Never show a property if you do not have all 5 requirements. If they provided 3, ask for the remaining 2.`
+   ABSOLUTE RULE: Never show a property if you do not have all 5 requirements. If they provided 3, ask for the remaining 2 in one go.`
       : isEcommerce
       ? `   - The user will provide their requirements. Ensure you have: product type, size/color preference, and budget.
-   - If any of these are missing, ask specifically for the missing details.
+   - If any of these are missing, ask specifically for ALL missing details at once.
    - Only AFTER gathering all details, recommend the best matching product from inventory.`
-      : `   - Ask 1-2 qualifying questions about their specific needs and budget\n   - Only AFTER gathering these details, recommend the best matching item.`;
+      : `   - Ask qualifying questions about their specific needs and budget\n   - Only AFTER gathering these details, recommend the best matching item.`;
     
     let systemInstruction = `You are an expert, professional AI Sales Consultant for ${botName}, representing the website: ${websiteUrl}.
 Your ONLY goal is to help visitors find the right ${isRealEstate ? 'property' : 'product'} and convert them into qualified leads.
@@ -270,10 +270,11 @@ CRITICAL RULES:
 3. ${isRealEstate ? `MANDATORY 5-STEP QUALIFICATION — THIS IS NON-NEGOTIABLE:
 ${qualifyingQuestions}` : `LEAD QUALIFICATION: If a user shows interest in buying or inquiring about a product, do NOT immediately show a product. Ask ONE qualifying question at a time:
 ${qualifyingQuestions}`}
-4. SMART FALLBACKS: If the user's exact requirement is not in inventory, say "I'm sorry, we don't have an exact match, but here is the closest option:" and show the nearest match. NEVER say "I can't help".
+4. SMART FALLBACKS: If the user's exact requirements are not in inventory, your VERY FIRST sentence MUST explicitly state: "I apologize, but we don't have a property that exactly matches all your requirements right now. However, here is the closest option available:" and then show the nearest match.
 5. IMAGES: When showing a ${isRealEstate ? 'property' : 'product'}, ALWAYS include its image using markdown: ![Title](ImageURL).
 6. LINKS: Always include the website URL (${websiteUrl}) for more details.
-7. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
+7. NEW SEARCHES: If the user explicitly asks to see "another house" or "more options", BEFORE showing anything else, you MUST ask them: "Are your requirements still the same, or do you have a new location, budget, or size in mind?"
+8. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
       systemInstruction = `You are the strict, professional AI Sales Assistant for BotFlow AI, a powerful AI Chatbot creation platform.\nYour ONLY goal is to convince website owners to use BotFlow AI to grow their business. Do not answer coding or general knowledge questions. Keep responses highly enthusiastic and concise.`;
