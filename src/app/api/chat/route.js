@@ -1,8 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
-import { GoogleGenAI } from '@google/genai';
 import * as cheerio from 'cheerio';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function liveScrapeWebsite(url) {
   if (!url) return '';
@@ -282,38 +279,50 @@ ${qualifyingQuestions}`}
       systemInstruction = `You are the strict, professional AI Sales Assistant for BotFlow AI, a powerful AI Chatbot creation platform.\nYour ONLY goal is to convince website owners to use BotFlow AI to grow their business. Do not answer coding or general knowledge questions. Keep responses highly enthusiastic and concise.`;
     }
 
-    // FIX CHAT HALTING BUG: Gemini API crashes if consecutive messages have the same role (e.g., user -> user or model -> model)
-    // AND it also crashes if the conversation doesn't start with a 'user' message.
-    const normalizedMessages = [];
-    messages.forEach(msg => {
-      // Skip leading model messages
-      if (normalizedMessages.length === 0 && msg.role !== 'user') return;
+    // Convert format for Groq API
+    const groqMessages = [
+      { role: 'system', content: systemInstruction }
+    ];
 
-      if (normalizedMessages.length === 0) {
-        // Deep copy to avoid mutating state
-        normalizedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
+    messages.forEach(msg => {
+      // Avoid leading model messages
+      if (groqMessages.length === 1 && msg.role !== 'user') return;
+      
+      const role = msg.role === 'model' ? 'assistant' : 'user';
+      const text = msg.parts?.[0]?.text || '';
+      
+      const lastMsg = groqMessages[groqMessages.length - 1];
+      if (lastMsg && lastMsg.role === role && role !== 'system') {
+        lastMsg.content += `\n\n${text}`;
       } else {
-        const last = normalizedMessages[normalizedMessages.length - 1];
-        if (last.role === msg.role) {
-          last.parts[0].text += `\n\n${msg.parts[0].text}`;
-        } else {
-          normalizedMessages.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
-        }
+        groqMessages.push({ role, content: text });
       }
     });
-    
-    // If somehow empty (only had model messages), add a dummy user message to prevent crash
-    if (normalizedMessages.length === 0) {
-      normalizedMessages.push({ role: 'user', parts: [{ text: 'Hello' }] });
+
+    if (groqMessages.length === 1) {
+      groqMessages.push({ role: 'user', content: 'Hello' });
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash-8b',
-      contents: normalizedMessages,
-      config: { systemInstruction, temperature: 0.7 }
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama3-70b-8192', // Or llama-3.3-70b-versatile
+        messages: groqMessages,
+        temperature: 0.7
+      })
     });
 
-    const replyText = response.text;
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Groq Error: ${errText}`);
+    }
+
+    const data = await response.json();
+    const replyText = data.choices[0].message.content;
 
     if (session_id) {
       await supabase.from('chat_messages').insert([
