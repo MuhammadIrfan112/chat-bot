@@ -187,13 +187,14 @@ export default function Chatbot() {
     }
   };
 
-  // Send a composed property query to the AI
+  // Send a composed property/product query to the AI
   const sendPropertyQuery = async (finalPropData) => {
     setIsLoading(true);
+    const itemLabel = botIndustry === 'Real Estate' ? 'property' : botIndustry === 'E-Commerce' ? 'product' : 'item';
     const parts = Object.entries(finalPropData)
-      .map(([k, v]) => `${k.replace('_', ' ')}: ${v}`)
+      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${v}`)
       .join(', ');
-    const composedQuery = `I am looking for a property with the following requirements — ${parts}. Please show me the best matching property from your inventory with full details and image.`;
+    const composedQuery = `I am looking for a ${itemLabel} with the following requirements — ${parts}. Please show me the best matching ${itemLabel} from your inventory with full details and image.`;
 
     const queryMsg = { role: 'user', parts: [{ text: composedQuery }] };
     // We keep conversation clean — don't add raw composed msg to UI, just send to AI
