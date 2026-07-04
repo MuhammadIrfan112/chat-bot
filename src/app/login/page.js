@@ -37,8 +37,11 @@ export default function Login() {
       setError(result.error.message);
       setLoading(false);
     } else {
-      // If signup is successful, also create a default subscription row
-      if (!isLogin && result.data?.user) {
+      const { data: rows } = await supabase.from('users_subscription').select('role').eq('user_id', result.data.user.id).limit(1);
+      const sub = rows?.[0];
+
+      // If signup is successful and they have NO row, create one
+      if (!isLogin && result.data?.user && !sub) {
         await supabase.from('users_subscription').insert({
           user_id: result.data.user.id,
           status: 'Inactive', // They must pay to activate
@@ -46,9 +49,7 @@ export default function Login() {
         });
         router.push('/dashboard');
       } else {
-        // Login success - check role to redirect correctly
-        const { data: rows } = await supabase.from('users_subscription').select('role').eq('user_id', result.data.user.id).limit(1);
-        const sub = rows?.[0];
+        // Login success or row already exists - check role to redirect correctly
         if (sub?.role === 'superadmin') {
           router.push('/superadmin');
         } else {
