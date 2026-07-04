@@ -152,6 +152,90 @@ async function getRelevantKnowledge(userQuery, botId) {
   }
 }
 
+// 🏡 Fetch real listings from Repliers.io MLS API
+async function fetchRepliersListings(userQuery) {
+  try {
+    const apiKey = process.env.REPLIERS_API_KEY;
+    const apiUrl = process.env.REPLIERS_API_URL || 'https://api.repliers.io';
+    if (!apiKey) return '';
+
+    // Smart extraction from user message
+    const q = userQuery.toLowerCase();
+
+    // Extract city
+    const cities = ['toronto', 'mississauga', 'brampton', 'vaughan', 'markham', 'oakville', 'richmond hill', 'north york', 'scarborough', 'etobicoke', 'hamilton', 'london', 'ottawa', 'calgary', 'vancouver', 'edmonton', 'winnipeg', 'montreal'];
+    const city = cities.find(c => q.includes(c)) || '';
+
+    // Extract beds (e.g. "3 bed", "3 bedroom", "3br")
+    const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
+    const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : '';
+
+    // Extract budget (e.g. "under 800k", "800,000", "$1m")
+    let maxPrice = '';
+    const priceMatch = q.match(/(?:under|below|max|budget|around)?\s*\$?([\d,]+)\s*(?:k|m|million)?/);
+    if (priceMatch) {
+      let val = parseFloat(priceMatch[1].replace(/,/g, ''));
+      if (q.includes('m') || q.includes('million')) val *= 1000000;
+      else if (q.includes('k')) val *= 1000;
+      if (val > 1000) maxPrice = Math.round(val);
+    }
+
+    // If we have at least city OR beds OR price, do a real search
+    if (!city && !minBedrooms && !maxPrice) return '';
+
+    const params = new URLSearchParams();
+    if (city) params.append('city', city);
+    if (minBedrooms) params.append('minBedrooms', minBedrooms);
+    if (maxPrice) params.append('maxPrice', maxPrice);
+    params.append('status', 'A');
+    params.append('resultsPerPage', '5');
+
+    const response = await fetch(`${apiUrl}/listings?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'REPLIERS-API-KEY': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('Repliers API error:', response.status);
+      return '';
+    }
+
+    const data = await response.json();
+    const raw = data.listings || [];
+    if (raw.length === 0) return '';
+
+    let section = '\n\nLIVE MLS LISTINGS (Real properties from Repliers.io MLS database. ALWAYS show these with images and details when user asks about properties):\n';
+    raw.slice(0, 5).forEach((l, i) => {
+      const addr = [
+        l.address?.streetNumber, l.address?.streetName,
+        l.address?.streetSuffix, l.address?.city
+      ].filter(Boolean).join(' ');
+      const price = l.listPrice ? '$' + Number(l.listPrice).toLocaleString('en-US') : 'Price on Request';
+      const beds = l.details?.numBedrooms || l.bedrooms || 'N/A';
+      const baths = l.details?.numBathrooms || l.bathrooms || 'N/A';
+      const sqft = l.details?.sqft || l.details?.approximateSquareFootage || 'N/A';
+      const img = l.images?.[0] || '';
+      const mls = l.mlsNumber || '';
+      const url = mls ? `https://www.realtor.ca/real-estate/${mls}` : '';
+
+      section += `\n${i + 1}. **${addr || 'Property ' + (i+1)}**\n`;
+      section += `   - Price: ${price}\n`;
+      section += `   - Beds: ${beds} | Baths: ${baths} | Size: ${sqft} sqft\n`;
+      if (img) section += `   - Image: ${img}\n`;
+      if (url) section += `   - Link: ${url}\n`;
+    });
+
+    return section;
+  } catch (err) {
+    console.error('Repliers fetch error:', err);
+    return '';
+  }
+}
+
 export async function POST(req) {
   try {
     const { messages, session_id, bot_id } = await req.json();
@@ -161,6 +245,10 @@ export async function POST(req) {
     let calendlyLink = '';
     let liveInventory = '';
 
+    // Extract user query early so we can use it for Repliers search
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    const userQuery = lastUserMessage?.parts?.[0]?.text || '';
+
     if (bot_id) {
       const { data: bot } = await supabase.from('bots').select('*').eq('id', bot_id).single();
       if (bot) {
@@ -168,12 +256,11 @@ export async function POST(req) {
         websiteUrl = bot.website_url;
         calendlyLink = bot.calendly_link || '';
         
-        // Detect industry from bot name
+        // Detect industry from DB first, then fallback to name detection
+        const botIndustryEarly = bot.industry || '';
         const botNameLower = bot.name.toLowerCase();
-        const isRealEstate = botNameLower.includes('real estate') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
-        const isEcommerce = botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
-        // Store for use in prompt
-        if (bot) bot._industry = isRealEstate ? 'real_estate' : isEcommerce ? 'ecommerce' : 'general';
+        const isRealEstateEarly = botIndustryEarly === 'Real Estate' || botNameLower.includes('real estate') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
+        const isEcommerceEarly = botIndustryEarly === 'E-Commerce' || botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
 
         if (bot.status !== 'Active') {
           return Response.json({ reply: "This chatbot is currently inactive. Please contact the website owner." });
@@ -197,8 +284,12 @@ export async function POST(req) {
           }
         }
         
-        // 🔥 TRIGGER LIVE SCRAPING
-        if (websiteUrl) {
+        // 🏡 Real Estate: Try Repliers API first for live MLS data
+        if (isRealEstateEarly) {
+          liveInventory = await fetchRepliersListings(userQuery);
+        }
+        // 🛒 E-commerce or fallback: Use live scraping
+        if (!liveInventory && websiteUrl) {
           liveInventory = await liveScrapeWebsite(websiteUrl);
         }
       }
@@ -222,9 +313,6 @@ export async function POST(req) {
       }
     }
 
-    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-    const userQuery = lastUserMessage?.parts?.[0]?.text || '';
-    
     const knowledge = await getRelevantKnowledge(userQuery, bot_id);
 
     const knowledgeSection = knowledge
