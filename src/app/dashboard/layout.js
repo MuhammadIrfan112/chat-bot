@@ -30,11 +30,12 @@ export default function DashboardLayout({ children }) {
         if (!session.user.user_metadata?.website_type) {
           setShowOnboarding(true);
         }
-        const { data: sub } = await supabase
+        const { data: rows } = await supabase
           .from('users_subscription')
           .select('status')
           .eq('user_id', session.user.id)
-          .single();
+          .limit(1);
+        const sub = rows?.[0];
 
         if (sub) {
           setSubscriptionStatus(sub.status);
