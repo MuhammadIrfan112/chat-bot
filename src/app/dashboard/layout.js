@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }) {
         }
         const { data: sub } = await supabase
           .from('users_subscription')
-          .select('status, role')
+          .select('status')
           .eq('user_id', session.user.id)
           .single();
 
@@ -62,7 +62,7 @@ export default function DashboardLayout({ children }) {
       }
       const { data: sub, error } = await supabase
         .from('users_subscription')
-        .select('user_id, role')
+        .select('user_id')
         .eq('user_id', session.user.id)
         .single();
 
