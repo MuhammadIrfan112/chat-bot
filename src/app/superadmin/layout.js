@@ -23,11 +23,12 @@ export default function SuperAdminLayout({ children }) {
       setUserEmail(session.user.email);
 
       // Check role in users_subscription
-      const { data: sub } = await supabase
+      const { data: rows } = await supabase
         .from('users_subscription')
         .select('role')
         .eq('user_id', session.user.id)
-        .single();
+        .limit(1);
+      const sub = rows?.[0];
 
       if (sub && sub.role === 'superadmin') {
         setIsAdmin(true);
