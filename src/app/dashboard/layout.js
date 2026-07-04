@@ -32,9 +32,15 @@ export default function DashboardLayout({ children }) {
         }
         const { data: sub } = await supabase
           .from('users_subscription')
-          .select('status')
+          .select('status, role')
           .eq('user_id', session.user.id)
           .single();
+          
+        if (sub?.role === 'superadmin') {
+          router.push('/superadmin');
+          return;
+        }
+
         if (sub) {
           setSubscriptionStatus(sub.status);
         } else {
@@ -61,13 +67,15 @@ export default function DashboardLayout({ children }) {
       }
       const { data: sub, error } = await supabase
         .from('users_subscription')
-        .select('user_id')
+        .select('user_id, role')
         .eq('user_id', session.user.id)
         .single();
 
       if (!sub || error) {
         await supabase.auth.signOut();
         router.push('/login');
+      } else if (sub.role === 'superadmin') {
+        router.push('/superadmin');
       }
     }, 30000);
 
@@ -131,7 +139,7 @@ export default function DashboardLayout({ children }) {
     { name: 'My Chatbots', path: '/dashboard/chatbots', icon: <MessageSquare size={20} /> },
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'CRM Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
-    { name: 'Live Chat', path: '/dashboard/livechat', icon: <MessageSquare size={20} /> },
+    { name: 'Chat History', path: '/dashboard/chat-history', icon: <MessageSquare size={20} /> },
   ];
 
   return (

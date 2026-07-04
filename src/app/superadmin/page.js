@@ -76,7 +76,7 @@ export default function AdminPage() {
 
     setDeletingUser(userId);
     try {
-      const res = await fetch('/api/admin/delete-user', {
+      const res = await fetch('/api/superadmin/delete-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
