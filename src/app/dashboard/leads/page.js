@@ -28,7 +28,7 @@ export default function LeadsCRM() {
   const fetchLeads = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    const userId = session.user.id;
+    const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
 
     // Get user's bots with name and industry info (with fallback for missing industry column)
     let bots = [];

@@ -73,9 +73,13 @@ export default function SuperAdminLayout({ children }) {
           <Link href="/superadmin" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', color: 'white', backgroundColor: pathname === '/superadmin' ? '#4F46E5' : 'transparent', textDecoration: 'none', fontWeight: '500' }}>
             <span style={{ fontSize: '18px' }}>👥</span> Manage Users
           </Link>
-          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', color: '#9CA3AF', textDecoration: 'none', fontWeight: '500' }}>
+          <button onClick={() => {
+            localStorage.removeItem('impersonated_user_id');
+            localStorage.removeItem('impersonated_user_email');
+            window.location.href = '/dashboard';
+          }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', color: '#9CA3AF', textDecoration: 'none', fontWeight: '500', background: 'none', border: 'none', cursor: 'pointer', width: '100%' }}>
             <span style={{ fontSize: '18px' }}>↩️</span> Enter as Client
-          </Link>
+          </button>
         </div>
       </div>
 

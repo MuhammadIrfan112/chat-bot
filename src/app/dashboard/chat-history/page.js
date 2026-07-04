@@ -21,7 +21,7 @@ export default function ChatHistory() {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    const userId = session.user.id;
+    const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
 
     // Get user's bots
     const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);

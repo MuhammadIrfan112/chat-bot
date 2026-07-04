@@ -20,7 +20,7 @@ export default function Dashboard() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const userId = session.user.id;
+    const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
     const type = session.user.user_metadata?.website_type || 'other';
     setWebsiteType(type);
 

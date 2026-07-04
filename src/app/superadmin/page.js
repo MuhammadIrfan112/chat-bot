@@ -137,6 +137,21 @@ export default function AdminPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('impersonated_user_id', user.user_id);
+                      localStorage.setItem('impersonated_user_email', user.email);
+                      window.location.href = '/dashboard';
+                    }}
+                    style={{
+                      padding: '8px 16px', borderRadius: '8px', border: '1px solid #4F46E5', fontWeight: '600', cursor: 'pointer', fontSize: '13px',
+                      backgroundColor: 'white',
+                      color: '#4F46E5',
+                      display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                  >
+                    👤 Login as Client
+                  </button>
                   <span style={{
                     padding: '4px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: '700',
                     backgroundColor: user.status === 'Active' ? '#D1FAE5' : '#FEE2E2',

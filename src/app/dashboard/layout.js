@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
   const [userEmail, setUserEmail] = useState('');
+  const [impersonatedEmail, setImpersonatedEmail] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
@@ -25,15 +26,23 @@ export default function DashboardLayout({ children }) {
       if (!session) {
         router.push('/login');
       } else {
-        setUserEmail(session.user.email);
+        const impEmail = localStorage.getItem('impersonated_user_email');
+        if (impEmail) {
+          setImpersonatedEmail(impEmail);
+          setUserEmail(impEmail);
+        } else {
+          setUserEmail(session.user.email);
+        }
         
         if (!session.user.user_metadata?.website_type) {
           setShowOnboarding(true);
         }
+        const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
+        
         const { data: rows } = await supabase
           .from('users_subscription')
           .select('status')
-          .eq('user_id', session.user.id)
+          .eq('user_id', userId)
           .limit(1);
         const sub = rows?.[0];
 
@@ -43,9 +52,9 @@ export default function DashboardLayout({ children }) {
           const trialEndsAt = new Date();
           trialEndsAt.setDate(trialEndsAt.getDate() + 15);
           await supabase.from('users_subscription').insert({
-            user_id: session.user.id,
+            user_id: userId,
             status: 'Active',
-            email: session.user.email,
+            email: impEmail || session.user.email,
             trial_ends_at: trialEndsAt.toISOString()
           });
           setSubscriptionStatus('Active');
@@ -61,10 +70,11 @@ export default function DashboardLayout({ children }) {
         router.push('/login');
         return;
       }
+      const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
       const { data: sub, error } = await supabase
         .from('users_subscription')
         .select('user_id')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .single();
 
       if (!sub || error) {
@@ -203,44 +213,7 @@ export default function DashboardLayout({ children }) {
             <span style={{ fontSize: '14px' }}>Workspace Settings</span>
           </Link>
 
-          <Link href="/dashboard/billing" style={{ 
-            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
-            color: pathname.includes('/dashboard/billing') ? 'white' : 'var(--text-secondary)', 
-            backgroundColor: pathname.includes('/dashboard/billing') ? 'rgba(255,255,255,0.03)' : 'transparent', 
-            textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: pathname.includes('/dashboard/billing') ? '600' : '500',
-            border: pathname.includes('/dashboard/billing') ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
-            marginBottom: '4px'
-          }}
-          onMouseEnter={(e) => { if (!pathname.includes('/dashboard/billing')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; } }}
-          onMouseLeave={(e) => { if (!pathname.includes('/dashboard/billing')) { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
-          >
-             {pathname.includes('/dashboard/billing') && (
-                  <motion.div layoutId="active-nav" style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '3px', background: 'var(--primary)', borderRadius: '0 4px 4px 0', boxShadow: '0 0 10px var(--primary)' }} />
-             )}
-            <span style={{ color: pathname.includes('/dashboard/billing') ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
-              <CreditCard size={20} />
-            </span>
-            <span style={{ fontSize: '14px' }}>Billing</span>
-          </Link>
 
-          <Link href="/dashboard/plans" style={{ 
-            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
-            color: pathname.includes('/dashboard/plans') ? 'white' : 'var(--text-secondary)', 
-            backgroundColor: pathname.includes('/dashboard/plans') ? 'rgba(255,255,255,0.03)' : 'transparent', 
-            textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: pathname.includes('/dashboard/plans') ? '600' : '500',
-            border: pathname.includes('/dashboard/plans') ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent'
-          }}
-          onMouseEnter={(e) => { if (!pathname.includes('/dashboard/plans')) { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; } }}
-          onMouseLeave={(e) => { if (!pathname.includes('/dashboard/plans')) { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; } }}
-          >
-             {pathname.includes('/dashboard/plans') && (
-                  <motion.div layoutId="active-nav" style={{ position: 'absolute', left: 0, top: '25%', bottom: '25%', width: '3px', background: 'var(--primary)', borderRadius: '0 4px 4px 0', boxShadow: '0 0 10px var(--primary)' }} />
-             )}
-            <span style={{ color: pathname.includes('/dashboard/plans') ? 'var(--primary)' : 'inherit', display: 'flex', alignItems: 'center' }}>
-              <Zap size={20} />
-            </span>
-            <span style={{ fontSize: '14px' }}>Subscription Plans</span>
-          </Link>
         </div>
 
         {/* User Profile Area */}
@@ -268,6 +241,21 @@ export default function DashboardLayout({ children }) {
 
       {/* Main Content Area */}
       <main style={{ flex: 1, padding: '48px 56px', overflowY: 'auto', position: 'relative' }}>
+        {impersonatedEmail && (
+          <div style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldAlert size={20} />
+              You are impersonating {impersonatedEmail}
+            </div>
+            <button onClick={() => {
+              localStorage.removeItem('impersonated_user_id');
+              localStorage.removeItem('impersonated_user_email');
+              window.location.href = '/superadmin';
+            }} style={{ padding: '6px 12px', backgroundColor: '#92400E', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Exit Impersonation
+            </button>
+          </div>
+        )}
         <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'var(--primary)', filter: 'blur(150px)', opacity: 0.05, pointerEvents: 'none' }}></div>
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           {children}

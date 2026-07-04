@@ -31,8 +31,9 @@ export default function MyBots() {
   const init = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-    setUserId(session.user.id);
-    fetchBots(session.user.id);
+    const id = localStorage.getItem('impersonated_user_id') || session.user.id;
+    setUserId(id);
+    fetchBots(id);
   };
 
   const fetchBots = async (uid) => {
