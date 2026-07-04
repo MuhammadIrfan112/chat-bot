@@ -35,11 +35,6 @@ export default function DashboardLayout({ children }) {
           .select('status, role')
           .eq('user_id', session.user.id)
           .single();
-          
-        if (sub?.role === 'superadmin') {
-          router.push('/superadmin');
-          return;
-        }
 
         if (sub) {
           setSubscriptionStatus(sub.status);
@@ -74,8 +69,6 @@ export default function DashboardLayout({ children }) {
       if (!sub || error) {
         await supabase.auth.signOut();
         router.push('/login');
-      } else if (sub.role === 'superadmin') {
-        router.push('/superadmin');
       }
     }, 30000);
 

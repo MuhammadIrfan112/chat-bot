@@ -44,8 +44,16 @@ export default function Login() {
           status: 'Inactive', // They must pay to activate
           email: email
         });
+        router.push('/dashboard');
+      } else {
+        // Login success - check role to redirect correctly
+        const { data: sub } = await supabase.from('users_subscription').select('role').eq('user_id', result.data.user.id).single();
+        if (sub?.role === 'superadmin') {
+          router.push('/superadmin');
+        } else {
+          router.push('/dashboard');
+        }
       }
-      router.push('/dashboard');
     }
   };
 
