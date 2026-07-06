@@ -380,6 +380,9 @@ ${isRealEstate || isEcommerce ? `5. IMAGES: When showing an item, ALWAYS include
       const role = msg.role === 'model' ? 'model' : 'user';
       const text = msg.parts?.[0]?.text || '';
       
+      // Skip leading model messages as Gemini strictly requires history to start with 'user'
+      if (geminiHistory.length === 0 && role === 'model') return;
+      
       const lastMsg = geminiHistory[geminiHistory.length - 1];
       if (lastMsg && lastMsg.role === role) {
         lastMsg.parts[0].text += `\n\n${text}`;
