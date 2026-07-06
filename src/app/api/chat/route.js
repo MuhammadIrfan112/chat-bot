@@ -322,7 +322,11 @@ export async function POST(req) {
 
     // Build dynamic prompt based on bot industry
     let botData = null;
-    if (bot_id) {
+    if (bot_id === 'demo-real-estate') {
+      botData = { name: 'Real Estate Bot', industry: 'Real Estate' };
+    } else if (bot_id === 'demo-ecommerce') {
+      botData = { name: 'E-Commerce Bot', industry: 'E-Commerce' };
+    } else if (bot_id) {
       const { data: b, error } = await supabase.from('bots').select('name, industry').eq('id', bot_id).single();
       if (error) {
         const { data: fallback } = await supabase.from('bots').select('name').eq('id', bot_id).single();
