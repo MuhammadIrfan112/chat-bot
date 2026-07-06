@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import * as cheerio from 'cheerio';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 async function liveScrapeWebsite(url) {
   if (!url) return '';
@@ -367,50 +368,44 @@ ${qualifyingQuestions}`}
       systemInstruction = `You are a helpful AI Assistant. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.`;
     }
 
-    // Convert format for Groq API
-    const groqMessages = [
-      { role: 'system', content: systemInstruction }
-    ];
+    // Setup Google Generative AI
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: systemInstruction,
+    });
 
+    const geminiHistory = [];
+    
     messages.forEach(msg => {
-      // Avoid leading model messages
-      if (groqMessages.length === 1 && msg.role !== 'user') return;
-      
-      const role = msg.role === 'model' ? 'assistant' : 'user';
+      // Gemini expects role to be 'user' or 'model'
+      const role = msg.role === 'model' ? 'model' : 'user';
       const text = msg.parts?.[0]?.text || '';
       
-      const lastMsg = groqMessages[groqMessages.length - 1];
-      if (lastMsg && lastMsg.role === role && role !== 'system') {
-        lastMsg.content += `\n\n${text}`;
+      const lastMsg = geminiHistory[geminiHistory.length - 1];
+      if (lastMsg && lastMsg.role === role) {
+        lastMsg.parts[0].text += `\n\n${text}`;
       } else {
-        groqMessages.push({ role, content: text });
+        geminiHistory.push({ role, parts: [{ text }] });
       }
     });
 
-    if (groqMessages.length === 1) {
-      groqMessages.push({ role: 'user', content: 'Hello' });
+    if (geminiHistory.length === 0) {
+      geminiHistory.push({ role: 'user', parts: [{ text: 'Hello' }] });
     }
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
+    // Pop the last message to send as the new query, use the rest as history
+    const latestUserMsg = geminiHistory.pop();
+
+    const chat = model.startChat({
+      history: geminiHistory,
+      generationConfig: {
+        temperature: 0.7,
       },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: groqMessages,
-        temperature: 0.7
-      })
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Groq Error: ${errText}`);
-    }
-
-    const data = await response.json();
-    const replyText = data.choices[0].message.content;
+    const result = await chat.sendMessage(latestUserMsg.parts[0].text);
+    const replyText = result.response.text();
 
     if (session_id) {
       await supabase.from('chat_messages').insert([
