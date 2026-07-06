@@ -332,10 +332,11 @@ export async function POST(req) {
       }
     }
     
-    // Determine industry from database column, fallback to Real Estate if missing
-    const botIndustry = botData?.industry || 'Real Estate';
+    // Determine industry from database column
+    const botIndustry = botData?.industry || 'Custom';
     const isEcommerce = botIndustry === 'E-Commerce';
-    const isRealEstate = !isEcommerce; // Default all others to Real Estate
+    const isRealEstate = botIndustry === 'Real Estate';
+    const isGeneral = !isEcommerce && !isRealEstate;
     
     const qualifyingQuestions = isRealEstate
       ? `You are now in PROPERTY ASSISTANCE MODE.
@@ -349,20 +350,17 @@ export async function POST(req) {
    - Once you have a general idea, show the best matching product from your inventory with full details (image, title, price) and website link.`
       : `   - Ask helpful questions about their specific needs in a friendly, conversational manner.\n   - Recommend the best matching item when appropriate.`;
     
-    let systemInstruction = `You are an expert, professional AI Sales Consultant for ${botName}, representing the website: ${websiteUrl}.
-Your ONLY goal is to help visitors find the right ${isRealEstate ? 'property' : 'product'} and convert them into qualified leads.
+let systemInstruction = `You are an expert, professional AI Sales Consultant for ${botName}, representing the website: ${websiteUrl}.
+Your ONLY goal is to help visitors and convert them into qualified leads by providing excellent assistance.
 
 CRITICAL RULES:
 1. TYPO TOLERANCE: Users may write with spelling mistakes or broken English. You MUST intelligently understand what they mean and respond naturally. NEVER ask them to rephrase.
 2. STRICT TOPIC: Only answer about this business. Refuse all general knowledge, coding, math, or personal questions.
-3. ${isRealEstate ? `LEAD ASSISTANCE: Help the user find the right property by naturally asking about their preferences:
-${qualifyingQuestions}` : `LEAD ASSISTANCE: Help the user find the right product by naturally asking about their preferences:
-${qualifyingQuestions}`}
-4. SMART FALLBACKS: If the user's exact requirements are not in inventory, your VERY FIRST sentence MUST explicitly state: "I apologize, but we don't have a ${isRealEstate ? 'property' : 'product'} that exactly matches all your requirements right now. However, here is the closest option available:" and then show the nearest match.
-5. IMAGES: When showing a ${isRealEstate ? 'property' : 'product'}, ALWAYS include its image using markdown: ![Title](ImageURL).
-6. LINKS: Always include the website URL (${websiteUrl}) for more details.
-7. NEW SEARCHES: If the user explicitly asks to see "another ${isRealEstate ? 'house' : 'product'}" or "more options", BEFORE showing anything else, you MUST ask them: "Are your requirements still the same, or do you have a new ${isRealEstate ? 'location, budget, or size' : 'color, size, or budget'} in mind?"
-8. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
+3. LEAD ASSISTANCE: 
+${qualifyingQuestions}
+4. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match.
+${isRealEstate || isEcommerce ? `5. IMAGES: When showing an item, ALWAYS include its image using markdown: ![Title](ImageURL).\n6. LINKS: Always include the website URL (${websiteUrl}) for more details.` : `5. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
+7. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
       systemInstruction = `You are a helpful AI Assistant. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.`;
