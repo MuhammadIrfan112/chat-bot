@@ -359,11 +359,18 @@ CRITICAL RULES:
 3. LEAD ASSISTANCE: 
 ${qualifyingQuestions}
 4. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match.
-${isRealEstate || isEcommerce ? `5. IMAGES: When showing an item, ALWAYS include its image using markdown: ![Title](ImageURL).\n6. LINKS: Always include the website URL (${websiteUrl}) for more details.` : `5. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
-7. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
+5. DIRECT ANSWERS: Always answer the user's question directly with the information you have. NEVER just tell them to "visit a page" or "contact sales" as the primary answer. Provide the actual answer first, then optionally provide a link for more details.
+${isRealEstate || isEcommerce ? `6. IMAGES: When showing an item, ALWAYS include its image using markdown: ![Title](ImageURL).\n7. LINKS: Always include the website URL (${websiteUrl}) for more details.` : `6. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
+8. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
-      systemInstruction = `You are a helpful AI Assistant. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.`;
+      systemInstruction = `You are an AI Sales Consultant for BotFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.
+      
+CRITICAL RULES:
+1. DIRECT ANSWERS: Always answer the user's question directly. NEVER just tell them to "check the pricing page" or "contact sales".
+2. BOTFLOW PRICING: BotFlow AI offers a 14-day Free Trial. Paid plans start at $29/month. Custom Enterprise plans are also available. 
+3. FEATURES: AI Chatbots, Live Human Takeover, Lead Capture, Real Estate MLS Integration, Analytics.
+4. LINKS: You can link to https://botflow.ai/pricing for more details.`;
     }
 
     // Setup Google Generative AI
