@@ -161,8 +161,29 @@ export default function LeadsCRM() {
                         <div style={{ marginBottom: '4px', fontSize: '11px', fontWeight: '700', color: isRealEstate ? '#A78BFA' : isEcommerce ? '#38BDF8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           {isRealEstate ? '🏠 ' : isEcommerce ? '🛍️ ' : '💬 '}{interestLabel}
                         </div>
-                        <span title={lead.property_interest || ''} style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>
-                          {lead.property_interest || '—'}
+                        <span title={lead.property_interest || ''} style={{ display: 'block', maxWidth: '250px' }}>
+                          {(() => {
+                            if (!lead.property_interest) return '—';
+                            const parts = lead.property_interest.split('Viewed Links:');
+                            const query = parts[0].trim();
+                            const linksText = parts[1] ? parts[1].trim() : '';
+                            return (
+                              <div>
+                                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }}>
+                                  {query}
+                                </div>
+                                {linksText && (
+                                  <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {linksText.split('\\n').filter(l => l.trim()).map((link, idx) => (
+                                      <a key={idx} href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#3B82F6', textDecoration: 'none', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px', display: 'inline-block', backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                        🔗 View Item {idx + 1}
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </span>
                       </td>
 

@@ -150,34 +150,63 @@ export default function Chatbot() {
     }
   };
 
-  const checkLeadTrigger = (count, currentMessages) => {
-    // Wait until 3 messages have been sent (user has seen responses/properties)
-    if (count >= 3 && !leadCaptured && leadStep === null) {
-      const conversationText = currentMessages
-        .filter(m => m.role === 'user')
-        .map(m => m.parts[0].text)
-        .join(', ');
+  const checkLeadTrigger = (currentMessages) => {
+    // Check if any model message contains an image markdown
+    const hasShownProperty = currentMessages.some(m => 
+      m.role === 'model' && m.parts[0].text.match(/!\[.*?\]\(.*?\)/)
+    );
 
+    // If an image has been shown, and we haven't captured a lead or started asking
+    if (hasShownProperty && !leadCaptured && leadStep === null) {
       setTimeout(() => {
-        setLeadData(prev => ({ ...prev, property_interest: conversationText.slice(0, 300) }));
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: "To assist you better and save these preferences, I just need a few details. 😊" }],
           inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
         }]);
         setLeadStep('name');
-      }, 800);
+      }, 1500); // 1.5 second delay after the property message
     }
   };
 
-  const saveLead = async (name, phone, email, property_interest) => {
+  // Extract all URLs shown by the AI
+  const extractViewedLinks = () => {
+    const links = new Set();
+    messages.forEach(msg => {
+      if (msg.role === 'model') {
+        const text = msg.parts[0].text;
+        // Match standard links [text](url)
+        const markdownLinks = text.match(/\[.*?\]\((https?:\/\/[^\s)]+)\)/g);
+        if (markdownLinks) {
+          markdownLinks.forEach(link => {
+            const urlMatch = link.match(/\((https?:\/\/[^\s)]+)\)/);
+            if (urlMatch && urlMatch[1]) {
+              links.add(urlMatch[1]);
+            }
+          });
+        }
+      }
+    });
+    return Array.from(links);
+  };
+
+  const saveLead = async (name, phone, email) => {
+    const viewedLinks = extractViewedLinks();
+    
+    // Create a summary of what they asked for
+    const userQueries = messages
+        .filter(m => m.role === 'user')
+        .map(m => m.parts[0].text)
+        .join(', ');
+
     await fetch('/api/save-lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name, email,
         phone_number: phone,
-        property_interest,
+        property_interest: userQueries.slice(0, 300),
+        viewed_links: viewedLinks,
         chatbot_source: botConfig.botName || 'Website Chatbot',
         bot_id: botConfig.botId
       })
@@ -241,7 +270,7 @@ export default function Chatbot() {
         }]);
         return;
       }
-      await saveLead(leadData.name, leadData.phone, msg, leadData.property_interest);
+      await saveLead(leadData.name, leadData.phone, msg);
       return;
     }
 
@@ -289,7 +318,7 @@ export default function Chatbot() {
     } finally {
       setIsLoading(false);
       setMessages(prev => {
-        checkLeadTrigger(messageCount.current, prev);
+        checkLeadTrigger(prev);
         return prev;
       });
     }
