@@ -7,14 +7,22 @@ export default async function BotEmbedPage({ params }) {
   const botId = resolvedParams.id;
   
   // Fetch bot config from database
-  const { data: bot } = await supabase
+  const { data } = await supabase
     .from('bots')
     .select('*')
     .eq('id', botId)
     .single();
+    
+  let bot = data;
 
   if (!bot) {
-    return <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>Bot not found</div>;
+    if (botId === 'demo-real-estate') {
+      bot = { id: botId, name: 'Real Estate Bot', bot_avatar: '🏡', primary_color: '#10B981', welcome_message: 'Hi! Looking for your dream home?' };
+    } else if (botId === 'demo-ecommerce') {
+      bot = { id: botId, name: 'NOVA Fashion', bot_avatar: '🛍️', primary_color: '#000000', welcome_message: 'Welcome to NOVA! How can I help you style today?' };
+    } else {
+      return <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>Bot not found</div>;
+    }
   }
 
   // Inject config into window so Chatbot.js can use it
