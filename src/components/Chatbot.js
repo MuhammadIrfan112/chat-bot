@@ -151,7 +151,8 @@ export default function Chatbot() {
   };
 
   const checkLeadTrigger = (count, currentMessages) => {
-    if (count >= 1 && !leadCaptured && leadStep === null) {
+    // Wait until 3 messages have been sent (user has seen responses/properties)
+    if (count >= 3 && !leadCaptured && leadStep === null) {
       const conversationText = currentMessages
         .filter(m => m.role === 'user')
         .map(m => m.parts[0].text)
@@ -161,7 +162,7 @@ export default function Chatbot() {
         setLeadData(prev => ({ ...prev, property_interest: conversationText.slice(0, 300) }));
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: "To assist you better, I need a few details first. 😊" }],
+          parts: [{ text: "To assist you better and save these preferences, I just need a few details. 😊" }],
           inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
         }]);
         setLeadStep('name');
@@ -182,73 +183,13 @@ export default function Chatbot() {
       })
     });
     setLeadCaptured(true);
-
-    if (botIndustry === 'Loading' || isQualifyingBot) {
-      // Show combined requirements question
-      setLeadStep('requirements');
-      const q = getRequirementsQuestion(botIndustry === 'Loading' ? 'Real Estate' : botIndustry);
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved.\n\n${q.text}` }],
-        inputCard: { icon: '🏡', label: 'Your Requirements', placeholder: q.placeholder }
-      }]);
-    } else {
-      // SaaS landing page — open AI chat
-      setLeadStep(null);
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Thank you, ${name}! 🎉 Details saved. How can I help you?` }]
-      }]);
-    }
+    setLeadStep(null);
+    setMessages(prev => [...prev, {
+      role: 'model',
+      parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved. We can continue our chat now, what else would you like to know?` }]
+    }]);
   };
 
-  // Send a composed property/product query to the AI (fresh clean conversation)
-  const sendPropertyQuery = async (finalPropData) => {
-    setIsLoading(true);
-    const itemLabel = botIndustry === 'E-Commerce' ? 'product' : 'property';
-    
-    // Build a human-readable summary of requirements
-    const reqLines = Object.entries(finalPropData)
-      .map(([k, v]) => `• ${k.replace(/_/g, ' ')}: ${v}`)
-      .join('\n');
-
-    const composedQuery = `Please find me the best matching ${itemLabel} based on these requirements:\n${reqLines}\n\nShow full details: image, address, price, beds/baths/size, and a link to view more.`;
-
-    // Send ONLY this single query — no messy history. AI has system prompt + inventory.
-    const cleanMessages = [{ role: 'user', parts: [{ text: composedQuery }] }];
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: cleanMessages,
-          session_id: sessionId,
-          bot_id: botConfig.botId
-        }),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const data = await response.json();
-      if (data.reply) {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
-        setPropLoopActive(true);
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            role: 'model',
-            parts: [{ text: "Would you like to search with **different requirements**? Just type anything and I'll guide you through again! 😊" }]
-          }]);
-        }, 600);
-      } else {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: "I couldn't find an exact match, but please browse our listings on our website for more options!" }] }]);
-      }
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: "⚠️ Sorry, something went wrong while searching. Please try again in a moment." }] }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSend = async (text) => {
     const msg = text || input;
@@ -304,12 +245,7 @@ export default function Chatbot() {
       return;
     }
 
-    // ── Requirements (all-at-once) step ─────────────────────────
-    if (leadStep === 'requirements') {
-      setLeadStep(null);
-      await sendRequirementsToAI(msg);
-      return;
-    }
+    // ── Requirements (all-at-once) step (REMOVED, handled by AI) ───
 
     // ── Human takeover ────────────────────────────────────────────
     if (isHumanTakeover) {
@@ -321,18 +257,7 @@ export default function Chatbot() {
       return;
     }
 
-    // ── Loop: re-show combined question after each result ─────────
-    if (propLoopActive && isQualifyingBot) {
-      setPropLoopActive(false);
-      setLeadStep('requirements');
-      const q = getRequirementsQuestion(botIndustry);
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: q.text }],
-        inputCard: { icon: '🔄', label: 'New Requirements', placeholder: q.placeholder }
-      }]);
-      return;
-    }
+    // ── Loop (REMOVED, handled by AI natively) ─────────
 
     // Normal AI chat
     setIsLoading(true);
