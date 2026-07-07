@@ -285,11 +285,18 @@ export async function POST(req) {
           }
         }
         
-        // 🏡 Real Estate: Try Repliers API first for live MLS data
+        // 🏡 Real Estate: First try website scraping, then fall back to Repliers
         if (isRealEstateEarly) {
-          liveInventory = await fetchRepliersListings(userQuery);
+          // Step 1: Scrape the client's own website first
+          if (websiteUrl) {
+            liveInventory = await liveScrapeWebsite(websiteUrl);
+          }
+          // Step 2: If website had no listings, fall back to Repliers MLS API
+          if (!liveInventory) {
+            liveInventory = await fetchRepliersListings(userQuery);
+          }
         }
-        // 🛒 E-commerce or fallback: Use live scraping
+        // 🛒 E-commerce: Use live scraping only
         if (!liveInventory && websiteUrl) {
           liveInventory = await liveScrapeWebsite(websiteUrl);
         }
