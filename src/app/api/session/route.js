@@ -5,17 +5,17 @@ export async function POST(req) {
   try {
     const { visitor_id, bot_id } = await req.json();
 
-    // Check if session exists for this specific bot (or landing page if no bot_id)
-    let query = supabase
+    // Do not save sessions for the main BotFlow website bot, only for client bots
+    if (!bot_id) {
+      return Response.json({ session: null });
+    }
+
+    // Check if session exists for this specific bot
+    const query = supabase
       .from('chat_sessions')
       .select('*')
-      .eq('visitor_id', visitor_id);
-      
-    if (bot_id) {
-      query = query.eq('bot_id', bot_id);
-    } else {
-      query = query.is('bot_id', null);
-    }
+      .eq('visitor_id', visitor_id)
+      .eq('bot_id', bot_id);
 
     const { data: existing } = await query
       .order('created_at', { ascending: false })
