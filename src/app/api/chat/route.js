@@ -383,7 +383,7 @@ CRITICAL RULES:
 1. DIRECT ANSWERS: Always answer the user's question directly. NEVER just tell them to "check the pricing page" or "contact sales".
 2. BOTFLOW PRICING: BotFlow AI offers a 14-day Free Trial. Paid plans start at $29/month. Custom Enterprise plans are also available. 
 3. FEATURES: AI Chatbots, Live Human Takeover, Lead Capture, Real Estate MLS Integration, Analytics.
-4. LINKS: You can link to https://botflow.ai/pricing for more details.`;
+4. LINKS: You can link to https://chatbot-flow.vercel.app/pricing for more details.`;
     }
 
     // Setup Google Generative AI
