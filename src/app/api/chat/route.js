@@ -171,9 +171,9 @@ async function fetchRepliersListings(userQuery) {
     const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
     const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : '';
 
-    // Extract budget (e.g. "under 800k", "800,000", "$1m")
+    // Extract budget (e.g. "under 800k", "800,000", "$1.5m", "4.5m")
     let maxPrice = '';
-    const priceMatch = q.match(/(?:under|below|max|budget|around)?\s*\$?([\d,]+)\s*(?:k|m|million)?/);
+    const priceMatch = q.match(/(?:under|below|max|budget|around)?\s*\$?([\d,.]+)\s*(?:k|m|million)?/);
     if (priceMatch) {
       let val = parseFloat(priceMatch[1].replace(/,/g, ''));
       if (q.includes('m') || q.includes('million')) val *= 1000000;
@@ -353,12 +353,14 @@ export async function POST(req) {
       ? `You are now in PROPERTY ASSISTANCE MODE.
    - When a user asks about properties or lists some requirements, kindly ask them for any missing key details (like Location, Budget, or Bedrooms) ONE AT A TIME in a conversational way.
    - Do NOT interrogate them. Keep the conversation flowing naturally.
-   - Once you have a general idea of what they want, show the best matching property from your inventory with full details (image, address, beds, baths, price) and website link.`
+   - Once you have a general idea of what they want, show the best matching property ONLY from the LIVE INVENTORY provided below. 
+   - CRITICAL: DO NOT invent, make up, or hallucinate properties. If no matching property is provided in the LIVE INVENTORY, politely state you couldn't find a match right now.`
       : isEcommerce
       ? `You are now in E-COMMERCE ASSISTANCE MODE.
    - When a user asks about a product, kindly ask them for any missing preferences (like Size, Color, or Budget) in a conversational way.
    - Do NOT interrogate them. Keep the conversation flowing naturally.
-   - Once you have a general idea, show the best matching product from your inventory with full details (image, title, price) and website link.`
+   - Once you have a general idea, show the best matching product ONLY from the LIVE INVENTORY provided below.
+   - CRITICAL: DO NOT invent or hallucinate products. If no matching product is provided in the LIVE INVENTORY, politely state you couldn't find a match right now.`
       : `   - Ask helpful questions about their specific needs in a friendly, conversational manner.\n   - Recommend the best matching item when appropriate.`;
     
 let systemInstruction = `You are an expert, professional AI Sales Consultant for ${botName}, representing the website: ${websiteUrl}.
@@ -369,9 +371,9 @@ CRITICAL RULES:
 2. STRICT TOPIC: Only answer about this business. Refuse all general knowledge, coding, math, or personal questions.
 3. LEAD ASSISTANCE: 
 ${qualifyingQuestions}
-4. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match.
-5. DIRECT ANSWERS: Always answer the user's question directly with the information you have. NEVER just tell them to "visit a page" or "contact sales" as the primary answer. Provide the actual answer first, then optionally provide a link for more details.
-${isRealEstate || isEcommerce ? `6. IMAGES: When showing an item, ALWAYS include its image using markdown: ![Title](ImageURL).\n7. LINKS: Always include the website URL (${websiteUrl}) for more details.` : `6. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
+4. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match from the actual inventory.
+5. DIRECT ANSWERS: Always answer the user's question directly with the information you have. NEVER just tell them to "visit a page" or "contact sales" as the primary answer. Provide the actual answer first.
+${isRealEstate || isEcommerce ? `6. IMAGES & LINKS: When showing an item from the inventory, you MUST include its exact image URL using markdown: ![Title](ImageURL) and its exact Link URL provided. DO NOT use placeholder links like "(this website)".\n7. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `6. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
 8. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
