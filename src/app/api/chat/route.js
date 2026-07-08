@@ -221,13 +221,14 @@ async function fetchRepliersListings(userQuery) {
       const sqft = l.details?.sqft || l.details?.approximateSquareFootage || 'N/A';
       const img = l.images?.[0] || '';
       const mls = l.mlsNumber || '';
-      const url = mls ? `https://www.realtor.ca/real-estate/${mls}` : '';
+      // Use google search for MLS since direct realtor.ca links often break
+      const url = mls ? `https://www.google.com/search?q=${encodeURIComponent(addr + ' MLS ' + mls)}` : '';
 
       section += `\n${i + 1}. **${addr || 'Property ' + (i+1)}**\n`;
       section += `   - Price: ${price}\n`;
       section += `   - Beds: ${beds} | Baths: ${baths} | Size: ${sqft} sqft\n`;
-      if (img) section += `   - Image: ${img}\n`;
-      if (url) section += `   - Link: ${url}\n`;
+      if (img) section += `   - Image: ![${addr}](${img})\n`;
+      if (url) section += `   - Link: [View Property](${url})\n`;
     });
 
     return section;
@@ -372,8 +373,8 @@ CRITICAL RULES:
 3. LEAD ASSISTANCE: 
 ${qualifyingQuestions}
 4. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match from the actual inventory.
-5. DIRECT ANSWERS: Always answer the user's question directly with the information you have. NEVER just tell them to "visit a page" or "contact sales" as the primary answer. Provide the actual answer first.
-${isRealEstate || isEcommerce ? `6. IMAGES & LINKS: When showing an item from the inventory, you MUST include its exact image URL using markdown: ![Title](ImageURL) and its exact Link URL provided. DO NOT use placeholder links like "(this website)".\n7. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `6. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
+5. DIRECT ANSWERS: Always answer the user's question directly. Keep your responses EXTREMELY short, exact, and to the point. No long paragraphs.
+${isRealEstate || isEcommerce ? `6. IMAGES & LINKS: When showing an item from the inventory, you MUST copy and use the EXACT markdown for Image and Link provided in the inventory data.\n7. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `6. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
 8. Keep responses warm, friendly, concise. Use emojis occasionally.${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
