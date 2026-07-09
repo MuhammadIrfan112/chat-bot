@@ -18,19 +18,10 @@ const getVisitorId = () => {
 
 const CALENDLY_URL = 'https://calendly.com/dariaodum1/30min';
 
-// Combined requirements question per industry
-const getRequirementsQuestion = (industry) => {
-  if (industry === 'E-Commerce') {
-    return {
-      text: `Please tell me what you're looking for — all in **one message**: 🛍️\n\n- What **type of product**? (e.g. shoes, jacket, phone)\n- Any **size or color** preference?\n- What is your **budget**?\n\n*Example: "Red Nike shoes, size 10, budget $150"*`,
-      placeholder: 'e.g. Red Nike shoes, size 10, budget $150...'
-    };
-  }
-  return {
-    text: `Great! To find your perfect home, please tell me all your requirements **in one message**: 🏡\n\n- How many **bedrooms**?\n- How many **bathrooms**?\n- What **size**? (sqft / marla / kanal)\n- Which **area or city**?\n- What is your **budget**?\n\n*Example: "3 beds, 2 baths, 2000 sqft, Beverly Hills, $1.5M"*`,
-    placeholder: 'e.g. 3 beds, 2 baths, 2000 sqft, Beverly Hills, $1.5M...'
-  };
-};
+// Quick reply options per step
+const BEDROOM_OPTIONS = ['1 Bedroom', '2 Bedrooms', '3 Bedrooms', '4 Bedrooms', '5+ Bedrooms'];
+const URGENCY_OPTIONS = ['ASAP (Within 30 days)', 'In 2-6 months', 'Just browsing'];
+const MORTGAGE_OPTIONS = ['Yes, pre-approved ✅', 'No, still exploring 🏦'];
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,13 +29,16 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadStep, setLeadStep] = useState(null); // null | 'name' | 'phone' | 'email' | 'requirements'
+  const [leadStep, setLeadStep] = useState(null); // null | 'name' | 'phone' | 'email'
+  // Real Estate qualification steps
+  const [qualStep, setQualStep] = useState(null); // null | 'bedrooms' | 'features' | 'budget' | 'urgency' | 'mortgage'
+  const [qualData, setQualData] = useState({ bedrooms: '', features: '', budget: '', urgency: '', mortgage: '' });
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
-  const [propLoopActive, setPropLoopActive] = useState(false);
   const [botIndustry, setBotIndustry] = useState('Loading');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
+  const [quickRepliesForStep, setQuickRepliesForStep] = useState([]);
 
   const messagesEndRef = useRef(null);
   const messageCount = useRef(0);
@@ -64,14 +58,68 @@ export default function Chatbot() {
   // It will use Real Estate logic by default.
   const isQualifyingBot = isClientBot && botIndustry !== 'Loading';
 
-  // Helper to show the combined requirements question
-  const showRequirementsQuestion = (setMsgs) => {
-    const q = getRequirementsQuestion(botIndustry);
-    setMsgs(prev => [...prev, {
+  // Start the step-by-step qualification flow for Real Estate
+  const startQualFlow = () => {
+    setQualStep('bedrooms');
+    setQuickRepliesForStep(BEDROOM_OPTIONS);
+    setMessages(prev => [...prev, {
       role: 'model',
-      parts: [{ text: q.text }],
-      inputCard: { icon: '🏡', label: 'Your Requirements', placeholder: q.placeholder }
+      parts: [{ text: 'To narrow things down, how many bedrooms are you looking for?' }]
     }]);
+  };
+
+  // Handle each step of the qualification
+  const handleQualStep = (msg) => {
+    if (qualStep === 'bedrooms') {
+      setQualData(prev => ({ ...prev, bedrooms: msg }));
+      setQualStep('features');
+      setQuickRepliesForStep([]);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Got it — **${msg}**! 🏡 Are there any specific must-haves? (e.g. large backyard, swimming pool, home office, garage)` }]
+      }]);
+      return true;
+    }
+    if (qualStep === 'features') {
+      setQualData(prev => ({ ...prev, features: msg }));
+      setQualStep('budget');
+      setQuickRepliesForStep([]);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Great choice! 💰 What is the maximum budget you would like to stay under for this search?` }]
+      }]);
+      return true;
+    }
+    if (qualStep === 'budget') {
+      setQualData(prev => ({ ...prev, budget: msg }));
+      setQualStep('urgency');
+      setQuickRepliesForStep(URGENCY_OPTIONS);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Perfect! If we find the right property for you, how soon would you want to move in? ⏰` }]
+      }]);
+      return true;
+    }
+    if (qualStep === 'urgency') {
+      setQualData(prev => ({ ...prev, urgency: msg }));
+      setQualStep('mortgage');
+      setQuickRepliesForStep(MORTGAGE_OPTIONS);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Awesome! Just one last thing — have you already been pre-approved for a mortgage? 🏦` }]
+      }]);
+      return true;
+    }
+    if (qualStep === 'mortgage') {
+      const allData = { ...qualData, mortgage: msg };
+      setQualData(allData);
+      setQualStep(null);
+      setQuickRepliesForStep([]);
+      // Now hand off to AI with all the gathered data
+      const summary = `Find me a property with: ${allData.bedrooms}, features: ${allData.features}, budget: ${allData.budget}, timeline: ${allData.urgency}, mortgage: ${msg}.`;
+      return summary; // return the summary string to be sent to AI
+    }
+    return false;
   };
 
   useEffect(() => {
@@ -165,7 +213,7 @@ export default function Chatbot() {
           inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
         }]);
         setLeadStep('name');
-      }, 1500); // 1.5 second delay after the property message
+      }, 1500);
     }
   };
 
@@ -224,11 +272,39 @@ export default function Chatbot() {
     const msg = text || input;
     if (!msg.trim()) return;
     setInput('');
+    setQuickRepliesForStep([]);
 
     const userMsg = { role: 'user', parts: [{ text: msg }] };
     setMessages(prev => [...prev, userMsg]);
 
-    // ── Lead info collection ──────────────────────────────────────
+    // ── Real Estate Step-by-Step Qualification flow ──────────────
+    if (qualStep && botIndustry === 'Real Estate') {
+      const result = handleQualStep(msg);
+      if (result === true) return; // step handled, show next question
+      if (typeof result === 'string') {
+        // all steps done — send summary to AI for property matching
+        setIsLoading(true);
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [...messages, userMsg, { role: 'user', parts: [{ text: result }] }],
+              session_id: sessionId,
+              bot_id: botConfig.botId
+            }),
+          });
+          const data = await response.json();
+          if (data.reply) {
+            setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
+            setMessages(prev => { checkLeadTrigger(prev); return prev; });
+          }
+        } catch(e) { console.error(e); }
+        finally { setIsLoading(false); }
+        return;
+      }
+    }
+
     if (leadStep === 'name') {
       setLeadData(prev => ({ ...prev, name: msg }));
       setLeadStep('phone');
@@ -292,6 +368,25 @@ export default function Chatbot() {
     setIsLoading(true);
     messageCount.current += 1;
 
+    // For Real Estate bots, after the first user message mentioning property/home,
+    // start the qualification flow instead of going to AI
+    const isREBot = botIndustry === 'Real Estate' && botConfig.botId;
+    const propertyKeywords = /home|house|property|bed|room|buy|looking|search|want|need|find/i;
+    const isFirstPropertyQuery = isREBot && qualStep === null && qualData.bedrooms === '' && propertyKeywords.test(msg);
+
+    if (isFirstPropertyQuery) {
+      setIsLoading(false);
+      // First acknowledge the location/intent, then start micro-questions
+      const locationMatch = msg.match(/in\s+([A-Z][a-zA-Z\s]+)/i);
+      const location = locationMatch ? locationMatch[1].trim() : '';
+      const ackMsg = location
+        ? `${location} is a great area! 🏡 Let me help you find the perfect home.`
+        : `Great! Let me help you find the perfect home. 🏡`;
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: ackMsg }] }]);
+      setTimeout(() => startQualFlow(), 600);
+      return;
+    }
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -324,15 +419,12 @@ export default function Chatbot() {
     }
   };
 
-  // Input placeholder text based on current step
   const getPlaceholder = () => {
     if (leadStep === 'name') return 'Enter your full name...';
     if (leadStep === 'phone') return 'Enter your phone number...';
     if (leadStep === 'email') return 'Enter your email address...';
-    if (leadStep === 'requirements') {
-      const q = getRequirementsQuestion(botIndustry);
-      return q.placeholder;
-    }
+    if (qualStep === 'features') return 'e.g. large backyard, swimming pool...';
+    if (qualStep === 'budget') return 'e.g. Under $1.2M, $800,000...';
     if (isHumanTakeover) return 'Message live agent...';
     return 'Type your message...';
   };
@@ -340,6 +432,9 @@ export default function Chatbot() {
   const quickReplies = botConfig.botId
     ? []
     : ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
+
+  // Show step-specific quick replies OR default quick replies
+  const activeQuickReplies = quickRepliesForStep.length > 0 ? quickRepliesForStep : (messages.length === 1 ? quickReplies : []);
 
   return (
     <div className={styles.chatbotContainer} style={{ '--primary': botConfig.primaryColor }}>
@@ -433,20 +528,10 @@ export default function Chatbot() {
             </div>
           )}
 
-          {messages.length === 1 && (
+          {activeQuickReplies.length > 0 && (
             <div className={styles.quickReplies}>
-              {quickReplies.map((reply, idx) => (
-                <button key={idx} onClick={() => {
-                  if (reply === 'Book a Free Call 📅') {
-                    setShowCalendly(true);
-                    setMessages(prev => [...prev,
-                      { role: 'user', parts: [{ text: reply }] },
-                      { role: 'model', parts: [{ text: "Great! Opening the booking calendar for you right now. Pick a time that works best! 📅" }] }
-                    ]);
-                  } else {
-                    handleSend(reply);
-                  }
-                }} className={styles.qrBtn}>{reply}</button>
+              {activeQuickReplies.map((reply, idx) => (
+                <button key={idx} onClick={() => handleSend(reply)} className={styles.qrBtn}>{reply}</button>
               ))}
             </div>
           )}
