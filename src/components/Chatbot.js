@@ -29,6 +29,7 @@ const RE_INTENT_OPTIONS = [
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +53,12 @@ export default function Chatbot() {
     primaryColor: '#4F46E5',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
+
+  useEffect(() => {
+    if (botConfig?.autoOpen) {
+      setTimeout(() => setIsOpen(true), 500); // Small delay for effect
+    }
+  }, [botConfig]);
 
   // Whether this is a client bot that should do property/product qualification
   const isClientBot = !!botConfig.botId;
