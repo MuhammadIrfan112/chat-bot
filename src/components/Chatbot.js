@@ -320,8 +320,6 @@ export default function Chatbot() {
     if (leadStep === 'name') return 'Enter your full name...';
     if (leadStep === 'phone') return 'Enter your phone number...';
     if (leadStep === 'email') return 'Enter your email address...';
-    if (qualStep === 'features') return 'e.g. large backyard, swimming pool...';
-    if (qualStep === 'budget') return 'e.g. Under $1.2M, $800,000...';
     if (isHumanTakeover) return 'Message live agent...';
     return 'Type your message...';
   };
@@ -331,7 +329,8 @@ export default function Chatbot() {
     : ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
 
   // Show RE intent options for first message, or BotFlow quick replies, or nothing
-  const isREBot = botIndustry === 'Real Estate' && botConfig.botId;
+  // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
+  const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading') && botConfig.botId;
   const activeQuickReplies = messages.length === 1
     ? (isREBot ? RE_INTENT_OPTIONS : quickReplies)
     : [];
