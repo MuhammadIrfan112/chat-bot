@@ -210,7 +210,6 @@ export default function Chatbot() {
     const msg = text || input;
     if (!msg.trim()) return;
     setInput('');
-    setQuickRepliesForStep([]);
 
     const userMsg = { role: 'user', parts: [{ text: msg }] };
     setMessages(prev => [...prev, userMsg]);
