@@ -286,15 +286,14 @@ export async function POST(req) {
           }
         }
         
-        // 🏡 Real Estate: First try website scraping, then fall back to Repliers
+        // 🏡 Real Estate: Scrape website and ALWAYS fetch from Repliers MLS
         if (isRealEstateEarly) {
-          // Step 1: Scrape the client's own website first
           if (websiteUrl) {
             liveInventory = await liveScrapeWebsite(websiteUrl);
           }
-          // Step 2: If website had no listings, fall back to Repliers MLS API
-          if (!liveInventory) {
-            liveInventory = await fetchRepliersListings(userQuery);
+          const mlsListings = await fetchRepliersListings(userQuery);
+          if (mlsListings) {
+            liveInventory += mlsListings;
           }
         }
         // 🛒 E-commerce: Use live scraping only
