@@ -1,4 +1,4 @@
-/* ===== BotFlow AI — Page Module Styles ===== */
+/* ===== RealtyPropFlow AI — Page Module Styles ===== */
 
 /* ─── Nav Links ─── */
 .navLink {
@@ -17,7 +17,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, #818CF8, #C084FC);
+  background: linear-gradient(90deg, #E5C158, #C084FC);
   border-radius: 2px;
   transform: scaleX(0);
   transform-origin: left;
@@ -46,7 +46,7 @@
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   color: white;
-  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+  background: linear-gradient(135deg, #E5C158 0%, #C084FC 100%);
   box-shadow: 0 0 24px rgba(99, 102, 241, 0.35);
   position: relative;
   overflow: hidden;
@@ -149,7 +149,7 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(90deg, #818CF8, #C084FC);
+  background: linear-gradient(90deg, #E5C158, #C084FC);
   color: white;
   padding: 5px 18px;
   border-radius: 50px;
@@ -187,13 +187,13 @@
 }
 
 .pricingBtnPro {
-  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+  background: linear-gradient(135deg, #E5C158 0%, #C084FC 100%);
   color: white;
   border: none;
   box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
 }
 .pricingBtnPro:hover {
-  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+  background: linear-gradient(135deg, #E5C158 0%, #C084FC 100%);
   color: white;
   opacity: 0.92;
 }
@@ -227,3 +227,4 @@
     grid-column: span 1;
   }
 }
+

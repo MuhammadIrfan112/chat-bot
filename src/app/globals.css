@@ -1,34 +1,34 @@
-/* ===== BotFlow AI - Ultra Premium Design System ===== */
+/* ===== RealtyPropFlow AI - Ultra Premium Design System ===== */
 /* True Dark Mode Theme (Linear / Vercel style) */
 :root {
   /* Core Colors */
-  --bg-base: #030712;        /* Deepest slate, almost black */
-  --bg-page: #020617;        /* Main background */
-  --bg-card: #0F172A;        /* Slightly lighter slate for cards */
-  --bg-sidebar: #09090b;     /* True dark sidebar */
+  --bg-base: #000000;        /* Pure Black */
+  --bg-page: #050505;        /* Almost black */
+  --bg-card: #111111;        /* Dark grey for cards */
+  --bg-sidebar: #000000;     /* Pure Black */
   
   /* Accents */
-  --primary: #818CF8;        /* Soft glowing indigo */
-  --primary-dark: #4F46E5;   /* Deep indigo */
-  --primary-glow: rgba(99, 102, 241, 0.3);
+  --primary: #C9A227;        /* Golden */
+  --primary-dark: #D4AF37;   /* Bright Golden */
+  --primary-glow: rgba(201, 162, 39, 0.3);
   
-  --accent: #38BDF8;         /* Bright blue for secondary highlights */
-  --success: #10B981;        /* Emerald */
-  --warning: #F59E0B;        /* Amber */
-  --danger: #EF4444;         /* Red */
+  --accent: #E5C158;         /* Lighter Gold for secondary highlights */
+  --success: #4CAF50;        /* Light Green tint */
+  --warning: #E5C158;        /* Lighter gold variant */
+  --danger: #E57373;         /* Soft Red */
   
   /* Text */
-  --text-primary: #F8FAFC;   /* Crisp white */
-  --text-secondary: #94A3B8; /* Muted slate */
-  --text-muted: #64748B;     /* Deep muted slate */
+  --text-primary: #F5F0E1;   /* Soft Cream / Off-white */
+  --text-secondary: #B8C4BC; /* Light greyish-green */
+  --text-muted: #7A8A82;     /* Muted grey-green */
   
   /* Borders & UI Elements */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-light: rgba(255, 255, 255, 0.15);
+  --border: rgba(201, 162, 39, 0.15); /* Subtle gold border */
+  --border-light: rgba(201, 162, 39, 0.3);
   
   /* Shadows & Glows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8), 0 2px 4px -2px rgba(0, 0, 0, 0.8);
   --shadow-glow: 0 0 20px -5px var(--primary-glow);
   --shadow-glow-large: 0 0 40px -10px var(--primary-glow);
 }
@@ -175,3 +175,4 @@ button {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
 }
+

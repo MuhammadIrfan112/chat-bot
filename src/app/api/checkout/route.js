@@ -33,7 +33,7 @@ export async function POST(req) {
     const amount = priceInPKR;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://chat-bot-ruddy-one.vercel.app';
-    const orderId = `botflow-${userId.slice(0,8)}-${plan}-${Date.now()}`;
+    const orderId = `RealtyPropFlow-${userId.slice(0,8)}-${plan}-${Date.now()}`;
 
     // Step 1: Create a payment tracker on Safepay
     const trackerRes = await fetch(`${SAFEPAY_API_BASE}/order/v1/init`, {
@@ -81,4 +81,5 @@ export async function POST(req) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
+
 

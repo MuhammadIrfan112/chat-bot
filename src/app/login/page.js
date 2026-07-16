@@ -95,14 +95,14 @@ export default function Login() {
         
         <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} style={{ position: 'relative', zIndex: 1, maxWidth: '500px', margin: '0 auto' }}>
           <Link href="/">
-            <img src="/logo.png" alt="BotFlow AI" style={{ height: '48px', filter: 'brightness(0) invert(1)', marginBottom: '40px' }} />
+            <img src="/logo.png" alt="RealtyPropFlow AI" style={{ height: '48px', filter: 'brightness(0) invert(1)', marginBottom: '40px' }} />
           </Link>
           <h1 style={{ fontSize: '48px', fontWeight: '800', lineHeight: '1.2', marginBottom: '24px', letterSpacing: '-0.04em' }}>
             Automate your growth. <br />
             <span className="text-gradient-primary">24/7.</span>
           </h1>
           <p style={{ fontSize: '18px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-            Join thousands of modern businesses using BotFlow AI to capture leads, support customers, and scale operations effortlessly.
+            Join thousands of modern businesses using RealtyPropFlow AI to capture leads, support customers, and scale operations effortlessly.
           </p>
         </motion.div>
       </div>
@@ -227,3 +227,4 @@ export default function Login() {
     </div>
   );
 }
+

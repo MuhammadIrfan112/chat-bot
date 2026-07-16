@@ -48,7 +48,7 @@ export default function Chatbot() {
 
   const botConfig = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
-    botName: 'BotFlow AI',
+    botName: 'RealtyPropFlow AI',
     botAvatar: 'AI',
     primaryColor: '#4F46E5',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
@@ -80,11 +80,11 @@ export default function Chatbot() {
     }
     const isClientSite = !!botConfig.botId;
     if (!isClientSite) {
-      const hasOpened = sessionStorage.getItem('botflow_auto_opened');
+      const hasOpened = sessionStorage.getItem('RealtyPropFlow_auto_opened');
       if (!hasOpened) {
         const timer = setTimeout(() => {
           setIsOpen(true);
-          sessionStorage.setItem('botflow_auto_opened', 'true');
+          sessionStorage.setItem('RealtyPropFlow_auto_opened', 'true');
         }, 1500);
         return () => clearTimeout(timer);
       }
@@ -334,7 +334,7 @@ export default function Chatbot() {
     ? []
     : ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
 
-  // Show RE intent options for first message, or BotFlow quick replies, or nothing
+  // Show RE intent options for first message, or RealtyPropFlow quick replies, or nothing
   // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
   const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading') && botConfig.botId;
   const activeQuickReplies = messages.length === 1
@@ -472,3 +472,4 @@ export default function Chatbot() {
     </div>
   );
 }
+

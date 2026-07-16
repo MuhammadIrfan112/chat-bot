@@ -29,7 +29,7 @@ export default async function BotEmbedPage({ params }) {
   const scriptContent = `
     window.CHATBOT_CONFIG = {
       botId: "${bot.id}",
-      botName: "${bot.name || 'BotFlow AI'}",
+      botName: "${bot.name || 'RealtyPropFlow AI'}",
       botAvatar: "${bot.bot_avatar || '🤖'}",
       primaryColor: "${bot.primary_color || '#4F46E5'}",
       welcomeMessage: "${bot.welcome_message || 'Hi there! 👋 How can I help you today?'}"

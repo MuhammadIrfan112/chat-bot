@@ -29,7 +29,7 @@ export default function HowItWorks() {
         className="glass-panel"
         style={{ padding: '0 5%', height: '80px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, borderBottom: '1px solid var(--border-light)' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-          <img src="/logo.png" alt="BotFlow AI" style={{ height: '40px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+          <img src="/logo.png" alt="RealtyPropFlow AI" style={{ height: '40px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
         </Link>
         <Link href="/" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <ChevronLeft size={16} /> Back to Home
@@ -41,7 +41,7 @@ export default function HowItWorks() {
         
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center', marginBottom: '80px' }}>
           <h1 style={{ fontSize: '56px', fontWeight: '800', marginBottom: '24px' }}>
-            How <span className="text-gradient-primary">BotFlow AI</span> Works
+            How <span className="text-gradient-primary">RealtyPropFlow AI</span> Works
           </h1>
           <p style={{ fontSize: '20px', color: 'var(--text-secondary)', maxWidth: '700px', margin: '0 auto', lineHeight: '1.6' }}>
             A complete system designed to capture leads, answer questions, and grow your business on autopilot. Here is what happens after you sign up.
@@ -139,3 +139,4 @@ export default function HowItWorks() {
     </div>
   );
 }
+

@@ -25,7 +25,7 @@ export async function POST(req) {
     toVisit.add(url);
 
     // 1. Fetch Main Page First
-    const mainRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (BotFlow AI Crawler)' }, signal: AbortSignal.timeout(5000) }).catch(() => null);
+    const mainRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (RealtyPropFlow AI Crawler)' }, signal: AbortSignal.timeout(5000) }).catch(() => null);
     if (!mainRes || !mainRes.ok) {
       return Response.json({ error: 'Failed to access the website. Make sure the URL is public.' }, { status: 400 });
     }
@@ -67,7 +67,7 @@ export async function POST(req) {
     if (queue.length > 0) {
       const fetchPromises = queue.map(async (pageUrl) => {
         try {
-          const res = await fetch(pageUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (BotFlow AI Crawler)' }, signal: AbortSignal.timeout(4000) });
+          const res = await fetch(pageUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (RealtyPropFlow AI Crawler)' }, signal: AbortSignal.timeout(4000) });
           if (!res.ok) return null;
           const html = await res.text();
           
@@ -108,3 +108,4 @@ export async function POST(req) {
     return Response.json({ error: "Failed to scrape the website." }, { status: 500 });
   }
 }
+

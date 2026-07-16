@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "BotFlow AI — Grow Your Business with AI Chatbots",
+  title: "RealtyPropFlow AI — Grow Your Business with AI Chatbots",
   description: "Create AI chatbots trained on your business data to capture leads and boost sales.",
 };
 
@@ -23,3 +23,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+

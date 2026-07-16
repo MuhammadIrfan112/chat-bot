@@ -128,7 +128,7 @@ export default function Dashboard() {
           </div>
           <div style={{ position: 'relative', zIndex: 1 }}>
             <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>
-              {isEcommerce ? 'Welcome to Your E-Commerce Hub! 🛒' : isRealEstate ? 'Welcome to Your Real Estate Hub! 🏠' : 'Welcome to BotFlow AI'}
+              {isEcommerce ? 'Welcome to Your E-Commerce Hub! 🛒' : isRealEstate ? 'Welcome to Your Real Estate Hub! 🏠' : 'Welcome to RealtyPropFlow AI'}
             </h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
               {isEcommerce
@@ -270,3 +270,4 @@ export default function Dashboard() {
     </motion.div>
   );
 }
+

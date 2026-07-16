@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'BotFlow AI Chatbot',
+  title: 'RealtyPropFlow AI Chatbot',
 };
 
 export default function BotLayout({ children }) {

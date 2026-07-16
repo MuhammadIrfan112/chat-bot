@@ -109,7 +109,7 @@ export default function DashboardLayout({ children }) {
     return (
       <div className={inter.className} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-page)', padding: '20px' }}>
         <div className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '40px', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '16px' }}>Welcome to BotFlow! 👋</h2>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'white', marginBottom: '16px' }}>Welcome to RealtyPropFlow! 👋</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '32px' }}>
             Before you start, please tell us what kind of website you have so we can set up your dashboard correctly.
           </p>
@@ -158,9 +158,9 @@ export default function DashboardLayout({ children }) {
         {/* Logo Area */}
         <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '6px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
-            <img src="/logo-icon.png" alt="BotFlow AI Icon" style={{ height: '20px', width: '20px', objectFit: 'contain' }} />
+            <img src="/logo-icon.png" alt="RealtyPropFlow AI Icon" style={{ height: '20px', width: '20px', objectFit: 'contain' }} />
           </div>
-          <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', color: 'white' }}>BotFlow<span style={{ color: 'var(--primary)' }}>.</span></h2>
+          <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', color: 'white' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></h2>
         </div>
         
         {/* Navigation */}
@@ -264,3 +264,4 @@ export default function DashboardLayout({ children }) {
     </div>
   );
 }
+

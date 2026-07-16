@@ -5,7 +5,7 @@ export async function POST(req) {
   try {
     const { visitor_id, bot_id } = await req.json();
 
-    // Do not save sessions for the main BotFlow website bot, only for client bots
+    // Do not save sessions for the main RealtyPropFlow website bot, only for client bots
     if (!bot_id) {
       return Response.json({ session: null });
     }
@@ -42,3 +42,4 @@ export async function POST(req) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
+

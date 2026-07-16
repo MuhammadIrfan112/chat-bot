@@ -14,7 +14,7 @@ const LOGOS = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Ahmad Raza', role: 'E-commerce Owner', text: 'BotFlow AI doubled our lead capture rate in the first week. Incredible ROI.', stars: 5 },
+  { name: 'Ahmad Raza', role: 'E-commerce Owner', text: 'RealtyPropFlow AI doubled our lead capture rate in the first week. Incredible ROI.', stars: 5 },
   { name: 'Sara Khan', role: 'Digital Agency', text: 'We deploy this for every client now. Setup takes 10 minutes, results are instant.', stars: 5 },
   { name: 'Mohammed Ali', role: 'SaaS Founder', text: 'The live takeover feature alone is worth the price. We close 3x more deals.', stars: 5 },
 ];
@@ -55,7 +55,7 @@ export default function Home() {
             <Bot size={18} color="white" />
           </div>
           <span style={{ fontSize: '18px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
-            BotFlow<span style={{ color: 'var(--primary)' }}>.</span>
+            RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span>
           </span>
         </Link>
 
@@ -150,7 +150,7 @@ export default function Home() {
               <div style={{ width: '188px', background: '#09090b', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '20px 10px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '28px', paddingLeft: '10px' }}>
                   <div style={{ width: '22px', height: '22px', borderRadius: '5px', background: 'linear-gradient(135deg, #818CF8, #C084FC)', flexShrink: 0 }} />
-                  <span style={{ fontWeight: '800', fontSize: '13px', color: 'white', letterSpacing: '-0.02em' }}>BotFlow.</span>
+                  <span style={{ fontWeight: '800', fontSize: '13px', color: 'white', letterSpacing: '-0.02em' }}>RealtyPropFlow.</span>
                 </div>
                 {['Overview', 'My Chatbots', 'Knowledge', 'CRM Leads', 'Live Chat'].map((item, i) => (
                   <div key={i} style={{ padding: '8px 10px', borderRadius: '8px', marginBottom: '2px', background: i === 0 ? 'rgba(99,102,241,0.12)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', borderLeft: i === 0 ? '2px solid #818CF8' : '2px solid transparent' }}>
@@ -289,7 +289,7 @@ export default function Home() {
               <Sparkles size={13} /> Live Industry Demos
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F8FAFC' }}>
-              See BotFlow AI <span className="text-gradient-primary">working live</span>
+              See RealtyPropFlow AI <span className="text-gradient-primary">working live</span>
             </h2>
             <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '520px', margin: '0 auto' }}>
               Real chatbots, deployed on real websites. Click to experience the bot yourself.
@@ -453,7 +453,7 @@ export default function Home() {
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['3 AI Chatbots', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Remove BotFlow Branding', 'Priority WhatsApp Support'].map((f, i) => (
+                {['3 AI Chatbots', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Remove RealtyPropFlow Branding', 'Priority WhatsApp Support'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#818CF8" strokeWidth={3} />
@@ -500,9 +500,9 @@ export default function Home() {
           <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg, #818CF8, #C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Bot size={14} color="white" />
           </div>
-          <span style={{ fontSize: '15px', fontWeight: '800', color: '#334155', letterSpacing: '-0.02em' }}>BotFlow<span style={{ color: 'var(--primary)' }}>.</span></span>
+          <span style={{ fontSize: '15px', fontWeight: '800', color: '#334155', letterSpacing: '-0.02em' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></span>
         </div>
-        <p style={{ color: '#334155', fontSize: '13px' }}>&copy; {new Date().getFullYear()} BotFlow AI — All rights reserved.</p>
+        <p style={{ color: '#334155', fontSize: '13px' }}>&copy; {new Date().getFullYear()} RealtyPropFlow AI — All rights reserved.</p>
         <div style={{ display: 'flex', gap: '24px' }}>
           {[['/how-it-works', 'How it Works'], ['/login', 'Dashboard']].map(([href, label]) => (
             <Link key={href} href={href} style={{ color: '#475569', fontSize: '13px', transition: 'color 0.2s' }}
@@ -514,3 +514,4 @@ export default function Home() {
     </div>
   );
 }
+

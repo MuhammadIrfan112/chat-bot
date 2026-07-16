@@ -22,7 +22,7 @@ async function liveScrapeWebsite(url) {
 
     // 1. SHOPIFY DIRECTORY CHECK
     try {
-      const shopifyRes = await fetch(targetUrl + 'products.json?limit=20', { headers: { 'User-Agent': 'BotFlow-AI' }});
+      const shopifyRes = await fetch(targetUrl + 'products.json?limit=20', { headers: { 'User-Agent': 'RealtyPropFlow-AI' }});
       if (shopifyRes.ok) {
         const shopifyData = await shopifyRes.json();
         if (shopifyData?.products?.length > 0) {
@@ -51,7 +51,7 @@ async function liveScrapeWebsite(url) {
       
       for (const u of urlsToTry) {
         try {
-          const res = await fetch(u, { headers: { 'User-Agent': 'BotFlow-AI' }, next: { revalidate: 300 } });
+          const res = await fetch(u, { headers: { 'User-Agent': 'RealtyPropFlow-AI' }, next: { revalidate: 300 } });
           if (res.ok) {
             html = await res.text();
             fetchedUrl = u;
@@ -425,11 +425,11 @@ ${isRealEstate || isEcommerce ? `6. IMAGES & LINKS: When showing an item from th
 ${knowledgeSection}${liveInventory}`;
 
     if (!bot_id) {
-      systemInstruction = `You are an AI Sales Consultant for BotFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.
+      systemInstruction = `You are an AI Sales Consultant for RealtyPropFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.
       
 CRITICAL RULES:
 1. DIRECT ANSWERS: Always answer the user's question directly. NEVER just tell them to "check the pricing page" or "contact sales".
-2. BOTFLOW PRICING: BotFlow AI offers a 14-day Free Trial. Paid plans start at $29/month. Custom Enterprise plans are also available. 
+2. RealtyPropFlow PRICING: RealtyPropFlow AI offers a 14-day Free Trial. Paid plans start at $29/month. Custom Enterprise plans are also available. 
 3. FEATURES: AI Chatbots, Live Human Takeover, Lead Capture, Real Estate MLS Integration, Analytics.
 4. LINKS: You can link to https://chatbot-flow.vercel.app/pricing for more details.`;
     }
@@ -489,3 +489,4 @@ CRITICAL RULES:
     return Response.json({ error: error.message || "Failed to generate response." }, { status: 500 });
   }
 }
+

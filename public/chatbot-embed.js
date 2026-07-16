@@ -1,10 +1,10 @@
 (function() {
-  if (window.BOTFLOW_INITIALIZED) return;
-  window.BOTFLOW_INITIALIZED = true;
+  if (window.RealtyPropFlow_INITIALIZED) return;
+  window.RealtyPropFlow_INITIALIZED = true;
 
   var config = window.CHATBOT_CONFIG || {};
   if (!config.botId) {
-    console.error('BotFlow AI: Missing botId in CHATBOT_CONFIG');
+    console.error('RealtyPropFlow AI: Missing botId in CHATBOT_CONFIG');
     return;
   }
 
@@ -29,7 +29,7 @@
   // Create iframe
   var iframe = document.createElement('iframe');
   iframe.src = baseUrl + '/bot/' + config.botId;
-  iframe.id = 'botflow-chatbot-iframe';
+  iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
   // Initial styles: Small size just for the floating button
   var closedStyle = "position: fixed; bottom: 20px; right: 20px; width: 200px; height: 100px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light;";
