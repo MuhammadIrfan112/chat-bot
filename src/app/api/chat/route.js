@@ -153,87 +153,67 @@ async function getRelevantKnowledge(userQuery, botId) {
   }
 }
 
-// 🏡 Fetch real listings from Repliers.io MLS API
-async function fetchRepliersListings(userQuery) {
+// 🏡 Fetch real listings from Apify Dataset (Zillow Scraper)
+async function fetchApifyListings(userQuery) {
   try {
-    const apiKey = process.env.REPLIERS_API_KEY;
-    const apiUrl = process.env.REPLIERS_API_URL || 'https://api.repliers.io';
-    if (!apiKey) return '';
+    const apiToken = process.env.APIFY_API_TOKEN;
+    const runId = process.env.APIFY_DATASET_RUN_ID;
+    
+    if (!apiToken || !runId) return '';
 
     // Smart extraction from user message
     const q = userQuery.toLowerCase();
 
-    // Extract city
-    const cities = ['toronto', 'mississauga', 'brampton', 'vaughan', 'markham', 'oakville', 'richmond hill', 'north york', 'scarborough', 'etobicoke', 'hamilton', 'london', 'ottawa', 'calgary', 'vancouver', 'edmonton', 'winnipeg', 'montreal'];
-    const city = cities.find(c => q.includes(c)) || '';
-
-    // Extract beds (e.g. "3 bed", "3 bedroom", "3br")
-    const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
-    const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : '';
-
-    // Extract budget (e.g. "under 800k", "800,000", "$1.5m", "4.5m")
-    let maxPrice = '';
-    const priceMatch = q.match(/(?:under|below|max|budget|around)?\s*\$?([\d,.]+)\s*(?:k|m|million)?/);
-    if (priceMatch) {
-      let val = parseFloat(priceMatch[1].replace(/,/g, ''));
-      if (q.includes('m') || q.includes('million')) val *= 1000000;
-      else if (q.includes('k')) val *= 1000;
-      if (val > 1000) maxPrice = Math.round(val);
-    }
-
-    // If we have at least city OR beds OR price, do a real search
-    if (!city && !minBedrooms && !maxPrice) return '';
-
-    const params = new URLSearchParams();
-    if (city) params.append('city', city);
-    if (minBedrooms) params.append('minBedrooms', minBedrooms);
-    if (maxPrice) params.append('maxPrice', maxPrice);
-    params.append('status', 'A');
-    params.append('resultsPerPage', '5');
-
-    const response = await fetch(`${apiUrl}/listings?${params.toString()}`, {
+    // Fetch the specific dataset from the successful Apify Run
+    const response = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apiToken}`, {
       method: 'GET',
       headers: {
-        'REPLIERS-API-KEY': apiKey,
-        'Content-Type': 'application/json',
         'Accept': 'application/json'
       }
     });
 
     if (!response.ok) {
-      console.error('Repliers API error:', response.status);
+      console.error('Apify API error:', response.status);
       return '';
     }
 
-    const data = await response.json();
-    const raw = data.listings || [];
-    if (raw.length === 0) return '';
+    const rawData = await response.json();
+    if (!rawData || rawData.length === 0) return '';
 
-    let section = '\n\nLIVE MLS LISTINGS (Real properties from Repliers.io MLS database. ALWAYS show these with images and details when user asks about properties):\n';
-    raw.slice(0, 5).forEach((l, i) => {
-      const addr = [
-        l.address?.streetNumber, l.address?.streetName,
-        l.address?.streetSuffix, l.address?.city
-      ].filter(Boolean).join(' ');
-      const price = l.listPrice ? '$' + Number(l.listPrice).toLocaleString('en-US') : 'Price on Request';
-      const beds = l.details?.numBedrooms || l.bedrooms || 'N/A';
-      const baths = l.details?.numBathrooms || l.bathrooms || 'N/A';
-      const sqft = l.details?.sqft || l.details?.approximateSquareFootage || 'N/A';
-      const img = l.images?.[0] || '';
-      const mls = l.mlsNumber || '';
-      // Use google search for MLS since direct realtor.ca links often break
-      const url = mls ? `https://www.google.com/search?q=${encodeURIComponent(addr + ' MLS ' + mls)}` : '';
+    // Optional: Filter the dataset in-memory based on user query
+    // e.g., if user asks for "4 bed", we filter out beds < 4
+    const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
+    const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
+
+    let filteredData = rawData;
+    if (minBedrooms > 0) {
+      filteredData = rawData.filter(item => parseInt(item.bedrooms) >= minBedrooms);
+    }
+    
+    if (filteredData.length === 0) filteredData = rawData; // Fallback to all if too restrictive
+
+    let section = '\n\nLIVE ZILLOW LISTINGS (Real properties scraped via Apify. ALWAYS show these with images and details when user asks about properties):\n';
+    
+    filteredData.slice(0, 5).forEach((l, i) => {
+      const addr = `${l.address || ''}, ${l.city || ''}, ${l.state || ''}`.replace(/^, | , /g, '').trim();
+      // Price might come as number or string, format appropriately
+      const price = l.price ? '$' + Number(l.price).toLocaleString('en-US') : 'Price on Request';
+      const beds = l.bedrooms || 'N/A';
+      const baths = l.bathrooms || 'N/A';
+      const sqft = l.livingArea || 'N/A';
+      const img = l.imgSrc || l.responsivePhotos?.[0]?.mixedSources?.jpeg?.[0]?.url || '';
+      const url = l.url || '';
 
       section += `\n${i + 1}. **${addr || 'Property ' + (i+1)}**\n`;
       section += `   - Price: ${price}\n`;
       section += `   - Beds: ${beds} | Baths: ${baths} | Size: ${sqft} sqft\n`;
       if (img) section += `   - Image: ![${addr}](${img})\n`;
-      if (url) section += `   - Link: [View Property](${url})\n`;
+      if (url) section += `   - Link: [View Property on Zillow](${url})\n`;
     });
 
     return section;
   } catch (err) {
-    console.error('Repliers fetch error:', err);
+    console.error('Apify fetch error:', err);
     return '';
   }
 }
@@ -286,14 +266,14 @@ export async function POST(req) {
           }
         }
         
-        // 🏡 Real Estate: Scrape website and ALWAYS fetch from Repliers MLS
+        // 🏡 Real Estate: Scrape website and ALWAYS fetch from Apify
         if (isRealEstateEarly) {
           if (websiteUrl) {
             liveInventory = await liveScrapeWebsite(websiteUrl);
           }
-          const mlsListings = await fetchRepliersListings(userQuery);
-          if (mlsListings) {
-            liveInventory += mlsListings;
+          const apifyListings = await fetchApifyListings(userQuery);
+          if (apifyListings) {
+            liveInventory += apifyListings;
           }
         }
         // 🛒 E-commerce: Use live scraping only
