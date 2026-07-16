@@ -153,50 +153,61 @@ async function getRelevantKnowledge(userQuery, botId) {
   }
 }
 
-// 🏡 Fetch real listings from Apify Dataset (Zillow Scraper)
-async function fetchApifyListings(userQuery) {
+// 🏡 Fetch listings from Supabase city_property_data (instant — no external API call)
+async function fetchCityPropertyData(botId, userQuery) {
   try {
-    const apiToken = process.env.APIFY_API_TOKEN;
-    const runId = process.env.APIFY_DATASET_RUN_ID;
-    
-    if (!apiToken || !runId) return '';
-
-    // Smart extraction from user message
     const q = userQuery.toLowerCase();
 
-    // Fetch the specific dataset from the successful Apify Run
-    const response = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apiToken}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    // 1. Get bot's service cities from knowledge_base
+    const { data: kbEntries } = await supabase
+      .from('knowledge_base')
+      .select('content')
+      .eq('bot_id', botId)
+      .eq('source', 'Agent Onboarding Profile')
+      .limit(1);
 
-    if (!response.ok) {
-      console.error('Apify API error:', response.status);
+    let agentCities = [];
+    if (kbEntries && kbEntries.length > 0) {
+      const match = kbEntries[0].content.match(/Service Cities:\s*(.+)/);
+      if (match) {
+        agentCities = match[1].split(',').map(c => c.trim().toLowerCase());
+      }
+    }
+
+    // 2. Detect which city user is asking about
+    // First try to match user query against agent's cities
+    let targetCity = agentCities.find(city => q.includes(city.split(',')[0].toLowerCase()));
+    // Fallback: use first agent city if no specific city mentioned
+    if (!targetCity && agentCities.length > 0) targetCity = agentCities[0];
+    if (!targetCity) return ''; // No city configured
+
+    // 3. Read from city_property_data table (instant DB query)
+    const { data: cityData } = await supabase
+      .from('city_property_data')
+      .select('properties, last_scraped_at')
+      .eq('city', targetCity)
+      .single();
+
+    if (!cityData || !cityData.properties || cityData.properties.length === 0) {
       return '';
     }
 
-    const rawData = await response.json();
-    if (!rawData || rawData.length === 0) return '';
+    const rawData = cityData.properties;
 
-    // Optional: Filter the dataset in-memory based on user query
-    // e.g., if user asks for "4 bed", we filter out beds < 4
+    // 4. Filter by beds if user mentioned it
     const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
     const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
+    let filteredData = minBedrooms > 0
+      ? rawData.filter(item => parseInt(item.bedrooms) >= minBedrooms)
+      : rawData;
+    if (filteredData.length === 0) filteredData = rawData;
 
-    let filteredData = rawData;
-    if (minBedrooms > 0) {
-      filteredData = rawData.filter(item => parseInt(item.bedrooms) >= minBedrooms);
-    }
-    
-    if (filteredData.length === 0) filteredData = rawData; // Fallback to all if too restrictive
+    const scrapedDate = cityData.last_scraped_at ? new Date(cityData.last_scraped_at).toLocaleDateString() : 'Recently';
 
-    let section = '\n\nLIVE ZILLOW LISTINGS (Real properties scraped via Apify. ALWAYS show these with images and details when user asks about properties):\n';
-    
+    let section = `\n\nLIVE ZILLOW LISTINGS for ${targetCity} (Data refreshed: ${scrapedDate}. ALWAYS show these with images and details when user asks about properties):\n`;
+
     filteredData.slice(0, 5).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.state || ''}`.replace(/^, | , /g, '').trim();
-      // Price might come as number or string, format appropriately
       const price = l.price ? '$' + Number(l.price).toLocaleString('en-US') : 'Price on Request';
       const beds = l.bedrooms || 'N/A';
       const baths = l.bathrooms || 'N/A';
@@ -208,12 +219,12 @@ async function fetchApifyListings(userQuery) {
       section += `   - Price: ${price}\n`;
       section += `   - Beds: ${beds} | Baths: ${baths} | Size: ${sqft} sqft\n`;
       if (img) section += `   - Image: ![${addr}](${img})\n`;
-      if (url) section += `   - Link: [View Property on Zillow](${url})\n`;
+      if (url) section += `   - Link: [View on Zillow](${url})\n`;
     });
 
     return section;
   } catch (err) {
-    console.error('Apify fetch error:', err);
+    console.error('City property fetch error:', err);
     return '';
   }
 }
@@ -266,14 +277,14 @@ export async function POST(req) {
           }
         }
         
-        // 🏡 Real Estate: Scrape website and ALWAYS fetch from Apify
+        // 🏡 Real Estate: Scrape website and fetch from city DB
         if (isRealEstateEarly) {
           if (websiteUrl) {
             liveInventory = await liveScrapeWebsite(websiteUrl);
           }
-          const apifyListings = await fetchApifyListings(userQuery);
-          if (apifyListings) {
-            liveInventory += apifyListings;
+          const cityListings = await fetchCityPropertyData(bot_id, userQuery);
+          if (cityListings) {
+            liveInventory += cityListings;
           }
         }
         // 🛒 E-commerce: Use live scraping only

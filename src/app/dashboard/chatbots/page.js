@@ -20,9 +20,10 @@ export default function MyBots() {
     welcome_message: 'Hi there! 👋 How can I help you today?',
     primary_color: '#4F46E5',
     bot_avatar: '🤖',
-    target_city: '',
+    cities: [],
     coverage_area: 'exclusive',
   });
+  const [cityInput, setCityInput] = useState('');
 
   const avatarOptions = ['🤖', '👩', '👨', '👩‍💼', '👨‍💼', '🦸‍♀️', '🦸‍♂️', '🧠'];
 
@@ -127,12 +128,17 @@ export default function MyBots() {
 
       if (data) {
         // Generate Knowledge Base Profile for Real Estate Agents
-        if (form.industry === 'Real Estate' && form.target_city.trim() !== '') {
+        if (form.industry === 'Real Estate' && form.cities.length > 0) {
           const isExclusive = form.coverage_area === 'exclusive';
+          const cityList = form.cities.join(', ');
           const kbContent = `[AGENT KNOWLEDGE PROFILE]
 Agent Name: ${form.name}
-Primary Target City: ${form.target_city}
-Coverage Policy: ${isExclusive ? `I exclusively sell and buy properties in ${form.target_city}. If a user asks for properties in another city, state, or country, I must politely inform them that I am a local expert in ${form.target_city} and do not cover that area, but I can refer them to a trusted local partner.` : `I primarily focus on ${form.target_city}, but I can assist with properties in surrounding areas as well. However, my main expertise is ${form.target_city}.`}`;
+Service Cities: ${cityList}
+Coverage Policy: ${isExclusive
+            ? `I exclusively sell and buy properties in these areas: ${cityList}. If a user asks for properties in any other city, state, or country NOT in this list, I must politely inform them that I specialize only in these areas and can refer them to a trusted local partner.`
+            : `I primarily focus on ${cityList}, but I can also assist with properties in surrounding areas.`
+          }
+IMPORTANT: When a user asks about properties, always check if their requested city matches one of my service cities (${cityList}). If yes, show available data. If no, redirect them.`;
 
           await supabase.from('knowledge_base').insert({
             user_id: userId,
@@ -151,7 +157,8 @@ Coverage Policy: ${isExclusive ? `I exclusively sell and buy properties in ${for
 
         setShowForm(false);
         setCreateError('');
-        setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖', target_city: '', coverage_area: 'exclusive' });
+        setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖', cities: [], coverage_area: 'exclusive' });
+        setCityInput('');
         fetchBots(userId);
         setEmbedBot(data);
       }
@@ -247,24 +254,60 @@ Coverage Policy: ${isExclusive ? `I exclusively sell and buy properties in ${for
 
               {form.industry === 'Real Estate' && (
                 <div style={{ padding: '16px', backgroundColor: 'rgba(52, 211, 153, 0.05)', border: '1px solid rgba(52, 211, 153, 0.2)', borderRadius: '12px', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#34D399', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Agent Knowledge Profile</div>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#34D399', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>🏠 Agent Service Areas</div>
                   
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>Target City</label>
-                    <input
-                      value={form.target_city}
-                      onChange={(e) => setForm({ ...form, target_city: e.target.value })}
-                      placeholder="e.g. Milton, ON"
-                      className="glass-input"
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
-                    />
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>Cities / Towns You Serve</label>
+                    
+                    {/* Chip display */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                      {form.cities.map((city, idx) => (
+                        <span key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: 'rgba(52, 211, 153, 0.15)', border: '1px solid rgba(52, 211, 153, 0.4)', color: '#34D399', borderRadius: '20px', padding: '4px 10px', fontSize: '12px', fontWeight: '600' }}>
+                          {city}
+                          <button type="button" onClick={() => setForm({ ...form, cities: form.cities.filter((_, i) => i !== idx) })} style={{ background: 'none', border: 'none', color: '#34D399', cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>×</button>
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Input to add new city */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        value={cityInput}
+                        onChange={(e) => setCityInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if ((e.key === 'Enter' || e.key === ',') && cityInput.trim()) {
+                            e.preventDefault();
+                            const newCity = cityInput.trim().replace(/,$/, '');
+                            if (newCity && !form.cities.includes(newCity)) {
+                              setForm({ ...form, cities: [...form.cities, newCity] });
+                            }
+                            setCityInput('');
+                          }
+                        }}
+                        placeholder="Type city name, press Enter to add..."
+                        className="glass-input"
+                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newCity = cityInput.trim();
+                          if (newCity && !form.cities.includes(newCity)) {
+                            setForm({ ...form, cities: [...form.cities, newCity] });
+                          }
+                          setCityInput('');
+                        }}
+                        style={{ padding: '8px 14px', borderRadius: '8px', background: 'rgba(52, 211, 153, 0.2)', border: '1px solid rgba(52, 211, 153, 0.4)', color: '#34D399', fontWeight: '700', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap' }}
+                      >+ Add</button>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '5px' }}>e.g. Milton, Halton, Burlington, Mississauga</div>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>Coverage Area Policy</label>
                     <select value={form.coverage_area} onChange={e => setForm({...form, coverage_area: e.target.value})} className="glass-input" style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}>
-                      <option style={{ color: 'black' }} value="exclusive">I EXCLUSIVELY sell here (Refer other cities to partners)</option>
-                      <option style={{ color: 'black' }} value="broad">I primarily sell here, but can assist elsewhere too</option>
+                      <option style={{ color: 'black' }} value="exclusive">I EXCLUSIVELY sell in listed cities (Refer others to partners)</option>
+                      <option style={{ color: 'black' }} value="broad">I primarily sell here, but can assist nearby areas too</option>
                     </select>
                   </div>
                 </div>
