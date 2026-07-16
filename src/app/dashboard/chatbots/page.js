@@ -20,6 +20,8 @@ export default function MyBots() {
     welcome_message: 'Hi there! 👋 How can I help you today?',
     primary_color: '#4F46E5',
     bot_avatar: '🤖',
+    target_city: '',
+    coverage_area: 'exclusive',
   });
 
   const avatarOptions = ['🤖', '👩', '👨', '👩‍💼', '👨‍💼', '🦸‍♀️', '🦸‍♂️', '🧠'];
@@ -73,7 +75,7 @@ export default function MyBots() {
         setShowForm(false);
         setEditingBotId(null);
         setCreateError('');
-        setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
+        setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖', target_city: '', coverage_area: 'exclusive' });
         fetchBots(userId);
       }
       setCreating(false);
@@ -124,6 +126,22 @@ export default function MyBots() {
       }
 
       if (data) {
+        // Generate Knowledge Base Profile for Real Estate Agents
+        if (form.industry === 'Real Estate' && form.target_city.trim() !== '') {
+          const isExclusive = form.coverage_area === 'exclusive';
+          const kbContent = `[AGENT KNOWLEDGE PROFILE]
+Agent Name: ${form.name}
+Primary Target City: ${form.target_city}
+Coverage Policy: ${isExclusive ? `I exclusively sell and buy properties in ${form.target_city}. If a user asks for properties in another city, state, or country, I must politely inform them that I am a local expert in ${form.target_city} and do not cover that area, but I can refer them to a trusted local partner.` : `I primarily focus on ${form.target_city}, but I can assist with properties in surrounding areas as well. However, my main expertise is ${form.target_city}.`}`;
+
+          await supabase.from('knowledge_base').insert({
+            user_id: userId,
+            bot_id: data.id,
+            content: kbContent,
+            source: 'Agent Onboarding Profile'
+          });
+        }
+
         // Trigger background auto-scraping to train the bot
         fetch('/api/bot/scrape-website', {
           method: 'POST',
@@ -133,7 +151,7 @@ export default function MyBots() {
 
         setShowForm(false);
         setCreateError('');
-        setForm({ name: '', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' });
+        setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖', target_city: '', coverage_area: 'exclusive' });
         fetchBots(userId);
         setEmbedBot(data);
       }
@@ -226,6 +244,31 @@ export default function MyBots() {
                   <option style={{ color: 'black' }} value="Other">Other</option>
                 </select>
               </div>
+
+              {form.industry === 'Real Estate' && (
+                <div style={{ padding: '16px', backgroundColor: 'rgba(52, 211, 153, 0.05)', border: '1px solid rgba(52, 211, 153, 0.2)', borderRadius: '12px', marginBottom: '24px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#34D399', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Agent Knowledge Profile</div>
+                  
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>Target City</label>
+                    <input
+                      value={form.target_city}
+                      onChange={(e) => setForm({ ...form, target_city: e.target.value })}
+                      placeholder="e.g. Milton, ON"
+                      className="glass-input"
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>Coverage Area Policy</label>
+                    <select value={form.coverage_area} onChange={e => setForm({...form, coverage_area: e.target.value})} className="glass-input" style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}>
+                      <option style={{ color: 'black' }} value="exclusive">I EXCLUSIVELY sell here (Refer other cities to partners)</option>
+                      <option style={{ color: 'black' }} value="broad">I primarily sell here, but can assist elsewhere too</option>
+                    </select>
+                  </div>
+                </div>
+              )}
               <div style={{ marginBottom: '24px' }}>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>Target Website URL</label>
                 <input
