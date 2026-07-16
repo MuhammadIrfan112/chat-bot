@@ -2,7 +2,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 9999;
+  z-index: 99999;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
@@ -239,16 +239,22 @@
 
 /* ── RESPONSIVE: Tablet (max 768px) ──────────────────────── */
 @media (max-width: 768px) {
+  /* Container stays fixed at bottom-right, never stretches */
   .chatbotContainer {
-    bottom: 16px;
+    bottom: 20px;
     right: 16px;
-    left: 16px;
+    left: auto;
+    width: auto;
   }
 
   .chatWindow {
-    width: 100%;
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    left: 16px;
+    width: auto;
     height: 75vh;
-    max-height: 600px;
+    max-height: 580px;
     border-radius: 18px;
   }
 
@@ -280,30 +286,29 @@
 
 /* ── RESPONSIVE: Mobile (max 480px) ──────────────────────── */
 @media (max-width: 480px) {
+  /* Button always stays visible bottom-right — never hides */
   .chatbotContainer {
-    bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
+    bottom: 20px;
+    right: 16px;
+    left: auto;
+    width: auto;
   }
 
+  /* Chat window opens above the button, full-width */
   .chatWindow {
-    width: 100vw;
-    height: 90vh;
-    border-radius: 20px 20px 0 0;
     position: fixed;
-    bottom: 0;
-    left: 0;
+    bottom: 80px;
     right: 0;
+    left: 0;
+    width: 100vw;
+    height: 85vh;
+    border-radius: 20px 20px 0 0;
   }
 
   .floatingBtn {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    left: auto;
     font-size: 14px;
     padding: 13px 20px;
+    white-space: nowrap;
   }
 
   .header {
