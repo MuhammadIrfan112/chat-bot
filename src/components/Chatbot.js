@@ -50,7 +50,7 @@ export default function Chatbot() {
     botId: null,
     botName: 'RealtyPropFlow AI',
     botAvatar: 'AI',
-    primaryColor: '#4F46E5',
+    primaryColor: '#C9A227',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
 

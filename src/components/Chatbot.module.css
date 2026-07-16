@@ -7,8 +7,8 @@
 }
 
 .floatingBtn {
-  background: linear-gradient(135deg, var(--primary, #C9A227), #E5C158);
-  color: white;
+  background: linear-gradient;
+  color: #000000;
   border: none;
   padding: 14px 22px;
   border-radius: 50px;
@@ -44,8 +44,8 @@
 }
 
 .header {
-  background: linear-gradient(135deg, var(--primary, #C9A227) 0%, color-mix(in srgb, var(--primary, #C9A227) 70%, #E5C158) 100%);
-  color: white;
+  background: linear-gradient;
+  color: #000000;
   padding: 14px 18px;
   display: flex;
   justify-content: space-between;

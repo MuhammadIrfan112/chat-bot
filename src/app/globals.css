@@ -98,14 +98,14 @@ html {
 
 /* Text Gradients */
 .text-gradient {
-  background: linear-gradient(to right, #F8FAFC, #94A3B8);
+  background: linear-gradient(to right, #F5F0E1, #B8C4BC);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-primary {
-  background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+  background: linear-gradient(135deg, #D4AF37 0%, #E5C158 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

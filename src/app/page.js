@@ -22,9 +22,9 @@ const TESTIMONIALS = [
 const FEATURES = [
   { icon: <Zap size={22} />, title: 'Lightning Fast Setup', desc: 'No coding needed. Paste your URL, upload your docs, and go live in under 10 minutes.', color: '#38BDF8', rgb: '56,189,248' },
   { icon: <Activity size={22} />, title: 'Capture Leads 24/7', desc: 'AI intelligently collects Name and Email and pushes them straight to your CRM.', color: '#10B981', rgb: '16,185,129' },
-  { icon: <Bot size={22} />, title: 'Custom Knowledge Base', desc: 'Feed it PDFs, URLs, or FAQs. Your bot answers exactly like your best sales rep.', color: '#818CF8', rgb: '129,140,248' },
+  { icon: <Bot size={22} />, title: 'Custom Knowledge Base', desc: 'Feed it PDFs, URLs, or FAQs. Your bot answers exactly like your best sales rep.', color: '#D4AF37', rgb: '129,140,248' },
   { icon: <Shield size={22} />, title: 'Live Human Takeover', desc: 'See a high-value prospect? Pause the AI and jump in yourself with a single click.', color: '#F59E0B', rgb: '245,158,11' },
-  { icon: <Globe size={22} />, title: 'Embed Anywhere', desc: 'Works on Shopify, WordPress, Wix, Webflow, or any custom-built website.', color: '#C084FC', rgb: '192,132,252' },
+  { icon: <Globe size={22} />, title: 'Embed Anywhere', desc: 'Works on Shopify, WordPress, Wix, Webflow, or any custom-built website.', color: '#E5C158', rgb: '192,132,252' },
   { icon: <TrendingUp size={22} />, title: 'Analytics & Insights', desc: 'Track sessions, lead quality, and bot performance from your live dashboard.', color: '#EF4444', rgb: '239,68,68' },
 ];
 
@@ -51,9 +51,7 @@ export default function Home() {
       >
         {/* Logo: icon + text  */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #818CF8, #C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Bot size={18} color="white" />
-          </div>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
           <span style={{ fontSize: '18px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
             RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span>
           </span>
@@ -81,7 +79,7 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(99,102,241,0.12)', padding: '6px 16px', borderRadius: '50px', fontSize: '13px', fontWeight: '700', marginBottom: '32px', border: '1px solid rgba(129,140,248,0.25)', color: '#A5B4FC', letterSpacing: '0.02em' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(201,162,39,0.12)', padding: '6px 16px', borderRadius: '50px', fontSize: '13px', fontWeight: '700', marginBottom: '32px', border: '1px solid rgba(129,140,248,0.25)', color: '#A5B4FC', letterSpacing: '0.02em' }}
           >
             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', flexShrink: 0, display: 'inline-block' }} />
             The #1 AI Chatbot for Sales & Support
@@ -92,7 +90,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 80 }}
-            style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: '900', lineHeight: 1.07, marginBottom: '28px', letterSpacing: '-0.03em', color: '#F8FAFC' }}
+            style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: '900', lineHeight: 1.07, marginBottom: '28px', letterSpacing: '-0.03em', color: '#F5F0E1' }}
           >
             Turn website visitors <br />
             into <span className="text-gradient-primary">paying customers.</span>
@@ -102,9 +100,9 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            style={{ fontSize: '19px', color: '#94A3B8', maxWidth: '580px', margin: '0 auto 44px', lineHeight: 1.75 }}
+            style={{ fontSize: '19px', color: '#B8C4BC', maxWidth: '580px', margin: '0 auto 44px', lineHeight: 1.75 }}
           >
-            Deploy an AI-powered chatbot trained on <em style={{ color: '#C7D2FE', fontStyle: 'normal', fontWeight: '600' }}>your data</em> in under 10 minutes. Capture leads, answer questions, and close deals — 24/7.
+            Deploy an AI-powered chatbot trained on <em style={{ color: '#E5C158', fontStyle: 'normal', fontWeight: '600' }}>your data</em> in under 10 minutes. Capture leads, answer questions, and close deals — 24/7.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -131,7 +129,7 @@ export default function Home() {
           transition={{ type: 'spring', stiffness: 45, damping: 18, delay: 0.7 }}
           style={{ marginTop: '72px', width: '100%', maxWidth: '1050px', position: 'relative', zIndex: 2 }}
         >
-          <div style={{ position: 'absolute', inset: '-30px', background: 'radial-gradient(ellipse 80% 50% at 50% 60%, rgba(99,102,241,0.18) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: '-30px', background: 'radial-gradient(ellipse 80% 50% at 50% 60%, rgba(201,162,39,0.18) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
 
           <div style={{ position: 'relative', zIndex: 1, borderRadius: '18px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)' }}>
             {/* Browser chrome */}
@@ -149,13 +147,13 @@ export default function Home() {
               {/* Sidebar */}
               <div style={{ width: '188px', background: '#09090b', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '20px 10px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '28px', paddingLeft: '10px' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '5px', background: 'linear-gradient(135deg, #818CF8, #C084FC)', flexShrink: 0 }} />
+                  <div style={{ width: '22px', height: '22px', borderRadius: '5px', background: 'linear-gradient(135deg, #D4AF37, #E5C158)', flexShrink: 0 }} />
                   <span style={{ fontWeight: '800', fontSize: '13px', color: 'white', letterSpacing: '-0.02em' }}>RealtyPropFlow.</span>
                 </div>
                 {['Overview', 'My Chatbots', 'Knowledge', 'CRM Leads', 'Live Chat'].map((item, i) => (
-                  <div key={i} style={{ padding: '8px 10px', borderRadius: '8px', marginBottom: '2px', background: i === 0 ? 'rgba(99,102,241,0.12)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', borderLeft: i === 0 ? '2px solid #818CF8' : '2px solid transparent' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: i === 0 ? '#818CF8' : '#334155' }} />
-                    <span style={{ fontSize: '12px', color: i === 0 ? '#C7D2FE' : '#475569', fontWeight: i === 0 ? '600' : '400' }}>{item}</span>
+                  <div key={i} style={{ padding: '8px 10px', borderRadius: '8px', marginBottom: '2px', background: i === 0 ? 'rgba(201,162,39,0.12)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', borderLeft: i === 0 ? '2px solid #D4AF37' : '2px solid transparent' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: i === 0 ? '#D4AF37' : '#334155' }} />
+                    <span style={{ fontSize: '12px', color: i === 0 ? '#E5C158' : '#475569', fontWeight: i === 0 ? '600' : '400' }}>{item}</span>
                   </div>
                 ))}
               </div>
@@ -168,7 +166,7 @@ export default function Home() {
                 </div>
                 {/* Stats */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
-                  {[{ label: 'Total Leads', value: '247', c: '#10B981' }, { label: 'Knowledge Items', value: '18', c: '#818CF8' }, { label: 'Chat Sessions', value: '1,482', c: '#F59E0B' }].map((s, i) => (
+                  {[{ label: 'Total Leads', value: '247', c: '#10B981' }, { label: 'Knowledge Items', value: '18', c: '#D4AF37' }, { label: 'Chat Sessions', value: '1,482', c: '#F59E0B' }].map((s, i) => (
                     <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '14px', borderLeft: `3px solid ${s.c}` }}>
                       <div style={{ fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{s.label}</div>
                       <div style={{ fontSize: '26px', fontWeight: '800', color: '#F1F5F9' }}>{s.value}</div>
@@ -179,11 +177,11 @@ export default function Home() {
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden' }}>
                   <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', fontWeight: '700', color: '#CBD5E1' }}>Recent CRM Leads</span>
-                    <span style={{ fontSize: '11px', color: '#818CF8', fontWeight: '600' }}>View All →</span>
+                    <span style={{ fontSize: '11px', color: '#D4AF37', fontWeight: '600' }}>View All →</span>
                   </div>
                   {[{ name: 'Ali Hassan', email: 'ali@store.com', status: 'New Lead', sc: '#10B981', sb: 'rgba(16,185,129,0.12)' }, { name: 'Sara Sheikh', email: 'sara@business.pk', status: 'Contacted', sc: '#F59E0B', sb: 'rgba(245,158,11,0.12)' }, { name: 'Kamran Malik', email: 'kamran@co.com', status: 'New Lead', sc: '#10B981', sb: 'rgba(16,185,129,0.12)' }].map((lead, i) => (
                     <div key={i} style={{ padding: '9px 14px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #818CF8, #4F46E5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'white', flexShrink: 0 }}>{lead.name[0]}</div>
+                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #D4AF37, #C9A227)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'white', flexShrink: 0 }}>{lead.name[0]}</div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0' }}>{lead.name}</div>
                         <div style={{ fontSize: '11px', color: '#475569' }}>{lead.email}</div>
@@ -220,7 +218,7 @@ export default function Home() {
       {/* ─── Features Bento ─── */}
       <section id="features" style={{ padding: '120px 6%', position: 'relative', zIndex: 10, maxWidth: '1200px', margin: '0 auto' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <h2 style={{ fontSize: 'clamp(32px, 4.5vw, 52px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F8FAFC' }}>
+          <h2 style={{ fontSize: 'clamp(32px, 4.5vw, 52px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F5F0E1' }}>
             Everything you need to <span className="text-gradient-primary">convert visitors</span>
           </h2>
           <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '500px', margin: '0 auto' }}>One powerful platform to handle your entire customer engagement funnel.</p>
@@ -256,7 +254,7 @@ export default function Home() {
       <section style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', color: '#F8FAFC' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', color: '#F5F0E1' }}>
               Trusted by businesses <span className="text-gradient-primary">like yours</span>
             </h2>
           </motion.div>
@@ -269,7 +267,7 @@ export default function Home() {
                 </div>
                 <p style={{ color: '#CBD5E1', fontSize: '15px', lineHeight: '1.7', marginBottom: '24px', fontWeight: '500' }}>"{t.text}"</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #818CF8, #C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: 'white', flexShrink: 0 }}>{t.name[0]}</div>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #D4AF37, #E5C158)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: 'white', flexShrink: 0 }}>{t.name[0]}</div>
                   <div>
                     <div style={{ fontWeight: '700', fontSize: '14px', color: '#F1F5F9' }}>{t.name}</div>
                     <div style={{ fontSize: '12px', color: '#475569' }}>{t.role}</div>
@@ -288,7 +286,7 @@ export default function Home() {
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(203,168,118,0.1)', padding: '5px 16px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', color: '#cba876', marginBottom: '20px', border: '1px solid rgba(203,168,118,0.25)' }}>
               <Sparkles size={13} /> Live Industry Demos
             </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F8FAFC' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F5F0E1' }}>
               See RealtyPropFlow AI <span className="text-gradient-primary">working live</span>
             </h2>
             <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '520px', margin: '0 auto' }}>
@@ -334,7 +332,7 @@ export default function Home() {
                 </p>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   {['Property Search', 'Lead Capture', 'Agent Info'].map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#94A3B8' }}>{tag}</span>
+                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#B8C4BC' }}>{tag}</span>
                   ))}
                 </div>
               </div>
@@ -388,7 +386,7 @@ export default function Home() {
                 </p>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                   {['Product Finder', 'Size Guide', 'Promo Codes'].map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#94A3B8' }}>{tag}</span>
+                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#B8C4BC' }}>{tag}</span>
                   ))}
                 </div>
               </div>
@@ -414,7 +412,7 @@ export default function Home() {
       <section id="pricing" style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
         <div style={{ maxWidth: '820px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '14px', color: '#F8FAFC' }}>Simple, transparent pricing</h2>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '14px', color: '#F5F0E1' }}>Simple, transparent pricing</h2>
             <p style={{ color: '#64748B', fontSize: '17px' }}>Cancel anytime. No hidden fees.</p>
           </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', textAlign: 'left' }}>
@@ -422,19 +420,19 @@ export default function Home() {
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
               style={{ background: 'rgba(15,23,42,0.9)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s' }}
               whileHover={{ y: -6, borderColor: 'rgba(255,255,255,0.16)' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F8FAFC' }}>Starter</h3>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Starter</h3>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Perfect for small businesses.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F8FAFC', letterSpacing: '-0.04em' }}>$29</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$29</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
                 {['1 AI Chatbot', 'Unlimited Knowledge Training', 'Up to 100 Leads/month', 'Email Support'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={10} color="#94A3B8" strokeWidth={3} />
+                      <Check size={10} color="#B8C4BC" strokeWidth={3} />
                     </div>
-                    <span style={{ fontSize: '14px', color: '#94A3B8' }}>{f}</span>
+                    <span style={{ fontSize: '14px', color: '#B8C4BC' }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -443,22 +441,22 @@ export default function Home() {
 
             {/* Pro */}
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-              style={{ background: 'linear-gradient(160deg, rgba(30,27,60,1) 0%, rgba(15,23,42,1) 100%)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(129,140,248,0.3)', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 0 40px rgba(99,102,241,0.12)', transition: 'all 0.3s' }}
-              whileHover={{ y: -6, boxShadow: '0 0 60px rgba(99,102,241,0.22)' }}>
-              <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #818CF8, #C084FC)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}>MOST POPULAR</div>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F8FAFC' }}>Pro</h3>
+              style={{ background: 'linear-gradient(160deg, rgba(30,27,60,1) 0%, rgba(15,23,42,1) 100%)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(129,140,248,0.3)', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 0 40px rgba(201,162,39,0.12)', transition: 'all 0.3s' }}
+              whileHover={{ y: -6, boxShadow: '0 0 60px rgba(201,162,39,0.22)' }}>
+              <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #D4AF37, #E5C158)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>MOST POPULAR</div>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Pro</h3>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>For growing teams & agencies.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F8FAFC', letterSpacing: '-0.04em' }}>$79</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$79</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
                 {['3 AI Chatbots', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Remove RealtyPropFlow Branding', 'Priority WhatsApp Support'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={10} color="#818CF8" strokeWidth={3} />
+                      <Check size={10} color="#D4AF37" strokeWidth={3} />
                     </div>
-                    <span style={{ fontSize: '14px', color: i >= 2 ? '#E2E8F0' : '#94A3B8', fontWeight: i >= 2 ? '600' : '400' }}>{f}</span>
+                    <span style={{ fontSize: '14px', color: i >= 2 ? '#E2E8F0' : '#B8C4BC', fontWeight: i >= 2 ? '600' : '400' }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -474,14 +472,14 @@ export default function Home() {
           initial={{ opacity: 0, y: 36 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          style={{ maxWidth: '900px', margin: '0 auto', borderRadius: '24px', padding: '64px 56px', textAlign: 'center', position: 'relative', overflow: 'hidden', background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(129,140,248,0.2)', boxShadow: '0 0 60px rgba(99,102,241,0.1)' }}
+          style={{ maxWidth: '900px', margin: '0 auto', borderRadius: '24px', padding: '64px 56px', textAlign: 'center', position: 'relative', overflow: 'hidden', background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(129,140,248,0.2)', boxShadow: '0 0 60px rgba(201,162,39,0.1)' }}
         >
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '500px', height: '300px', background: '#4338CA', filter: 'blur(100px)', opacity: 0.15, zIndex: 0, pointerEvents: 'none' }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(129,140,248,0.12)', padding: '5px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', color: '#818CF8', marginBottom: '24px', border: '1px solid rgba(129,140,248,0.2)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(129,140,248,0.12)', padding: '5px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', color: '#D4AF37', marginBottom: '24px', border: '1px solid rgba(129,140,248,0.2)' }}>
               <Sparkles size={13} /> Limited Offer — 15-Day Free Trial
             </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '18px', color: '#F8FAFC' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '18px', color: '#F5F0E1' }}>
               Ready to automate your growth?
             </h2>
             <p style={{ fontSize: '17px', color: '#64748B', marginBottom: '36px', maxWidth: '440px', margin: '0 auto 36px' }}>
@@ -497,7 +495,7 @@ export default function Home() {
       {/* ─── Footer ─── */}
       <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '36px 6%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg, #818CF8, #C084FC)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg, #D4AF37, #E5C158)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Bot size={14} color="white" />
           </div>
           <span style={{ fontSize: '15px', fontWeight: '800', color: '#334155', letterSpacing: '-0.02em' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></span>
@@ -506,7 +504,7 @@ export default function Home() {
         <div style={{ display: 'flex', gap: '24px' }}>
           {[['/how-it-works', 'How it Works'], ['/login', 'Dashboard']].map(([href, label]) => (
             <Link key={href} href={href} style={{ color: '#475569', fontSize: '13px', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.target.style.color = '#94A3B8'}
+              onMouseEnter={e => e.target.style.color = '#B8C4BC'}
               onMouseLeave={e => e.target.style.color = '#475569'}>{label}</Link>
           ))}
         </div>
