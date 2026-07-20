@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
+import Chatbot from '@/components/Chatbot';
 
 export default async function BotEmbedPage({ params }) {
   // Await params as required by newer Next.js versions
@@ -38,6 +39,7 @@ export default async function BotEmbedPage({ params }) {
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'transparent', backgroundColor: 'transparent' }}>
       <script dangerouslySetInnerHTML={{ __html: scriptContent }} />
+      <Chatbot />
       
       {/* Force transparent background on all wrapper elements */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -50,8 +52,8 @@ export default async function BotEmbedPage({ params }) {
           color-scheme: light !important;
         }
         .chatbotContainer {
-          bottom: 24px !important;
-          right: 24px !important;
+          bottom: 0 !important;
+          right: 0 !important;
           position: fixed !important;
           width: auto !important;
           height: auto !important;
