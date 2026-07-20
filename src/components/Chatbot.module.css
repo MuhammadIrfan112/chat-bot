@@ -201,11 +201,11 @@
 }
 
 .quickReplies {
-  padding: 6px 16px 14px;
+  padding: 6px 16px 14px 20px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .qrBtn {
