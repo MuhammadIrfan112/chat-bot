@@ -58,9 +58,15 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     }
     const checkDevice = () => {
       // Use parent window width if inside an iframe, else use own window
-      const w = window.parent !== window
-        ? (window.parent.innerWidth || window.innerWidth)
-        : window.innerWidth;
+      let w = window.innerWidth;
+      try {
+        if (window.parent !== window) {
+          w = window.parent.innerWidth || window.innerWidth;
+        }
+      } catch (e) {
+        // Fallback if blocked by cross-origin policy
+        w = window.innerWidth;
+      }
       setIsMobile(w <= 480);
       setIsTablet(w > 480 && w <= 768);
     };

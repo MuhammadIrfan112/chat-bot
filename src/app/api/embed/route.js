@@ -26,7 +26,7 @@ export async function GET(req) {
   }
 
   if (!baseUrl) {
-    baseUrl = 'https://chat-bot-ruddy-one.vercel.app';
+    baseUrl = 'https://chatbot-flow.vercel.app';
   }
 
   // Create iframe
@@ -35,7 +35,7 @@ export async function GET(req) {
   
   var isMobile = window.innerWidth <= 480;
   var isTablet = window.innerWidth > 480 && window.innerWidth <= 768;
-  iframe.src = baseUrl + '/bot/' + config.botId + (isMobile ? '' : '?desktop=true');
+  iframe.src = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile' : '?desktop=true');
   
   // Closed: desktop pill button area | mobile: circular button area
   var closedStyle = isMobile
