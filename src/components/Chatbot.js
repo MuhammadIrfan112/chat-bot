@@ -48,17 +48,26 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const messageCount = useRef(0);
   const pollRef = useRef(null);
 
-  // Device detection
+  // Device detection — skip if inside a desktop iframe embed
   useEffect(() => {
+    if (isDesktopEmbed) {
+      // Force desktop mode — iframe handles sizing externally
+      setIsMobile(false);
+      setIsTablet(false);
+      return;
+    }
     const checkDevice = () => {
-      const w = window.innerWidth;
+      // Use parent window width if inside an iframe, else use own window
+      const w = window.parent !== window
+        ? (window.parent.innerWidth || window.innerWidth)
+        : window.innerWidth;
       setIsMobile(w <= 480);
       setIsTablet(w > 480 && w <= 768);
     };
     checkDevice();
     window.addEventListener('resize', checkDevice);
     return () => window.removeEventListener('resize', checkDevice);
-  }, []);
+  }, [isDesktopEmbed]);
 
   const botConfig = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
