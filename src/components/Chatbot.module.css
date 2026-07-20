@@ -152,27 +152,31 @@
 }
 
 .quickReplies {
-  padding: 0 20px 12px;
+  padding: 6px 16px 14px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: center;
 }
 
 .qrBtn {
   background-color: white;
-  border: 1px solid var(--primary, #C9A227);
+  border: 1.5px solid var(--primary, #C9A227);
   color: var(--primary, #C9A227);
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 8px 14px;
+  border-radius: 22px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .qrBtn:hover {
   background-color: var(--primary, #C9A227);
-  color: white;
+  color: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.12);
 }
 
 .inputArea {
