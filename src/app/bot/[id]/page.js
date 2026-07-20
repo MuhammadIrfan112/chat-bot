@@ -50,8 +50,8 @@ export default async function BotEmbedPage({ params }) {
           color-scheme: light !important;
         }
         .chatbotContainer {
-          bottom: 14px !important;
-          right: 14px !important;
+          bottom: 24px !important;
+          right: 24px !important;
           position: fixed !important;
           width: auto !important;
           height: auto !important;

@@ -32,8 +32,8 @@ export async function GET() {
   iframe.src = baseUrl + '/bot/' + config.botId;
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
-  var closedStyle = "position: fixed; bottom: 10px; right: 10px; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
-  var openStyle = "position: fixed; bottom: 10px; right: 10px; width: 390px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var closedStyle = "position: fixed; bottom: 0; right: 0; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var openStyle = "position: fixed; bottom: 0; right: 0; width: 400px; height: 620px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   var isMobile = window.innerWidth <= 480;
   if (isMobile) {
