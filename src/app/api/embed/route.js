@@ -31,13 +31,14 @@ export async function GET(req) {
 
   // Create iframe
   var iframe = document.createElement('iframe');
-  iframe.src = baseUrl + '/bot/' + config.botId;
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
-  var closedStyle = "position: fixed; bottom: 24px; right: 24px; width: 210px; height: 60px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
-  var openStyle = "position: fixed; bottom: 24px; right: 24px; width: 400px; height: 490px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
-  
   var isMobile = window.innerWidth <= 480;
+  iframe.src = baseUrl + '/bot/' + config.botId + (isMobile ? '' : '?desktop=true');
+  
+  var closedStyle = "position: fixed; bottom: 0; right: 0; width: 210px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var openStyle = "position: fixed; bottom: 0; right: 0; width: 440px; height: 650px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  
   if (isMobile) {
     openStyle = "position: fixed; bottom: 0; right: 0; width: 100vw; height: 100vh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light;";
   }

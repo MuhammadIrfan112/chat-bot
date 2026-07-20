@@ -27,7 +27,7 @@ const RE_INTENT_OPTIONS = [
   "❓ I have a general real estate question"
 ];
 
-export default function Chatbot({ isGlobal = false }) {
+export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [messages, setMessages] = useState([]);
@@ -348,7 +348,7 @@ export default function Chatbot({ isGlobal = false }) {
     : [];
 
   return (
-    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={styles.chatbotContainer} style={{ '--primary': botConfig.primaryColor }}>
+    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''}`} style={{ '--primary': botConfig.primaryColor }}>
       {isOpen ? (
         <div className={styles.chatWindow} style={{ position: 'relative' }}>
           <div className={styles.header}>

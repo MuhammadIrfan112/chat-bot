@@ -28,7 +28,7 @@
 
 .chatWindow {
   width: 360px;
-  height: 460px;
+  height: 570px;
   background-color: #FFFFFF;
   border-radius: 22px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.1);
@@ -251,14 +251,14 @@
 /* ── RESPONSIVE: Tablet (max 768px) ──────────────────────── */
 @media (max-width: 768px) {
   /* Container stays fixed at bottom-right, never stretches */
-  .chatbotContainer {
+  .chatbotContainer:not(.forceDesktop) {
     bottom: 20px;
     right: 16px;
     left: auto;
     width: auto;
   }
 
-  .chatWindow {
+  .chatbotContainer:not(.forceDesktop) .chatWindow {
     position: fixed;
     bottom: 80px;
     right: 16px;
@@ -298,7 +298,7 @@
 /* ── RESPONSIVE: Mobile (max 480px) ──────────────────────── */
 @media (max-width: 480px) {
   /* Button always stays visible bottom-right — never hides */
-  .chatbotContainer {
+  .chatbotContainer:not(.forceDesktop) {
     bottom: 20px;
     right: 16px;
     left: auto;
@@ -306,7 +306,7 @@
   }
 
   /* Chat window opens above the button, full-width */
-  .chatWindow {
+  .chatbotContainer:not(.forceDesktop) .chatWindow {
     position: fixed;
     bottom: 80px;
     right: 0;

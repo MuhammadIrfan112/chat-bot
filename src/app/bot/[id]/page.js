@@ -1,10 +1,12 @@
 import { supabase } from '@/lib/supabaseClient';
 import Chatbot from '@/components/Chatbot';
 
-export default async function BotEmbedPage({ params }) {
+export default async function BotEmbedPage({ params, searchParams }) {
   // Await params as required by newer Next.js versions
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const botId = resolvedParams.id;
+  const isDesktopEmbed = resolvedSearchParams.desktop === 'true';
   
   // Fetch bot config from database
   const { data } = await supabase
@@ -39,7 +41,7 @@ export default async function BotEmbedPage({ params }) {
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'transparent', backgroundColor: 'transparent' }}>
       <script dangerouslySetInnerHTML={{ __html: scriptContent }} />
-      <Chatbot />
+      <Chatbot isDesktopEmbed={isDesktopEmbed} />
       
       {/* Force transparent background on all wrapper elements */}
       <style dangerouslySetInnerHTML={{ __html: `
