@@ -83,13 +83,21 @@
 }
 
 .closeBtn {
-  background: none;
+  background: rgba(0,0,0,0.1);
   border: none;
-  color: white;
-  font-size: 18px;
+  color: inherit;
+  font-size: 16px;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.closeBtn:hover {
+  background: rgba(0,0,0,0.2);
 }
 
 .closeBtn:hover {
@@ -117,11 +125,11 @@
 }
 
 .modelMsg {
-  background-color: #FFFFFF;
+  background-color: #F1F5F9;
   color: #1F2937;
   align-self: flex-start;
   border-bottom-left-radius: 4px;
-  border: 1px solid #E5E7EB;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .modelMsg p, .modelMsg h1, .modelMsg h2, .modelMsg h3, .modelMsg li, .modelMsg strong, .modelMsg span {
