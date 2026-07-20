@@ -43,8 +43,14 @@ export default async function BotEmbedPage({ params }) {
       
       {/* Force transparent background on all wrapper elements */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* Failsafe: Hide the global chatbot from layout.js if it accidentally renders in the iframe due to caching */
+        /* Hide the global chatbot (from root layout) if it accidentally renders inside iframe */
         #realty-prop-global-bot { display: none !important; }
+        
+        /* Override chatbotContainer position: the gap is provided by the iframe's own external bottom/right */
+        #realty-prop-embed-bot {
+          bottom: 0 !important;
+          right: 0 !important;
+        }
         
         html, body, #__next, [data-nextjs-scroll-focus-boundary] {
           background: transparent !important;
