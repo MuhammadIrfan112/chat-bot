@@ -88,6 +88,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Main UI chatbot (chatbot-flow.vercel.app) gets extra height ─── */
+.globalChatWindow {
+  height: 520px;
+}
+
 .header {
   background: linear-gradient(135deg, var(--primary, #C9A227) 0%, #E5C158 100%);
   color: #000000;

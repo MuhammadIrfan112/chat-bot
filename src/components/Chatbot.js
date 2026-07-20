@@ -373,7 +373,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   return (
     <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
       {isOpen ? (
-        <div className={styles.chatWindow} style={{ position: 'relative' }}>
+        <div className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`} style={{ position: 'relative' }}>
           <div className={styles.header}>
             <div className={styles.headerInfo}>
               <div className={styles.avatar}>{botConfig.botAvatar}</div>
