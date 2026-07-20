@@ -57,13 +57,13 @@ export default function Home() {
           </span>
         </Link>
 
-        <nav style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
+        <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
           {[['#features', 'Features'], ['#pricing', 'Pricing'], ['/how-it-works', 'How it Works']].map(([href, label]) => (
             <Link key={href} href={href} className={styles.navLink}>{label}</Link>
           ))}
         </nav>
 
-        <Link href="/login" className={styles.secondaryBtn} style={{ padding: '8px 18px', fontSize: '14px' }}>
+        <Link href="/login" className={`${styles.secondaryBtn} ${styles.desktopOnly}`} style={{ padding: '8px 18px', fontSize: '14px' }}>
           Dashboard Login
         </Link>
       </motion.header>
@@ -131,7 +131,9 @@ export default function Home() {
         >
           <div style={{ position: 'absolute', inset: '-30px', background: 'radial-gradient(ellipse 80% 50% at 50% 60%, rgba(201,162,39,0.18) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
 
-          <div style={{ position: 'relative', zIndex: 1, borderRadius: '18px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)' }}>
+          <div style={{ position: 'relative', zIndex: 1, borderRadius: '18px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)', overflowX: 'auto' }}>
+            <div style={{ minWidth: '800px' }}>
+
             {/* Browser chrome */}
             <div style={{ background: '#09090b', borderRadius: '13px 13px 0 0', padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -192,6 +194,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </motion.div>
       </section>
@@ -224,8 +227,8 @@ export default function Home() {
           <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '500px', margin: '0 auto' }}>One powerful platform to handle your entire customer engagement funnel.</p>
         </motion.div>
 
-        {/* Clean 3-col equal grid — no large/small spans */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+        {/* Responsive Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
           {FEATURES.map((f, i) => (
             <motion.div
               key={i}

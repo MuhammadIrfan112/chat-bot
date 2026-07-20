@@ -67,8 +67,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         // Fallback if blocked by cross-origin policy
         w = window.innerWidth;
       }
-      setIsMobile(w <= 480);
-      setIsTablet(w > 480 && w <= 768);
+      setIsMobile(w <= 768);
+      setIsTablet(false); // Tablet is merged into mobile for full screen chat
     };
     checkDevice();
     window.addEventListener('resize', checkDevice);

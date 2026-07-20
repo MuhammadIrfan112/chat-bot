@@ -33,8 +33,8 @@ export async function GET(req) {
   var iframe = document.createElement('iframe');
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
-  var isMobile = window.innerWidth <= 480;
-  var isTablet = window.innerWidth > 480 && window.innerWidth <= 768;
+  var isMobile = window.innerWidth <= 768;
+  var isTablet = false;
   iframe.src = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile' : '?desktop=true');
   
   // Closed: desktop pill button area | mobile: circular button area
