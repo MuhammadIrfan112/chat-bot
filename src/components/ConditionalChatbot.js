@@ -7,5 +7,5 @@ import Chatbot from './Chatbot';
 export default function ConditionalChatbot() {
   const pathname = usePathname();
   if (pathname?.startsWith('/bot/')) return null;
-  return <Chatbot />;
+  return <Chatbot isGlobal={true} />;
 }

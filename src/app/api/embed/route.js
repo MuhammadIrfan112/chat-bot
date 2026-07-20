@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+export const dynamic = 'force-dynamic';
+
+export async function GET(req) {
   const scriptContent = `
 (function() {
   if (window.RealtyPropFlow_INITIALIZED) return;
@@ -33,7 +35,7 @@ export async function GET() {
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
   var closedStyle = "position: fixed; bottom: 0; right: 0; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
-  var openStyle = "position: fixed; bottom: 0; right: 0; width: 410px; height: min(620px, 100vh); border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var openStyle = "position: fixed; bottom: 0; right: 0; width: 410px; height: min(630px, 100vh); border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   var isMobile = window.innerWidth <= 480;
   if (isMobile) {
