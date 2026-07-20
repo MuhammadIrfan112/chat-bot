@@ -29,6 +29,8 @@ const RE_INTENT_OPTIONS = [
 
 export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -45,6 +47,18 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const messagesEndRef = useRef(null);
   const messageCount = useRef(0);
   const pollRef = useRef(null);
+
+  // Device detection
+  useEffect(() => {
+    const checkDevice = () => {
+      const w = window.innerWidth;
+      setIsMobile(w <= 480);
+      setIsTablet(w > 480 && w <= 768);
+    };
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
 
   const botConfig = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
@@ -348,7 +362,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     : [];
 
   return (
-    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''}`} style={{ '--primary': botConfig.primaryColor }}>
+    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
       {isOpen ? (
         <div className={styles.chatWindow} style={{ position: 'relative' }}>
           <div className={styles.header}>
@@ -471,8 +485,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
           </div>
         </div>
       ) : (
-        <button className={styles.floatingBtn} onClick={() => setIsOpen(true)}>
-          💬 Chat with us
+        <button
+          className={`${styles.floatingBtn} ${isMobile ? styles.floatingBtnMobile : ''}`}
+          onClick={() => setIsOpen(true)}
+          title="Chat with us"
+        >
+          {isMobile ? '💬' : '💬 Chat with us'}
         </button>
       )}
     </div>

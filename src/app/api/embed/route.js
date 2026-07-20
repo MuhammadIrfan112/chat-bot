@@ -34,13 +34,20 @@ export async function GET(req) {
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
   var isMobile = window.innerWidth <= 480;
+  var isTablet = window.innerWidth > 480 && window.innerWidth <= 768;
   iframe.src = baseUrl + '/bot/' + config.botId + (isMobile ? '' : '?desktop=true');
   
-  var closedStyle = "position: fixed; bottom: 0; right: 0; width: 210px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  // Closed: desktop pill button area | mobile: circular button area
+  var closedStyle = isMobile
+    ? "position: fixed; bottom: 16px; right: 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
+    : "position: fixed; bottom: 0; right: 0; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+
   var openStyle = "position: fixed; bottom: 0; right: 0; width: 420px; height: 550px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   if (isMobile) {
     openStyle = "position: fixed; bottom: 0; right: 0; width: 100vw; height: 100vh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light;";
+  } else if (isTablet) {
+    openStyle = "position: fixed; bottom: 0; right: 0; width: 400px; height: 580px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   }
 
   iframe.style.cssText = closedStyle;
