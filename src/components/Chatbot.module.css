@@ -27,8 +27,8 @@
 }
 
 .chatWindow {
-  width: 370px;
-  height: min(590px, calc(100vh - 100px));
+  width: 360px;
+  height: 570px;
   background-color: #FFFFFF;
   border-radius: 22px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.1);
@@ -156,16 +156,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .qrBtn {
   background-color: white;
   border: 1.5px solid var(--primary, #C9A227);
   color: var(--primary, #C9A227);
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 22px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;

@@ -18,13 +18,13 @@ const getVisitorId = () => {
 
 const CALENDLY_URL = 'https://calendly.com/dariaodum1/30min';
 
-// 5 initial intent options for Real Estate bots (short text = fit inline as pills)
+// 5 initial intent options for Real Estate bots
 const RE_INTENT_OPTIONS = [
-  "🏡 Buy a Home",
-  "💰 Home Valuation",
-  "🏠 Sell My Home",
-  "🔑 Rent a Property",
-  "❓ General Question"
+  "🏡 I'm looking to buy a home",
+  "💰 I want to know my home's value",
+  "🏠 I'm thinking about selling my home",
+  "🔑 I'm looking to rent",
+  "❓ I have a general real estate question"
 ];
 
 export default function Chatbot() {
