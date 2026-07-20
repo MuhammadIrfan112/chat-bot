@@ -90,7 +90,7 @@
 
 /* ── Main UI chatbot (chatbot-flow.vercel.app) gets extra height ─── */
 .globalChatWindow {
-  height: 520px;
+  height: 570px;
 }
 
 .header {
