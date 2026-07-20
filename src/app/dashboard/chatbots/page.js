@@ -31,15 +31,15 @@ export default function MyBots() {
     init();
   }, []);
 
-  const init = async () => {
+  async function init() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     const id = localStorage.getItem('impersonated_user_id') || session.user.id;
     setUserId(id);
     fetchBots(id);
-  };
+  }
 
-  const fetchBots = async (uid) => {
+  async function fetchBots(uid) {
     const { data } = await supabase
       .from('bots')
       .select('*')
@@ -333,7 +333,7 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
                   className="glass-input"
                   style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
                 />
-                <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', fontWeight: '500' }}>💡 Note: If you want the "📅 Book a Free Call" button to appear, you must provide your Calendly link.</div>
+                <div style={{ fontSize: '11px', color: '#F59E0B', marginTop: '4px', fontWeight: '500' }}>💡 Note: If you want the &quot;📅 Book a Free Call&quot; button to appear, you must provide your Calendly link.</div>
               </div>
 
               <div>
@@ -421,7 +421,7 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
               <button onClick={() => setEmbedBot(null)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--text-secondary)' }}>✕</button>
             </div>
             
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '15px' }}><strong style={{ color: 'var(--text-primary)' }}>Option 1: Do it yourself</strong><br/>Copy this code and paste it into your website's HTML (before the closing <code style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>&lt;/body&gt;</code> tag):</p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '15px' }}><strong style={{ color: 'var(--text-primary)' }}>Option 1: Do it yourself</strong><br/>Copy this code and paste it into your website&apos;s HTML (before the closing <code style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>&lt;/body&gt;</code> tag):</p>
             <pre style={{ backgroundColor: '#020617', border: '1px solid rgba(163,230,53,0.2)', color: '#A3E635', padding: '16px', borderRadius: '12px', fontSize: '13px', overflowX: 'auto', lineHeight: '1.6', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
               {getEmbedCode(embedBot)}
             </pre>
@@ -443,7 +443,7 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
               <div style={{ flex: 1, minWidth: '250px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>⭐ Option 2: Let us do it for you</div>
                 <h3 style={{ color: 'white', fontSize: '20px', fontWeight: '800', margin: '0 0 8px 0' }}>Professional Installation Service</h3>
-                <p style={{ color: '#C7D2FE', fontSize: '13px', margin: '0 0 12px 0', lineHeight: '1.5' }}>Don't know how to code? We will install and deploy the chatbot on your website perfectly within 24 hours.</p>
+                <p style={{ color: '#C7D2FE', fontSize: '13px', margin: '0 0 12px 0', lineHeight: '1.5' }}>Don&apos;t know how to code? We will install and deploy the chatbot on your website perfectly within 24 hours.</p>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   <span style={{ color: '#A5B4FC', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>✅ Zero Tech Skills Needed</span>
                   <span style={{ color: '#A5B4FC', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>✅ Fully Tested</span>

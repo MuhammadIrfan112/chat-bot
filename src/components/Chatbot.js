@@ -128,20 +128,26 @@ export default function Chatbot() {
     return () => clearInterval(pollRef.current);
   }, [sessionId, messages.length]);
 
-  const initSession = async () => {
+  async function initSession() {
     const visitor_id = getVisitorId();
     if (!visitor_id) return;
-    const res = await fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visitor_id, bot_id: botConfig.botId })
-    });
-    const data = await res.json();
-    if (data.session) {
-      setSessionId(data.session.id);
-      setIsHumanTakeover(data.session.is_human_takeover);
+    try {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatbot_source: botConfig.botName || 'Website Chatbot',
+          website_url: window.location.href,
+          visitor_id,
+          bot_id: botConfig.botId
+        })
+      });
+      const data = await response.json();
+      if (data.session_id) setSessionId(data.session_id);
+    } catch (e) {
+      console.error("Session Init Error:", e);
     }
-  };
+  }
 
   const checkLeadTrigger = (currentMessages) => {
     // Check if any model message contains an image markdown
