@@ -56,13 +56,28 @@ export default function Pricing() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
         style={{ padding: '0 6%', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        {/* Logo: icon + text  */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow" style={{ width: '30px', height: '30px', borderRadius: '8px' }} />
-          <span style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.02em', color: '#F1F5F9' }}>RealtyProp<span style={{ color: '#E5C158' }}>Flow</span>.</span>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', mixBlendMode: 'lighten' }} />
+          <span style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
+            RealtyPropFlow<span style={{ color: '#E5C158' }}>.</span>
+          </span>
         </Link>
-        <Link href="/" className={styles.navLink} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', color: '#94A3B8' }}>
-          <ChevronLeft size={16} /> Home
-        </Link>
+
+        <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
+          {[['/#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
+            <Link key={href} href={href} className={styles.navLink}>{label}</Link>
+          ))}
+        </nav>
+
+        <div className={styles.desktopOnly} style={{ display: 'flex', gap: '12px' }}>
+          <Link href="/login" className={styles.secondaryBtn} style={{ padding: '8px 20px', fontSize: '14px' }}>
+            Login
+          </Link>
+          <Link href="/login" className={styles.primaryBtn} style={{ padding: '8px 20px', fontSize: '14px' }}>
+            Sign up
+          </Link>
+        </div>
       </motion.header>
 
       {/* Main Content */}

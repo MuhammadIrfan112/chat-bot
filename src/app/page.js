@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Bot, Zap, Shield, ChevronRight, Activity, Check, ArrowRight, Sparkles, TrendingUp, Globe, Star } from 'lucide-react';
 import styles from './page.module.css';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 const LOGOS = [
   { name: 'Shopify', letter: 'S', bg: '#96BF48' },
@@ -34,6 +34,16 @@ export default function Home() {
   const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '25%']);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
+  const [formStatus, setFormStatus] = useState('idle');
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    setFormStatus('submitting');
+    setTimeout(() => {
+      setFormStatus('success');
+    }, 1500);
+  };
+
   return (
     <div style={{ minHeight: '100vh', position: 'relative', backgroundColor: 'var(--bg-page)', overflowX: 'hidden' }}>
 
@@ -51,21 +61,26 @@ export default function Home() {
       >
         {/* Logo: icon + text  */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
-          <span style={{ fontSize: '18px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', mixBlendMode: 'lighten' }} />
+          <span style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
             RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span>
           </span>
         </Link>
 
         <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
-          {[['#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
+          {[['/#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
             <Link key={href} href={href} className={styles.navLink}>{label}</Link>
           ))}
         </nav>
 
-        <Link href="/login" className={`${styles.secondaryBtn} ${styles.desktopOnly}`} style={{ padding: '8px 18px', fontSize: '14px' }}>
-          Dashboard Login
-        </Link>
+        <div className={styles.desktopOnly} style={{ display: 'flex', gap: '12px' }}>
+          <Link href="/login" className={styles.secondaryBtn} style={{ padding: '8px 20px', fontSize: '14px' }}>
+            Login
+          </Link>
+          <Link href="/login" className={styles.primaryBtn} style={{ padding: '8px 20px', fontSize: '14px' }}>
+            Sign up
+          </Link>
+        </div>
       </motion.header>
 
       {/* ─── HERO ─── */}
@@ -430,7 +445,7 @@ export default function Home() {
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', 'Unlimited Knowledge Training', 'Up to 100 Leads/month', 'Email Support'].map((f, i) => (
+                {['1 AI Chatbot', '10 Knowledge Training', '300 Leads Collect', 'Email Support'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#B8C4BC" strokeWidth={3} />
@@ -450,16 +465,16 @@ export default function Home() {
               <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Pro</h3>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>For growing teams & agencies.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$79</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$49</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['3 AI Chatbots', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Remove RealtyPropFlow Branding', 'Priority WhatsApp Support'].map((f, i) => (
+                {['1 AI Chatbot', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#D4AF37" strokeWidth={3} />
                     </div>
-                    <span style={{ fontSize: '14px', color: i >= 2 ? '#E2E8F0' : '#B8C4BC', fontWeight: i >= 2 ? '600' : '400' }}>{f}</span>
+                    <span style={{ fontSize: '14px', color: '#E2E8F0', fontWeight: '600' }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -469,30 +484,71 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Final CTA ─── */}
-      <section style={{ padding: '60px 6% 100px', position: 'relative', zIndex: 10 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 36 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          style={{ maxWidth: '900px', margin: '0 auto', borderRadius: '24px', padding: '64px 56px', textAlign: 'center', position: 'relative', overflow: 'hidden', background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(129,140,248,0.2)', boxShadow: '0 0 60px rgba(201,162,39,0.1)' }}
-        >
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '500px', height: '300px', background: '#4338CA', filter: 'blur(100px)', opacity: 0.15, zIndex: 0, pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(129,140,248,0.12)', padding: '5px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', color: '#D4AF37', marginBottom: '24px', border: '1px solid rgba(129,140,248,0.2)' }}>
-              <Sparkles size={13} /> Limited Offer — 15-Day Free Trial
-            </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '18px', color: '#F5F0E1' }}>
-              Ready to automate your growth?
-            </h2>
-            <p style={{ fontSize: '17px', color: '#64748B', marginBottom: '36px', maxWidth: '440px', margin: '0 auto 36px' }}>
-              Join hundreds of businesses that never miss a lead again.
-            </p>
-            <Link href="/login" className={styles.primaryBtn} style={{ padding: '16px 40px', fontSize: '16px' }}>
-              Get Started Free <ChevronRight size={20} />
-            </Link>
+      {/* ─── Contact Section ─── */}
+      <section id="contact" style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: '80px' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '14px', color: '#F5F0E1' }}>Ready to automate your growth?</h2>
+            <p style={{ color: '#64748B', fontSize: '17px' }}>Fill out the form below and we'll get back to you within 24 hours.</p>
+          </motion.div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'flex-start' }}>
+            
+            <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px', display: 'flex', gap: '20px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(201,162,39,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E5C158', flexShrink: 0 }}><span style={{ fontSize: '24px' }}>✉️</span></div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>Email Us</h3>
+                  <a href="mailto:support@realtypropflow.com" style={{ color: '#E5C158', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>support@realtypropflow.com</a>
+                </div>
+              </div>
+              <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px', display: 'flex', gap: '20px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(56,189,248,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38BDF8', flexShrink: 0 }}><span style={{ fontSize: '24px' }}>📞</span></div>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>Call Us</h3>
+                  <a href="tel:+1234567890" style={{ color: '#38BDF8', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>+1 (234) 567-890</a>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '48px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+              {formStatus === 'success' ? (
+                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', padding: '32px', borderRadius: '16px', textAlign: 'center' }}>
+                  <div style={{ width: '64px', height: '64px', background: '#10B981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#000' }}>
+                    <Check size={32} />
+                  </div>
+                  <h3 style={{ fontSize: '20px', color: '#F1F5F9', marginBottom: '8px' }}>Message Sent!</h3>
+                  <p style={{ color: '#94A3B8', fontSize: '15px' }}>Thank you for reaching out. We will be in touch shortly.</p>
+                  <button onClick={() => setFormStatus('idle')} style={{ marginTop: '24px', background: 'none', border: 'none', color: '#E5C158', fontWeight: '600', cursor: 'pointer' }}>Send another message</button>
+                </div>
+              ) : (
+                <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>First Name</label>
+                      <input required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Last Name</label>
+                      <input required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Email Address</label>
+                    <input required type="email" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Message</label>
+                    <textarea required rows="4" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none', resize: 'vertical' }}></textarea>
+                  </div>
+                  <button type="submit" disabled={formStatus === 'submitting'} style={{ marginTop: '12px', padding: '16px', borderRadius: '12px', background: 'linear-gradient(135deg, #C9A227 0%, #E5C158 100%)', color: '#000', border: 'none', fontWeight: '700', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: formStatus === 'submitting' ? 'not-allowed' : 'pointer', opacity: formStatus === 'submitting' ? 0.7 : 1, transition: 'all 0.2s' }}>
+                    {formStatus === 'submitting' ? 'Sending...' : 'Send Message'}
+                  </button>
+                </form>
+              )}
+            </motion.div>
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* ─── Footer ─── */}
