@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import * as cheerio from 'cheerio';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
 async function liveScrapeWebsite(url) {
   if (!url) return '';
@@ -461,47 +461,30 @@ CRITICAL RULES:
 4. LINKS: You can link to https://chatbot-flow.vercel.app/pricing for more details.`;
     }
 
-    // Setup Google Generative AI
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: systemInstruction,
+    // Setup OpenAI Client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const geminiHistory = [];
-    
+    const openaiMessages = [
+      { role: "system", content: systemInstruction }
+    ];
+
     messages.forEach(msg => {
-      // Gemini expects role to be 'user' or 'model'
-      const role = msg.role === 'model' ? 'model' : 'user';
+      // Translate Gemini history roles to OpenAI roles:
+      // 'model' -> 'assistant', 'user' -> 'user'
+      const role = msg.role === 'model' ? 'assistant' : 'user';
       const text = msg.parts?.[0]?.text || '';
-      
-      // Skip leading model messages as Gemini strictly requires history to start with 'user'
-      if (geminiHistory.length === 0 && role === 'model') return;
-      
-      const lastMsg = geminiHistory[geminiHistory.length - 1];
-      if (lastMsg && lastMsg.role === role) {
-        lastMsg.parts[0].text += `\n\n${text}`;
-      } else {
-        geminiHistory.push({ role, parts: [{ text }] });
-      }
+      openaiMessages.push({ role, content: text });
     });
 
-    if (geminiHistory.length === 0) {
-      geminiHistory.push({ role: 'user', parts: [{ text: 'Hello' }] });
-    }
-
-    // Pop the last message to send as the new query, use the rest as history
-    const latestUserMsg = geminiHistory.pop();
-
-    const chat = model.startChat({
-      history: geminiHistory,
-      generationConfig: {
-        temperature: 0.7,
-      },
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: openaiMessages,
+      temperature: 0.7,
     });
 
-    const result = await chat.sendMessage(latestUserMsg.parts[0].text);
-    const replyText = result.response.text();
+    const replyText = response.choices[0].message.content;
 
     if (session_id) {
       await supabase.from('chat_messages').insert([
@@ -514,9 +497,13 @@ CRITICAL RULES:
   } catch (error) {
     console.error("Chat API Error:", error);
     
-    // Handle Gemini Free Tier Quota / Rate Limit Error
-    if (error.message && (error.message.includes('429 Too Many Requests') || error.message.includes('exceeded your current quota') || error.message.includes('Rate limit exceeded'))) {
-      return Response.json({ error: "⚠️ The AI is currently receiving too many requests. Please wait a few seconds and try again." }, { status: 429 });
+    // Handle OpenAI Quota / Rate Limit / Authentication Errors
+    if (error.status === 429 || (error.message && (error.message.includes('429') || error.message.includes('quota') || error.message.includes('Rate limit')))) {
+      return Response.json({ error: "⚠️ The AI service is currently receiving too many requests. Please wait a few seconds and try again." }, { status: 429 });
+    }
+    
+    if (error.status === 401 || (error.message && error.message.includes('API key'))) {
+      return Response.json({ error: "⚠️ Invalid AI credentials configured. Please contact the administrator." }, { status: 401 });
     }
 
     return Response.json({ error: "An unexpected error occurred. Please try again later." }, { status: 500 });
