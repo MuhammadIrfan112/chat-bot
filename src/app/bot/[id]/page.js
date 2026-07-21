@@ -19,7 +19,7 @@ export default async function BotEmbedPage({ params, searchParams }) {
 
   if (!bot) {
     if (botId === 'demo-real-estate') {
-      bot = { id: botId, name: 'Real Estate Bot', bot_avatar: '🏡', primary_color: '#10B981', welcome_message: 'thanks for reaching out , how may i help you' };
+      bot = { id: botId, name: 'Real Estate Bot', bot_avatar: '🏡', primary_color: '#10B981', welcome_message: 'Hi there! 👋 Welcome to RealtyPropFlow. How can I assist you with your real estate journey today?' };
     } else if (botId === 'demo-ecommerce') {
       bot = { id: botId, name: 'NOVA Fashion', bot_avatar: '🛍️', primary_color: '#000000', welcome_message: 'Welcome to NOVA! How can I help you style today?' };
     } else {
