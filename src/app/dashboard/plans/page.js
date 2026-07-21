@@ -1,12 +1,58 @@
 'use client';
-import { useState } from 'react';
-import { Check, Zap, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Zap, Star, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function PlansPage() {
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [subStatus, setSubStatus] = useState(null);
+  const [paying, setPaying] = useState(null); // plan being paid for
+  const [payError, setPayError] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+      const { data } = await supabase
+        .from('users_subscription')
+        .select('status')
+        .eq('user_id', session.user.id)
+        .single();
+      if (data) setSubStatus(data.status);
+    });
+  }, []);
+
+  const handleSelectPlan = async (planId, price) => {
+    setPaying(planId);
+    setPayError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setPayError('Please login first.'); setPaying(null); return; }
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: planId,
+          cycle: billingCycle,
+          userId: session.user.id,
+          userEmail: session.user.email
+        })
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setPayError('Could not start payment. Please try again.');
+        setPaying(null);
+      }
+    } catch (err) {
+      setPayError('Payment error. Please try again.');
+      setPaying(null);
+    }
+  };
 
   const plans = [
     {
@@ -21,8 +67,6 @@ export default function PlansPage() {
         'Basic Analytics & Lead Capture',
         'Standard Support'
       ],
-      buttonText: 'Current Plan',
-      isCurrent: true,
       popular: false,
       planId: 'starter'
     },
@@ -40,19 +84,57 @@ export default function PlansPage() {
         'Live Human Takeover',
         'Priority WhatsApp Support'
       ],
-      buttonText: 'Upgrade to Pro',
-      isCurrent: false,
       popular: true,
       planId: 'pro'
     }
   ];
 
+  const isExpired = subStatus === 'Inactive';
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '60px' }}>
+      
+      {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <h1 style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '16px' }}>Subscription Plans</h1>
+
+        {/* Trial Expired Alert */}
+        {isExpired && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))',
+              border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: '16px',
+              padding: '20px 28px',
+              marginBottom: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              textAlign: 'left',
+              boxShadow: '0 8px 25px rgba(239,68,68,0.12)'
+            }}
+          >
+            <div style={{ fontSize: '36px', flexShrink: 0 }}>🔒</div>
+            <div>
+              <div style={{ fontWeight: '800', fontSize: '18px', color: 'white', marginBottom: '6px' }}>
+                ⛔ Your 15-day free trial has ended
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', lineHeight: '1.5' }}>
+                Your chatbot is currently paused. Select a plan below to reactivate it instantly for your website visitors.
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        <h1 style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '16px' }}>
+          {isExpired ? 'Reactivate Your Chatbot' : 'Subscription Plans'}
+        </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '16px', maxWidth: '600px', margin: '0 auto 32px' }}>
-          Choose the perfect plan for your business. Upgrade anytime as your operations grow.
+          {isExpired
+            ? 'Choose a plan below to get your chatbot back online immediately.'
+            : 'Choose the perfect plan for your business. Upgrade anytime as your operations grow.'
+          }
         </p>
 
         {/* Billing Toggle */}
@@ -80,6 +162,12 @@ export default function PlansPage() {
           </button>
         </div>
       </div>
+
+      {payError && (
+        <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', color: '#FCA5A5', textAlign: 'center' }}>
+          {payError}
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap' }}>
         {plans.map((plan, index) => (
@@ -131,15 +219,19 @@ export default function PlansPage() {
             
             <div style={{ marginTop: 'auto' }}>
               <button 
-                onClick={() => router.push(`/dashboard/billing?plan=${plan.planId}&cycle=${billingCycle}&price=${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}`)}
+                disabled={paying === plan.planId}
+                onClick={() => handleSelectPlan(plan.planId, billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice)}
                 style={{ 
-                  width: '100%', padding: '14px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s',
-                  background: plan.isCurrent ? 'rgba(255,255,255,0.05)' : plan.popular ? 'linear-gradient(90deg, #818CF8, #4F46E5)' : 'white',
-                  color: plan.isCurrent ? 'var(--text-muted)' : plan.popular ? 'white' : 'black',
-                  border: plan.isCurrent ? '1px solid var(--border)' : 'none'
+                  width: '100%', padding: '14px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: paying === plan.planId ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                  background: paying === plan.planId ? 'rgba(255,255,255,0.05)' : plan.popular
+                    ? 'linear-gradient(90deg, #818CF8, #4F46E5)'
+                    : isExpired ? 'linear-gradient(90deg, #EF4444, #DC2626)' : 'white',
+                  color: paying === plan.planId ? 'var(--text-muted)' : plan.popular ? 'white' : isExpired ? 'white' : 'black',
+                  border: 'none',
+                  opacity: paying && paying !== plan.planId ? 0.5 : 1
                 }}
               >
-                {plan.buttonText}
+                {paying === plan.planId ? '⏳ Processing...' : isExpired ? `🔓 Reactivate with ${plan.name}` : `Get ${plan.name}`}
               </button>
             </div>
           </motion.div>

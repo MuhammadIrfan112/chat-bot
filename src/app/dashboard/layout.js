@@ -149,6 +149,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'CRM Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
     { name: 'Chat History', path: '/dashboard/chat-history', icon: <MessageSquare size={20} /> },
+    { name: 'Plans & Billing', path: '/dashboard/plans', icon: <CreditCard size={20} /> },
   ];
 
   return (
@@ -265,69 +266,75 @@ export default function DashboardLayout({ children }) {
         {/* ⏰ Trial Countdown Banner */}
         {(subscriptionStatus === 'Trialing' || subscriptionStatus === 'Inactive') && trialDaysLeft !== null && (
           <div style={{
-            marginBottom: '24px',
+            marginBottom: '28px',
             borderRadius: '16px',
-            padding: '16px 24px',
+            padding: '20px 28px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: '12px',
-            background: trialDaysLeft <= 3
+            gap: '16px',
+            background: subscriptionStatus === 'Inactive'
+              ? 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(180,0,0,0.08))'
+              : trialDaysLeft <= 3
               ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))'
               : trialDaysLeft <= 7
               ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))'
               : 'linear-gradient(135deg, rgba(79,70,229,0.15), rgba(79,70,229,0.05))',
             border: `1px solid ${
-              trialDaysLeft <= 3 ? 'rgba(239,68,68,0.3)'
+              subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.4)'
+              : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.3)'
               : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.3)'
               : 'rgba(79,70,229,0.3)'
             }`,
-            boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+            boxShadow: subscriptionStatus === 'Inactive' ? '0 8px 25px rgba(239,68,68,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{
-                width: '42px', height: '42px', borderRadius: '12px', flexShrink: 0,
-                background: trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
+                width: '50px', height: '50px', borderRadius: '14px', flexShrink: 0,
+                background: subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
               }}>
-                {trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
+                {subscriptionStatus === 'Inactive' ? '🔒' : trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
               </div>
               <div>
-                <div style={{ fontWeight: '700', fontSize: '15px', color: 'white' }}>
+                <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>
                   {subscriptionStatus === 'Inactive'
-                    ? '⛔ Trial Expired — Your chatbot is paused'
+                    ? '⛔ Your 15-day free trial has ended. Your chatbot is now paused.'
                     : trialDaysLeft === 0
                     ? '⛔ Last Day! Your trial ends today'
                     : trialDaysLeft === 1
-                    ? '⚠️ Trial ends tomorrow — 1 day left'
-                    : `🗓️ Free Trial — ${trialDaysLeft} days remaining`
+                    ? '⚠️ Trial ends tomorrow — 1 day left!'
+                    : `🗓️ Free Trial Active — ${trialDaysLeft} days remaining`
                   }
                 </div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: '1.5' }}>
                   {subscriptionStatus === 'Inactive'
-                    ? 'Purchase a plan to reactivate your chatbot for your visitors.'
-                    : 'Upgrade now to ensure your chatbot never stops working for your clients.'
+                    ? 'Your chatbot visitors are seeing a paused message. Purchase a plan below to reactivate instantly.'
+                    : 'Upgrade now to ensure your chatbot never stops working for your visitors.'
                   }
                 </div>
               </div>
             </div>
             <a href="/dashboard/plans" style={{
-              padding: '10px 20px',
-              background: trialDaysLeft <= 3 || subscriptionStatus === 'Inactive'
+              padding: '12px 28px',
+              background: subscriptionStatus === 'Inactive' || trialDaysLeft <= 3
                 ? 'linear-gradient(135deg, #EF4444, #DC2626)'
                 : 'linear-gradient(135deg, #C9A227, #F59E0B)',
               color: 'white',
               border: 'none',
-              borderRadius: '10px',
-              fontWeight: '700',
-              fontSize: '13px',
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '14px',
               cursor: 'pointer',
               textDecoration: 'none',
               whiteSpace: 'nowrap',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+              boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}>
-              {subscriptionStatus === 'Inactive' ? '🔓 Reactivate Now' : '⚡ Upgrade Plan'}
+              {subscriptionStatus === 'Inactive' ? '🔓 Purchase a Plan' : '⚡ Upgrade Plan'}
             </a>
           </div>
         )}
