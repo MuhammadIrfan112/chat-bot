@@ -54,9 +54,9 @@ export default function HowItWorks() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         style={{ padding: '0 6%', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Logo: icon + text  */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', mixBlendMode: 'lighten' }} />
-          <span style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '52px', width: '52px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '15px', fontWeight: '600', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
             RealtyPropFlow<span style={{ color: '#E5C158' }}>.</span>
           </span>
         </Link>

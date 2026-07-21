@@ -60,10 +60,10 @@ export default function Home() {
         style={{ padding: '0 6%', height: '68px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}
       >
         {/* Logo: icon + text  */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', mixBlendMode: 'lighten' }} />
-          <span style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
-            RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '52px', width: '52px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '15px', fontWeight: '600', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
+            RealtyPropFlow<span style={{ color: '#7e6006ff' }}>.</span>
           </span>
         </Link>
 
@@ -445,7 +445,7 @@ export default function Home() {
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', '10 Knowledge Training', '300 Leads Collect', 'Email Support'].map((f, i) => (
+                {['1 AI Chatbot', '10 Knowledge Training', '300 Leads Collect'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#B8C4BC" strokeWidth={3} />
@@ -503,10 +503,10 @@ export default function Home() {
                 </div>
               </div>
               <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px', display: 'flex', gap: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(56,189,248,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38BDF8', flexShrink: 0 }}><span style={{ fontSize: '24px' }}>📞</span></div>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(37,211,102,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#25D366', flexShrink: 0 }}><span style={{ fontSize: '24px' }}>💬</span></div>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>Call Us</h3>
-                  <a href="tel:+1234567890" style={{ color: '#38BDF8', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>+1 (234) 567-890</a>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>WhatsApp Us</h3>
+                  <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" style={{ color: '#25D366', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>+1 (234) 567-890</a>
                 </div>
               </div>
             </motion.div>

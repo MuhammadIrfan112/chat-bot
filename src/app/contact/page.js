@@ -30,9 +30,9 @@ export default function ContactUs() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         style={{ padding: '0 6%', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Logo: icon + text  */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', mixBlendMode: 'lighten' }} />
-          <span style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '52px', width: '52px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '15px', fontWeight: '600', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
             RealtyPropFlow<span style={{ color: '#E5C158' }}>.</span>
           </span>
         </Link>
@@ -94,13 +94,13 @@ export default function ContactUs() {
             </div>
 
             <div style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px', display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(56,189,248,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38BDF8', flexShrink: 0 }}>
-                <Phone size={24} />
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(37,211,102,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#25D366', flexShrink: 0 }}>
+                <span style={{ fontSize: '24px' }}>💬</span>
               </div>
               <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>Call Us</h3>
-                <p style={{ color: '#94A3B8', fontSize: '15px', lineHeight: '1.6', marginBottom: '12px' }}>Need immediate assistance? We are available Mon-Fri, 9am-5pm EST.</p>
-                <a href="tel:+1234567890" style={{ color: '#38BDF8', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>+1 (234) 567-890</a>
+                <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>WhatsApp Us</h3>
+                <p style={{ color: '#94A3B8', fontSize: '15px', lineHeight: '1.6', marginBottom: '12px' }}>Chat with us directly on WhatsApp for quick support, anytime.</p>
+                <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" style={{ color: '#25D366', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>+1 (234) 567-890</a>
               </div>
             </div>
 

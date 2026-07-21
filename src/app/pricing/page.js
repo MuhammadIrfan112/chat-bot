@@ -13,12 +13,11 @@ export default function Pricing() {
       description: "Perfect for starting agents and small agencies looking to automate lead capture.",
       features: [
         { name: "1 AI Chatbot", included: true },
-        { name: "Up to 500 Conversations/mo", included: true },
-        { name: "Basic Lead Capture", included: true },
-        { name: "Standard Email Support", included: true },
+        { name: "10 Knowledge Training", included: true },
+        { name: "300 Leads Collect", included: true },
         { name: "Live Human Takeover", included: false },
-        { name: "Advanced Analytics", included: false },
-        { name: "Remove Branding", included: false },
+        { name: "Unlimited Knowledge Training", included: false },
+        { name: "Unlimited Leads Capture", included: false },
       ],
       ctaText: "Start Basic",
       popular: false,
@@ -30,13 +29,10 @@ export default function Pricing() {
       period: "/month",
       description: "For top-producing agents who need advanced features and high volume.",
       features: [
-        { name: "3 AI Chatbots", included: true },
-        { name: "Unlimited Conversations", included: true },
-        { name: "Advanced Lead Capture", included: true },
-        { name: "Priority 24/7 Support", included: true },
+        { name: "1 AI Chatbot", included: true },
+        { name: "Unlimited Knowledge Training", included: true },
+        { name: "Unlimited Leads Capture", included: true },
         { name: "Live Human Takeover", included: true },
-        { name: "Advanced Analytics", included: true },
-        { name: "Remove 'Powered by' Branding", included: true },
       ],
       ctaText: "Get Pro (Recommended)",
       popular: true,
@@ -57,9 +53,9 @@ export default function Pricing() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         style={{ padding: '0 6%', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Logo: icon + text  */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', mixBlendMode: 'lighten' }} />
-          <span style={{ fontSize: '20px', fontWeight: '800', color: 'white', letterSpacing: '-0.03em' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '52px', width: '52px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '15px', fontWeight: '600', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
             RealtyPropFlow<span style={{ color: '#E5C158' }}>.</span>
           </span>
         </Link>
