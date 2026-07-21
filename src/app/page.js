@@ -61,9 +61,9 @@ export default function Home() {
       >
         {/* Logo: icon + text  */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', background: 'transparent' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '48px', width: '48px', objectFit: 'contain', background: 'transparent', display: 'block' }} />
-          <span style={{ fontSize: '15px', fontWeight: '600', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
-            RealtyPropFlow<span style={{ color: '#7c600cff' }}>.</span>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '48px', width: '48px', objectFit: 'contain', background: 'transparent', display: 'block', mixBlendMode: 'screen' }} />
+          <span style={{ fontSize: '16px', fontWeight: '900', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
+            RealtyPropFlow<span style={{ color: '#685a0dff' }}>.</span>
           </span>
         </Link>
 
