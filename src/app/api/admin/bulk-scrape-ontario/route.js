@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-// Use service role for write access
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -9,310 +8,146 @@ const supabase = createClient(
 
 // Full Ontario municipalities list
 const ONTARIO_CITIES = [
-  "Addington Highlands, Ontario",
-  "Adelaide Metcalfe, Ontario",
-  "Admaston/Bromley, Ontario",
-  "Ajax, Ontario",
-  "Algonquin Highlands, Ontario",
-  "Alfred and Plantagenet, Ontario",
-  "Alnwick/Haldimand, Ontario",
-  "Amaranth, Ontario",
-  "Amherstburg, Ontario",
-  "Armour, Ontario",
-  "Armstrong, Ontario",
-  "Arnprior, Ontario",
-  "Arran-Elderslie, Ontario",
-  "Ashfield-Colborne-Wawanosh, Ontario",
-  "Asphodel-Norwood, Ontario",
-  "Assiginack, Ontario",
-  "Athens, Ontario",
-  "Atikokan, Ontario",
-  "Augusta, Ontario",
-  "Aurora, Ontario",
-  "Aylmer, Ontario",
-  "Baldwin, Ontario",
-  "Bancroft, Ontario",
-  "Barrie, Ontario",
-  "Bayham, Ontario",
-  "Beckwith, Ontario",
-  "Belleville, Ontario",
-  "Billings, Ontario",
-  "Blind River, Ontario",
-  "Blue Mountains, Ontario",
-  "Bonfield, Ontario",
-  "Bonnechere Valley, Ontario",
-  "Bracebridge, Ontario",
-  "Bradford West Gwillimbury, Ontario",
-  "Brampton, Ontario",
-  "Brant, Ontario",
-  "Brantford, Ontario",
-  "Brock, Ontario",
-  "Brockton, Ontario",
-  "Brockville, Ontario",
-  "Bruce Mines, Ontario",
-  "Burlington, Ontario",
-  "Caledon, Ontario",
-  "Callander, Ontario",
-  "Calvin, Ontario",
-  "Cambridge, Ontario",
-  "Carleton Place, Ontario",
-  "Casselman, Ontario",
-  "Central Elgin, Ontario",
-  "Central Frontenac, Ontario",
-  "Central Huron, Ontario",
-  "Central Manitoulin, Ontario",
-  "Central Middlesex, Ontario",
-  "Centre Hastings, Ontario",
-  "Champlain, Ontario",
-  "Chapleau, Ontario",
-  "Chatham-Kent, Ontario",
-  "Chatsworth, Ontario",
-  "Clarington, Ontario",
-  "Clearview, Ontario",
-  "Cochrane, Ontario",
-  "Collingwood, Ontario",
-  "Cornwall, Ontario",
-  "Cobourg, Ontario",
-  "Cramahe, Ontario",
-  "Clarence-Rockland, Ontario",
-  "Deep River, Ontario",
-  "Deseronto, Ontario",
-  "Dutton/Dunwich, Ontario",
-  "Dryden, Ontario",
-  "Durham, Ontario",
-  "Dysart et al., Ontario",
-  "East Ferris, Ontario",
-  "East Garafraxa, Ontario",
-  "East Gwillimbury, Ontario",
-  "East Hawkesbury, Ontario",
-  "East Luther Grand Valley, Ontario",
-  "East Zorra-Tavistock, Ontario",
-  "Elizabethtown-Kitley, Ontario",
-  "Elliot Lake, Ontario",
-  "Espanola, Ontario",
-  "Essa, Ontario",
-  "Essex, Ontario",
-  "Faraday, Ontario",
-  "Fort Erie, Ontario",
-  "Fort Frances, Ontario",
-  "French River, Ontario",
-  "Gananoque, Ontario",
-  "Georgian Bay, Ontario",
-  "Georgina, Ontario",
-  "Goderich, Ontario",
-  "Gore Bay, Ontario",
-  "Grand Valley, Ontario",
-  "Gravenhurst, Ontario",
-  "Greater Napanee, Ontario",
-  "Greater Sudbury, Ontario",
-  "Grey Highlands, Ontario",
-  "Guelph, Ontario",
-  "Haldimand County, Ontario",
-  "Haliburton, Ontario",
-  "Hamilton, Ontario",
-  "Hanover, Ontario",
-  "Hastings Highlands, Ontario",
-  "Hawkesbury, Ontario",
-  "Hearst, Ontario",
-  "Horton, Ontario",
-  "Huntsville, Ontario",
-  "Huron East, Ontario",
-  "Ignace, Ontario",
-  "Ingersoll, Ontario",
-  "Innisfil, Ontario",
-  "Iroquois Falls, Ontario",
-  "Kapuskasing, Ontario",
-  "Kawartha Lakes, Ontario",
-  "Kearney, Ontario",
-  "Kenora, Ontario",
-  "Killaloe, Hagarty and Richards, Ontario",
-  "Kincardine, Ontario",
-  "King, Ontario",
-  "Kingston, Ontario",
-  "Kingsville, Ontario",
-  "Kirkland Lake, Ontario",
-  "Kitchener, Ontario",
-  "Laurentian Hills, Ontario",
-  "Laurentian Valley, Ontario",
-  "Lake of Bays, Ontario",
-  "Lakeshore, Ontario",
-  "LaSalle, Ontario",
-  "Leeds and the Thousand Islands, Ontario",
-  "Loyalist, Ontario",
-  "London, Ontario",
-  "Lucan Biddulph, Ontario",
-  "Magnetawan, Ontario",
-  "Mapleton, Ontario",
-  "Marathon, Ontario",
-  "Markham, Ontario",
-  "Marmora and Lake, Ontario",
-  "Mattawa, Ontario",
-  "McDougall, Ontario",
-  "Meaford, Ontario",
-  "Melancthon, Ontario",
-  "Minto, Ontario",
-  "Mississippi Mills, Ontario",
-  "Mono, Ontario",
-  "Moonbeam, Ontario",
-  "Morris-Turnberry, Ontario",
-  "Mulmur, Ontario",
-  "Muskoka Lakes, Ontario",
-  "Neebing, Ontario",
-  "Newmarket, Ontario",
-  "Niagara Falls, Ontario",
-  "Niagara-on-the-Lake, Ontario",
-  "Norfolk County, Ontario",
-  "North Bay, Ontario",
-  "North Dumfries, Ontario",
-  "North Frontenac, Ontario",
-  "North Glengarry, Ontario",
-  "North Huron, Ontario",
-  "North Kawartha, Ontario",
-  "North Middlesex, Ontario",
-  "North Perth, Ontario",
-  "North Stormont, Ontario",
-  "Norwich, Ontario",
-  "Oakville, Ontario",
-  "Orangeville, Ontario",
-  "Orillia, Ontario",
-  "Oshawa, Ontario",
-  "Ottawa, Ontario",
-  "Owen Sound, Ontario",
-  "Pelham, Ontario",
-  "Pembroke, Ontario",
-  "Penetanguishene, Ontario",
-  "Perth, Ontario",
-  "Perth East, Ontario",
-  "Perth South, Ontario",
-  "Petawawa, Ontario",
-  "Peterborough, Ontario",
-  "Pickering, Ontario",
-  "Plympton-Wyoming, Ontario",
-  "Port Colborne, Ontario",
-  "Port Hope, Ontario",
-  "Powassan, Ontario",
-  "Prescott, Ontario",
-  "Prince Edward County, Ontario",
-  "Rainy River, Ontario",
-  "Ramara, Ontario",
-  "Red Lake, Ontario",
-  "Renfrew, Ontario",
-  "Rideau Lakes, Ontario",
-  "Richmond Hill, Ontario",
-  "Rockland, Ontario",
-  "Sarnia, Ontario",
-  "Saugeen Shores, Ontario",
-  "Scugog, Ontario",
-  "Seguin, Ontario",
-  "Selwyn, Ontario",
-  "Sioux Lookout, Ontario",
-  "Smiths Falls, Ontario",
-  "South Algonquin, Ontario",
-  "South Bruce, Ontario",
-  "South Bruce Peninsula, Ontario",
-  "South Dundas, Ontario",
-  "South Frontenac, Ontario",
-  "South Glengarry, Ontario",
-  "South Huron, Ontario",
-  "South Stormont, Ontario",
-  "Southgate, Ontario",
-  "Spanish, Ontario",
-  "Springwater, Ontario",
-  "St. Catharines, Ontario",
-  "St. Marys, Ontario",
-  "St. Thomas, Ontario",
-  "Stirling-Rawdon, Ontario",
-  "Stone Mills, Ontario",
-  "Stratford, Ontario",
-  "Strathroy-Caradoc, Ontario",
-  "Sudbury, Ontario",
-  "Sundridge, Ontario",
-  "Tay, Ontario",
-  "Tay Valley, Ontario",
-  "Tecumseh, Ontario",
-  "Temagami, Ontario",
-  "Temiskaming Shores, Ontario",
-  "Thames Centre, Ontario",
-  "Thessalon, Ontario",
-  "Thorold, Ontario",
-  "Thunder Bay, Ontario",
-  "Tillsonburg, Ontario",
-  "Timmins, Ontario",
-  "Toronto, Ontario",
-  "Trent Hills, Ontario",
-  "Trent Lakes, Ontario",
-  "Tweed, Ontario",
-  "Tyendinaga, Ontario",
-  "Uxbridge, Ontario",
-  "Vaughan, Ontario",
-  "Wainfleet, Ontario",
-  "Wasaga Beach, Ontario",
-  "Waterloo, Ontario",
-  "Wawa, Ontario",
-  "West Elgin, Ontario",
-  "West Grey, Ontario",
-  "West Lincoln, Ontario",
-  "West Nipissing, Ontario",
-  "West Perth, Ontario",
-  "Whitby, Ontario",
-  "Whitchurch-Stouffville, Ontario",
-  "Wilmot, Ontario",
-  "Windsor, Ontario",
-  "Woodstock, Ontario",
-  "Woolwich, Ontario",
-  "Zorra, Ontario",
-  "Adjala-Tosorontio, Ontario",
-  "Centre Wellington, Ontario",
-  "Erin, Ontario",
-  "Georgian Bluffs, Ontario",
-  "Huron-Kinloss, Ontario",
-  "Huron Shores, Ontario",
-  "Killarney, Ontario",
-  "Loyalist Township, Ontario",
-  "Madawaska Valley, Ontario",
-  "Minden Hills, Ontario",
-  "Nipigon, Ontario",
-  "North Algona Wilberforce, Ontario",
-  "North Bruce Peninsula, Ontario",
-  "North Dundas, Ontario",
-  "North Grenville, Ontario",
-  "Otonabee-South Monaghan, Ontario",
-  "Parry Sound, Ontario",
-  "Puslinch, Ontario",
-  "Quinte West, Ontario",
-  "Red Rock, Ontario",
-  "Russell, Ontario",
-  "South-West Oxford, Ontario",
-  "St. Clair Township, Ontario",
-  "Strong, Ontario",
-  "The Archipelago, Ontario",
-  "The Blue Mountains, Ontario",
-  "Township of Georgian Bay, Ontario",
-  "Township of Muskoka Lakes, Ontario",
-  "Township of Oro-Medonte, Ontario",
-  "Township of Ramara, Ontario",
-  "Township of Severn, Ontario",
-  "Township of Tiny, Ontario",
-  "Whitewater Region, Ontario",
+  "Addington Highlands", "Adelaide Metcalfe", "Admaston Bromley", "Ajax",
+  "Algonquin Highlands", "Alfred and Plantagenet", "Alnwick Haldimand", "Amaranth",
+  "Amherstburg", "Armour", "Armstrong", "Arnprior", "Arran-Elderslie",
+  "Ashfield-Colborne-Wawanosh", "Asphodel-Norwood", "Athens", "Atikokan",
+  "Augusta", "Aurora", "Aylmer", "Bancroft", "Barrie", "Bayham", "Beckwith",
+  "Belleville", "Billings", "Blind River", "Blue Mountains", "Bonfield",
+  "Bonnechere Valley", "Bracebridge", "Bradford West Gwillimbury", "Brampton",
+  "Brant", "Brantford", "Brock", "Brockton", "Brockville", "Bruce Mines",
+  "Burlington", "Caledon", "Callander", "Calvin", "Cambridge", "Carleton Place",
+  "Casselman", "Central Elgin", "Central Frontenac", "Central Huron",
+  "Central Manitoulin", "Central Middlesex", "Centre Hastings", "Champlain",
+  "Chapleau", "Chatham-Kent", "Chatsworth", "Clarington", "Clearview",
+  "Cochrane", "Collingwood", "Cornwall", "Cobourg", "Cramahe",
+  "Clarence-Rockland", "Deep River", "Deseronto", "Dutton Dunwich", "Dryden",
+  "Durham", "East Ferris", "East Garafraxa", "East Gwillimbury",
+  "East Hawkesbury", "East Luther Grand Valley", "East Zorra-Tavistock",
+  "Elizabethtown-Kitley", "Elliot Lake", "Espanola", "Essa", "Essex",
+  "Fort Erie", "Fort Frances", "French River", "Gananoque", "Georgian Bay",
+  "Georgina", "Goderich", "Gore Bay", "Grand Valley", "Gravenhurst",
+  "Greater Napanee", "Greater Sudbury", "Grey Highlands", "Guelph",
+  "Haldimand County", "Haliburton", "Hamilton", "Hanover",
+  "Hastings Highlands", "Hawkesbury", "Hearst", "Horton", "Huntsville",
+  "Huron East", "Ignace", "Ingersoll", "Innisfil", "Iroquois Falls",
+  "Kapuskasing", "Kawartha Lakes", "Kearney", "Kenora",
+  "Killaloe Hagarty and Richards", "Kincardine", "King", "Kingston",
+  "Kingsville", "Kirkland Lake", "Kitchener", "Laurentian Hills",
+  "Laurentian Valley", "Lake of Bays", "Lakeshore", "LaSalle",
+  "Leeds and the Thousand Islands", "Loyalist", "London", "Lucan Biddulph",
+  "Magnetawan", "Mapleton", "Marathon", "Markham", "Marmora and Lake",
+  "Mattawa", "McDougall", "Meaford", "Melancthon", "Minto",
+  "Mississippi Mills", "Mono", "Moonbeam", "Morris-Turnberry", "Mulmur",
+  "Muskoka Lakes", "Neebing", "Newmarket", "Niagara Falls",
+  "Niagara-on-the-Lake", "Norfolk County", "North Bay", "North Dumfries",
+  "North Frontenac", "North Glengarry", "North Huron", "North Kawartha",
+  "North Middlesex", "North Perth", "North Stormont", "Norwich", "Oakville",
+  "Orangeville", "Orillia", "Oshawa", "Ottawa", "Owen Sound", "Pelham",
+  "Pembroke", "Penetanguishene", "Perth", "Perth East", "Perth South",
+  "Petawawa", "Peterborough", "Pickering", "Plympton-Wyoming", "Port Colborne",
+  "Port Hope", "Powassan", "Prescott", "Prince Edward County", "Rainy River",
+  "Ramara", "Red Lake", "Renfrew", "Rideau Lakes", "Richmond Hill",
+  "Rockland", "Sarnia", "Saugeen Shores", "Scugog", "Seguin", "Selwyn",
+  "Sioux Lookout", "Smiths Falls", "South Algonquin", "South Bruce",
+  "South Bruce Peninsula", "South Dundas", "South Frontenac",
+  "South Glengarry", "South Huron", "South Stormont", "Southgate",
+  "Spanish", "Springwater", "St. Catharines", "St. Marys", "St. Thomas",
+  "Stirling-Rawdon", "Stone Mills", "Stratford", "Strathroy-Caradoc",
+  "Sudbury", "Sundridge", "Tay", "Tay Valley", "Tecumseh", "Temagami",
+  "Temiskaming Shores", "Thames Centre", "Thessalon", "Thorold",
+  "Thunder Bay", "Tillsonburg", "Timmins", "Toronto", "Trent Hills",
+  "Trent Lakes", "Tweed", "Tyendinaga", "Uxbridge", "Vaughan",
+  "Wainfleet", "Wasaga Beach", "Waterloo", "Wawa", "West Elgin",
+  "West Grey", "West Lincoln", "West Nipissing", "West Perth", "Whitby",
+  "Whitchurch-Stouffville", "Wilmot", "Windsor", "Woodstock", "Woolwich",
+  "Zorra", "Adjala-Tosorontio", "Centre Wellington", "Erin",
+  "Georgian Bluffs", "Huron-Kinloss", "Huron Shores", "Killarney",
+  "Loyalist Township", "Madawaska Valley", "Minden Hills", "Nipigon",
+  "North Algona Wilberforce", "North Bruce Peninsula", "North Dundas",
+  "North Grenville", "Otonabee-South Monaghan", "Parry Sound", "Puslinch",
+  "Quinte West", "Red Rock", "Russell", "South-West Oxford",
+  "St. Clair Township", "Strong", "The Archipelago", "The Blue Mountains",
+  "Township of Georgian Bay", "Township of Muskoka Lakes",
+  "Township of Oro-Medonte", "Township of Ramara", "Township of Severn",
+  "Township of Tiny", "Whitewater Region",
 ];
 
-// Process one city with Apify Zillow scraper
-async function scrapeCity(city, apifyToken) {
-  const actorId = "maxcopell~zillow-scraper";
-  const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${apifyToken}&timeout=90`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        searchTerm: city,
-        maxItems: 15, // Keeping small to stay within DB limits
-        type: "sale",
-      }),
-    }
-  );
-  if (!runRes.ok) throw new Error(`Apify error: ${runRes.status}`);
-  return await runRes.json();
+// Scrape Realtor.ca (Canada's official MLS) — completely FREE, no API key needed
+async function scrapeRealtorCa(city) {
+  try {
+    const searchText = encodeURIComponent(`${city}, Ontario`);
+
+    // Realtor.ca uses this internal API endpoint
+    const body = new URLSearchParams({
+      CultureId: "1",
+      ApplicationId: "1",
+      RecordsPerPage: "20",
+      CurrentPage: "1",
+      PropertySearchTypeId: "1",
+      TransactionTypeId: "2", // For Sale
+      SortOrder: "6",
+      SortBy: "1",
+      SearchText: `${city}, Ontario`,
+      Version: "7.0",
+    });
+
+    const res = await fetch(
+      "https://api2.realtor.ca/Listing.svc/PropertySearch_Post",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          Origin: "https://www.realtor.ca",
+          Referer: "https://www.realtor.ca/",
+        },
+        body: body.toString(),
+      }
+    );
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    if (!data?.Results?.length) return [];
+
+    // Map to our standard format
+    return data.Results.slice(0, 15).map((item) => {
+      const addr = item.Property?.Address?.AddressText || "";
+      const price = item.Property?.Price || "Price on Request";
+      const beds = item.Building?.BedroomTotal || "N/A";
+      const baths = item.Building?.BathroomTotal || "N/A";
+      const img =
+        item.Property?.Photo?.[0]?.HighResPath ||
+        item.Property?.Photo?.[0]?.MedResPath ||
+        "";
+      const mlsNum = item.MlsNumber || "";
+      const url = mlsNum
+        ? `https://www.realtor.ca/real-estate/${mlsNum}`
+        : "https://www.realtor.ca";
+      const propType = item.Property?.Type || "Residential";
+      const sqft = item.Building?.SizeInterior || "";
+
+      return {
+        address: addr.split("|")[0]?.trim() || addr,
+        city: city,
+        state: "ON",
+        price: String(price).replace(/[^0-9]/g, "") || null,
+        priceDisplay: price,
+        bedrooms: beds,
+        bathrooms: baths,
+        livingArea: sqft,
+        imgSrc: img,
+        url: url,
+        propertyType: propType,
+        mlsNumber: mlsNum,
+      };
+    });
+  } catch (err) {
+    console.error(`Realtor.ca error for ${city}:`, err.message);
+    return [];
+  }
 }
 
 export async function GET(req) {
@@ -322,10 +157,9 @@ export async function GET(req) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Support pagination: ?batch=0 for first 10, ?batch=1 for next 10, etc.
   const url = new URL(req.url);
   const batch = parseInt(url.searchParams.get("batch") || "0");
-  const batchSize = 8; // Scrape 8 cities per call to avoid timeout
+  const batchSize = 5; // 5 cities per call — give each city enough time
 
   const start = batch * batchSize;
   const end = start + batchSize;
@@ -338,9 +172,8 @@ export async function GET(req) {
     });
   }
 
-  const apifyToken = process.env.APIFY_API_TOKEN;
-  const results = [];
   const today = new Date().toISOString().split("T")[0];
+  const results = [];
 
   for (const city of citiesToProcess) {
     const cityKey = city.toLowerCase();
@@ -363,28 +196,32 @@ export async function GET(req) {
     }
 
     try {
-      const properties = await scrapeCity(city, apifyToken);
+      const properties = await scrapeRealtorCa(city);
 
       await supabase.from("city_property_data").upsert(
         {
           city: cityKey,
-          properties: properties || [],
+          properties: properties,
           last_scraped_at: new Date().toISOString(),
         },
         { onConflict: "city" }
       );
 
-      results.push({ city, status: "done", count: properties?.length || 0 });
+      results.push({ city, status: "done", count: properties.length });
     } catch (err) {
       results.push({ city, status: "error", reason: err.message });
     }
+
+    // Small delay to be polite to realtor.ca
+    await new Promise((r) => setTimeout(r, 800));
   }
 
   return NextResponse.json({
     batch,
+    source: "realtor.ca",
     processed: citiesToProcess.length,
     total_cities: ONTARIO_CITIES.length,
-    batches_remaining: Math.ceil((ONTARIO_CITIES.length - end) / batchSize),
+    total_batches: Math.ceil(ONTARIO_CITIES.length / batchSize),
     next_batch: end < ONTARIO_CITIES.length ? batch + 1 : null,
     results,
   });
