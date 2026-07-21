@@ -483,7 +483,14 @@ CRITICAL RULES:
       // Translate Gemini history roles to OpenAI roles:
       // 'model' -> 'assistant', 'user' -> 'user'
       const role = msg.role === 'model' ? 'assistant' : 'user';
-      const text = msg.parts?.[0]?.text || '';
+      let text = msg.parts?.[0]?.text || '';
+      
+      // Reconstruct buttons in history so OpenAI sees the correct assistant pattern
+      if (role === 'assistant' && msg.quickReplies && msg.quickReplies.length > 0) {
+        const buttonTags = msg.quickReplies.map(btn => `[BUTTON: ${btn}]`).join(' ');
+        text = `${text} ${buttonTags}`;
+      }
+      
       openaiMessages.push({ role, content: text });
     });
 
