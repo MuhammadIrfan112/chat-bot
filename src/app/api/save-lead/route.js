@@ -2,13 +2,16 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function POST(req) {
   try {
-    const { name, email, phone_number, property_interest, viewed_links, chatbot_source, bot_id } = await req.json();
+    const { name, email, phone_number, property_interest, viewed_links, chatbot_source, bot_id, time_preference } = await req.json();
 
     if (!email) {
       return Response.json({ error: "Email is required" }, { status: 400 });
     }
 
     let finalInterest = property_interest || '';
+    if (time_preference) {
+      finalInterest += `\n\nPreferred Callback Time:\n${time_preference}`;
+    }
     if (viewed_links && viewed_links.length > 0) {
       finalInterest += `\n\nViewed Links:\n${viewed_links.join('\n')}`;
     }

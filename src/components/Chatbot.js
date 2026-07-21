@@ -36,8 +36,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadStep, setLeadStep] = useState(null); // null | 'name' | 'phone' | 'email'
-  const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', property_interest: '' });
+  const [leadStep, setLeadStep] = useState(null); // null | 'name' | 'phone' | 'email' | 'time'
+  const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', time_preference: '', property_interest: '' });
   const [botIndustry, setBotIndustry] = useState('Loading');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
@@ -179,22 +179,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   }
 
   const checkLeadTrigger = (currentMessages) => {
-    // Check if any model message contains an image markdown
-    const hasShownProperty = currentMessages.some(m => 
-      m.role === 'model' && m.parts[0].text.match(/!\[.*?\]\(.*?\)/)
-    );
-
-    // If an image has been shown, and we haven't captured a lead or started asking
-    if (hasShownProperty && !leadCaptured && leadStep === null) {
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: [{ text: "To assist you better and save these preferences, I just need a few details. 😊" }],
-          inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
-        }]);
-        setLeadStep('name');
-      }, 1500);
-    }
+    // Lead capture is now explicitly triggered by the AI returning [START_LEAD_CAPTURE] tag
   };
 
   // Extract all URLs shown by the AI
@@ -233,6 +218,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       body: JSON.stringify({
         name, email,
         phone_number: phone,
+        time_preference: leadData.time_preference,
         property_interest: userQueries.slice(0, 300),
         viewed_links: viewedLinks,
         chatbot_source: botConfig.botName || 'Website Chatbot',
@@ -303,7 +289,19 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         }]);
         return;
       }
-      await saveLead(leadData.name, leadData.phone, msg);
+      setLeadData(prev => ({ ...prev, email: msg }));
+      setLeadStep('time');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Got it! Lastly, what time works best for you?` }],
+        inputCard: { icon: '🕒', label: 'Time Preference', placeholder: 'e.g. Tomorrow morning, or Anytime...' }
+      }]);
+      return;
+    }
+
+    if (leadStep === 'time') {
+      setLeadData(prev => ({ ...prev, time_preference: msg }));
+      await saveLead(leadData.name, leadData.phone, leadData.email);
       return;
     }
 
@@ -340,7 +338,39 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         setIsHumanTakeover(true);
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "🔄 You've been connected to a live agent. Please wait for their response..." }] }]);
       } else if (data.reply) {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: data.reply }] }]);
+        let text = data.reply;
+        let startLead = false;
+        
+        // Parse [BUTTON: text]
+        const buttons = [];
+        text = text.replace(/\[BUTTON:\s*(.*?)\]/g, (match, btnText) => {
+           buttons.push(btnText.trim());
+           return '';
+        });
+        
+        // Parse [START_LEAD_CAPTURE]
+        if (text.includes('[START_LEAD_CAPTURE]')) {
+           startLead = true;
+           text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
+        }
+
+        const newModelMsg = { role: 'model', parts: [{ text: text.trim() }] };
+        if (buttons.length > 0) {
+           newModelMsg.quickReplies = buttons;
+        }
+
+        setMessages(prev => [...prev, newModelMsg]);
+        
+        if (startLead && !leadCaptured && leadStep === null) {
+          setTimeout(() => {
+             setMessages(prev => [...prev, {
+                role: 'model',
+                parts: [{ text: "Great, would you like me call you tomorrow to arrange the showing? May I know your name?" }],
+                inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
+             }]);
+             setLeadStep('name');
+          }, 1500);
+        }
       } else {
         throw new Error("Empty response from AI");
       }
@@ -361,6 +391,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     if (leadStep === 'name') return 'Enter your full name...';
     if (leadStep === 'phone') return 'Enter your phone number...';
     if (leadStep === 'email') return 'Enter your email address...';
+    if (leadStep === 'time') return 'Enter your preferred time...';
     if (isHumanTakeover) return 'Message live agent...';
     return 'Type your message...';
   };
@@ -372,9 +403,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   // Show RE intent options for first message, or RealtyPropFlow quick replies, or nothing
   // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
   const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading') && botConfig.botId;
-  const activeQuickReplies = messages.length === 1
-    ? (isREBot ? RE_INTENT_OPTIONS : quickReplies)
-    : [];
+  const lastMsg = messages[messages.length - 1];
+  let activeQuickReplies = [];
+  if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {
+    activeQuickReplies = lastMsg.quickReplies;
+  } else if (messages.length === 1) {
+    activeQuickReplies = isREBot ? RE_INTENT_OPTIONS : quickReplies;
+  }
 
   return (
     <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
