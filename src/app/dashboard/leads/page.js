@@ -169,7 +169,7 @@ export default function LeadsCRM() {
                             const linksText = parts[1] ? parts[1].trim() : '';
                             return (
                               <div>
-                                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }}>
+                                <div style={{ whiteSpace: 'pre-line', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)' }}>
                                   {query}
                                 </div>
                                 {linksText && (

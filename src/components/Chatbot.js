@@ -206,11 +206,73 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const saveLead = async (name, phone, email) => {
     const viewedLinks = extractViewedLinks();
     
-    // Create a summary of what they asked for
-    const userQueries = messages
-        .filter(m => m.role === 'user')
-        .map(m => m.parts[0].text)
-        .join(', ');
+    // Parse conversation to extract structured real estate requirements
+    let propertyType = 'Not specified';
+    let city = 'Not specified';
+    let bedsBaths = 'Not specified';
+    let firstTimeBuyer = 'Not specified';
+    let schoolReqs = 'Not specified';
+    let features = 'Not specified';
+    let budget = 'Not specified';
+    let timeline = 'Not specified';
+    let preApproved = 'Not specified';
+    let likedProperty = 'Not specified';
+
+    for (let i = 0; i < messages.length - 1; i++) {
+      const msg = messages[i];
+      const nextMsg = messages[i + 1];
+      if (msg.role === 'model' && nextMsg.role === 'user') {
+        const text = msg.parts?.[0]?.text?.toLowerCase() || '';
+        const ans = nextMsg.parts?.[0]?.text?.trim() || '';
+        
+        if (!ans) continue;
+
+        if (text.includes('family home') && (text.includes('investment') || text.includes('first home'))) {
+          propertyType = ans;
+        } else if (text.includes('city') || text.includes('area are you interested')) {
+          city = ans;
+        } else if (text.includes('bedrooms') && text.includes('bathrooms')) {
+          bedsBaths = ans;
+        } else if (text.includes('first-time buyer') || text.includes('first time buyer')) {
+          firstTimeBuyer = ans;
+        } else if (text.includes('school requirements') || text.includes('school preference')) {
+          schoolReqs = ans;
+        } else if (text.includes('important features') || text.includes('garage, finished basement') || text.includes('swimming pool')) {
+          features = ans;
+        } else if (text.includes('maximum budget') || text.includes('your budget')) {
+          budget = ans;
+        } else if (text.includes('purchase by') || text.includes('aiming to purchase')) {
+          timeline = ans;
+        } else if (text.includes('pre-approved')) {
+          preApproved = ans;
+        } else if (text.includes('interested in') || text.includes('property did you like') || text.includes('like any of these')) {
+          likedProperty = ans;
+        }
+      }
+    }
+
+    const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
+
+    let finalPropertyInterest = '';
+    if (isRealEstate) {
+      finalPropertyInterest = `📋 Real Estate Requirements:
+• Property Type: ${propertyType}
+• Target City: ${city}
+• Bedrooms/Baths: ${bedsBaths}
+• First-Time Buyer: ${firstTimeBuyer}
+• School Preference: ${schoolReqs}
+• Desired Features: ${features}
+• Max Budget: ${budget}
+• Target Timeline: ${timeline}
+• Pre-Approved: ${preApproved}
+• Liked Property: ${likedProperty}`;
+    } else {
+      // Create a fallback summary of what they asked for
+      finalPropertyInterest = messages
+          .filter(m => m.role === 'user')
+          .map(m => m.parts[0].text)
+          .join(', ');
+    }
 
     await fetch('/api/save-lead', {
       method: 'POST',
@@ -219,7 +281,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         name, email,
         phone_number: phone,
         time_preference: leadData.time_preference,
-        property_interest: userQueries.slice(0, 300),
+        property_interest: finalPropertyInterest,
         viewed_links: viewedLinks,
         chatbot_source: botConfig.botName || 'Website Chatbot',
         bot_id: botConfig.botId
