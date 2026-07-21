@@ -60,10 +60,10 @@ export default function Home() {
         style={{ padding: '0 6%', height: '68px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}
       >
         {/* Logo: icon + text  */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '52px', width: '52px', objectFit: 'contain' }} />
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', background: 'transparent' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '48px', width: '48px', objectFit: 'contain', background: 'transparent', display: 'block' }} />
           <span style={{ fontSize: '15px', fontWeight: '600', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
-            RealtyPropFlow<span style={{ color: '#7e6006ff' }}>.</span>
+            RealtyPropFlow<span style={{ color: '#7c600cff' }}>.</span>
           </span>
         </Link>
 

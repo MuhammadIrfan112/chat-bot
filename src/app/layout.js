@@ -11,6 +11,10 @@ const inter = Inter({
 export const metadata = {
   title: "RealtyPropFlow AI — Grow Your Business with AI Chatbots",
   description: "Create AI chatbots trained on your business data to capture leads and boost sales.",
+  icons: {
+    icon: '/logo-icon.png',
+    apple: '/logo-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {
