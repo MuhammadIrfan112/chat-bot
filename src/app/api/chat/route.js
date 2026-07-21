@@ -510,7 +510,13 @@ CRITICAL RULES:
     return Response.json({ reply: replyText });
   } catch (error) {
     console.error("Chat API Error:", error);
-    return Response.json({ error: error.message || "Failed to generate response." }, { status: 500 });
+    
+    // Handle Gemini Free Tier Quota / Rate Limit Error
+    if (error.message && (error.message.includes('429 Too Many Requests') || error.message.includes('exceeded your current quota') || error.message.includes('Rate limit exceeded'))) {
+      return Response.json({ error: "⚠️ The AI is currently receiving too many requests. Please wait a few seconds and try again." }, { status: 429 });
+    }
+
+    return Response.json({ error: "An unexpected error occurred. Please try again later." }, { status: 500 });
   }
 }
 
