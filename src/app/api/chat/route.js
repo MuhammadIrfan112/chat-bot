@@ -276,11 +276,11 @@ export async function POST(req) {
               .update({ status: 'Inactive' })
               .eq('user_id', bot.user_id);
               
-            return Response.json({ reply: "⏰ Your 15-day free trial has ended. Please purchase a plan to continue using this chatbot." });
+            return Response.json({ reply: "This chatbot is currently paused. Please contact the website owner directly." });
           }
           
           if (subscription.status === 'Inactive') {
-             return Response.json({ reply: "⏰ Your plan has expired or is inactive. Please purchase a plan to continue using this chatbot." });
+             return Response.json({ reply: "This chatbot is currently paused. Please contact the website owner directly." });
           }
         }
         
