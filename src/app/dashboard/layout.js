@@ -12,6 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 export default function DashboardLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
+  const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -41,13 +42,17 @@ export default function DashboardLayout({ children }) {
         
         const { data: rows } = await supabase
           .from('users_subscription')
-          .select('status')
+          .select('status, trial_ends_at')
           .eq('user_id', userId)
           .limit(1);
         const sub = rows?.[0];
 
         if (sub) {
           setSubscriptionStatus(sub.status);
+          if (sub.trial_ends_at) {
+            const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
+            setTrialDaysLeft(daysLeft > 0 ? daysLeft : 0);
+          }
         } else {
           const trialEndsAt = new Date();
           trialEndsAt.setDate(trialEndsAt.getDate() + 15);
@@ -256,6 +261,77 @@ export default function DashboardLayout({ children }) {
             </button>
           </div>
         )}
+
+        {/* ⏰ Trial Countdown Banner */}
+        {(subscriptionStatus === 'Trialing' || subscriptionStatus === 'Inactive') && trialDaysLeft !== null && (
+          <div style={{
+            marginBottom: '24px',
+            borderRadius: '16px',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+            background: trialDaysLeft <= 3
+              ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))'
+              : trialDaysLeft <= 7
+              ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))'
+              : 'linear-gradient(135deg, rgba(79,70,229,0.15), rgba(79,70,229,0.05))',
+            border: `1px solid ${
+              trialDaysLeft <= 3 ? 'rgba(239,68,68,0.3)'
+              : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.3)'
+              : 'rgba(79,70,229,0.3)'
+            }`,
+            boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px', flexShrink: 0,
+                background: trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
+              }}>
+                {trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
+              </div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '15px', color: 'white' }}>
+                  {subscriptionStatus === 'Inactive'
+                    ? '⛔ Trial Expired — Your chatbot is paused'
+                    : trialDaysLeft === 0
+                    ? '⛔ Last Day! Your trial ends today'
+                    : trialDaysLeft === 1
+                    ? '⚠️ Trial ends tomorrow — 1 day left'
+                    : `🗓️ Free Trial — ${trialDaysLeft} days remaining`
+                  }
+                </div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                  {subscriptionStatus === 'Inactive'
+                    ? 'Purchase a plan to reactivate your chatbot for your visitors.'
+                    : 'Upgrade now to ensure your chatbot never stops working for your clients.'
+                  }
+                </div>
+              </div>
+            </div>
+            <a href="/dashboard/plans" style={{
+              padding: '10px 20px',
+              background: trialDaysLeft <= 3 || subscriptionStatus === 'Inactive'
+                ? 'linear-gradient(135deg, #EF4444, #DC2626)'
+                : 'linear-gradient(135deg, #C9A227, #F59E0B)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '10px',
+              fontWeight: '700',
+              fontSize: '13px',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+            }}>
+              {subscriptionStatus === 'Inactive' ? '🔓 Reactivate Now' : '⚡ Upgrade Plan'}
+            </a>
+          </div>
+        )}
+
         <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'var(--primary)', filter: 'blur(150px)', opacity: 0.05, pointerEvents: 'none' }}></div>
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           {children}
