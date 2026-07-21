@@ -217,7 +217,7 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
         </div>
         {bots.length === 0 && (
           <button
-            onClick={() => { setEditingBotId(null); setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' }); setShowForm(true); }}
+            onClick={() => { setEditingBotId(null); setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖', cities: [], coverage_area: 'exclusive' }); setShowForm(true); }}
             className="btn-primary-glow"
             style={{ padding: '12px 24px', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
           >
@@ -474,7 +474,7 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
           <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>No chatbots yet</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Create your first chatbot to start capturing leads automatically.</p>
           <button
-            onClick={() => { setEditingBotId(null); setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖' }); setShowForm(true); }}
+            onClick={() => { setEditingBotId(null); setForm({ name: '', industry: 'Real Estate', website_url: '', calendly_link: '', welcome_message: 'Hi there! 👋 How can I help you today?', primary_color: '#4F46E5', bot_avatar: '🤖', cities: [], coverage_area: 'exclusive' }); setShowForm(true); }}
             className="btn-primary-glow"
             style={{ padding: '12px 28px', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '15px' }}
           >
@@ -506,7 +506,9 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
                       calendly_link: bot.calendly_link || '',
                       welcome_message: bot.welcome_message || '',
                       primary_color: bot.primary_color || '#4F46E5',
-                      bot_avatar: bot.bot_avatar || '🤖'
+                      bot_avatar: bot.bot_avatar || '🤖',
+                      cities: [],
+                      coverage_area: 'exclusive'
                     });
                     setShowForm(true);
                   }}
