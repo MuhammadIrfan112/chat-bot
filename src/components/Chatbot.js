@@ -454,26 +454,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                       {msg.parts[0].text}
                     </ReactMarkdown>
 
-                    {/* Styled Input Card shown inside chat bubble */}
-                    {msg.inputCard && (
-                      <div style={{
-                        marginTop: '10px',
-                        backgroundColor: 'rgba(255,255,255,0.15)',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        borderRadius: '10px',
-                        padding: '10px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        fontSize: '13px',
-                        color: 'inherit',
-                        opacity: 0.8
-                      }}>
-                        <span style={{ fontSize: '18px' }}>{msg.inputCard.icon}</span>
-                        <span style={{ flex: 1, fontStyle: 'italic' }}>{msg.inputCard.placeholder}</span>
-                        <span style={{ fontSize: '11px', opacity: 0.6, whiteSpace: 'nowrap' }}>↓ Type below</span>
-                      </div>
-                    )}
+                    {/* Removed redundant inline inputCard */}
                   </>
                 ) : (
                   msg.parts[0].text
@@ -519,6 +500,25 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
               >
                 📅 Book a Free Discovery Call
               </button>
+            </div>
+          )}
+
+          {leadStep && (
+            <div style={{
+              padding: '8px 16px',
+              backgroundColor: 'rgba(255, 123, 44, 0.08)',
+              borderTop: '1px solid rgba(255, 123, 44, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#FF7B2C'
+            }}>
+              <span>{leadStep === 'name' ? '👤' : leadStep === 'phone' ? '📞' : leadStep === 'email' ? '✉️' : '🕒'}</span>
+              <span>
+                {leadStep === 'name' ? 'Full Name required to book call' : leadStep === 'phone' ? 'Valid Phone Number required' : leadStep === 'email' ? 'Valid Email Address required' : 'Preferred Contact Time required'}
+              </span>
             </div>
           )}
 
