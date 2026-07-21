@@ -54,8 +54,8 @@ export default function Pricing() {
         style={{ padding: '0 6%', height: '70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(2, 6, 23, 0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Logo: icon + text  */}
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', background: 'transparent' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '48px', width: '48px', objectFit: 'contain', background: 'transparent', display: 'block', mixBlendMode: 'screen' }} />
-          <span style={{ fontSize: '16px', fontWeight: '900', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '60px', width: '60px', objectFit: 'contain', background: 'transparent', display: 'block' }} />
+          <span style={{ fontSize: '18px', fontWeight: '900', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
             RealtyPropFlow<span style={{ color: '#E5C158' }}>.</span>
           </span>
         </Link>
