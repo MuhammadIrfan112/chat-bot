@@ -53,11 +53,11 @@ export default function DashboardLayout({ children }) {
           trialEndsAt.setDate(trialEndsAt.getDate() + 15);
           await supabase.from('users_subscription').insert({
             user_id: userId,
-            status: 'Active',
+            status: 'Trialing',
             email: impEmail || session.user.email,
             trial_ends_at: trialEndsAt.toISOString()
           });
-          setSubscriptionStatus('Active');
+          setSubscriptionStatus('Trialing');
         }
         setLoading(false);
       }

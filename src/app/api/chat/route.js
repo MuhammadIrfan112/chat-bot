@@ -268,12 +268,19 @@ export async function POST(req) {
         if (subscription && subscription.trial_ends_at) {
           const trialEnd = new Date(subscription.trial_ends_at);
           const now = new Date();
-          if (now > trialEnd && subscription.status !== 'Active') {
+          
+          if (subscription.status === 'Trialing' && now > trialEnd) {
+            // Trial has expired, auto-update to Inactive to prevent further chats
             await supabase
               .from('users_subscription')
               .update({ status: 'Inactive' })
               .eq('user_id', bot.user_id);
-            return Response.json({ reply: "⏰ Your 15-day free trial has ended. Please upgrade your plan to continue using this chatbot." });
+              
+            return Response.json({ reply: "⏰ Your 15-day free trial has ended. Please purchase a plan to continue using this chatbot." });
+          }
+          
+          if (subscription.status === 'Inactive') {
+             return Response.json({ reply: "⏰ Your plan has expired or is inactive. Please purchase a plan to continue using this chatbot." });
           }
         }
         

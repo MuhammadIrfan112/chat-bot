@@ -8,8 +8,9 @@ const supabaseAdmin = createClient(
 
 export async function POST(req) {
   try {
-    const { websiteUrl } = await req.json();
+    const { websiteUrl, userId } = await req.json();
     if (!websiteUrl) return NextResponse.json({ error: 'URL required' }, { status: 400 });
+    if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
 
     let hostname = '';
     try {
@@ -23,19 +24,19 @@ export async function POST(req) {
     // Fetch all bots to check their hostnames (using service role to bypass RLS)
     const { data, error } = await supabaseAdmin
       .from('bots')
-      .select('website_url');
+      .select('website_url, user_id');
 
     if (error) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
-    // Check if any existing bot's hostname matches the requested hostname
+    // Check if any existing bot's hostname matches the requested hostname AND belongs to a DIFFERENT user
     const exists = data.some(bot => {
       try {
         if (!bot.website_url) return false;
         let botHostname = new URL(bot.website_url.includes('http') ? bot.website_url : `https://${bot.website_url}`).hostname;
         botHostname = botHostname.replace(/^www\./, '');
-        return botHostname === hostname;
+        return botHostname === hostname && bot.user_id !== userId;
       } catch (e) {
         return false;
       }
