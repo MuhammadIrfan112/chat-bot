@@ -527,11 +527,20 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-              placeholder={getPlaceholder()}
+              onKeyDown={(e) => { if (e.key === 'Enter' && activeQuickReplies.length === 0) handleSend(); }}
+              placeholder={activeQuickReplies.length > 0 ? 'Please select an option above...' : getPlaceholder()}
               className={styles.input}
+              disabled={activeQuickReplies.length > 0}
+              style={{ opacity: activeQuickReplies.length > 0 ? 0.6 : 1, cursor: activeQuickReplies.length > 0 ? 'not-allowed' : 'text' }}
             />
-            <button onClick={() => handleSend()} className={styles.sendBtn}>Send</button>
+            <button 
+              onClick={() => handleSend()} 
+              className={styles.sendBtn}
+              disabled={activeQuickReplies.length > 0}
+              style={{ opacity: activeQuickReplies.length > 0 ? 0.5 : 1, cursor: activeQuickReplies.length > 0 ? 'not-allowed' : 'pointer' }}
+            >
+              Send
+            </button>
           </div>
         </div>
       ) : (
