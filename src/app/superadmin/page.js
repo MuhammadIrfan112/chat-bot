@@ -103,9 +103,17 @@ export default function AdminPage() {
           <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0 }}>👥 Clients & Chatbots</h1>
           <p style={{ color: '#6B7280', marginTop: '4px' }}>Click on a client to see & manage their chatbots individually.</p>
         </div>
-        <button onClick={fetchUsers} style={{ padding: '10px 16px', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-          🔄 Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <a
+            href="/superadmin/bulk-scrape"
+            style={{ padding: '10px 16px', backgroundColor: '#C9A227', color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', textDecoration: 'none', fontSize: '14px' }}
+          >
+            🏙️ Ontario Bulk Scraper
+          </a>
+          <button onClick={fetchUsers} style={{ padding: '10px 16px', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+            🔄 Refresh
+          </button>
+        </div>
       </div>
 
       {loading ? (
