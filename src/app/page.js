@@ -58,7 +58,7 @@ export default function Home() {
         </Link>
 
         <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
-          {[['#features', 'Features'], ['#pricing', 'Pricing'], ['/how-it-works', 'How it Works']].map(([href, label]) => (
+          {[['#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
             <Link key={href} href={href} className={styles.navLink}>{label}</Link>
           ))}
         </nav>
