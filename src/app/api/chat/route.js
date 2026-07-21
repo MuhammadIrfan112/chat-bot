@@ -204,7 +204,7 @@ async function fetchCityPropertyData(botId, userQuery) {
 
     const scrapedDate = cityData.last_scraped_at ? new Date(cityData.last_scraped_at).toLocaleDateString() : 'Recently';
 
-    let section = `\n\nLIVE ZILLOW LISTINGS for ${targetCity} (Data refreshed: ${scrapedDate}. ALWAYS show these with images and details when user asks about properties):\n`;
+    let section = `\n\n--- SECONDARY FALLBACK INVENTORY (LIVE ZILLOW LISTINGS for ${targetCity}) ---\nData refreshed: ${scrapedDate}. CRITICAL INSTRUCTION: ONLY use these properties if you CANNOT find a matching property in the PRIMARY WEBSITE INVENTORY above. If you do use these, ALWAYS show them with images and details:\n`;
 
     filteredData.slice(0, 5).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.state || ''}`.replace(/^, | , /g, '').trim();
@@ -287,11 +287,14 @@ export async function POST(req) {
         // 🏡 Real Estate: Scrape website and fetch from city DB
         if (isRealEstateEarly) {
           if (websiteUrl) {
-            liveInventory = await liveScrapeWebsite(websiteUrl);
+            const websiteData = await liveScrapeWebsite(websiteUrl);
+            if (websiteData) {
+              liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY (ALWAYS PRIORITIZE THIS DATA) ---\n${websiteData}`;
+            }
           }
           const cityListings = await fetchCityPropertyData(bot_id, userQuery);
           if (cityListings) {
-            liveInventory += cityListings;
+            liveInventory = (liveInventory || '') + cityListings;
           }
         }
         // 🛒 E-commerce: Use live scraping only
