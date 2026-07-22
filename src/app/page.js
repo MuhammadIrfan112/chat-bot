@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Bot, Zap, Shield, ChevronRight, Activity, Check, ArrowRight, Sparkles, TrendingUp, Globe, Star } from 'lucide-react';
 import styles from './page.module.css';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 const LOGOS = [
   { name: 'Shopify', letter: 'S', bg: '#96BF48' },
@@ -33,8 +35,18 @@ export default function Home() {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '25%']);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const router = useRouter();
 
   const [formStatus, setFormStatus] = useState('idle');
+
+  // ── Auto-redirect logged-in users to dashboard ────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/dashboard');
+      }
+    });
+  }, [router]);
 
   const handleContactSubmit = (e) => {
     e.preventDefault();

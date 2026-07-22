@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,7 +13,29 @@ export default function Login() {
   const [websiteType, setWebsiteType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
+
+  // ── Auto-redirect if already logged in ──────────────────────
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        // Check role
+        const { data: rows } = await supabase
+          .from('users_subscription')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .limit(1);
+        if (rows?.[0]?.role === 'superadmin') {
+          router.replace('/superadmin');
+        } else {
+          router.replace('/dashboard');
+        }
+      } else {
+        setCheckingSession(false);
+      }
+    });
+  }, [router]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -74,6 +96,19 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  // Show spinner while checking session
+  if (checkingSession) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-page)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '44px', height: '44px', border: '3px solid rgba(129,140,248,0.2)', borderTopColor: '#818CF8', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Checking session...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', backgroundColor: 'var(--bg-page)', position: 'relative', overflow: 'hidden' }}>
