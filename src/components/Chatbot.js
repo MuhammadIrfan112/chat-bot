@@ -203,7 +203,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     return Array.from(links);
   };
 
-  const saveLead = async (name, phone, email) => {
+  const saveLead = async (name, phone, email, time_preference) => {
     const viewedLinks = extractViewedLinks();
     
     // Parse conversation to extract structured real estate requirements
@@ -255,17 +255,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
     let finalPropertyInterest = '';
     if (isRealEstate) {
-      finalPropertyInterest = `📋 Real Estate Requirements:
-• Property Type: ${propertyType}
-• Target City: ${city}
-• Bedrooms/Baths: ${bedsBaths}
-• First-Time Buyer: ${firstTimeBuyer}
-• School Preference: ${schoolReqs}
-• Desired Features: ${features}
-• Max Budget: ${budget}
-• Target Timeline: ${timeline}
-• Pre-Approved: ${preApproved}
-• Liked Property: ${likedProperty}`;
+      finalPropertyInterest = `📋 Real Estate Requirements:\n• Property Type: ${propertyType}\n• Target City: ${city}\n• Bedrooms/Baths: ${bedsBaths}\n• First-Time Buyer: ${firstTimeBuyer}\n• School Preference: ${schoolReqs}\n• Desired Features: ${features}\n• Max Budget: ${budget}\n• Target Timeline: ${timeline}\n• Pre-Approved: ${preApproved}\n• Liked Property: ${likedProperty}`;
     } else {
       // Create a fallback summary of what they asked for
       finalPropertyInterest = messages
@@ -274,19 +264,28 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
           .join(', ');
     }
 
-    await fetch('/api/save-lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name, email,
-        phone_number: phone,
-        time_preference: leadData.time_preference,
-        property_interest: finalPropertyInterest,
-        viewed_links: viewedLinks,
-        chatbot_source: botConfig.botName || 'Website Chatbot',
-        bot_id: botConfig.botId
-      })
-    });
+    try {
+      const res = await fetch('/api/save-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name, email,
+          phone_number: phone,
+          time_preference: time_preference,
+          property_interest: finalPropertyInterest,
+          viewed_links: viewedLinks,
+          chatbot_source: botConfig.botName || 'Website Chatbot',
+          bot_id: botConfig.botId
+        })
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        console.error('Lead save failed:', result);
+      }
+    } catch (err) {
+      console.error('Lead save error:', err);
+    }
+
     setLeadCaptured(true);
     setLeadStep(null);
     setMessages(prev => [...prev, {
@@ -363,9 +362,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
     if (leadStep === 'time') {
       setLeadData(prev => ({ ...prev, time_preference: msg }));
-      await saveLead(leadData.name, leadData.phone, leadData.email);
+      await saveLead(leadData.name, leadData.phone, leadData.email, msg);
       return;
     }
+
 
     // ── Requirements (all-at-once) step (REMOVED, handled by AI) ───
 
