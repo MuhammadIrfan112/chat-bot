@@ -448,9 +448,9 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
                     <span style={{ fontSize: '10px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Option 2: Let Us Do It For You</span>
                   </div>
                   <h3 style={{ color: 'white', fontSize: '22px', fontWeight: '900', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>Professional Installation Service</h3>
-                  <p style={{ color: '#C4B5FD', fontSize: '13px', margin: '0 0 16px 0', lineHeight: '1.6' }}>Don&apos;t know how to add code to your website? Our expert team will install and deploy your chatbot perfectly — live within 24 hours, guaranteed.</p>
+                  <p style={{ color: '#C4B5FD', fontSize: '13px', margin: '0 0 16px 0', lineHeight: '1.6' }}>Our expert team will install and deploy your chatbot perfectly — live within 24 hours, guaranteed.</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {['✅ Zero Tech Skills Needed', '✅ Live in 24 Hours', '✅ Fully Tested', '✅ 100% Satisfaction'].map((item, i) => (
+                    {['✅ Live in 24 Hours', '✅ Fully Tested', '✅ 100% Satisfaction'].map((item, i) => (
                       <span key={i} style={{ color: '#DDD6FE', fontSize: '11px', fontWeight: '600', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '50px' }}>{item}</span>
                     ))}
                   </div>

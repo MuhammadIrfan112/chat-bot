@@ -521,7 +521,7 @@ export default function Home() {
                   <span style={{ background: 'linear-gradient(90deg, #A78BFA, #818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>yourself?</span>
                 </h2>
                 <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: '1.7', maxWidth: '520px', margin: '0 0 28px 0' }}>
-                  No coding required. Our expert team will professionally install and deploy your AI chatbot on your website — <strong style={{ color: '#C4B5FD' }}>fully tested and live within 24 hours</strong>, guaranteed.
+                  Our expert team will professionally install and deploy your AI chatbot on your website — <strong style={{ color: '#C4B5FD' }}>fully tested and live within 24 hours</strong>, guaranteed.
                 </p>
 
                 {/* Feature Pills */}
@@ -530,7 +530,6 @@ export default function Home() {
                     { icon: '⚡', text: 'Live in 24 Hours' },
                     { icon: '🔒', text: 'Secure Installation' },
                     { icon: '🧪', text: 'Fully Tested' },
-                    { icon: '✅', text: 'Zero Tech Skills Needed' },
                     { icon: '📞', text: '24/7 Support Included' },
                   ].map((item, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '7px 14px' }}>
