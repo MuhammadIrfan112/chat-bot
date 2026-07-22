@@ -9,8 +9,8 @@ const SAFEPAY_CHECKOUT_BASE = isSandbox
   : 'https://getsafepay.com';
 
 const PLAN_PRICES = {
-  starter: { monthly: 49, yearly: 39 },
-  pro: { monthly: 79, yearly: 65 }
+  starter: { monthly: 29, yearly: 24 },
+  pro: { monthly: 49, yearly: 39 }
 };
 
 export async function POST(req) {
