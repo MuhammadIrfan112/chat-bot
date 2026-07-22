@@ -439,26 +439,34 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
             </div>
 
             {/* Premium Installation Upsell */}
-            <div style={{ background: 'linear-gradient(135deg, #1E1B4B, #312E81)', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-              <div style={{ flex: 1, minWidth: '250px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>⭐ Option 2: Let us do it for you</div>
-                <h3 style={{ color: 'white', fontSize: '20px', fontWeight: '800', margin: '0 0 8px 0' }}>Professional Installation Service</h3>
-                <p style={{ color: '#C7D2FE', fontSize: '13px', margin: '0 0 12px 0', lineHeight: '1.5' }}>Don&apos;t know how to code? We will install and deploy the chatbot on your website perfectly within 24 hours.</p>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <span style={{ color: '#A5B4FC', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>✅ Zero Tech Skills Needed</span>
-                  <span style={{ color: '#A5B4FC', fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>✅ Fully Tested</span>
+            <div style={{ background: 'linear-gradient(135deg, #0F0A2E 0%, #1E1B4B 50%, #2D1B69 100%)', borderRadius: '20px', padding: '28px', border: '1px solid rgba(167,139,250,0.25)', boxShadow: '0 0 40px rgba(139,92,246,0.15)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', background: 'radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', position: 'relative', zIndex: 1 }}>
+                <div style={{ flex: 1, minWidth: '240px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(90deg, rgba(253,224,71,0.15), rgba(251,191,36,0.15))', border: '1px solid rgba(253,224,71,0.3)', borderRadius: '50px', padding: '4px 12px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '10px' }}>⭐</span>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Option 2: Let Us Do It For You</span>
+                  </div>
+                  <h3 style={{ color: 'white', fontSize: '22px', fontWeight: '900', margin: '0 0 8px 0', letterSpacing: '-0.02em' }}>Professional Installation Service</h3>
+                  <p style={{ color: '#C4B5FD', fontSize: '13px', margin: '0 0 16px 0', lineHeight: '1.6' }}>Don&apos;t know how to add code to your website? Our expert team will install and deploy your chatbot perfectly — live within 24 hours, guaranteed.</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['✅ Zero Tech Skills Needed', '✅ Live in 24 Hours', '✅ Fully Tested', '✅ 100% Satisfaction'].map((item, i) => (
+                      <span key={i} style={{ color: '#DDD6FE', fontSize: '11px', fontWeight: '600', backgroundColor: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '50px' }}>{item}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', minWidth: '160px' }}>
-                <div style={{ fontSize: '36px', fontWeight: '900', color: 'white', lineHeight: '1' }}>$100</div>
-                <div style={{ color: '#A5B4FC', fontSize: '12px', marginBottom: '12px', marginTop: '4px' }}>One-time fee</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <a href="https://wa.me/923000000000?text=Hi! I want the Professional Installation Service ($100) for my chatbot." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#25D366', color: 'white', padding: '10px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 10px rgba(37, 211, 102, 0.2)' }}>
-                    💬 WhatsApp
-                  </a>
-                  <a href="https://mail.google.com/mail/?view=cm&fs=1&to=irfangull2288@gmail.com&su=Order%3A%20Professional%20Installation%20Service%20(%24100)&body=Hi%2C%20I%20would%20like%20to%20order%20the%20chatbot%20Professional%20Installation%20Service%20(%24100)." target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#4F46E5', color: 'white', padding: '10px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)', cursor: 'pointer' }}>
-                    📧 Email Us
-                  </a>
+                <div style={{ textAlign: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(167,139,250,0.2)', padding: '20px 24px', borderRadius: '16px', minWidth: '160px', backdropFilter: 'blur(10px)' }}>
+                  <div style={{ fontSize: '12px', color: '#A78BFA', fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>One-Time Fee</div>
+                  <div style={{ fontSize: '44px', fontWeight: '900', color: 'white', lineHeight: '1', marginBottom: '4px' }}>$100</div>
+                  <div style={{ fontSize: '11px', color: '#7C3AED', marginBottom: '16px' }}>No recurring charges</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <a href="https://wa.me/923107165565?text=Hi!%20I%20want%20the%20Professional%20Installation%20Service%20(%24100)%20for%20my%20chatbot." target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', backgroundColor: '#25D366', color: 'white', padding: '11px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 15px rgba(37,211,102,0.3)', transition: 'all 0.2s' }}>
+                      💬 WhatsApp Us
+                    </a>
+                    <a href="mailto:chatbotflow1@gmail.com?subject=Order%3A%20Professional%20Installation%20Service%20(%24100)&body=Hi%2C%20I%20would%20like%20to%20order%20the%20chatbot%20Professional%20Installation%20Service%20(%24100)." target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', backgroundColor: 'rgba(129,140,248,0.2)', border: '1px solid rgba(129,140,248,0.4)', color: '#A5B4FC', padding: '11px 16px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '13px', transition: 'all 0.2s' }}>
+                      📧 Email Us
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -529,6 +537,63 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
           ))}
         </div>
       )}
+
+      {/* ── Permanent Professional Installation Banner ── */}
+      <div style={{ marginTop: '48px', background: 'linear-gradient(135deg, #0F0A2E 0%, #1A1040 50%, #0D1B3E 100%)', borderRadius: '24px', padding: '36px', border: '1px solid rgba(167,139,250,0.2)', boxShadow: '0 0 60px rgba(99,57,234,0.12)', position: 'relative', overflow: 'hidden' }}>
+        {/* Glow orbs */}
+        <div style={{ position: 'absolute', top: '-40px', left: '-40px', width: '180px', height: '180px', background: 'radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '-40px', right: '-40px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '28px' }}>
+          {/* Left: Content */}
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(90deg, rgba(253,224,71,0.12), rgba(251,191,36,0.12))', border: '1px solid rgba(253,224,71,0.25)', borderRadius: '50px', padding: '5px 14px', marginBottom: '16px' }}>
+              <span>🚀</span>
+              <span style={{ fontSize: '10px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Professional Installation Service</span>
+            </div>
+            <h2 style={{ color: 'white', fontSize: '26px', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-0.02em', lineHeight: 1.2 }}>Can&apos;t add the chatbot to your website?</h2>
+            <p style={{ color: '#A5B4FC', fontSize: '14px', margin: '0 0 20px 0', lineHeight: '1.7', maxWidth: '480px' }}>No worries! Our expert team will handle everything — from installation to testing. Your chatbot will be live on your website within <strong style={{ color: '#C4B5FD' }}>24 hours</strong>, fully configured and working perfectly.</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {[
+                { icon: '⚡', text: 'Live in 24 Hours' },
+                { icon: '🔒', text: 'Secure & Safe' },
+                { icon: '🧪', text: 'Fully Tested' },
+                { icon: '📞', text: '24/7 Support' }
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '6px 14px' }}>
+                  <span style={{ fontSize: '13px' }}>{item.icon}</span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#DDD6FE' }}>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Price + CTA */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: '20px', padding: '24px 32px', backdropFilter: 'blur(10px)', minWidth: '200px', gap: '4px' }}>
+            <div style={{ fontSize: '12px', color: '#7C3AED', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em' }}>One-Time Fee</div>
+            <div style={{ fontSize: '52px', fontWeight: '900', color: 'white', lineHeight: 1, letterSpacing: '-0.04em' }}>$100</div>
+            <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '20px' }}>No monthly charges</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+              <a
+                href="https://wa.me/923107165565?text=Hi!%20I%20want%20the%20Professional%20Installation%20Service%20(%24100)%20for%20my%20chatbot."
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'linear-gradient(135deg, #25D366, #1DAA54)', color: 'white', padding: '13px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '800', fontSize: '14px', boxShadow: '0 4px 20px rgba(37,211,102,0.35)', whiteSpace: 'nowrap' }}
+              >
+                💬 Order via WhatsApp
+              </a>
+              <a
+                href="mailto:chatbotflow1@gmail.com?subject=Order%3A%20Professional%20Installation%20Service%20(%24100)&body=Hi%2C%20I%20would%20like%20to%20order%20the%20Professional%20Installation%20Service%20for%20%24100."
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', color: '#A5B4FC', padding: '13px 20px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap' }}
+              >
+                📧 Send Email
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -484,7 +484,122 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── Professional Installation Service ─── */}
+      <section style={{ padding: '0 6% 100px', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            style={{
+              background: 'linear-gradient(135deg, #0D0A2A 0%, #13104A 40%, #0A1628 100%)',
+              borderRadius: '28px',
+              padding: 'clamp(36px, 5vw, 60px)',
+              border: '1px solid rgba(139,92,246,0.25)',
+              boxShadow: '0 0 80px rgba(99,57,234,0.18), 0 40px 100px rgba(0,0,0,0.4)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            {/* Background Glow Effects */}
+            <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-80px', right: '-60px', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '200px', background: 'radial-gradient(ellipse, rgba(99,57,234,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '40px' }}>
+              
+              {/* Left Content */}
+              <div style={{ flex: 1, minWidth: '300px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(90deg, rgba(253,224,71,0.12), rgba(251,191,36,0.08))', border: '1px solid rgba(253,224,71,0.3)', borderRadius: '50px', padding: '6px 16px', marginBottom: '20px' }}>
+                  <span style={{ fontSize: '14px' }}>🚀</span>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Done-For-You Service</span>
+                </div>
+
+                <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: '900', color: '#F5F0E1', margin: '0 0 12px 0', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+                  Can&apos;t install the chatbot<br />
+                  <span style={{ background: 'linear-gradient(90deg, #A78BFA, #818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>yourself?</span>
+                </h2>
+                <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: '1.7', maxWidth: '520px', margin: '0 0 28px 0' }}>
+                  No coding required. Our expert team will professionally install and deploy your AI chatbot on your website — <strong style={{ color: '#C4B5FD' }}>fully tested and live within 24 hours</strong>, guaranteed.
+                </p>
+
+                {/* Feature Pills */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '32px' }}>
+                  {[
+                    { icon: '⚡', text: 'Live in 24 Hours' },
+                    { icon: '🔒', text: 'Secure Installation' },
+                    { icon: '🧪', text: 'Fully Tested' },
+                    { icon: '✅', text: 'Zero Tech Skills Needed' },
+                    { icon: '📞', text: '24/7 Support Included' },
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '7px 14px' }}>
+                      <span style={{ fontSize: '13px' }}>{item.icon}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#CBD5E1' }}>{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Contact Buttons */}
+                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                  <a
+                    href="https://wa.me/923107165565?text=Hi!%20I%20want%20the%20Professional%20Chatbot%20Installation%20Service%20(%24100)."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #25D366, #1DAA54)', color: 'white', padding: '14px 28px', borderRadius: '50px', textDecoration: 'none', fontWeight: '800', fontSize: '15px', boxShadow: '0 6px 25px rgba(37,211,102,0.4)', letterSpacing: '-0.01em', transition: 'all 0.3s' }}
+                  >
+                    💬 Order via WhatsApp
+                  </a>
+                  <a
+                    href="mailto:chatbotflow1@gmail.com?subject=Order%3A%20Professional%20Installation%20Service%20(%24100)&body=Hi%2C%20I%20would%20like%20to%20order%20the%20Professional%20Chatbot%20Installation%20Service%20for%20%24100."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.35)', color: '#A5B4FC', padding: '14px 28px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '15px', letterSpacing: '-0.01em', transition: 'all 0.3s' }}
+                  >
+                    📧 Send Email
+                  </a>
+                </div>
+              </div>
+
+              {/* Right: Price Card */}
+              <motion.div
+                whileHover={{ y: -6, boxShadow: '0 0 60px rgba(139,92,246,0.3)' }}
+                style={{
+                  background: 'rgba(0,0,0,0.5)',
+                  border: '1px solid rgba(167,139,250,0.25)',
+                  borderRadius: '24px',
+                  padding: '36px 40px',
+                  textAlign: 'center',
+                  backdropFilter: 'blur(20px)',
+                  minWidth: '220px',
+                  boxShadow: '0 0 40px rgba(99,57,234,0.2)',
+                  transition: 'all 0.3s',
+                  flexShrink: 0
+                }}
+              >
+                <div style={{ fontSize: '11px', color: '#7C3AED', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>One-Time Fee</div>
+                <div style={{ fontSize: '64px', fontWeight: '900', color: 'white', lineHeight: 1, letterSpacing: '-0.05em', marginBottom: '4px' }}>$100</div>
+                <div style={{ fontSize: '13px', color: '#475569', marginBottom: '8px' }}>No monthly charges ever</div>
+                <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, #7C3AED, #818CF8)', margin: '16px auto', borderRadius: '2px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#94A3B8', textAlign: 'left', marginBottom: '8px' }}>
+                  {['Setup & Installation', 'Configuration & Testing', 'Go-Live Support'].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(129,140,248,0.2)', border: '1px solid rgba(129,140,248,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Check size={9} color="#818CF8" strokeWidth={3} />
+                      </div>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ─── Contact Section ─── */}
+
       <section id="contact" style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: '80px' }}>
