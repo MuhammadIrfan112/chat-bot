@@ -27,7 +27,9 @@ export async function POST(req) {
     // Stripe expects amount in cents
     const amountInCents = Math.round(priceUSD * 100);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://chat-bot-ruddy-one.vercel.app';
+    // Dynamically get the current domain (works for localhost and live domains like realtypropflow.com)
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.slice(0, -1) || 'https://www.realtypropflow.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
