@@ -30,9 +30,9 @@ export async function POST(req) {
     // Stripe expects amount in cents
     const amountInCents = Math.round(totalAmount * 100);
 
-    // Dynamically get the current domain (works for localhost and live domains like realtypropflow.com)
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.slice(0, -1) || 'https://www.realtypropflow.com';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin;
+    // Always use live domain — fallback to realtypropflow.com
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin || 'https://www.realtypropflow.com';
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
