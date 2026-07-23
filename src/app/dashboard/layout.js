@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
