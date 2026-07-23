@@ -80,10 +80,8 @@ export default function PlansPage() {
         '1 AI Chatbot',
         'Real Estate Listings Scraping',
         'Data Sync from Realtor.ca',
-        'E-commerce Product Syncing',
         'Advanced CRM Lead Mapping',
-        'Live Human Takeover',
-        'Priority WhatsApp Support'
+        'Live Human Takeover'
       ],
       popular: true,
       planId: 'pro'
