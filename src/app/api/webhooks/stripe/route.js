@@ -1,0 +1,74 @@
+import Stripe from 'stripe';
+import { supabase } from '@/lib/supabaseClient';
+import { headers } from 'next/headers';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16',
+});
+
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+export async function POST(req) {
+  try {
+    const body = await req.text();
+    const headersList = headers();
+    const signature = headersList.get('stripe-signature');
+
+    if (!signature || !webhookSecret) {
+      console.error('Missing Stripe signature or webhook secret');
+      return Response.json({ error: 'Missing stripe signature or secret' }, { status: 400 });
+    }
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    } catch (err) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return Response.json({ error: 'Webhook Error: ' + err.message }, { status: 400 });
+    }
+
+    // Handle the event
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const metadata = session.metadata;
+
+      if (!metadata || !metadata.user_id) {
+        console.error('No user_id found in session metadata', session.id);
+        return Response.json({ error: 'Missing metadata' }, { status: 400 });
+      }
+
+      const { user_id, plan, cycle } = metadata;
+
+      // Calculate new trial ends at based on cycle
+      const trialEnd = new Date();
+      if (cycle === 'yearly') {
+        trialEnd.setFullYear(trialEnd.getFullYear() + 1);
+      } else {
+        // default to monthly
+        trialEnd.setMonth(trialEnd.getMonth() + 1);
+      }
+
+      // Update Supabase subscription
+      const { error } = await supabase.from('users_subscription').upsert({
+        user_id: user_id,
+        status: 'Active',
+        plan: plan || 'starter',
+        billing_cycle: cycle || 'monthly',
+        trial_ends_at: trialEnd.toISOString(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+      if (error) {
+        console.error('Error updating subscription in DB:', error);
+        return Response.json({ error: 'Database update failed' }, { status: 500 });
+      }
+
+      console.log(`Successfully activated subscription for user: ${user_id}`);
+    }
+
+    return Response.json({ received: true });
+  } catch (err) {
+    console.error('Stripe webhook handler failed:', err);
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

@@ -1,15 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 
-const isSandbox = process.env.SAFEPAY_ENV === 'sandbox';
-const SAFEPAY_API_BASE = isSandbox
-  ? 'https://sandbox.api.getsafepay.com'
-  : 'https://api.getsafepay.com';
-const SAFEPAY_CHECKOUT_BASE = isSandbox
-  ? 'https://sandbox.getsafepay.com'
-  : 'https://getsafepay.com';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16', // Use the latest API version or your preferred one
+});
 
 const PLAN_PRICES = {
-  starter: { monthly: 29, yearly: 24 },
+  starter: { monthly: 29, yearly: 24 }, // Assuming yearly means $24 * 12 or just $24 as a placeholder. We will use what's defined here.
   pro: { monthly: 49, yearly: 39 }
 };
 
@@ -27,59 +23,47 @@ export async function POST(req) {
     }
 
     const priceUSD = planDetails[cycle];
-    // Safepay expects the exact amount in PKR. $1 ≈ 278 PKR
-    const priceInPKR = Math.round(priceUSD * 278);
-    // Use priceInPKR directly (no need to multiply by 100 for paisas based on the UI screenshot)
-    const amount = priceInPKR;
+    
+    // Stripe expects amount in cents
+    const amountInCents = Math.round(priceUSD * 100);
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://chat-bot-ruddy-one.vercel.app';
-    const orderId = `RealtyPropFlow-${userId.slice(0,8)}-${plan}-${Date.now()}`;
 
-    // Step 1: Create a payment tracker on Safepay
-    const trackerRes = await fetch(`${SAFEPAY_API_BASE}/order/v1/init`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-SFPY-MERCHANT-SECRET': process.env.SAFEPAY_SECRET_KEY,
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: userEmail || undefined,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `RealtyPropFlow ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${cycle})`,
+              description: `One-time payment for ${cycle} access.`,
+            },
+            unit_amount: amountInCents,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        user_id: userId,
+        user_email: userEmail || '',
+        plan: plan,
+        cycle: cycle,
+        price_usd: priceUSD
       },
-      body: JSON.stringify({
-        merchant_api_key: process.env.SAFEPAY_PUBLISHABLE_KEY,
-        client: process.env.SAFEPAY_PUBLISHABLE_KEY,
-        environment: isSandbox ? 'sandbox' : 'production',
-        intent: 'CYBERSOURCE',
-        mode: 'payment',
-        currency: 'PKR',
-        amount: amount,
-        order_id: orderId,
-        metadata: {
-          user_id: userId,
-          user_email: userEmail,
-          plan,
-          cycle,
-          price_usd: priceUSD
-        }
-      }),
+      success_url: `${appUrl}/dashboard/billing/success?plan=${plan}&cycle=${cycle}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/dashboard/billing?plan=${plan}&cycle=${cycle}&cancelled=true`,
     });
 
-    const trackerData = await trackerRes.json();
-    console.log('Safepay tracker response:', JSON.stringify(trackerData));
-
-    const token = trackerData?.data?.token;
-    if (!trackerRes.ok || !token) {
-      return Response.json({ error: 'Failed to create payment session', details: trackerData }, { status: 500 });
-    }
-
-    // Step 2: Build the hosted checkout URL
-    const redirectUrl = encodeURIComponent(`${appUrl}/dashboard/billing/success?plan=${plan}&cycle=${cycle}`);
-    const cancelUrl = encodeURIComponent(`${appUrl}/dashboard/billing?plan=${plan}&cycle=${cycle}&price=${priceUSD}&cancelled=true`);
-    const checkoutUrl = `${SAFEPAY_API_BASE}/checkout/pay?env=${isSandbox ? 'sandbox' : 'production'}&beacon=${token}&source=custom&redirect_url=${redirectUrl}&cancel_url=${cancelUrl}`;
-
-    return Response.json({ checkoutUrl, token });
+    // Return the checkout URL to redirect the user
+    return Response.json({ checkoutUrl: session.url });
 
   } catch (error) {
     console.error('Checkout API error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
-
 

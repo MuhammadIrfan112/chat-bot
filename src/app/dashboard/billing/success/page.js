@@ -13,32 +13,14 @@ export default function PaymentSuccess() {
   const [activating, setActivating] = useState(true);
 
   useEffect(() => {
-    activateSubscription();
+    // The actual subscription update is now securely handled by the Stripe Webhook.
+    // We just show a success message here.
+    const timer = setTimeout(() => {
+      setActivating(false);
+    }, 2500); // Simulate brief processing time for UX
+    
+    return () => clearTimeout(timer);
   }, []);
-
-  const activateSubscription = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const trialEnd = new Date();
-      trialEnd.setDate(trialEnd.getDate() + 30);
-
-      await supabase.from('users_subscription').upsert({
-        user_id: session.user.id,
-        status: 'Active',
-        plan: plan || 'starter',
-        billing_cycle: cycle || 'monthly',
-        trial_ends_at: trialEnd.toISOString(),
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
-
-      setActivating(false);
-    } catch (err) {
-      console.error('Activation error:', err);
-      setActivating(false);
-    }
-  };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
