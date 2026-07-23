@@ -58,8 +58,8 @@ export default function PlansPage() {
     {
       name: 'Starter',
       description: 'Perfect for simple websites and basic chatbot needs.',
-      monthlyPrice: '29',
-      yearlyPrice: '26',
+      monthlyPrice: '69',
+      yearlyPrice: '62',
       icon: <Star size={24} color="#818CF8" />,
       features: [
         '1 AI Chatbot',
@@ -73,12 +73,13 @@ export default function PlansPage() {
     {
       name: 'Pro',
       description: 'Advanced AI features for Real Estate and E-commerce.',
-      monthlyPrice: '49',
-      yearlyPrice: '44',
+      monthlyPrice: '99',
+      yearlyPrice: '89',
       icon: <Zap size={24} color="#FBBF24" />,
       features: [
         '1 AI Chatbot',
         'Real Estate Listings Scraping',
+        'Data Sync from Realtor.ca',
         'E-commerce Product Syncing',
         'Advanced CRM Lead Mapping',
         'Live Human Takeover',

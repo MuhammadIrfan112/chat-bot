@@ -7,8 +7,8 @@ import styles from '../page.module.css';
 export default function Pricing() {
   const plans = [
     {
-      name: "Basic",
-      price: "$29",
+      name: "Starter",
+      price: "$69",
       period: "/month",
       description: "Perfect for starting agents and small agencies looking to automate lead capture.",
       features: [
@@ -18,14 +18,15 @@ export default function Pricing() {
         { name: "Live Human Takeover", included: false },
         { name: "Unlimited Knowledge Training", included: false },
         { name: "Unlimited Leads Capture", included: false },
+        { name: "Data Sync from Realtor.ca", included: false },
       ],
-      ctaText: "Start Basic",
+      ctaText: "Start Starter",
       popular: false,
       glow: "rgba(255,255,255,0.05)"
     },
     {
       name: "Pro",
-      price: "$49",
+      price: "$99",
       period: "/month",
       description: "For top-producing agents who need advanced features and high volume.",
       features: [
@@ -33,6 +34,7 @@ export default function Pricing() {
         { name: "Unlimited Knowledge Training", included: true },
         { name: "Unlimited Leads Capture", included: true },
         { name: "Live Human Takeover", included: true },
+        { name: "Data Sync from Realtor.ca", included: true },
       ],
       ctaText: "Get Pro (Recommended)",
       popular: true,
