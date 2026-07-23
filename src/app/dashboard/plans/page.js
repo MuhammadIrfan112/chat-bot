@@ -199,12 +199,17 @@ export default function PlansPage() {
             
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px', minHeight: '40px' }}>{plan.description}</p>
             
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: billingCycle === 'yearly' ? '8px' : '32px' }}>
               <span style={{ fontSize: '40px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1 }}>
                 ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
               </span>
               <span style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: '500' }}>/ month</span>
             </div>
+            {billingCycle === 'yearly' && (
+              <div style={{ marginBottom: '32px', fontSize: '13px', color: 'rgba(99,102,241,0.9)', fontWeight: '600', background: 'rgba(99,102,241,0.1)', padding: '6px 12px', borderRadius: '8px', display: 'inline-block' }}>
+                Billed ${plan.yearlyPrice * 12}/year — Save ${(plan.monthlyPrice - plan.yearlyPrice) * 12}/year
+              </div>
+            )}
             
             <div style={{ borderTop: '1px solid var(--border)', margin: '0 -32px 32px', padding: '32px 32px 0' }}>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>

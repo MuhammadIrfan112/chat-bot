@@ -23,9 +23,12 @@ export async function POST(req) {
     }
 
     const priceUSD = planDetails[cycle];
-    
+
+    // For yearly plans, charge the full annual amount (monthly equivalent × 12)
+    const totalAmount = cycle === 'yearly' ? priceUSD * 12 : priceUSD;
+
     // Stripe expects amount in cents
-    const amountInCents = Math.round(priceUSD * 100);
+    const amountInCents = Math.round(totalAmount * 100);
 
     // Dynamically get the current domain (works for localhost and live domains like realtypropflow.com)
     const origin = req.headers.get('origin') || req.headers.get('referer')?.slice(0, -1) || 'https://www.realtypropflow.com';
@@ -41,8 +44,10 @@ export async function POST(req) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `RealtyPropFlow ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${cycle})`,
-              description: `One-time payment for ${cycle} access.`,
+              name: `RealtyPropFlow ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${cycle === 'yearly' ? 'Annual' : 'Monthly'})`,
+              description: cycle === 'yearly'
+                ? `Annual billing — $${priceUSD}/month × 12 months = $${totalAmount}/year`
+                : `Monthly billing — $${priceUSD}/month`,
             },
             unit_amount: amountInCents,
           },
@@ -54,7 +59,7 @@ export async function POST(req) {
         user_email: userEmail || '',
         plan: plan,
         cycle: cycle,
-        price_usd: priceUSD
+        price_usd: totalAmount
       },
       success_url: `${appUrl}/dashboard/billing/success?plan=${plan}&cycle=${cycle}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/dashboard/billing?plan=${plan}&cycle=${cycle}&cancelled=true`,
