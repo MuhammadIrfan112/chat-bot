@@ -42,13 +42,24 @@ export default function Home() {
 
   // ── Auto-redirect logged-in users to dashboard ────────────────
   useEffect(() => {
+    // Check existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         router.replace('/dashboard');
       } else {
-        setAuthChecking(false); // No session — show landing page
+        setAuthChecking(false);
       }
     });
+
+    // Listen for auth state changes (catches token refresh etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        router.replace('/dashboard');
+      } else {
+        setAuthChecking(false);
+      }
+    });
+    return () => subscription.unsubscribe();
   }, [router]);
 
   // Show blank screen while checking auth (avoids flash of landing page)

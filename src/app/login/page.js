@@ -35,6 +35,14 @@ export default function Login() {
         setCheckingSession(false);
       }
     });
+
+    // Also listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        router.replace('/dashboard');
+      }
+    });
+    return () => subscription.unsubscribe();
   }, [router]);
 
   const handleAuth = async (e) => {
@@ -129,8 +137,11 @@ export default function Login() {
         <div style={{ position: 'absolute', bottom: '-20%', left: '-20%', width: '800px', height: '800px', background: 'radial-gradient(circle, rgba(192,132,252,0.1) 0%, transparent 70%)', zIndex: 0 }}></div>
         
         <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} style={{ position: 'relative', zIndex: 1, maxWidth: '500px', margin: '0 auto' }}>
-          <Link href="/">
-            <img src="/logo.png" alt="RealtyPropFlow AI" style={{ height: '48px', filter: 'brightness(0) invert(1)', marginBottom: '40px' }} />
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '8px', display: 'flex', boxShadow: '0 0 20px rgba(255,255,255,0.15)' }}>
+              <img src="/logo-icon.png" alt="RealtyPropFlow" style={{ height: '28px', width: '28px', objectFit: 'contain' }} />
+            </div>
+            <span style={{ fontSize: '22px', fontWeight: '800', color: 'white', letterSpacing: '-0.02em' }}>RealtyPropFlow<span style={{ color: '#818CF8' }}>.</span></span>
           </Link>
           <h1 style={{ fontSize: '48px', fontWeight: '800', lineHeight: '1.2', marginBottom: '24px', letterSpacing: '-0.04em' }}>
             Automate your growth. <br />
