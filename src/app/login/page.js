@@ -10,6 +10,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [websiteType, setWebsiteType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -58,7 +59,7 @@ export default function Login() {
         email, 
         password,
         options: {
-          data: { website_type: websiteType }
+          data: { name: name, website_type: websiteType }
         }
       });
     }
@@ -75,7 +76,8 @@ export default function Login() {
         await supabase.from('users_subscription').insert({
           user_id: result.data.user.id,
           status: 'Inactive', // They must pay to activate
-          email: email
+          email: email,
+          name: name
         });
         router.push('/dashboard');
       } else {
@@ -176,6 +178,21 @@ export default function Login() {
           )}
 
           <form onSubmit={handleAuth} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {!isLogin && (
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', transition: 'all 0.2s', outline: 'none' }}
+                  placeholder="John Doe"
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
+                />
+              </div>
+            )}
             <div>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>Email</label>
               <input
