@@ -5,8 +5,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const PLAN_PRICES = {
-  starter: { monthly: 29, yearly: 24 }, // Assuming yearly means $24 * 12 or just $24 as a placeholder. We will use what's defined here.
-  pro: { monthly: 49, yearly: 39 }
+  starter: { monthly: 29, yearly: 26 }, // 10% off: $29 * 0.9 = $26.1 → $26/month ($312/year)
+  pro: { monthly: 49, yearly: 44 }      // 10% off: $49 * 0.9 = $44.1 → $44/month ($528/year)
 };
 
 export async function POST(req) {
