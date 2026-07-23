@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { headers } from 'next/headers';
 
 // Create a Supabase admin client with the service_role key to bypass RLS
 const supabaseAdmin = createClient(
@@ -16,8 +15,7 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 export async function POST(req) {
   try {
     const body = await req.text();
-    const headersList = headers();
-    const signature = headersList.get('stripe-signature');
+    const signature = req.headers.get('stripe-signature');
 
     if (!signature || !webhookSecret) {
       console.error('Missing Stripe signature or webhook secret');
