@@ -91,6 +91,6 @@ export async function POST(req) {
     return Response.json({ received: true });
   } catch (err) {
     console.error('Stripe webhook handler failed:', err);
-    return Response.json({ error: 'Internal Server Error' }, { status: 500 });
+    return Response.json({ error: 'Internal Server Error', details: err.message, stack: err.stack }, { status: 500 });
   }
 }
