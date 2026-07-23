@@ -207,7 +207,28 @@ export default function DashboardLayout({ children }) {
           })}
           
           <div style={{ margin: '24px 0 8px', borderTop: '1px solid var(--border)' }}></div>
-          
+
+          {/* Visit Main Website Link */}
+          <a
+            href="https://www.realtypropflow.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
+              borderRadius: '12px', color: 'var(--text-secondary)', backgroundColor: 'transparent',
+              textDecoration: 'none', transition: 'all 0.2s ease', fontWeight: '500',
+              border: '1px solid transparent', marginBottom: '4px'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center' }}>
+              <Globe size={20} />
+            </span>
+            <span style={{ fontSize: '14px' }}>Visit Website</span>
+            <span style={{ marginLeft: 'auto', fontSize: '11px', opacity: 0.5 }}>↗</span>
+          </a>
+
           <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', paddingLeft: '12px' }}>Settings</div>
           
           <Link href="/dashboard/settings" style={{ 
