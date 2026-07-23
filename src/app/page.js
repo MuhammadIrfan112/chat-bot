@@ -42,6 +42,13 @@ export default function Home() {
 
   // ── Auto-redirect logged-in users to dashboard ────────────────
   useEffect(() => {
+    const isViewWebsite = window.location.search.includes('view=website');
+
+    if (isViewWebsite) {
+      setAuthChecking(false);
+      return; // Skip auto-redirect completely
+    }
+
     // Check existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {

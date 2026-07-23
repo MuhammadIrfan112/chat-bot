@@ -109,13 +109,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     }
     const isClientSite = !!botConfig.botId;
     if (!isClientSite) {
+      // Auto-open logic removed per user request
       const hasOpened = sessionStorage.getItem('RealtyPropFlow_auto_opened');
       if (!hasOpened) {
-        const timer = setTimeout(() => {
-          setIsOpen(true);
-          sessionStorage.setItem('RealtyPropFlow_auto_opened', 'true');
-        }, 1500);
-        return () => clearTimeout(timer);
+        // Just mark it as opened so we don't do it later if we add it back
+        sessionStorage.setItem('RealtyPropFlow_auto_opened', 'true');
       }
     }
     // Fetch bot industry IMMEDIATELY on mount

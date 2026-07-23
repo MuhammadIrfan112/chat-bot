@@ -210,7 +210,7 @@ export default function DashboardLayout({ children }) {
 
           {/* Visit Main Website Link */}
           <a
-            href="https://www.realtypropflow.com"
+            href="https://www.realtypropflow.com/?view=website"
             target="_blank"
             rel="noopener noreferrer"
             style={{
