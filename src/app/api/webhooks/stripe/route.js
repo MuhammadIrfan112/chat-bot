@@ -1,7 +1,12 @@
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 
+// Create a Supabase admin client with the service_role key to bypass RLS
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
@@ -49,7 +54,7 @@ export async function POST(req) {
       }
 
       // Update Supabase subscription
-      const { error } = await supabase.from('users_subscription').upsert({
+      const { error } = await supabaseAdmin.from('users_subscription').upsert({
         user_id: user_id,
         status: 'Active',
         plan: plan || 'starter',

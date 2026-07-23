@@ -54,6 +54,8 @@ export default function DashboardLayout({ children }) {
           if (sub.trial_ends_at) {
             const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
             setTrialDaysLeft(daysLeft > 0 ? daysLeft : 0);
+          } else {
+            setTrialDaysLeft(0);
           }
         } else {
           const trialEndsAt = new Date();
