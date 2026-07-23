@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
   const [planName, setPlanName] = useState('');
+  const [billingCycle, setBillingCycle] = useState('monthly');
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
@@ -43,7 +44,7 @@ export default function DashboardLayout({ children }) {
         
         const { data: rows } = await supabase
           .from('users_subscription')
-          .select('status, trial_ends_at, plan')
+          .select('status, trial_ends_at, plan, billing_cycle')
           .eq('user_id', userId)
           .limit(1);
         const sub = rows?.[0];
@@ -51,6 +52,7 @@ export default function DashboardLayout({ children }) {
         if (sub) {
           setSubscriptionStatus(sub.status);
           setPlanName(sub.plan || 'starter');
+          setBillingCycle(sub.billing_cycle || 'monthly');
           if (sub.trial_ends_at) {
             const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
             setTrialDaysLeft(daysLeft > 0 ? daysLeft : 0);
@@ -301,7 +303,7 @@ export default function DashboardLayout({ children }) {
               <div>
                 <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>
                   {subscriptionStatus === 'Active'
-                    ? `✅ ${planName.charAt(0).toUpperCase() + planName.slice(1)} Plan Active`
+                    ? `✅ ${planName.charAt(0).toUpperCase() + planName.slice(1)} Plan Active — ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`
                     : subscriptionStatus === 'Inactive'
                     ? '⛔ Your 15-day free trial has ended. Your chatbot is now paused.'
                     : trialDaysLeft === 0
@@ -313,7 +315,7 @@ export default function DashboardLayout({ children }) {
                 </div>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: '1.5' }}>
                   {subscriptionStatus === 'Active'
-                    ? 'Your chatbot is fully active and all features are unlocked.'
+                    ? `Your chatbot is fully active and all features are unlocked. (${billingCycle === 'yearly' ? 'Annual billing' : 'Monthly billing'})`
                     : subscriptionStatus === 'Inactive'
                     ? 'Your chatbot visitors are seeing a paused message. Purchase a plan below to reactivate instantly.'
                     : 'Upgrade now to ensure your chatbot never stops working for your visitors.'

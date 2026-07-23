@@ -61,6 +61,7 @@ export async function POST(req) {
       const payload = {
         status: 'Active',
         plan: plan || 'starter',
+        billing_cycle: cycle || 'monthly',
         trial_ends_at: trialEnd.toISOString(),
         updated_at: new Date().toISOString()
       };
