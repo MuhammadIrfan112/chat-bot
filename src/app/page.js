@@ -45,7 +45,7 @@ export default function Home() {
     // Check existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.replace('/dashboard');
+        window.location.href = '/dashboard';
       } else {
         setAuthChecking(false);
       }
@@ -54,7 +54,7 @@ export default function Home() {
     // Listen for auth state changes (catches token refresh etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        router.replace('/dashboard');
+        window.location.href = '/dashboard';
       } else {
         setAuthChecking(false);
       }

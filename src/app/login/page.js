@@ -27,9 +27,9 @@ export default function Login() {
           .eq('user_id', session.user.id)
           .limit(1);
         if (rows?.[0]?.role === 'superadmin') {
-          router.replace('/superadmin');
+          window.location.href = '/superadmin';
         } else {
-          router.replace('/dashboard');
+          window.location.href = '/dashboard';
         }
       } else {
         setCheckingSession(false);
@@ -39,7 +39,7 @@ export default function Login() {
     // Also listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        router.replace('/dashboard');
+        window.location.href = '/dashboard';
       }
     });
     return () => subscription.unsubscribe();
