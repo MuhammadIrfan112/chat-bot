@@ -12,6 +12,7 @@ const inter = Inter({ subsets: ['latin'] });
 export default function DashboardLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
+  const [planName, setPlanName] = useState('');
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [userEmail, setUserEmail] = useState('');
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
@@ -42,13 +43,14 @@ export default function DashboardLayout({ children }) {
         
         const { data: rows } = await supabase
           .from('users_subscription')
-          .select('status, trial_ends_at')
+          .select('status, trial_ends_at, plan')
           .eq('user_id', userId)
           .limit(1);
         const sub = rows?.[0];
 
         if (sub) {
           setSubscriptionStatus(sub.status);
+          setPlanName(sub.plan || 'starter');
           if (sub.trial_ends_at) {
             const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
             setTrialDaysLeft(daysLeft > 0 ? daysLeft : 0);
@@ -59,10 +61,12 @@ export default function DashboardLayout({ children }) {
           await supabase.from('users_subscription').insert({
             user_id: userId,
             status: 'Trialing',
+            plan: 'free',
             email: impEmail || session.user.email,
             trial_ends_at: trialEndsAt.toISOString()
           });
           setSubscriptionStatus('Trialing');
+          setPlanName('free');
         }
         setLoading(false);
       }
@@ -264,42 +268,39 @@ export default function DashboardLayout({ children }) {
         )}
 
         {/* ⏰ Trial Countdown Banner */}
-        {(subscriptionStatus === 'Trialing' || subscriptionStatus === 'Inactive') && trialDaysLeft !== null && (
+        {(subscriptionStatus !== 'Inactive' || trialDaysLeft !== null) && (
           <div style={{
-            marginBottom: '28px',
-            borderRadius: '16px',
-            padding: '20px 28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
-            background: subscriptionStatus === 'Inactive'
-              ? 'linear-gradient(135deg, rgba(239,68,68,0.18), rgba(180,0,0,0.08))'
-              : trialDaysLeft <= 3
-              ? 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))'
-              : trialDaysLeft <= 7
-              ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05))'
-              : 'linear-gradient(135deg, rgba(79,70,229,0.15), rgba(79,70,229,0.05))',
+            background: subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.05)' : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.05)' : 'rgba(79,70,229,0.05)',
             border: `1px solid ${
-              subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.4)'
+              subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.3)'
+              : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.3)'
               : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.3)'
               : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.3)'
               : 'rgba(79,70,229,0.3)'
             }`,
-            boxShadow: subscriptionStatus === 'Inactive' ? '0 8px 25px rgba(239,68,68,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
+            borderRadius: '16px',
+            padding: '24px',
+            marginBottom: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '20px',
+            flexWrap: 'wrap',
+            boxShadow: subscriptionStatus === 'Inactive' ? '0 8px 25px rgba(239,68,68,0.15)' : subscriptionStatus === 'Active' ? '0 4px 15px rgba(16,185,129,0.1)' : '0 4px 15px rgba(0,0,0,0.1)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{
                 width: '50px', height: '50px', borderRadius: '14px', flexShrink: 0,
-                background: subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
+                background: subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.2)' : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
               }}>
-                {subscriptionStatus === 'Inactive' ? '🔒' : trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
+                {subscriptionStatus === 'Active' ? '🎉' : subscriptionStatus === 'Inactive' ? '🔒' : trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
               </div>
               <div>
                 <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>
-                  {subscriptionStatus === 'Inactive'
+                  {subscriptionStatus === 'Active'
+                    ? `✅ ${planName.charAt(0).toUpperCase() + planName.slice(1)} Plan Active`
+                    : subscriptionStatus === 'Inactive'
                     ? '⛔ Your 15-day free trial has ended. Your chatbot is now paused.'
                     : trialDaysLeft === 0
                     ? '⛔ Last Day! Your trial ends today'
@@ -309,33 +310,37 @@ export default function DashboardLayout({ children }) {
                   }
                 </div>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: '1.5' }}>
-                  {subscriptionStatus === 'Inactive'
+                  {subscriptionStatus === 'Active'
+                    ? 'Your chatbot is fully active and all features are unlocked.'
+                    : subscriptionStatus === 'Inactive'
                     ? 'Your chatbot visitors are seeing a paused message. Purchase a plan below to reactivate instantly.'
                     : 'Upgrade now to ensure your chatbot never stops working for your visitors.'
                   }
                 </div>
               </div>
             </div>
-            <a href="/dashboard/plans" style={{
-              padding: '12px 28px',
-              background: subscriptionStatus === 'Inactive' || trialDaysLeft <= 3
-                ? 'linear-gradient(135deg, #EF4444, #DC2626)'
-                : 'linear-gradient(135deg, #C9A227, #F59E0B)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontWeight: '800',
-              fontSize: '14px',
-              cursor: 'pointer',
-              textDecoration: 'none',
-              whiteSpace: 'nowrap',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              {subscriptionStatus === 'Inactive' ? '🔓 Purchase a Plan' : '⚡ Upgrade Plan'}
-            </a>
+            {subscriptionStatus !== 'Active' && (
+              <a href="/dashboard/plans" style={{
+                padding: '12px 28px',
+                background: subscriptionStatus === 'Inactive' || trialDaysLeft <= 3
+                  ? 'linear-gradient(135deg, #EF4444, #DC2626)'
+                  : 'linear-gradient(135deg, #C9A227, #F59E0B)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '800',
+                fontSize: '14px',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                {subscriptionStatus === 'Inactive' ? '🔓 Purchase a Plan' : '⚡ Upgrade Plan'}
+              </a>
+            )}
           </div>
         )}
 
