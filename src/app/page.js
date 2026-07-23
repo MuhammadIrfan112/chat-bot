@@ -38,15 +38,23 @@ export default function Home() {
   const router = useRouter();
 
   const [formStatus, setFormStatus] = useState('idle');
+  const [authChecking, setAuthChecking] = useState(true);
 
   // ── Auto-redirect logged-in users to dashboard ────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         router.replace('/dashboard');
+      } else {
+        setAuthChecking(false); // No session — show landing page
       }
     });
   }, [router]);
+
+  // Show blank screen while checking auth (avoids flash of landing page)
+  if (authChecking) {
+    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page)' }} />;
+  }
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
