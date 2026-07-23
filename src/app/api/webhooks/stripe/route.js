@@ -53,19 +53,38 @@ export async function POST(req) {
         trialEnd.setMonth(trialEnd.getMonth() + 1);
       }
 
-      // Update Supabase subscription
-      const { error } = await supabaseAdmin.from('users_subscription').upsert({
-        user_id: user_id,
+      // Update Supabase subscription (Safe approach without relying on unique constraints)
+      const { data: existingSub } = await supabaseAdmin
+        .from('users_subscription')
+        .select('id')
+        .eq('user_id', user_id)
+        .single();
+
+      const payload = {
         status: 'Active',
         plan: plan || 'starter',
         billing_cycle: cycle || 'monthly',
         trial_ends_at: trialEnd.toISOString(),
         updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+      };
 
-      if (error) {
-        console.error('Error updating subscription in DB:', error);
-        return Response.json({ error: 'Database update failed' }, { status: 500 });
+      let dbError;
+      if (existingSub) {
+        const { error } = await supabaseAdmin
+          .from('users_subscription')
+          .update(payload)
+          .eq('user_id', user_id);
+        dbError = error;
+      } else {
+        const { error } = await supabaseAdmin
+          .from('users_subscription')
+          .insert({ user_id: user_id, ...payload });
+        dbError = error;
+      }
+
+      if (dbError) {
+        console.error('Error updating subscription in DB:', dbError);
+        return Response.json({ error: 'Database update failed', details: dbError.message || dbError }, { status: 500 });
       }
 
       console.log(`Successfully activated subscription for user: ${user_id}`);
