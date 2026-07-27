@@ -405,23 +405,23 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* NOVA E-Commerce Demo Card */}
+            {/* Adnan Alvi Real Estate Demo Card */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 80 }}
-              style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '22px', overflow: 'hidden', transition: 'all 0.3s' }}
-              whileHover={{ y: -8, borderColor: 'rgba(124,58,237,0.5)', boxShadow: '0 20px 60px rgba(124,58,237,0.1)' }}
+              style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '22px', overflow: 'hidden', transition: 'all 0.3s' }}
+              whileHover={{ y: -8, borderColor: 'rgba(16,185,129,0.5)', boxShadow: '0 20px 60px rgba(16,185,129,0.1)' }}
             >
               {/* Preview Banner */}
-              <div style={{ height: '180px', background: 'linear-gradient(135deg, #0a0514 0%, #0d0d1a 50%, #050a14 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '200px', background: '#7C3AED', filter: 'blur(80px)', opacity: 0.15 }} />
+              <div style={{ height: '180px', background: 'linear-gradient(135deg, #05140a 0%, #0d1a10 50%, #05140a 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '200px', background: '#10B981', filter: 'blur(80px)', opacity: 0.15 }} />
                 <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>🛍️</div>
-                  <div style={{ fontSize: '26px', fontWeight: '900', color: 'white', letterSpacing: '4px' }}>N<span style={{ background: 'linear-gradient(135deg, #7C3AED, #06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>OVA</span></div>
-                  <div style={{ fontSize: '11px', color: '#8B5CF6', letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>Premium Fashion & Lifestyle</div>
+                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>🏢</div>
+                  <div style={{ fontSize: '26px', fontWeight: '900', color: 'white', letterSpacing: '4px' }}>A<span style={{ background: 'linear-gradient(135deg, #10B981, #06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DNAN</span></div>
+                  <div style={{ fontSize: '11px', color: '#10B981', letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>Real Estate Expert</div>
                 </div>
                 <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '50px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', display: 'inline-block' }} />
@@ -432,16 +432,16 @@ export default function Home() {
               {/* Card Content */}
               <div style={{ padding: '24px 28px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '700', color: '#8B5CF6', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    E-Commerce
+                  <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '700', color: '#10B981', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Real Estate
                   </div>
                 </div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#F1F5F9', marginBottom: '8px', letterSpacing: '-0.02em' }}>NOVA Fashion — Shopping Assistant</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#F1F5F9', marginBottom: '8px', letterSpacing: '-0.02em' }}>Adnan Alvi — Property Assistant</h3>
                 <p style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.7', marginBottom: '24px' }}>
-                  AI trained on 1,200+ fashion products, brand story, and policies. Helps customers find styles, check sizes, apply promo codes, and complete purchases.
+                  AI trained on real estate market trends, property listings, and agent policies. Helps clients find homes, check property values, and schedule viewings.
                 </p>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {['Product Finder', 'Size Guide', 'Promo Codes'].map((tag, i) => (
+                  {['Property Search', 'Market Value', 'Book Viewing'].map((tag, i) => (
                     <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#B8C4BC' }}>{tag}</span>
                   ))}
                 </div>
@@ -449,8 +449,8 @@ export default function Home() {
 
               {/* CTA */}
               <div style={{ padding: '0 28px 28px' }}>
-                <a href="https://real-state-nbje.vercel.app" target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', color: 'white', fontWeight: '800', fontSize: '14px', textDecoration: 'none', transition: 'all 0.3s', letterSpacing: '0.02em' }}
+                <a href="https://realtypropflow.com/" target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', fontWeight: '800', fontSize: '14px', textDecoration: 'none', transition: 'all 0.3s', letterSpacing: '0.02em' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
