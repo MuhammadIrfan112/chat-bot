@@ -479,7 +479,7 @@ export default function Home() {
               <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Starter</h3>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Perfect for small businesses.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$29</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$69</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
@@ -503,11 +503,11 @@ export default function Home() {
               <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Pro</h3>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>For growing teams & agencies.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$49</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$99</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover'].map((f, i) => (
+                {['1 AI Chatbot', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Data Sync from Realtor.ca'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#D4AF37" strokeWidth={3} />
