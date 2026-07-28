@@ -205,7 +205,7 @@ async function fetchCityPropertyData(botId, fullChatText) {
       
     if (filteredData.length === 0) filteredData = properties;
 
-    let section = `\n\n--- REAL ESTATE DATABASE INVENTORY (CRITICAL: MUST USE THESE PROPERTIES) ---\nCRITICAL INSTRUCTION: You MUST ONLY show properties from this list below. NEVER hallucinate or invent properties like "Property 1". If this list is empty, say you will have the agent send them manually. ALWAYS show them with images and details using markdown \`![title](image_url)\`:\n`;
+    let section = `\n\n--- REAL ESTATE DATABASE INVENTORY (CRITICAL: MUST USE THESE PROPERTIES) ---\nCRITICAL INSTRUCTION: You MUST ONLY show properties from the exact list below. DO NOT invent or hallucinate placeholder properties (like "Property 1"). If the list below is empty, you MUST say "I couldn't find exact matches right now, but I will have the agent send them to you manually." ALWAYS show the real address, price, and image using markdown \`![title](image_url)\`:\n`;
 
     filteredData.slice(0, 8).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
@@ -410,7 +410,7 @@ Step 9. Ask for pre-approval status:
 Step 10. Summarize and show properties:
 Once all information is collected, you MUST generate a summary like this:
 "To summarize, you're looking for a [X]-bedroom [Property Type] in [City] with a [Feature], with a budget of up to [Budget], and you're [Pre-approved Status] and aiming to purchase within [Timeline]."
-After the summary, say "Let me look up a few properties for you." and display 4-6 matching properties from the LIVE INVENTORY using markdown images.
+After the summary, say "Let me look up a few properties for you." and then display matching properties EXACTLY as they appear in the REAL ESTATE DATABASE INVENTORY section at the bottom of this prompt. DO NOT invent or hallucinate properties. If the inventory is empty, do not show any properties.
 
 Step 11. Ask for interest (LEAD CAPTURE TRIGGER):
 After showing the properties, ask:
@@ -474,6 +474,13 @@ CRITICAL RULES:
 2. RealtyPropFlow PRICING: RealtyPropFlow AI offers a 14-day Free Trial. Paid plans start at $29/month. Custom Enterprise plans are also available. 
 3. FEATURES: AI Chatbots, Live Human Takeover, Lead Capture, Real Estate MLS Integration, Analytics.
 4. LINKS: You can link to https://chatbot-flow.vercel.app/pricing for more details.`;
+    }
+
+    // DEBUG: Log if inventory was successfully injected
+    if (liveInventory) {
+      console.log("✅ LIVE INVENTORY INJECTED INTO PROMPT! Length:", liveInventory.length);
+    } else {
+      console.log("❌ NO INVENTORY INJECTED (liveInventory is empty)");
     }
 
     // Setup OpenAI Client
