@@ -39,6 +39,9 @@ export default function Home() {
 
   const [formStatus, setFormStatus] = useState('idle');
   const [authChecking, setAuthChecking] = useState(true);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installForm, setInstallForm] = useState({ name: '', phone: '', installTime: '', techInfo: '', websiteType: '', hasHostingAccess: '', hostingUser: '', hostingPass: '' });
+  const [installStatus, setInstallStatus] = useState('idle'); // idle | submitting | success
 
   // ── Auto-redirect logged-in users to dashboard ────────────────
   useEffect(() => {
@@ -522,7 +525,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Professional Installation Service ─── */}
+      {/* ─── Free Trial Installation Section ─── */}
       <section style={{ padding: '0 6% 100px', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <motion.div
@@ -543,7 +546,6 @@ export default function Home() {
             {/* Background Glow Effects */}
             <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', bottom: '-80px', right: '-60px', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '600px', height: '200px', background: 'radial-gradient(ellipse, rgba(99,57,234,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '40px' }}>
               
@@ -555,11 +557,11 @@ export default function Home() {
                 </div>
 
                 <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: '900', color: '#F5F0E1', margin: '0 0 12px 0', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-                  Can&apos;t install the chatbot<br />
-                  <span style={{ background: 'linear-gradient(90deg, #A78BFA, #818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>yourself?</span>
+                  Try Our AI Chatbot{' '}
+                  <span style={{ background: 'linear-gradient(90deg, #A78BFA, #818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Free for 30 Days!</span>
                 </h2>
                 <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: '1.7', maxWidth: '520px', margin: '0 0 28px 0' }}>
-                  Our expert team will professionally install and deploy your AI chatbot on your website — <strong style={{ color: '#C4B5FD' }}>fully tested and live within 24 hours</strong>, guaranteed.
+                  See the difference an intelligent chatbot can make for your business. Improve customer support, capture more leads, and delight your visitors.
                 </p>
 
                 {/* Feature Pills */}
@@ -577,25 +579,13 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Contact Buttons */}
-                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                  <a
-                    href="https://wa.me/923107165565?text=Hi!%20I%20want%20the%20Professional%20Chatbot%20Installation%20Service%20(%24100)."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #25D366, #1DAA54)', color: 'white', padding: '14px 28px', borderRadius: '50px', textDecoration: 'none', fontWeight: '800', fontSize: '15px', boxShadow: '0 6px 25px rgba(37,211,102,0.4)', letterSpacing: '-0.01em', transition: 'all 0.3s' }}
-                  >
-                    💬 Order via WhatsApp
-                  </a>
-                  <a
-                    href="mailto:chatbotflow1@gmail.com?subject=Order%3A%20Professional%20Installation%20Service%20(%24100)&body=Hi%2C%20I%20would%20like%20to%20order%20the%20Professional%20Chatbot%20Installation%20Service%20for%20%24100."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(129,140,248,0.12)', border: '1px solid rgba(129,140,248,0.35)', color: '#A5B4FC', padding: '14px 28px', borderRadius: '50px', textDecoration: 'none', fontWeight: '700', fontSize: '15px', letterSpacing: '-0.01em', transition: 'all 0.3s' }}
-                  >
-                    📧 Send Email
-                  </a>
-                </div>
+                {/* CTA Button */}
+                <button
+                  onClick={() => { setShowInstallModal(true); setInstallStatus('idle'); }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'linear-gradient(135deg, #25D366, #1DAA54)', color: 'white', padding: '16px 32px', borderRadius: '50px', border: 'none', fontWeight: '800', fontSize: '16px', boxShadow: '0 6px 25px rgba(37,211,102,0.4)', letterSpacing: '-0.01em', transition: 'all 0.3s', cursor: 'pointer' }}
+                >
+                  ✅ Yes! Install it for me
+                </button>
               </div>
 
               {/* Right: Price Card */}
@@ -634,6 +624,112 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* ─── Installation Request Modal ─── */}
+      {showInstallModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(6px)' }} onClick={(e) => { if (e.target === e.currentTarget) setShowInstallModal(false); }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ background: 'linear-gradient(135deg, #0D0A2A, #13104A)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
+          >
+            {/* Close Button */}
+            <button onClick={() => setShowInstallModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'none', border: 'none', color: '#64748B', fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
+
+            {installStatus === 'success' ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
+                <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#F1F5F9', marginBottom: '12px' }}>Thank You Very Much!</h3>
+                <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: 1.6 }}>Our support team will contact you soon to get your chatbot installed.</p>
+                <button onClick={() => setShowInstallModal(false)} style={{ marginTop: '24px', padding: '12px 28px', borderRadius: '50px', background: 'linear-gradient(135deg, #A78BFA, #818CF8)', color: 'white', border: 'none', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Close</button>
+              </div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#F1F5F9', marginBottom: '6px' }}>Get Your Chatbot Installed</h3>
+                <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '28px' }}>Fill in the details below and we&apos;ll set it up for you within 24 hours.</p>
+
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  setInstallStatus('submitting');
+                  await new Promise(r => setTimeout(r, 1000));
+                  setInstallStatus('success');
+                }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                  {/* Name */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Full Name *</label>
+                    <input required type="text" placeholder="John Doe" value={installForm.name} onChange={e => setInstallForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Phone Number *</label>
+                    <input required type="tel" placeholder="+92 300 1234567" value={installForm.phone} onChange={e => setInstallForm(p => ({...p, phone: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                  </div>
+
+                  {/* Install Time */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Preferred Installation Time *</label>
+                    <input required type="text" placeholder="e.g. Tomorrow morning, Weekdays 10am-12pm" value={installForm.installTime} onChange={e => setInstallForm(p => ({...p, installTime: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                  </div>
+
+                  {/* Technical Info */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Technical Information / Website URL</label>
+                    <input type="text" placeholder="https://yourwebsite.com" value={installForm.techInfo} onChange={e => setInstallForm(p => ({...p, techInfo: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                  </div>
+
+                  {/* Website Type */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Website Type *</label>
+                    <select required value={installForm.websiteType} onChange={e => setInstallForm(p => ({...p, websiteType: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: '#0D0A2A', border: '1px solid rgba(255,255,255,0.1)', color: installForm.websiteType ? 'white' : '#64748B', fontSize: '14px', outline: 'none' }}>
+                      <option value="" disabled>Select website type</option>
+                      <option value="WordPress">WordPress</option>
+                      <option value="PHP">PHP (Custom)</option>
+                      <option value="Unknown">Unknown</option>
+                    </select>
+                  </div>
+
+                  {/* Hosting Access */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Do you have access to your hosting account? *</label>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      {['Yes', 'No'].map(opt => (
+                        <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#CBD5E1', fontSize: '14px' }}>
+                          <input type="radio" name="hostingAccess" value={opt} checked={installForm.hasHostingAccess === opt} onChange={e => setInstallForm(p => ({...p, hasHostingAccess: e.target.value}))} style={{ accentColor: '#A78BFA' }} />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hosting Credentials - show only if Yes */}
+                  {installForm.hasHostingAccess === 'Yes' && (
+                    <div style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <p style={{ fontSize: '12px', color: '#A78BFA', margin: 0 }}>🔒 Your credentials are safe and only used for installation.</p>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Hosting Username</label>
+                        <input type="text" placeholder="admin" value={installForm.hostingUser} onChange={e => setInstallForm(p => ({...p, hostingUser: e.target.value}))} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Hosting Password</label>
+                        <input type="password" placeholder="••••••••" value={installForm.hostingPass} onChange={e => setInstallForm(p => ({...p, hostingPass: e.target.value}))} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submit */}
+                  <button type="submit" disabled={installStatus === 'submitting'} style={{ marginTop: '8px', padding: '14px', borderRadius: '50px', background: 'linear-gradient(135deg, #A78BFA, #818CF8)', color: 'white', border: 'none', fontWeight: '800', fontSize: '15px', cursor: installStatus === 'submitting' ? 'not-allowed' : 'pointer', opacity: installStatus === 'submitting' ? 0.7 : 1, transition: 'all 0.2s' }}>
+                    {installStatus === 'submitting' ? 'Submitting...' : 'Submit Request 🚀'}
+                  </button>
+
+                </form>
+              </>
+            )}
+          </motion.div>
+        </div>
+      )}
 
       {/* ─── Contact Section ─── */}
 
