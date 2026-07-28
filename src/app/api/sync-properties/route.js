@@ -2,51 +2,29 @@ import { NextResponse } from 'next/server';
 import { ApifyClient } from 'apify-client';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-// Initialize Apify Client
 const apifyClient = new ApifyClient({
     token: process.env.APIFY_API_TOKEN,
 });
 
-// Build a Realtor.ca search URL for a given city
-function buildRealtorUrl(city) {
-    const cityMap = {
-        'Milton':      { lat: '43.5183', lng: '-79.8833', zoom: 12, geoName: 'Milton, ON' },
-        'Toronto':     { lat: '43.7080', lng: '-79.3764', zoom: 11, geoName: 'Toronto, ON' },
-        'Brampton':    { lat: '43.7315', lng: '-79.7624', zoom: 11, geoName: 'Brampton, ON' },
-        'Mississauga': { lat: '43.5890', lng: '-79.6441', zoom: 11, geoName: 'Mississauga, ON' },
-        'Oakville':    { lat: '43.4675', lng: '-79.6877', zoom: 12, geoName: 'Oakville, ON' },
-        'Hamilton':    { lat: '43.2557', lng: '-79.8711', zoom: 11, geoName: 'Hamilton, ON' },
-        'Burlington':  { lat: '43.3255', lng: '-79.7990', zoom: 12, geoName: 'Burlington, ON' },
-    };
-
-    const cityKey = Object.keys(cityMap).find(k => city.toLowerCase().includes(k.toLowerCase())) || 'Milton';
-    const c = cityMap[cityKey];
-
-    return `https://www.realtor.ca/map#ZoomLevel=${c.zoom}&Center=${c.lat}%2C${c.lng}&GeoName=${encodeURIComponent(c.geoName)}&Sort=6-D&PropertySearchTypeId=0&TransactionTypeId=2&Currency=CAD`;
-}
-
 export async function POST(request) {
     try {
         const body = await request.json();
-        const city = body.city || "Milton, ON";
+        const city = body.city || "Milton";
+        const maxItems = body.maxItems || 50;
+        const operation = body.operation || "buy";
 
-        console.log(`Starting Apify scrape for: ${city}`);
+        console.log(`Starting Apify scrape for: ${city}, max: ${maxItems}`);
 
-        const searchUrl = buildRealtorUrl(city);
-        console.log(`Realtor.ca URL: ${searchUrl}`);
-
-        // Correct actor from Apify Store — requires startUrls input
-        const run = await apifyClient.actor('scrapemind/realtor-ca-scraper').call({
-            startUrls: [{ url: searchUrl }],
-            maxListings: 20,
-            numberOfWorkers: 3,
-            getDetails: false,
-            simplifyOutput: true,
+        // Actor: igolaizola/realtor-canada-scraper-ppe ($0.80 per 1000 results)
+        const run = await apifyClient.actor('igolaizola/realtor-canada-scraper-ppe').call({
+            location:  city,
+            maxItems:  maxItems,
+            operation: operation,
+            sortBy:    "newest",
         });
 
         console.log(`Apify Run Finished. Dataset: ${run.defaultDatasetId}`);
@@ -61,15 +39,23 @@ export async function POST(request) {
 
         let savedCount = 0;
         for (const item of items) {
-            const mls        = item.mlsNumber || item.MlsNumber || item.id || `UNKNOWN-${Math.random()}`;
-            const price      = item.price || item.Price || "Contact for price";
-            const address    = item.address || item.Address || item.streetAddress || "Address not provided";
-            const bedrooms   = item.bedrooms || item.Bedrooms || item.bedroomsTotal || "?";
-            const bathrooms  = item.bathrooms || item.Bathrooms || item.bathroomsTotal || "?";
-            const propType   = item.propertyType || item.PropertyType || "Residential";
-            const desc       = item.description || "";
-            const imageUrl   = item.photoUrl || item.photo || item.image || (Array.isArray(item.photos) && item.photos[0]) || "";
-            const url        = item.url || item.listingUrl || "";
+            // Map the fields from igolaizola actor output
+            const mls       = item.mlsNumber || item.mls || item.id || `UNKNOWN-${Date.now()}-${Math.random()}`;
+            const price     = item.price != null ? `$${Number(item.price).toLocaleString('en-CA')}` : "Contact for price";
+            const address   = item.address || item.streetAddress || "Address not provided";
+            const bedrooms  = item.bedrooms  != null ? String(item.bedrooms)  : "?";
+            const bathrooms = item.bathrooms != null ? String(item.bathrooms) : "?";
+            const propType  = item.propertyType || "Residential";
+            const desc      = item.description || "";
+
+            // Image: actor returns photos array or single photo
+            let imageUrl = "";
+            if (item.photo)                                    imageUrl = item.photo;
+            else if (Array.isArray(item.photos) && item.photos[0]) imageUrl = item.photos[0];
+            else if (item.photoUrl)                            imageUrl = item.photoUrl;
+            else if (item.image)                               imageUrl = item.image;
+
+            const url = item.url || item.listingUrl || item.link || "";
 
             const { error } = await supabase
                 .from('properties')
@@ -79,8 +65,8 @@ export async function POST(request) {
                     address:       String(address),
                     city:          city.split(',')[0].trim(),
                     province:      "ON",
-                    bedrooms:      String(bedrooms),
-                    bathrooms:     String(bathrooms),
+                    bedrooms:      bedrooms,
+                    bathrooms:     bathrooms,
                     property_type: String(propType),
                     description:   String(desc).slice(0, 1000),
                     image_url:     String(imageUrl),
@@ -88,14 +74,14 @@ export async function POST(request) {
                 }, { onConflict: 'mls_number' });
 
             if (!error) savedCount++;
-            if (error) console.error("Supabase insert error:", error.message);
+            else console.error("Supabase insert error:", error.message);
         }
 
         return NextResponse.json({
             success: true,
             message: `Successfully scraped and saved ${savedCount} properties for ${city}.`,
             count: savedCount,
-            sample: items[0]
+            sample: items[0]   // Return first item so we can verify field names
         }, { status: 200 });
 
     } catch (error) {
