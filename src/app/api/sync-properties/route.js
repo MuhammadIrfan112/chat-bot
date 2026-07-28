@@ -39,23 +39,31 @@ export async function POST(request) {
 
         let savedCount = 0;
         for (const item of items) {
-            // Map the fields from igolaizola actor output
-            const mls       = item.mlsNumber || item.mls || item.id || `UNKNOWN-${Date.now()}-${Math.random()}`;
-            const price     = item.price != null ? `$${Number(item.price).toLocaleString('en-CA')}` : "Contact for price";
-            const address   = item.address || item.streetAddress || "Address not provided";
-            const bedrooms  = item.bedrooms  != null ? String(item.bedrooms)  : "?";
-            const bathrooms = item.bathrooms != null ? String(item.bathrooms) : "?";
-            const propType  = item.propertyType || "Residential";
-            const desc      = item.description || "";
+            // igolaizola actor returns NESTED data structure
+            const prop     = item.Property || {};
+            const building = item.Building || {};
+            const propAddr = prop.Address   || {};
 
-            // Image: actor returns photos array or single photo
+            const mls       = item.MlsNumber || item.mlsNumber || item.id || `UNKNOWN-${Date.now()}`;
+            const price     = prop.Price || "Contact for price";
+            const address   = [propAddr.StreetAddress, propAddr.AddressText].find(Boolean) ||
+                              propAddr.AddressText || "Address not provided";
+            const bedrooms  = building.Bedrooms  || building.BedroomsTotal  || "?";
+            const bathrooms = building.BathroomTotal || building.Bathrooms  || "?";
+            const propType  = prop.Type || building.Type || "Residential";
+            const desc      = item.PublicRemarks || "";
+
+            // Photos: prop.Photo is an array of objects with HighResPath or MedResPath
             let imageUrl = "";
-            if (item.photo)                                    imageUrl = item.photo;
-            else if (Array.isArray(item.photos) && item.photos[0]) imageUrl = item.photos[0];
-            else if (item.photoUrl)                            imageUrl = item.photoUrl;
-            else if (item.image)                               imageUrl = item.image;
+            if (Array.isArray(prop.Photo) && prop.Photo.length > 0) {
+                imageUrl = prop.Photo[0].HighResPath || prop.Photo[0].MedResPath || prop.Photo[0].LowResPath || "";
+            } else if (item.photoUrl) {
+                imageUrl = item.photoUrl;
+            }
 
-            const url = item.url || item.listingUrl || item.link || "";
+            // Full Realtor.ca URL
+            const url = item.URL || 
+                        (item.RelativeURLEn ? `https://www.realtor.ca${item.RelativeURLEn}` : "");
 
             const { error } = await supabase
                 .from('properties')
