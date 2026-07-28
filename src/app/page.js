@@ -652,8 +652,26 @@ export default function Home() {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   setInstallStatus('submitting');
-                  await new Promise(r => setTimeout(r, 1000));
-                  setInstallStatus('success');
+                  try {
+                    const response = await fetch('/api/contact', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'installation',
+                        ...installForm
+                      }),
+                    });
+                    if (response.ok) {
+                      setInstallStatus('success');
+                    } else {
+                      alert('Failed to submit request. Please try again.');
+                      setInstallStatus('idle');
+                    }
+                  } catch (error) {
+                    console.error('Error submitting form:', error);
+                    alert('An error occurred. Please try again.');
+                    setInstallStatus('idle');
+                  }
                 }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                   {/* Name */}

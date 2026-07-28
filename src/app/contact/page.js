@@ -8,12 +8,35 @@ import styles from '../page.module.css';
 export default function ContactUs() {
   const [formStatus, setFormStatus] = useState('idle');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormStatus('submitting');
-    setTimeout(() => {
-      setFormStatus('success');
-    }, 1500);
+    
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'contact',
+          name: `${e.target.firstName.value} ${e.target.lastName.value}`,
+          email: e.target.email.value,
+          message: e.target.message.value,
+        }),
+      });
+
+      if (response.ok) {
+        setFormStatus('success');
+      } else {
+        alert('Failed to send message. Please try again.');
+        setFormStatus('idle');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('An error occurred. Please try again.');
+      setFormStatus('idle');
+    }
   };
 
   return (
@@ -142,20 +165,20 @@ export default function ContactUs() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>First Name</label>
-                    <input required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
+                    <input name="firstName" required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Last Name</label>
-                    <input required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
+                    <input name="lastName" required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
                   </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Email Address</label>
-                  <input required type="email" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
+                  <input name="email" required type="email" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Message</label>
-                  <textarea required rows="4" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none', resize: 'vertical' }}></textarea>
+                  <textarea name="message" required rows="4" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none', resize: 'vertical' }}></textarea>
                 </div>
                 <button 
                   type="submit" 
