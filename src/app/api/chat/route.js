@@ -192,7 +192,10 @@ async function fetchCityPropertyData(botId, fullChatText) {
 
     const { data: properties, error } = await query.limit(20);
 
+    console.log(`fetchCityPropertyData: DB query done. TargetCity: ${targetCity}. Found ${properties?.length || 0} properties. Error: ${error?.message || 'none'}`);
+
     if (error || !properties || properties.length === 0) {
+      console.log(`fetchCityPropertyData: Returning empty string because no properties found.`);
       return '';
     }
 
@@ -204,6 +207,8 @@ async function fetchCityPropertyData(botId, fullChatText) {
       : properties;
       
     if (filteredData.length === 0) filteredData = properties;
+
+    console.log(`fetchCityPropertyData: Passing ${filteredData.slice(0,8).length} properties to the AI.`);
 
     let section = `\n\n--- REAL ESTATE DATABASE INVENTORY (CRITICAL: MUST USE THESE PROPERTIES) ---\nCRITICAL INSTRUCTION: You MUST ONLY show properties from the exact list below. DO NOT invent or hallucinate placeholder properties (like "Property 1"). If the list below is empty, you MUST say "I couldn't find exact matches right now, but I will have the agent send them to you manually." ALWAYS show the real address, price, and image using markdown \`![title](image_url)\`:\n`;
 
@@ -410,7 +415,8 @@ Step 9. Ask for pre-approval status:
 Step 10. Summarize and show properties:
 Once all information is collected, you MUST generate a summary like this:
 "To summarize, you're looking for a [X]-bedroom [Property Type] in [City] with a [Feature], with a budget of up to [Budget], and you're [Pre-approved Status] and aiming to purchase within [Timeline]."
-After the summary, say "Let me look up a few properties for you." and then display matching properties EXACTLY as they appear in the REAL ESTATE DATABASE INVENTORY section at the bottom of this prompt. DO NOT invent or hallucinate properties. If the inventory is empty, do not show any properties.
+After the summary, you MUST display the properties EXACTLY as they appear in the REAL ESTATE DATABASE INVENTORY section at the very bottom of this prompt. 
+CRITICAL RULE: DO NOT INVENT PROPERTIES. DO NOT USE EXAMPLE.COM LINKS. DO NOT MAKE UP DESCRIPTIONS. If the REAL ESTATE DATABASE INVENTORY is empty, simply say "I will have Mr. Adnan Alvi send you a customized list of matching properties shortly."
 
 Step 11. Ask for interest (LEAD CAPTURE TRIGGER):
 After showing the properties, ask:
