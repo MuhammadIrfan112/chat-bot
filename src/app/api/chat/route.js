@@ -153,7 +153,7 @@ async function getRelevantKnowledge(userQuery, botId) {
   }
 }
 
-// 🏡 Fetch listings from Supabase city_property_data (instant — no external API call)
+// 🏡 Fetch listings from Supabase properties table
 async function fetchCityPropertyData(botId, userQuery) {
   try {
     const q = userQuery.toLowerCase();
@@ -175,51 +175,46 @@ async function fetchCityPropertyData(botId, userQuery) {
     }
 
     // 2. Detect which city user is asking about
-    // First try to match user query against agent's cities
     let targetCity = agentCities.find(city => q.includes(city.split(',')[0].toLowerCase()));
-    // Fallback: use first agent city if no specific city mentioned
-    if (!targetCity && agentCities.length > 0) targetCity = agentCities[0];
-    if (!targetCity) return ''; // No city configured
-
-    // 3. Read from city_property_data table (instant DB query)
-    const { data: cityData } = await supabase
-      .from('city_property_data')
-      .select('properties, last_scraped_at')
-      .eq('city', targetCity)
-      .single();
-
-    if (!cityData || !cityData.properties || cityData.properties.length === 0) {
-      return '';
+    
+    // 3. Query the properties table
+    let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
+    
+    if (targetCity) {
+       query = query.ilike('city', `%${targetCity}%`);
     }
 
-    const rawData = cityData.properties;
+    const { data: properties, error } = await query.limit(20);
+
+    if (error || !properties || properties.length === 0) {
+      return '';
+    }
 
     // 4. Filter by beds if user mentioned it
     const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
     const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
     let filteredData = minBedrooms > 0
-      ? rawData.filter(item => parseInt(item.bedrooms) >= minBedrooms)
-      : rawData;
-    if (filteredData.length === 0) filteredData = rawData;
+      ? properties.filter(item => parseInt(item.bedrooms) >= minBedrooms)
+      : properties;
+      
+    if (filteredData.length === 0) filteredData = properties;
 
-    const scrapedDate = cityData.last_scraped_at ? new Date(cityData.last_scraped_at).toLocaleDateString() : 'Recently';
+    let section = `\n\n--- SECONDARY FALLBACK INVENTORY (LIVE REALTOR.CA LISTINGS) ---\nCRITICAL INSTRUCTION: ONLY use these properties if you CANNOT find a matching property in the PRIMARY WEBSITE INVENTORY above. ALWAYS show them with images and details using markdown \`![title](image_url)\`:\n`;
 
-    let section = `\n\n--- SECONDARY FALLBACK INVENTORY (LIVE ZILLOW LISTINGS for ${targetCity}) ---\nData refreshed: ${scrapedDate}. CRITICAL INSTRUCTION: ONLY use these properties if you CANNOT find a matching property in the PRIMARY WEBSITE INVENTORY above. If you do use these, ALWAYS show them with images and details:\n`;
-
-    filteredData.slice(0, 5).forEach((l, i) => {
-      const addr = `${l.address || ''}, ${l.city || ''}, ${l.state || ''}`.replace(/^, | , /g, '').trim();
-      const price = l.price ? '$' + Number(l.price).toLocaleString('en-US') : 'Price on Request';
+    filteredData.slice(0, 8).forEach((l, i) => {
+      const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
+      const price = l.price;
       const beds = l.bedrooms || 'N/A';
       const baths = l.bathrooms || 'N/A';
-      const sqft = l.livingArea || 'N/A';
-      const img = l.imgSrc || l.responsivePhotos?.[0]?.mixedSources?.jpeg?.[0]?.url || '';
+      const type = l.property_type || 'Property';
+      const img = l.image_url || '';
       const url = l.url || '';
 
-      section += `\n${i + 1}. **${addr || 'Property ' + (i+1)}**\n`;
+      section += `\n${i + 1}. **${addr}**\n`;
       section += `   - Price: ${price}\n`;
-      section += `   - Beds: ${beds} | Baths: ${baths} | Size: ${sqft} sqft\n`;
+      section += `   - Beds: ${beds} | Baths: ${baths} | Type: ${type}\n`;
       if (img) section += `   - Image: ![${addr}](${img})\n`;
-      if (url) section += `   - Link: [View on Zillow](${url})\n`;
+      if (url) section += `   - Link: [View on Realtor.ca](${url})\n`;
     });
 
     return section;
