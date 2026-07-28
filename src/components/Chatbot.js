@@ -36,13 +36,21 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
-  const [leadStep, setLeadStep] = useState(null); // null | 'name' | 'phone' | 'email' | 'time'
+  const [leadStep, setLeadStep] = useState(null);
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', time_preference: '', property_interest: '' });
   const [botIndustry, setBotIndustry] = useState('Loading');
   const [sessionId, setSessionId] = useState('');
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
-  const [intentSelected, setIntentSelected] = useState(false); // tracks if user picked an intent
+  const [intentSelected, setIntentSelected] = useState(false);
+
+  // ── Closing flow state ─────────────────────────────────────────
+  // Tracks which step of the closing conversation we're in
+  // null | 'ask_callback' | 'callback_name' | 'callback_phone' | 'callback_time'
+  //       | 'ask_listings' | 'listings_name' | 'listings_phone' | 'listings_email'
+  //       | 'open_ended'
+  const [closingStep, setClosingStep] = useState(null);
+  const [closingData, setClosingData] = useState({ name: '', phone: '', email: '', time: '' });
 
   const messagesEndRef = useRef(null);
   const messageCount = useRef(0);
@@ -365,7 +373,139 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     }
 
 
-    // ── Requirements (all-at-once) step (REMOVED, handled by AI) ───
+    // ── Closing Flow Handler ──────────────────────────────────────
+    if (closingStep === 'ask_callback') {
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        setClosingStep('callback_name');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Wonderful! May I have your **full name** please?` }]
+        }]);
+      } else {
+        // No callback → ask about listings
+        setClosingStep('ask_listings');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `No problem! Would you like me to **send you some listings** of the available properties in your area?` }],
+          quickReplies: ['✅ Yes, send me listings', '❌ No, thank you']
+        }]);
+      }
+      return;
+    }
+
+    if (closingStep === 'callback_name') {
+      setClosingData(prev => ({ ...prev, name: msg }));
+      setClosingStep('callback_phone');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Nice to meet you, **${msg}**! 👋 What is the best **phone number** to reach you?` }]
+      }]);
+      return;
+    }
+
+    if (closingStep === 'callback_phone') {
+      const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
+      if (!phoneRegex.test(msg.trim())) {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Please enter a valid phone number (e.g. 0300-1234567):` }]
+        }]);
+        return;
+      }
+      setClosingData(prev => ({ ...prev, phone: msg }));
+      setClosingStep('callback_time');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Perfect! 📞 And what is the **best time to call** you?` }]
+      }]);
+      return;
+    }
+
+    if (closingStep === 'callback_time') {
+      const data = { ...closingData, time: msg };
+      setClosingData(data);
+      setClosingStep(null);
+      setLeadCaptured(true);
+      // Save lead
+      await saveLead(data.name, data.phone, '', msg);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thank you, **${data.name}**! 🎉 Mr. Adnan Alvi will call you at **${data.phone}** around **${msg}**. Is there anything else I can help you with?` }]
+      }]);
+      return;
+    }
+
+    if (closingStep === 'ask_listings') {
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        setClosingStep('listings_name');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Great! I'll send you some beautiful listings. May I have your **full name** please?` }]
+        }]);
+      } else {
+        // No listings either → open ended
+        setClosingStep('open_ended');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Of course! 😊 **What would you like me to do for you?** I'm here to help!` }]
+        }]);
+        setClosingStep(null); // Reset so AI takes over for open ended
+      }
+      return;
+    }
+
+    if (closingStep === 'listings_name') {
+      setClosingData(prev => ({ ...prev, name: msg }));
+      setClosingStep('listings_phone');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Nice to meet you, **${msg}**! 👋 What is your **phone number**?` }]
+      }]);
+      return;
+    }
+
+    if (closingStep === 'listings_phone') {
+      const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
+      if (!phoneRegex.test(msg.trim())) {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Please enter a valid phone number (e.g. 0300-1234567):` }]
+        }]);
+        return;
+      }
+      setClosingData(prev => ({ ...prev, phone: msg }));
+      setClosingStep('listings_email');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Perfect! And finally, what is your **email address** so I can send the listings to you?` }]
+      }]);
+      return;
+    }
+
+    if (closingStep === 'listings_email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(msg)) {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `That doesn't look like a valid email. Please try again:` }]
+        }]);
+        return;
+      }
+      const data = { ...closingData, email: msg };
+      setClosingData(data);
+      setClosingStep(null);
+      setLeadCaptured(true);
+      // Save lead
+      await saveLead(data.name, data.phone, msg, '');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thank you, **${data.name}**! 🎉 I'll send the available property listings to **${msg}** shortly. Is there anything else I can help you with?` }]
+      }]);
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────
 
     // ── Human takeover ────────────────────────────────────────────
     if (isHumanTakeover) {
@@ -421,14 +561,26 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
         setMessages(prev => [...prev, newModelMsg]);
         
-        if (startLead && !leadCaptured && leadStep === null) {
+        if (startLead && !leadCaptured && leadStep === null && closingStep === null) {
           setTimeout(() => {
-             setMessages(prev => [...prev, {
-                role: 'model',
-                parts: [{ text: "Great, would you like me call you tomorrow to arrange the showing? May I know your name?" }],
-                inputCard: { icon: '👤', label: 'Your Name', placeholder: 'Enter your full name...' }
-             }]);
-             setLeadStep('name');
+            // Extract city from conversation for personalized message
+            let detectedCity = 'your preferred';
+            for (let i = 0; i < messages.length; i++) {
+              const m = messages[i];
+              if (m.role === 'user') {
+                const t = m.parts[0]?.text || '';
+                if (t.match(/milton|toronto|brampton|mississauga|oakville|hamilton|london/i)) {
+                  detectedCity = t.match(/milton|toronto|brampton|mississauga|oakville|hamilton|london/i)[0];
+                  break;
+                }
+              }
+            }
+            setMessages(prev => [...prev, {
+              role: 'model',
+              parts: [{ text: `Great, I have your requirements! There are many beautiful properties available in the ${detectedCity} area — let me have a look and come back to you. 🏡\n\nWould you like **Mr. Adnan Alvi** to call you back?` }],
+              quickReplies: ['✅ Yes, please call me', '❌ No, thank you']
+            }]);
+            setClosingStep('ask_callback');
           }, 1500);
         }
       } else {
