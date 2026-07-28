@@ -38,7 +38,7 @@ export async function POST(request) {
 
     // Configure nodemailer with environment variables
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtpout.secureserver.net', // Default GoDaddy SMTP
+      host: process.env.SMTP_HOST || 'smtp.titan.email', // Titan Email SMTP
       port: process.env.SMTP_PORT || 465,
       secure: true,
       auth: {
