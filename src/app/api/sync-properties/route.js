@@ -19,13 +19,13 @@ export async function POST(request) {
 
         console.log(`Starting Apify scrape for: ${city}`);
 
-        // Using one of the most reliable Realtor.ca scraper actors
-        const actorId = 'memo23/realtor-ca-scraper';
+        // Using a popular, verified Realtor.ca scraper actor
+        const actorId = 'haketa/realtor-ca-scraper';
         
         // Starts an actor and waits for it to finish
         const run = await apifyClient.actor(actorId).call({
-            "location": city,
-            "maxItems": 20 // Keep it small for testing to save credits
+            "searchQuery": city,
+            "maxResults": 20 // Keep it small for testing to save credits
         });
 
         console.log(`Apify Run Finished. Fetching dataset: ${run.defaultDatasetId}`);
