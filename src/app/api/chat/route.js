@@ -154,9 +154,9 @@ async function getRelevantKnowledge(userQuery, botId) {
 }
 
 // 🏡 Fetch listings from Supabase properties table
-async function fetchCityPropertyData(botId, userQuery) {
+async function fetchCityPropertyData(botId, fullChatText) {
   try {
-    const q = userQuery.toLowerCase();
+    const q = fullChatText.toLowerCase();
 
     // 1. Get bot's service cities from knowledge_base
     const { data: kbEntries } = await supabase
@@ -176,6 +176,12 @@ async function fetchCityPropertyData(botId, userQuery) {
 
     // 2. Detect which city user is asking about
     let targetCity = agentCities.find(city => q.includes(city.split(',')[0].toLowerCase()));
+    
+    // If no agent city matches, check if any common city is in the chat
+    if (!targetCity) {
+      const commonCities = ['milton', 'toronto', 'brampton', 'mississauga', 'oakville', 'hamilton', 'burlington'];
+      targetCity = commonCities.find(city => q.includes(city));
+    }
     
     // 3. Query the properties table
     let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
@@ -199,7 +205,7 @@ async function fetchCityPropertyData(botId, userQuery) {
       
     if (filteredData.length === 0) filteredData = properties;
 
-    let section = `\n\n--- SECONDARY FALLBACK INVENTORY (LIVE REALTOR.CA LISTINGS) ---\nCRITICAL INSTRUCTION: ONLY use these properties if you CANNOT find a matching property in the PRIMARY WEBSITE INVENTORY above. ALWAYS show them with images and details using markdown \`![title](image_url)\`:\n`;
+    let section = `\n\n--- REAL ESTATE DATABASE INVENTORY (CRITICAL: MUST USE THESE PROPERTIES) ---\nCRITICAL INSTRUCTION: You MUST ONLY show properties from this list below. NEVER hallucinate or invent properties like "Property 1". If this list is empty, say you will have the agent send them manually. ALWAYS show them with images and details using markdown \`![title](image_url)\`:\n`;
 
     filteredData.slice(0, 8).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
@@ -233,9 +239,10 @@ export async function POST(req) {
     let calendlyLink = '';
     let liveInventory = '';
 
-    // Extract user query early so we can use it for Repliers search
+    // Extract user query and full chat history
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     const userQuery = lastUserMessage?.parts?.[0]?.text || '';
+    const fullChatText = messages.map(m => m.parts?.[0]?.text || '').join(' ');
 
     if (bot_id) {
       const { data: bot } = await supabase.from('bots').select('*').eq('id', bot_id).single();
@@ -284,10 +291,10 @@ export async function POST(req) {
           if (websiteUrl) {
             const websiteData = await liveScrapeWebsite(websiteUrl);
             if (websiteData) {
-              liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY (ALWAYS PRIORITIZE THIS DATA) ---\n${websiteData}`;
+              liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
             }
           }
-          const cityListings = await fetchCityPropertyData(bot_id, userQuery);
+          const cityListings = await fetchCityPropertyData(bot_id, fullChatText);
           if (cityListings) {
             liveInventory = (liveInventory || '') + cityListings;
           }
