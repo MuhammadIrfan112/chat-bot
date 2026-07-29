@@ -639,7 +639,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
   // Show RE intent options for first message, or RealtyPropFlow quick replies, or nothing
   // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
-  const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading') && botConfig.botId;
+  const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading' || (botConfig?.name || '').toLowerCase().includes('real state')) && botConfig.botId;
   const lastMsg = messages[messages.length - 1];
   let activeQuickReplies = [];
   if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {

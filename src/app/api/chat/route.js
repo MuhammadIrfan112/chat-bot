@@ -259,7 +259,8 @@ export async function POST(req) {
         // Detect industry from DB first, then fallback to name detection
         const botIndustryEarly = bot.industry || '';
         const botNameLower = bot.name.toLowerCase();
-        const isRealEstateEarly = botIndustryEarly === 'Real Estate' || botNameLower.includes('real estate') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
+        // Added 'real state' to cover user typos in bot naming
+        const isRealEstateEarly = botIndustryEarly === 'Real Estate' || botNameLower.includes('real estate') || botNameLower.includes('real state') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
         const isEcommerceEarly = botIndustryEarly === 'E-Commerce' || botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
 
         if (bot.status !== 'Active') {
@@ -353,8 +354,9 @@ export async function POST(req) {
     
     // Determine industry from database column
     const botIndustry = botData?.industry || 'Custom';
-    const isEcommerce = botIndustry === 'E-Commerce';
-    const isRealEstate = botIndustry === 'Real Estate';
+    const botNameL = botData?.name ? botData.name.toLowerCase() : '';
+    const isEcommerce = botIndustry === 'E-Commerce' || botNameL.includes('shop') || botNameL.includes('store');
+    const isRealEstate = botIndustry === 'Real Estate' || botNameL.includes('real estate') || botNameL.includes('real state') || botNameL.includes('realty') || botNameL.includes('property');
     const isGeneral = !isEcommerce && !isRealEstate;
     
     const qualifyingQuestions = isRealEstate
