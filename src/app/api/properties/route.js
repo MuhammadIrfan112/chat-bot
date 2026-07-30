@@ -8,10 +8,11 @@ export async function GET(request) {
   let query = supabaseAdmin
     .from('properties')
     .select('mls_number, price, address, city, province, bedrooms, bathrooms, property_type, image_url, url')
-    .order('created_at', { ascending: false })
-    .limit(6);
+    .order('created_at', { ascending: false });
 
   if (city) query = query.ilike('city', `%${city}%`);
+  
+  query = query.limit(10);
 
   const { data, error } = await query;
   if (error) return Response.json({ properties: [] });
