@@ -528,14 +528,27 @@ CRITICAL RULES:
     let replyText = aiResponse.choices[0].message.content;
     let propertiesList = null;
 
-    // Detect if AI triggered the properties carousel
+    // Detect if AI triggered the properties carousel (or if it forgot but asked the question)
     const carouselMatch = replyText.match(/\[SHOW_PROPERTIES_CAROUSEL:\s*([^:]+?)\s*:\s*(\d+)\s*\]/i);
-    if (carouselMatch) {
-      const cityMatch = carouselMatch[1].trim();
-      const bedsMatch = parseInt(carouselMatch[2]) || 0;
+    const forgotTagButAsked = isRealEstateEarly && replyText.includes("Did you like any of these properties");
+    
+    if (carouselMatch || forgotTagButAsked) {
+      let cityMatch = '';
+      let bedsMatch = 0;
       
-      // Remove tag from text
-      replyText = replyText.replace(carouselMatch[0], '');
+      if (carouselMatch) {
+        cityMatch = carouselMatch[1].trim();
+        bedsMatch = parseInt(carouselMatch[2]) || 0;
+        // Remove tag from text
+        replyText = replyText.replace(carouselMatch[0], '');
+      } else {
+        // Fallback: extract from chat history
+        const lcChat = fullChatText.toLowerCase();
+        const commonCities = ['milton', 'toronto', 'brampton', 'mississauga', 'oakville', 'hamilton', 'burlington', 'london'];
+        cityMatch = commonCities.find(c => lcChat.includes(c)) || '';
+        const bMatch = lcChat.match(/(\d+)\s*(?:bed|bedroom|br)/);
+        bedsMatch = bMatch ? parseInt(bMatch[1]) : 0;
+      }
 
       // Fetch properties directly from DB
       let pQuery = supabase.from('properties')
