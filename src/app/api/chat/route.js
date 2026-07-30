@@ -527,7 +527,7 @@ CRITICAL RULES:
       max_tokens: 500,
     });
 
-    let replyText = aiResponse.choices[0].message.content;
+    let replyText = aiResponse.choices[0].message.content || '';
     let propertiesList = null;
 
     // Detect if AI triggered the properties carousel (or if it forgot but asked the question)
