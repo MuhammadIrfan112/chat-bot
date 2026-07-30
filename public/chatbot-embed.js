@@ -23,7 +23,7 @@
 
   if (!baseUrl) {
     // Fallback if we couldn't parse the script URL
-    baseUrl = 'https://chat-bot-ruddy-one.vercel.app';
+    baseUrl = 'https://www.realtypropflow.com';
   }
 
   // Create iframe

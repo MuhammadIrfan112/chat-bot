@@ -196,7 +196,7 @@ export default function Home() {
                 {['#EF4444', '#F59E0B', '#10B981'].map(c => <div key={c} style={{ width: '10px', height: '10px', borderRadius: '50%', background: c }} />)}
               </div>
               <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: '5px', padding: '4px 12px', fontSize: '12px', color: '#64748B', textAlign: 'center', maxWidth: '340px', margin: '0 auto' }}>
-                chat-bot.vercel.app/dashboard
+                www.realtypropflow.com/dashboard
               </div>
             </div>
 

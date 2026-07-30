@@ -26,7 +26,7 @@ export async function GET(req) {
   }
 
   if (!baseUrl) {
-    baseUrl = 'https://chatbot-flow.vercel.app';
+    baseUrl = 'https://www.realtypropflow.com';
   }
 
   // Create iframe

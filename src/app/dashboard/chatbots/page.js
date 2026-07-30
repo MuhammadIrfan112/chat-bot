@@ -167,7 +167,7 @@ IMPORTANT: When a user asks about properties, always check if their requested ci
   };
 
   const getEmbedCode = (bot) => {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://chat-bot-ruddy-one.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com';
     return `<!-- AI Chatbot by SaaS Platform -->
 <script>
   window.CHATBOT_CONFIG = {
