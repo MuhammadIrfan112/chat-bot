@@ -670,7 +670,23 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                       {msg.parts[0].text}
                     </ReactMarkdown>
 
-                    {/* Removed redundant inline inputCard */}
+                    {msg.properties && msg.properties.length > 0 && (
+                      <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', marginTop: '12px', paddingBottom: '8px' }}>
+                        {msg.properties.map((prop, i) => (
+                          <a key={i} href={prop.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0, width: '220px', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            <img src={prop.image_url} alt={prop.address} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                            <div style={{ padding: '12px' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981', marginBottom: '4px' }}>{prop.price}</div>
+                              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={prop.address}>{prop.address}</div>
+                              <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#374151' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🛏️ {prop.bedrooms}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🛁 {prop.bathrooms}</span>
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </>
                 ) : (
                   msg.parts[0].text
