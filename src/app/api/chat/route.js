@@ -243,6 +243,8 @@ export async function POST(req) {
     let websiteUrl = 'this website';
     let calendlyLink = '';
     let liveInventory = '';
+    let isRealEstateEarly = false;
+    let isEcommerceEarly = false;
 
     // Extract user query and full chat history
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
@@ -260,8 +262,8 @@ export async function POST(req) {
         const botIndustryEarly = bot.industry || '';
         const botNameLower = bot.name.toLowerCase();
         // Added 'real state' to cover user typos in bot naming
-        const isRealEstateEarly = botIndustryEarly === 'Real Estate' || botNameLower.includes('real estate') || botNameLower.includes('real state') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
-        const isEcommerceEarly = botIndustryEarly === 'E-Commerce' || botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
+        isRealEstateEarly = botIndustryEarly === 'Real Estate' || botNameLower.includes('real estate') || botNameLower.includes('real state') || botNameLower.includes('realty') || botNameLower.includes('property') || botNameLower.includes('luxe');
+        isEcommerceEarly = botIndustryEarly === 'E-Commerce' || botNameLower.includes('shop') || botNameLower.includes('store') || botNameLower.includes('fashion') || botNameLower.includes('ecommerce');
 
         if (bot.status !== 'Active') {
           return Response.json({ reply: "This chatbot is currently inactive. Please contact the website owner." });
