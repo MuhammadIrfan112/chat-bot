@@ -35,7 +35,9 @@ export async function GET(req) {
   
   var isMobile = window.innerWidth <= 768;
   var isTablet = false;
-  iframe.src = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile' : '?desktop=true');
+  var timestamp = new Date().getTime();
+  var iframeUrl = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile&v=' + timestamp : '?desktop=true&v=' + timestamp);
+  iframe.src = iframeUrl;
   
   // Closed: desktop pill button area | mobile: circular button area
   var closedStyle = isMobile

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabaseClient';
 import Chatbot from '@/components/Chatbot';
 
+export const dynamic = 'force-dynamic';
+
 export default async function BotEmbedPage({ params, searchParams }) {
   // Await params as required by newer Next.js versions
   const resolvedParams = await params;

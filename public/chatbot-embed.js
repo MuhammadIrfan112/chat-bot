@@ -26,17 +26,20 @@
     baseUrl = 'https://www.realtypropflow.com';
   }
 
+  // Ensure mobile responsiveness
+  var isMobile = window.innerWidth <= 480;
+
   // Create iframe
   var iframe = document.createElement('iframe');
-  iframe.src = baseUrl + '/bot/' + config.botId;
+  var timestamp = new Date().getTime();
+  var iframeUrl = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile&v=' + timestamp : '?desktop=true&v=' + timestamp);
+  iframe.src = iframeUrl;
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   
   // Initial styles: Small size just for the floating button
   var closedStyle = "position: fixed; bottom: 10px; right: 10px; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   var openStyle = "position: fixed; bottom: 10px; right: 10px; width: 390px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
-  // Ensure mobile responsiveness
-  var isMobile = window.innerWidth <= 480;
   if (isMobile) {
     openStyle = "position: fixed; bottom: 0; right: 0; width: 100vw; height: 100vh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light;";
   }
