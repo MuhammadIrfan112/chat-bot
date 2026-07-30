@@ -554,34 +554,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
            text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
         }
 
-        // Parse [SHOW_PROPERTIES_CAROUSEL:city:beds]
-        let carouselData = null;
-        const carouselMatch = text.match(/\[SHOW_PROPERTIES_CAROUSEL:([^:]+):(\d+)\]/);
-        if (carouselMatch) {
-          carouselData = { city: carouselMatch[1], beds: parseInt(carouselMatch[2]) || 0 };
-          text = text.replace(/\[SHOW_PROPERTIES_CAROUSEL:([^:]+):(\d+)\]/g, '');
-          
-          // Fetch properties asynchronously to display in the chat
-          fetch(`/api/properties?city=${carouselData.city}&beds=${carouselData.beds}`)
-            .then(res => res.json())
-            .then(data => {
-               if (data.properties && data.properties.length > 0) {
-                 setMessages(prev => {
-                   const newMsgs = [...prev];
-                   const lastMsgIndex = newMsgs.length - 1;
-                   if (newMsgs[lastMsgIndex].role === 'model') {
-                     newMsgs[lastMsgIndex].properties = data.properties;
-                   }
-                   return newMsgs;
-                 });
-               }
-            })
-            .catch(err => console.error('Failed to load properties:', err));
-        }
-
+        // The backend now parses the carousel tag and sends properties synchronously!
         const newModelMsg = { role: 'model', parts: [{ text: text.trim() }] };
         if (buttons.length > 0) {
            newModelMsg.quickReplies = buttons;
+        }
+        if (data.properties && data.properties.length > 0) {
+           newModelMsg.properties = data.properties;
         }
 
         setMessages(prev => [...prev, newModelMsg]);

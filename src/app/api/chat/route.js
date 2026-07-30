@@ -518,13 +518,43 @@ CRITICAL RULES:
       openaiMessages.push({ role, content: text });
     });
 
-    const response = await openai.chat.completions.create({
+    const aiResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: openaiMessages,
       temperature: 0.7,
+      max_tokens: 500,
     });
 
-    const replyText = response.choices[0].message.content;
+    let replyText = aiResponse.choices[0].message.content;
+    let propertiesList = null;
+
+    // Detect if AI triggered the properties carousel
+    const carouselMatch = replyText.match(/\[SHOW_PROPERTIES_CAROUSEL:\s*([^:]+?)\s*:\s*(\d+)\s*\]/i);
+    if (carouselMatch) {
+      const cityMatch = carouselMatch[1].trim();
+      const bedsMatch = parseInt(carouselMatch[2]) || 0;
+      
+      // Remove tag from text
+      replyText = replyText.replace(carouselMatch[0], '');
+
+      // Fetch properties directly from DB
+      let pQuery = supabase.from('properties')
+        .select('mls_number, price, address, city, province, bedrooms, bathrooms, property_type, image_url, url')
+        .order('created_at', { ascending: false });
+        
+      if (cityMatch) pQuery = pQuery.ilike('city', `%${cityMatch}%`);
+      pQuery = pQuery.limit(10);
+      
+      const { data: pData } = await pQuery;
+      if (pData && pData.length > 0) {
+        let filtered = pData;
+        if (bedsMatch > 0) {
+          const bFiltered = pData.filter(p => parseInt(p.bedrooms) >= bedsMatch);
+          if (bFiltered.length > 0) filtered = bFiltered;
+        }
+        propertiesList = filtered.slice(0, 6);
+      }
+    }
 
     if (session_id) {
       await supabase.from('chat_messages').insert([
@@ -533,7 +563,10 @@ CRITICAL RULES:
       ]);
     }
 
-    return Response.json({ reply: replyText });
+    return Response.json({ 
+      reply: replyText,
+      properties: propertiesList
+    });
   } catch (error) {
     console.error("Chat API Error:", error);
     
