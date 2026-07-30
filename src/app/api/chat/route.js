@@ -531,9 +531,14 @@ CRITICAL RULES:
     let propertiesList = null;
 
     // Detect if AI triggered the properties carousel (or if it forgot but asked the question)
-    const carouselMatch = replyText.match(/\[SHOW_PROPERTIES_CAROUSEL:\s*([^:]+?)\s*:\s*(\d+)\s*\]/i);
-    const forgotTagButAsked = isRealEstateEarly && replyText.includes("Did you like any of these properties");
+    const carouselMatch = replyText.match(/\[SHOW_PROPERTIES_CAROUSEL:\s*([^:]+?)\s*:\s*(\d+)[^\]]*\]/i);
+    const forgotTagButAsked = replyText.includes("Did you like any of these properties");
     
+    console.log("=== PROPERTIES CAROUSEL DEBUG ===");
+    console.log("isRealEstateEarly:", isRealEstateEarly);
+    console.log("carouselMatch:", !!carouselMatch);
+    console.log("forgotTagButAsked:", forgotTagButAsked);
+
     if (carouselMatch || forgotTagButAsked) {
       let cityMatch = '';
       let bedsMatch = 0;
@@ -551,6 +556,9 @@ CRITICAL RULES:
         const bMatch = lcChat.match(/(\d+)\s*(?:bed|bedroom|br)/);
         bedsMatch = bMatch ? parseInt(bMatch[1]) : 0;
       }
+      
+      console.log("Extracted City:", cityMatch);
+      console.log("Extracted Beds:", bedsMatch);
 
       // Fetch properties directly from DB
       let pQuery = supabase.from('properties')
@@ -560,7 +568,11 @@ CRITICAL RULES:
       if (cityMatch) pQuery = pQuery.ilike('city', `%${cityMatch}%`);
       pQuery = pQuery.limit(10);
       
-      const { data: pData } = await pQuery;
+      const { data: pData, error: pError } = await pQuery;
+      
+      console.log("DB Query Error:", pError?.message || "None");
+      console.log("DB Query Result Length:", pData?.length || 0);
+
       if (pData && pData.length > 0) {
         let filtered = pData;
         if (bedsMatch > 0) {
@@ -569,7 +581,9 @@ CRITICAL RULES:
         }
         propertiesList = filtered.slice(0, 6);
       }
+      console.log("Final propertiesList length:", propertiesList?.length || 0);
     }
+    console.log("=================================");
 
     if (session_id) {
       await supabase.from('chat_messages').insert([
