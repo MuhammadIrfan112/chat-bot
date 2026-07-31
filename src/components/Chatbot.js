@@ -43,6 +43,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
+  const [galleryModal, setGalleryModal] = useState(null); // { property, images, activeIdx }
 
   // ── Closing flow state ─────────────────────────────────────────
   // Tracks which step of the closing conversation we're in
@@ -671,20 +672,41 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                     </ReactMarkdown>
 
                     {msg.properties && msg.properties.length > 0 && (
-                      <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', marginTop: '12px', paddingBottom: '8px' }}>
-                        {msg.properties.map((prop, i) => (
-                          <a key={i} href={prop.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', flexShrink: 0, width: '220px', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                            <img src={prop.image_url} alt={prop.address} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
-                            <div style={{ padding: '12px' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981', marginBottom: '4px' }}>{prop.price}</div>
-                              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={prop.address}>{prop.address}</div>
-                              <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#374151' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🛏️ {prop.bedrooms}</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>🛁 {prop.bathrooms}</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                        {msg.properties.map((prop, i) => {
+                          // Build gallery images from realtor.ca CDN pattern
+                          const makeImages = (url) => {
+                            if (!url) return [];
+                            const imgs = [];
+                            for (let n = 1; n <= 5; n++) {
+                              imgs.push(url.replace(/_\d+\.jpg$/, `_${n}.jpg`));
+                            }
+                            return imgs;
+                          };
+                          return (
+                            <div
+                              key={i}
+                              onClick={() => setGalleryModal({ property: prop, images: makeImages(prop.image_url), activeIdx: 0 })}
+                              style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid #f0f0f0' }}
+                              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)'; }}
+                            >
+                              <div style={{ position: 'relative' }}>
+                                <img src={prop.image_url} alt={prop.address} style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                                <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>📸 View Photos</div>
+                              </div>
+                              <div style={{ padding: '8px 10px 10px' }}>
+                                <div style={{ fontWeight: '800', fontSize: '14px', color: '#059669', marginBottom: '3px' }}>{prop.price}</div>
+                                <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prop.address.split('|')[0]}</div>
+                                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#374151', borderTop: '1px solid #f3f4f6', paddingTop: '6px' }}>
+                                  <span>🛏️ {prop.bedrooms}</span>
+                                  <span>🛁 {prop.bathrooms}</span>
+                                  <span style={{ marginLeft: 'auto', color: '#9ca3af', fontSize: '10px' }}>{prop.property_type}</span>
+                                </div>
                               </div>
                             </div>
-                          </a>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -700,6 +722,73 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Property Image Gallery Modal */}
+          {galleryModal && (
+            <div
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.93)', zIndex: 20, display: 'flex', flexDirection: 'column', borderRadius: '16px', overflow: 'hidden' }}
+              onClick={(e) => { if (e.target === e.currentTarget) setGalleryModal(null); }}
+            >
+              {/* Modal Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', flexShrink: 0 }}>
+                <div>
+                  <div style={{ color: 'white', fontWeight: '800', fontSize: '13px' }}>{galleryModal.property.price}</div>
+                  <div style={{ color: '#9ca3af', fontSize: '11px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{galleryModal.property.address.split('|')[0]}</div>
+                </div>
+                <button onClick={() => setGalleryModal(null)} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: 'white', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              </div>
+
+              {/* Main Image */}
+              <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                <img
+                  src={galleryModal.images[galleryModal.activeIdx]}
+                  alt="Property"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                {/* Prev Arrow */}
+                {galleryModal.activeIdx > 0 && (
+                  <button
+                    onClick={() => setGalleryModal(prev => ({ ...prev, activeIdx: prev.activeIdx - 1 }))}
+                    style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+                  >‹</button>
+                )}
+                {/* Next Arrow */}
+                {galleryModal.activeIdx < galleryModal.images.length - 1 && (
+                  <button
+                    onClick={() => setGalleryModal(prev => ({ ...prev, activeIdx: prev.activeIdx + 1 }))}
+                    style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+                  >›</button>
+                )}
+                {/* Image counter */}
+                <div style={{ position: 'absolute', bottom: '8px', right: '10px', background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: '11px', padding: '2px 8px', borderRadius: '20px' }}>
+                  {galleryModal.activeIdx + 1} / {galleryModal.images.length}
+                </div>
+              </div>
+
+              {/* Thumbnail Strip */}
+              <div style={{ display: 'flex', gap: '4px', padding: '8px', background: 'rgba(0,0,0,0.6)', overflowX: 'auto', flexShrink: 0 }}>
+                {galleryModal.images.map((img, ti) => (
+                  <img
+                    key={ti}
+                    src={img}
+                    alt={`Photo ${ti + 1}`}
+                    onClick={() => setGalleryModal(prev => ({ ...prev, activeIdx: ti }))}
+                    style={{ width: '60px', height: '45px', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', flexShrink: 0, border: ti === galleryModal.activeIdx ? '2px solid #10b981' : '2px solid transparent', opacity: ti === galleryModal.activeIdx ? 1 : 0.6, transition: 'opacity 0.2s, border 0.2s' }}
+                    onError={(e) => { e.target.parentElement.removeChild(e.target); }}
+                  />
+                ))}
+              </div>
+
+              {/* Property Details Footer */}
+              <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.7)', display: 'flex', gap: '16px', alignItems: 'center', flexShrink: 0 }}>
+                <span style={{ color: '#d1fae5', fontSize: '12px' }}>🛏️ {galleryModal.property.bedrooms} Beds</span>
+                <span style={{ color: '#d1fae5', fontSize: '12px' }}>🛁 {galleryModal.property.bathrooms} Baths</span>
+                <span style={{ color: '#9ca3af', fontSize: '12px' }}>{galleryModal.property.property_type}</span>
+                <span style={{ color: '#6b7280', fontSize: '11px', marginLeft: 'auto' }}>{galleryModal.property.city}, {galleryModal.property.province}</span>
+              </div>
+            </div>
+          )}
 
           {/* Calendly Popup */}
           {showCalendly && (
