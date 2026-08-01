@@ -692,6 +692,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)'; }}
                             >
                               <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', top: '6px', left: '6px', background: '#10b981', color: 'white', fontSize: '12px', fontWeight: 'bold', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 2 }}>{i + 1}</div>
                                 <img src={prop.image_url} alt={prop.address} style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
                                 <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>📸 View Photos</div>
                               </div>
