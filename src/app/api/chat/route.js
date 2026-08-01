@@ -593,26 +593,65 @@ CRITICAL RULES:
       console.log("Extracted City:", cityMatch);
       console.log("Extracted Beds:", bedsMatch);
 
-      // Fetch properties directly from DB
-      let pQuery = supabase.from('properties')
-        .select('mls_number, price, address, city, province, bedrooms, bathrooms, property_type, image_url, url')
-        .order('created_at', { ascending: false });
-        
-      if (cityMatch) pQuery = pQuery.ilike('city', `%${cityMatch}%`);
-      pQuery = pQuery.limit(10);
-      
-      const { data: pData, error: pError } = await pQuery;
-      
-      console.log("DB Query Error:", pError?.message || "None");
-      console.log("DB Query Result Length:", pData?.length || 0);
+      // Fetch properties from city_property_data (real Apify data)
+      let allCarouselProps = [];
+      const { data: cityRows } = await supabase
+        .from('city_property_data')
+        .select('city, properties')
+        .ilike('city', `%${cityMatch}%`)
+        .limit(5);
 
-      if (pData && pData.length > 0) {
-        let filtered = pData;
-        if (bedsMatch > 0) {
-          const bFiltered = pData.filter(p => parseInt(p.bedrooms) >= bedsMatch);
-          if (bFiltered.length > 0) filtered = bFiltered;
+      if (cityRows && cityRows.length > 0) {
+        cityRows.forEach(row => {
+          if (row.properties && Array.isArray(row.properties)) {
+            allCarouselProps = allCarouselProps.concat(row.properties);
+          }
+        });
+      }
+
+      // Filter by bedrooms
+      if (bedsMatch > 0) {
+        const bFiltered = allCarouselProps.filter(p => parseInt(p.bedrooms) >= bedsMatch);
+        if (bFiltered.length > 0) allCarouselProps = bFiltered;
+      }
+
+      // Filter by budget from chat history
+      const budgetMatchCarousel = fullChatText.match(/\$([\d,]+)/) || fullChatText.match(/(\d{3,}),?(\d{3})/);
+      if (budgetMatchCarousel) {
+        const raw = budgetMatchCarousel[0].replace(/[^0-9]/g, '');
+        const maxBudget = parseInt(raw);
+        if (maxBudget > 10000) {
+          const withinBudget = allCarouselProps.filter(item => {
+            const priceNum = parseInt(String(item.price || '').replace(/[^0-9]/g, ''));
+            return priceNum > 0 && priceNum <= maxBudget;
+          });
+          if (withinBudget.length > 0) allCarouselProps = withinBudget;
         }
-        propertiesList = filtered.slice(0, 6);
+      }
+
+      // Strict city filter
+      if (cityMatch) {
+        const strictCity = allCarouselProps.filter(p =>
+          String(p.city || '').toLowerCase().includes(cityMatch.toLowerCase())
+        );
+        if (strictCity.length > 0) allCarouselProps = strictCity;
+      }
+
+      // Normalize to expected format
+      if (allCarouselProps.length > 0) {
+        propertiesList = allCarouselProps.slice(0, 6).map(p => ({
+          mls_number: p.mls_number || p.mlsNumber || '',
+          price: p.price || 'Contact for Price',
+          address: p.address || '',
+          city: p.city || cityMatch,
+          province: p.province || 'ON',
+          bedrooms: p.bedrooms || 'N/A',
+          bathrooms: p.bathrooms || 'N/A',
+          property_type: p.property_type || p.propertyType || 'Residential',
+          images: p.images && p.images.length > 0 ? p.images : [],
+          image_url: (p.images && p.images[0]) || '',
+          url: p.url || ''
+        }));
       }
       console.log("Final propertiesList length:", propertiesList?.length || 0);
     }
