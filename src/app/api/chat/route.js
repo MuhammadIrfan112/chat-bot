@@ -198,25 +198,10 @@ async function fetchCityPropertyData(botId, fullChatText) {
       });
     }
 
-    // 5. If city_property_data is empty, fallback to old properties table
+    // 5. If city_property_data is empty, instruct AI to handle it gracefully
     if (allProperties.length === 0) {
-      console.log(`fetchCityPropertyData: No Apify data found. Falling back to properties table.`);
-      const { data: fallbackProps } = await supabase
-        .from('properties')
-        .select('*')
-        .ilike('city', `%${targetCity || 'milton'}%`)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (!fallbackProps || fallbackProps.length === 0) return '';
-
-      let fallbackSection = `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nCRITICAL: ONLY show properties from this exact list. DO NOT invent properties. Show real address, price, image using markdown \`![title](url)\`:\n`;
-      fallbackProps.slice(0, 8).forEach((l, i) => {
-        const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
-        fallbackSection += `\n${i + 1}. **${addr}**\n   - Price: ${l.price}\n   - Beds: ${l.bedrooms || 'N/A'} | Baths: ${l.bathrooms || 'N/A'} | Type: ${l.property_type || 'Property'}\n`;
-        if (l.image_url) fallbackSection += `   - Image: ![${addr}](${l.image_url})\n`;
-      });
-      return fallbackSection;
+      console.log(`fetchCityPropertyData: No Apify data found.`);
+      return `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nNo real properties found matching this query in the database. CRITICAL: Inform the user politely that no exact matches were found for their specific criteria in this city. Do NOT show any mock data or invent properties. Suggest they ask about a different city or change their requirements.\n`;
     }
 
     // 6. Filter by beds if user mentioned it

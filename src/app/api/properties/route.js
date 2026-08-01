@@ -19,43 +19,10 @@ export async function GET(request) {
     });
   }
 
-  // Fallback to old properties table if Apify data is empty
+  // If no Apify data is found, return empty array immediately (no mock data fallback)
   if (allProperties.length === 0) {
-    let query = supabaseAdmin
-      .from('properties')
-      .select('mls_number, price, address, city, province, bedrooms, bathrooms, property_type, image_url, url')
-      .order('created_at', { ascending: false });
-
-    if (city) query = query.ilike('city', `%${city}%`);
-    query = query.limit(10);
-
-    const { data, error } = await query;
-    if (error) return Response.json({ properties: [] });
-
-    let properties = data || [];
-    if (beds > 0) {
-      const filtered = properties.filter(p => parseInt(p.bedrooms) >= beds);
-      if (filtered.length > 0) properties = filtered;
-    }
-
-    // Normalize to unified format with images array
-    const normalized = properties.slice(0, 6).map(p => ({
-      mls_number: p.mls_number,
-      price: p.price,
-      address: p.address,
-      city: p.city,
-      province: p.province,
-      bedrooms: p.bedrooms,
-      bathrooms: p.bathrooms,
-      property_type: p.property_type,
-      images: p.image_url ? [p.image_url] : [],
-      image_url: p.image_url,
-      url: p.url
-    }));
-
-    return Response.json({ properties: normalized });
+    return Response.json({ properties: [] });
   }
-
   // Filter by beds
   if (beds > 0) {
     const filtered = allProperties.filter(p => parseInt(p.bedrooms) >= beds);
