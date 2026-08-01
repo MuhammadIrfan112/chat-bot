@@ -212,6 +212,35 @@ async function fetchCityPropertyData(botId, fullChatText) {
       : allProperties;
     if (filteredData.length === 0) filteredData = allProperties;
 
+    // 7. Filter by budget if user mentioned it (e.g. $650,000 or 650k)
+    const budgetMatch = q.match(/\$([\d,]+)(?:k)?/) || q.match(/(\d+)k(?:\s|$)/);
+    let maxBudget = 0;
+    if (budgetMatch) {
+      const raw = budgetMatch[1].replace(/,/g, '');
+      maxBudget = raw.endsWith('k') ? parseInt(raw) * 1000 : parseInt(raw);
+      if (maxBudget < 10000) maxBudget = maxBudget * 1000; // handle "650k" style
+    }
+    if (maxBudget > 0) {
+      const withinBudget = filteredData.filter(item => {
+        const priceStr = String(item.price || '').replace(/[^0-9]/g, '');
+        const priceNum = parseInt(priceStr);
+        return priceNum > 0 && priceNum <= maxBudget;
+      });
+      if (withinBudget.length > 0) filteredData = withinBudget;
+      else {
+        // No properties within budget — tell AI to be honest
+        return `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nNo real properties found within the budget of $${maxBudget.toLocaleString()} in ${targetCity || 'this city'}. CRITICAL: Tell the user honestly that no properties matching their budget were found. DO NOT show over-budget properties. Suggest they increase their budget or ask about different areas. DO NOT invent any properties.\n`;
+      }
+    }
+
+    // 8. Strict city filter - only show properties from the asked city
+    if (targetCity) {
+      const strictCity = filteredData.filter(item =>
+        String(item.city || '').toLowerCase().includes(targetCity.split(',')[0].toLowerCase())
+      );
+      if (strictCity.length > 0) filteredData = strictCity;
+    }
+
     console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real Apify properties to AI.`);
 
     let section = `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nCRITICAL: ONLY show properties from this exact list. DO NOT invent properties. Show real address, price, image using markdown \`![title](url)\`:\n`;
