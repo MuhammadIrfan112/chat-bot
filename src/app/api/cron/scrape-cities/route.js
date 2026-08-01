@@ -53,7 +53,7 @@ export async function GET(req) {
 
       try {
         const apifyToken = process.env.APIFY_API_TOKEN;
-        const actorId = "scrapemind~realtor-ca-scraper";
+        const actorId = "solidcode~realtorca-scraper";
         
         const runRes = await fetch(
           `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${apifyToken}&timeout=120`,
@@ -71,28 +71,25 @@ export async function GET(req) {
 
         const rawProperties = await runRes.json();
         
-        // Map the raw data to a standardized format and limit images
+        // Map the raw data to a standardized format
         const properties = rawProperties.map(p => {
           let imgs = [];
           if (p.photos && Array.isArray(p.photos)) {
-            imgs = p.photos.slice(0, 6); // Keep only up to 6 images
-          } else if (p.imgSrc) {
-            imgs = [p.imgSrc]; // Fallback if only 1 image exists
+            imgs = p.photos.slice(0, 6);
           }
-
           return {
-            mls_number: p.zpid || p.mlsNumber || p.id || Math.random().toString(36).substring(7),
-            price: p.priceDisplay || (p.price ? '$' + p.price.toLocaleString() : 'Contact for Price'),
-            address: p.address || p.streetAddress || 'Address Not Disclosed',
+            mls_number: p.mlsNumber || p.listingId || Math.random().toString(36).substring(7),
+            price: p.price || 'Contact for Price',
+            address: p.address || 'Address Not Disclosed',
             city: p.city || city,
-            province: p.state || 'ON',
-            bedrooms: p.bedrooms || p.beds || 'N/A',
-            bathrooms: p.bathrooms || p.baths || 'N/A',
-            property_type: p.propertyType || p.homeType || 'Residential',
-            images: imgs,
-            url: p.url || `https://www.zillow.com/homedetails/${p.zpid}_zpid/`
+            province: p.province || 'ON',
+            bedrooms: p.bedrooms || 'N/A',
+            bathrooms: p.bathrooms || 'N/A',
+            property_type: p.propertyType || 'Residential',
+            images: imgs, // We save the image URL from Apify here
+            url: p.listingUrl || ''
           };
-        }).filter(p => p.price && p.images.length > 0); // Keep only valid ones
+        }).filter(p => p.price && p.url); // Keep only valid ones
 
         await supabase
           .from("city_property_data")
