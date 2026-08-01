@@ -53,14 +53,14 @@ export async function GET(req) {
 
       try {
         const apifyToken = process.env.APIFY_API_TOKEN;
-        const actorId = "maxcopell~zillow-scraper";
+        const actorId = "scrapemind~realtor-ca-scraper";
         
         const runRes = await fetch(
           `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${apifyToken}&timeout=120`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ searchTerm: city, maxItems: 20, type: "sale" })
+            body: JSON.stringify({ location: city + ", Ontario", listingType: "sale", maxItems: 50 })
           }
         );
 
