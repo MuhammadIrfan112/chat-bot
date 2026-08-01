@@ -674,8 +674,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                     {msg.properties && msg.properties.length > 0 && (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
                         {msg.properties.map((prop, i) => {
-                          // Build gallery images from realtor.ca CDN pattern
-                          const makeImages = (url) => {
+                          // Use real images array (Apify) or fallback to URL pattern (old mock data)
+                          const makeImages = (prop) => {
+                            if (prop.images && Array.isArray(prop.images) && prop.images.length > 0) {
+                              return prop.images.slice(0, 6); // Already limited to 6
+                            }
+                            // Fallback: try generating from realtor.ca CDN pattern
+                            const url = prop.image_url || prop.imgSrc || '';
                             if (!url) return [];
                             const imgs = [];
                             for (let n = 1; n <= 5; n++) {
@@ -686,7 +691,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                           return (
                             <div
                               key={i}
-                              onClick={() => setGalleryModal({ property: prop, images: makeImages(prop.image_url), activeIdx: 0 })}
+                              onClick={() => setGalleryModal({ property: prop, images: makeImages(prop), activeIdx: 0 })}
                               style={{ cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid #f0f0f0' }}
                               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)'; }}
                               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)'; }}

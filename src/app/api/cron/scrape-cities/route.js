@@ -69,7 +69,30 @@ export async function GET(req) {
           continue;
         }
 
-        const properties = await runRes.json();
+        const rawProperties = await runRes.json();
+        
+        // Map the raw data to a standardized format and limit images
+        const properties = rawProperties.map(p => {
+          let imgs = [];
+          if (p.photos && Array.isArray(p.photos)) {
+            imgs = p.photos.slice(0, 6); // Keep only up to 6 images
+          } else if (p.imgSrc) {
+            imgs = [p.imgSrc]; // Fallback if only 1 image exists
+          }
+
+          return {
+            mls_number: p.zpid || p.mlsNumber || p.id || Math.random().toString(36).substring(7),
+            price: p.priceDisplay || (p.price ? '$' + p.price.toLocaleString() : 'Contact for Price'),
+            address: p.address || p.streetAddress || 'Address Not Disclosed',
+            city: p.city || city,
+            province: p.state || 'ON',
+            bedrooms: p.bedrooms || p.beds || 'N/A',
+            bathrooms: p.bathrooms || p.baths || 'N/A',
+            property_type: p.propertyType || p.homeType || 'Residential',
+            images: imgs,
+            url: p.url || `https://www.zillow.com/homedetails/${p.zpid}_zpid/`
+          };
+        }).filter(p => p.price && p.images.length > 0); // Keep only valid ones
 
         await supabase
           .from("city_property_data")

@@ -153,7 +153,7 @@ async function getRelevantKnowledge(userQuery, botId) {
   }
 }
 
-// 🏡 Fetch listings from Supabase properties table
+// 🏡 Fetch listings from city_property_data (Apify real data)
 async function fetchCityPropertyData(botId, fullChatText) {
   try {
     const q = fullChatText.toLowerCase();
@@ -176,56 +176,74 @@ async function fetchCityPropertyData(botId, fullChatText) {
 
     // 2. Detect which city user is asking about
     let targetCity = agentCities.find(city => q.includes(city.split(',')[0].toLowerCase()));
-    
-    // If no agent city matches, check if any common city is in the chat
     if (!targetCity) {
       const commonCities = ['milton', 'toronto', 'brampton', 'mississauga', 'oakville', 'hamilton', 'burlington'];
       targetCity = commonCities.find(city => q.includes(city));
     }
-    
-    // 3. Query the properties table
-    let query = supabase.from('properties').select('*').order('created_at', { ascending: false });
-    
-    if (targetCity) {
-       query = query.ilike('city', `%${targetCity}%`);
+
+    // 3. Query city_property_data table (real Apify scraped data)
+    let cityQuery = supabase.from('city_property_data').select('city, properties');
+    if (targetCity) cityQuery = cityQuery.ilike('city', `%${targetCity}%`);
+    const { data: cityRows, error: cityError } = await cityQuery.limit(5);
+
+    console.log(`fetchCityPropertyData: city_property_data query. TargetCity: ${targetCity}. Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
+
+    // 4. Flatten all properties from matched rows
+    let allProperties = [];
+    if (!cityError && cityRows && cityRows.length > 0) {
+      cityRows.forEach(row => {
+        if (row.properties && Array.isArray(row.properties)) {
+          allProperties = allProperties.concat(row.properties);
+        }
+      });
     }
 
-    const { data: properties, error } = await query.limit(20);
+    // 5. If city_property_data is empty, fallback to old properties table
+    if (allProperties.length === 0) {
+      console.log(`fetchCityPropertyData: No Apify data found. Falling back to properties table.`);
+      const { data: fallbackProps } = await supabase
+        .from('properties')
+        .select('*')
+        .ilike('city', `%${targetCity || 'milton'}%`)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-    console.log(`fetchCityPropertyData: DB query done. TargetCity: ${targetCity}. Found ${properties?.length || 0} properties. Error: ${error?.message || 'none'}`);
+      if (!fallbackProps || fallbackProps.length === 0) return '';
 
-    if (error || !properties || properties.length === 0) {
-      console.log(`fetchCityPropertyData: Returning empty string because no properties found.`);
-      return '';
+      let fallbackSection = `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nCRITICAL: ONLY show properties from this exact list. DO NOT invent properties. Show real address, price, image using markdown \`![title](url)\`:\n`;
+      fallbackProps.slice(0, 8).forEach((l, i) => {
+        const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
+        fallbackSection += `\n${i + 1}. **${addr}**\n   - Price: ${l.price}\n   - Beds: ${l.bedrooms || 'N/A'} | Baths: ${l.bathrooms || 'N/A'} | Type: ${l.property_type || 'Property'}\n`;
+        if (l.image_url) fallbackSection += `   - Image: ![${addr}](${l.image_url})\n`;
+      });
+      return fallbackSection;
     }
 
-    // 4. Filter by beds if user mentioned it
+    // 6. Filter by beds if user mentioned it
     const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
     const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
     let filteredData = minBedrooms > 0
-      ? properties.filter(item => parseInt(item.bedrooms) >= minBedrooms)
-      : properties;
-      
-    if (filteredData.length === 0) filteredData = properties;
+      ? allProperties.filter(item => parseInt(item.bedrooms) >= minBedrooms)
+      : allProperties;
+    if (filteredData.length === 0) filteredData = allProperties;
 
-    console.log(`fetchCityPropertyData: Passing ${filteredData.slice(0,8).length} properties to the AI.`);
+    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real Apify properties to AI.`);
 
-    let section = `\n\n--- REAL ESTATE DATABASE INVENTORY (CRITICAL: MUST USE THESE PROPERTIES) ---\nCRITICAL INSTRUCTION: You MUST ONLY show properties from the exact list below. DO NOT invent or hallucinate placeholder properties (like "Property 1"). If the list below is empty, you MUST say "I couldn't find exact matches right now, but I will have the agent send them to you manually." ALWAYS show the real address, price, and image using markdown \`![title](image_url)\`:\n`;
+    let section = `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nCRITICAL: ONLY show properties from this exact list. DO NOT invent properties. Show real address, price, image using markdown \`![title](url)\`:\n`;
 
     filteredData.slice(0, 8).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
-      const price = l.price;
-      const beds = l.bedrooms || 'N/A';
-      const baths = l.bathrooms || 'N/A';
-      const type = l.property_type || 'Property';
-      const img = l.image_url || '';
-      const url = l.url || '';
+      const price = l.price || l.priceDisplay || 'Contact for Price';
+      const beds = l.bedrooms || l.beds || 'N/A';
+      const baths = l.bathrooms || l.baths || 'N/A';
+      const type = l.property_type || l.propertyType || 'Property';
+      const imgArr = l.images && l.images.length > 0 ? l.images : (l.image_url ? [l.image_url] : (l.imgSrc ? [l.imgSrc] : []));
+      const mainImg = imgArr[0] || '';
 
       section += `\n${i + 1}. **${addr}**\n`;
       section += `   - Price: ${price}\n`;
       section += `   - Beds: ${beds} | Baths: ${baths} | Type: ${type}\n`;
-      if (img) section += `   - Image: ![${addr}](${img})\n`;
-      if (url) section += `   - Link: [View on Realtor.ca](${url})\n`;
+      if (mainImg) section += `   - Image: ![${addr}](${mainImg})\n`;
     });
 
     return section;
@@ -234,6 +252,7 @@ async function fetchCityPropertyData(botId, fullChatText) {
     return '';
   }
 }
+
 
 export async function POST(req) {
   try {
