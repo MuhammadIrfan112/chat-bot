@@ -42,14 +42,14 @@ export async function GET(req) {
   // Closed: desktop pill button area | mobile: circular button area
   var closedStyle = isMobile
     ? "position: fixed; bottom: 16px; right: 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
-    : "position: fixed; bottom: 0; right: 0; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    : "position: fixed; bottom: 0; right: 0; width: 220px; height: 100px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
 
-  var openStyle = "position: fixed; bottom: 0; right: 0; width: 420px; height: 550px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var openStyle = "position: fixed; bottom: 0; right: 0; width: 420px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   if (isMobile) {
-    openStyle = "position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 480px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    openStyle = "position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 100dvh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   } else if (isTablet) {
-    openStyle = "position: fixed; bottom: 0; right: 0; width: 400px; height: 560px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    openStyle = "position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   }
 
   iframe.style.cssText = closedStyle;
