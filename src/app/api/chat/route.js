@@ -1,6 +1,27 @@
 import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import * as cheerio from 'cheerio';
 import OpenAI from "openai";
+import faqsData from '@/data/faqs.json';
+import Fuse from 'fuse.js';
+
+let fuseInstance = null;
+
+function getRelevantFaqs(userQuery) {
+  if (!faqsData || !Array.isArray(faqsData) || faqsData.length === 0) return '';
+  if (!fuseInstance) {
+    fuseInstance = new Fuse(faqsData, {
+      keys: ['question', 'keywords', 'intent_name', 'category'],
+      threshold: 0.5,
+      includeScore: true
+    });
+  }
+  const results = fuseInstance.search(userQuery);
+  const topResults = results.slice(0, 4).map(r => `Q: ${r.item.question}\nA: ${r.item.answer}`);
+  if (topResults.length > 0) {
+    return "\n\nCLIENT APPROVED KNOWLEDGE BASE (Use these exact answers if relevant to the user's question. Do not invent answers if one of these matches):\n" + topResults.join('\n\n');
+  }
+  return '';
+}
 
 async function liveScrapeWebsite(url) {
   if (!url) return '';
@@ -364,12 +385,7 @@ export async function POST(req) {
         return Response.json({ reply: null, human_takeover: true });
       }
     }
-
     const knowledge = await getRelevantKnowledge(userQuery, bot_id);
-
-    const knowledgeSection = knowledge
-      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge}`
-      : '';
 
     // Build dynamic prompt based on bot industry
     let botData = null;
@@ -394,6 +410,15 @@ export async function POST(req) {
     const isRealEstate = botIndustry === 'Real Estate' || botNameL.includes('real estate') || botNameL.includes('real state') || botNameL.includes('realty') || botNameL.includes('property');
     const isGeneral = !isEcommerce && !isRealEstate;
     
+    let faqContext = '';
+    if (isRealEstate) {
+      faqContext = getRelevantFaqs(userQuery);
+    }
+
+    const knowledgeSection = (knowledge || faqContext)
+      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}`
+      : '';
+
     const qualifyingQuestions = isRealEstate
       ? `You are a professional real estate AI assistant representing ${botName}.
 Your role is to welcome visitors, understand their real estate needs, provide helpful guidance, qualify opportunities, and connect serious prospects with the agent.
@@ -525,7 +550,6 @@ ${qualifyingQuestions}
 6. RESPONSE STYLE: Keep responses short, engaging, and scannable. Use occasional emojis. Use line breaks so it looks clean on mobile.
 ${isRealEstate || isEcommerce ? `7. IMAGES & LINKS: When showing an item from the inventory, you MUST copy and use the EXACT markdown for Image and Link provided in the inventory data.\n8. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `7. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
 ${knowledgeSection}${liveInventory}`;
-
     if (!bot_id) {
       systemInstruction = `You are an AI Sales Consultant for RealtyPropFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.
       
