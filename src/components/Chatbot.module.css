@@ -369,13 +369,25 @@
   40%           { transform: scale(1);   opacity: 1; }
 }
 
-/* ══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    DESKTOP EMBED (forced desktop inside iframe)
-══════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
+.chatbotContainer.forceDesktop {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .forceDesktop .chatWindow {
-  position: relative !important;
-  bottom: auto !important;
-  right: auto !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   width: 100% !important;
   height: 100% !important;
   border-radius: 22px !important;
