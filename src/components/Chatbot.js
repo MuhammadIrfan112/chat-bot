@@ -46,6 +46,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [galleryModal, setGalleryModal] = useState(null); // { property, images, activeIdx }
   const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
+  const [likedProperties, setLikedProperties] = useState([]);
+  const [dislikedProperties, setDislikedProperties] = useState([]);
 
   // ── Closing flow state ─────────────────────────────────────────
   // Tracks which step of the closing conversation we're in
@@ -730,6 +732,38 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                                   <span>🛁 {prop.bathrooms}</span>
                                   <span style={{ marginLeft: 'auto', color: '#9ca3af', fontSize: '10px' }}>{prop.property_type}</span>
                                 </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', padding: '0 10px 10px', marginTop: '2px' }}>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const id = prop.mls_number || prop.address;
+                                    setLikedProperties(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+                                    setDislikedProperties(prev => prev.filter(x => x !== id));
+                                  }}
+                                  style={{ 
+                                    flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                    background: likedProperties.includes(prop.mls_number || prop.address) ? '#10b981' : '#f3f4f6', 
+                                    color: likedProperties.includes(prop.mls_number || prop.address) ? 'white' : '#4b5563'
+                                  }}
+                                >
+                                  👍 Like
+                                </button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const id = prop.mls_number || prop.address;
+                                    setDislikedProperties(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+                                    setLikedProperties(prev => prev.filter(x => x !== id));
+                                  }}
+                                  style={{ 
+                                    flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'all 0.2s',
+                                    background: dislikedProperties.includes(prop.mls_number || prop.address) ? '#ef4444' : '#f3f4f6', 
+                                    color: dislikedProperties.includes(prop.mls_number || prop.address) ? 'white' : '#4b5563'
+                                  }}
+                                >
+                                  👎 Pass
+                                </button>
                               </div>
                             </div>
                           );

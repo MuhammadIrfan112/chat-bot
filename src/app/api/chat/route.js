@@ -463,10 +463,13 @@ Is this information correct?"
 [BUTTON: Yes] [BUTTON: No]
 
 Step 11. Show Properties:
-If the user confirms the information is correct (e.g. they select "Yes"), reply with a brief confirmation and immediately output this EXACT tag on a new line:
+If the user confirms the information is correct (e.g. they select "Yes"), reply EXACTLY with this phrasing and the hidden tag on a new line:
+
+"Great! Let me share a few listings with you."
 [SHOW_PROPERTIES_CAROUSEL:City:Beds]
+
 (Replace City with the requested city name, and Beds with the requested bedroom count number. Example: [SHOW_PROPERTIES_CAROUSEL:Milton:3])
-FAILURE TO OUTPUT THIS TAG WILL BREAK THE SYSTEM.
+CRITICAL ANTI-HALLUCINATION RULE: DO NOT WRITE OUT PROPERTY DETAILS, PRICES, OR DESCRIPTIONS MANUALLY IN TEXT. EVER. ONLY USE THE TAG. THE SYSTEM WILL RENDER THE CAROUSEL FOR YOU.
 
 If the user says "No", ask them what information they would like to correct and update your understanding.
 
@@ -650,9 +653,9 @@ CRITICAL RULES:
         if (strictCity.length > 0) allCarouselProps = strictCity;
       }
 
-      // Normalize to expected format
+      // Normalize to expected format (Limit to 4 most relevant)
       if (allCarouselProps.length > 0) {
-        propertiesList = allCarouselProps.slice(0, 6).map(p => ({
+        propertiesList = allCarouselProps.slice(0, 4).map(p => ({
           mls_number: p.mls_number || p.mlsNumber || '',
           price: p.price || 'Contact for Price',
           address: p.address || '',
