@@ -55,6 +55,8 @@ export default async function BotEmbedPage({ params, searchParams }) {
           background-color: transparent !important;
           margin: 0 !important;
           padding: 0 !important;
+          height: 100% !important;
+          width: 100% !important;
           overflow: hidden !important;
           color-scheme: light !important;
         }
