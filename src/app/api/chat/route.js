@@ -64,6 +64,74 @@ Link: ${p.property_url}
   }
 }
 
+// Live Apify Zillow scraper — called when Supabase has no matching properties
+async function fetchApifyProperties(city, state, intent, beds, maxBudget) {
+  try {
+    const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+    if (!APIFY_TOKEN) return null;
+
+    // Build Zillow search URL based on intent
+    const listingType = intent === 'rent' ? 'rentals' : 'homes';
+    const citySlug = `${city.toLowerCase().replace(/\s+/g, '-')}-${state.toLowerCase()}`;
+    const searchUrl = `https://www.zillow.com/${citySlug}/${listingType}/`;
+
+    console.log(`[Apify] Live scraping: ${searchUrl}`);
+
+    // Call Apify synchronously — wait up to 90 seconds
+    const runRes = await fetch(
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}&waitForFinish=90`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          searchUrls: [{ url: searchUrl }],
+          maxItems: 4,
+          proxy: { useApifyProxy: true }
+        })
+      }
+    );
+
+    if (!runRes.ok) {
+      console.error('[Apify] Run failed:', runRes.status);
+      return null;
+    }
+
+    const runData = await runRes.json();
+    const datasetId = runData?.data?.defaultDatasetId;
+    if (!datasetId) return null;
+
+    // Fetch results from dataset
+    const itemsRes = await fetch(
+      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=4`
+    );
+    if (!itemsRes.ok) return null;
+
+    const items = await itemsRes.json();
+    if (!items || items.length === 0) return null;
+
+    // Format as property cards
+    const cards = items
+      .filter(p => (p.mainImage || p.imgSrc) && (p.propertyUrl || p.detailUrl))
+      .slice(0, 4)
+      .map(p => {
+        const image = p.mainImage || p.imgSrc;
+        const url = p.propertyUrl || p.detailUrl;
+        const address = p.listingAddress?.full || p.address || `${city}, ${state}`;
+        const price = p.listingPrice?.formatted || p.price || 'Contact for price';
+        const propBeds = p.bedrooms || '?';
+        const propBaths = p.bathrooms || '?';
+        const type = p.homeType || p.cardType || 'Property';
+        const status = p.listingStatus === 'forRent' ? '🔵 For Rent' : '🟢 For Sale';
+        return `[PROPERTY_CARD]\nStatus: ${status}\nType: ${type}\nAddress: ${address}\nPrice: ${price}\nBeds: ${propBeds} | Baths: ${propBaths}\nImage: ${image}\nLink: ${url}\n[/PROPERTY_CARD]`;
+      });
+
+    return cards.length > 0 ? cards.join('\n\n') : null;
+  } catch (e) {
+    console.error('[Apify] Error:', e.message);
+    return null;
+  }
+}
+
 async function liveScrapeWebsite(url) {
   if (!url) return '';
   try {
@@ -456,40 +524,61 @@ export async function POST(req) {
       faqContext = getRelevantFaqs(userQuery);
     }
 
-    // --- Morton Grove Property Matching ---
+    // --- Property Matching: Supabase first, Apify as fallback ---
     let propertyContext = '';
+    let cityEngagementContext = '';
+
     if (isRealEstate) {
-      // Detect intent from conversation
       const fullText = fullChatText.toLowerCase();
       let propIntent = null;
       if (fullText.includes('rent') || fullText.includes('rental') || fullText.includes('apartment') || fullText.includes('lease')) propIntent = 'rent';
       else if (fullText.includes('buy') || fullText.includes('purchase') || fullText.includes('for sale') || fullText.includes('buying')) propIntent = 'buy';
 
-      // Extract bedrooms from user message
+      // Extract bedrooms
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
 
-      // Extract budget from user message
+      // Extract budget
       const budgetMatch = fullText.match(/\$?([\d,]+)k?\s*(?:\/mo|per month|month|budget|max|under)?/);
       let propBudget = 0;
       if (budgetMatch) {
         const raw = budgetMatch[1].replace(/,/g, '');
-        propBudget = raw.endsWith('k') ? parseInt(raw) * 1000 : parseInt(raw);
-        if (propBudget < 500) propBudget = propBudget * 1000; // handle "2k" style
-        if (propBudget > 50000 && propIntent === 'rent') propBudget = 0; // ignore sale prices for rent
+        propBudget = parseInt(raw);
+        if (propBudget < 500) propBudget = propBudget * 1000;
+        if (propBudget > 50000 && propIntent === 'rent') propBudget = 0;
       }
 
-      // Only fetch if user seems to be in property search mode
+      // Extract city from conversation
+      const cityMatch = fullText.match(/(?:in|near|at|for)\s+([a-z\s]+),?\s*(il|tx|ca|fl|ny|wa|az|co|ga|nc|oh|mi|pa|nj|va|ma|tn|in|mo|wi|mn|sc|al|la|ky|or|ok|ct|ia|ms|ar|ut|nv|nm|ne|wv|id|hi|me|nh|ri|mt|de|sd|nd|ak|vt|wy)\b/);
+      const detectedCity = cityMatch ? cityMatch[1].trim() : null;
+      const detectedState = cityMatch ? cityMatch[2].toUpperCase() : null;
+
       if (propIntent) {
-        const matchedProperties = await getMatchingProperties(propIntent, propBeds, propBudget);
+        // Step 1: Try Supabase first
+        let matchedProperties = await getMatchingProperties(propIntent, propBeds, propBudget);
+
         if (matchedProperties) {
-          propertyContext = `\n\nMORTON GROVE AVAILABLE PROPERTIES (Real listings from database. Show these as property cards with image, price, address, beds/baths and Zillow link):\n${matchedProperties}`;
+          // Found in database
+          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
+        } else if (detectedCity) {
+          // Not in database — trigger Apify live scrape
+          console.log(`[Route] No DB results for ${detectedCity}, ${detectedState} — calling Apify live...`);
+          const liveProperties = await fetchApifyProperties(detectedCity, detectedState || 'IL', propIntent, propBeds, propBudget);
+
+          if (liveProperties) {
+            propertyContext = `\n\nLIVE PROPERTIES FROM ZILLOW (Just found for ${detectedCity}! Show these as property cards with image, address, price, beds/baths and Zillow link):\n${liveProperties}`;
+          } else {
+            propertyContext = `\n\nNo properties found for ${detectedCity} at this time. Suggest the user broaden their search or adjust filters.`;
+          }
+
+          // City engagement content — shown while Apify was fetching
+          cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Since the user is searching in ${detectedCity}, ${detectedState || ''}, you MUST start your response with a brief engaging intro about ${detectedCity} ONLY IF properties are now included above. Say something like: "While searching for properties in ${detectedCity}, here's a quick look at what makes this area great! 🏙️" then show 2-3 key highlights using expandable buttons BEFORE showing the properties. Use this EXACT button format for city topics (user clicks to learn more):\n[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]\n\nWhen user clicks any of these buttons, provide ONLY 2-3 short bullet points about that topic for ${detectedCity}. Do NOT write long paragraphs. After 2-3 city topics are discussed OR immediately if user wants to skip — show the property cards below.`;
         }
       }
     }
 
     const knowledgeSection = (knowledge || faqContext || propertyContext)
-      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${propertyContext}`
+      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${cityEngagementContext}${propertyContext}`
       : '';
 
     const qualifyingQuestions = isRealEstate
