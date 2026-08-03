@@ -630,11 +630,12 @@ CRITICAL RULES:
       const bathsMatch = lcChat.match(/(\d+)\s*(?:bath|bathroom|baths)/);
       const bathsNeeded = bathsMatch ? parseInt(bathsMatch[1]) : 0;
 
-      // ── STEP 2: Extract budget (supports $700k, $700,000, 4m, $4.5m etc.) ─
+      // ── STEP 2: Extract budget (supports $700k, $700,000, $4m, $4.5m etc.) ─
+      // IMPORTANT: Dollar sign required for 'm' shorthand to avoid matching "3 months" as $3M
       let maxBudget = 0;
-      const budgetMillionMatch = fullChatText.match(/\$?([\d.]+)\s*m(?:illion)?/i);
-      const budgetKMatch = fullChatText.match(/\$?([\d.]+)\s*k\b/i);
-      const budgetPlainMatch = fullChatText.match(/\$\s*([\d,]+)/);
+      const budgetMillionMatch = fullChatText.match(/\$([\d.]+)\s*m(?:illion)?\b/i);  // requires $
+      const budgetKMatch = fullChatText.match(/\$([\d.]+)\s*k\b/i);                   // requires $
+      const budgetPlainMatch = fullChatText.match(/\$\s*([\d,]{4,})/);                // $700,000 or $700000
       if (budgetMillionMatch) {
         maxBudget = Math.round(parseFloat(budgetMillionMatch[1]) * 1_000_000);
       } else if (budgetKMatch) {
