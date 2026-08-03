@@ -47,7 +47,7 @@ export async function GET(req) {
   var openStyle = "position: fixed; bottom: 0; right: 0; width: 420px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   if (isMobile) {
-    openStyle = "position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 100dvh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    openStyle = "position: fixed; bottom: 2dvh; left: 3vw; width: 94vw; height: 85dvh; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   } else if (isTablet) {
     openStyle = "position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   }

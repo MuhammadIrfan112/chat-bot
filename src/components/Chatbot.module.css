@@ -378,7 +378,23 @@
   right: auto !important;
   width: 100% !important;
   height: 100% !important;
-  border-radius: 0 !important;
+  border-radius: 22px !important;
+}
+
+/* Ensure desktop doesn't get mobile button styles if iframe is < 600px */
+.forceDesktop .quickReplies {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  padding: 4px 16px 12px !important;
+}
+
+.forceDesktop .qrBtn {
+  width: auto !important;
+  text-align: center !important;
+  border-radius: 24px !important;
+  white-space: nowrap !important;
+  padding: 9px 18px !important;
 }
 
 
