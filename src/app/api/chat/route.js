@@ -24,7 +24,7 @@ function getRelevantFaqs(userQuery) {
 }
 
 // Search properties from Supabase
-async function getMatchingProperties(intent, beds, maxBudget) {
+async function getMatchingProperties(intent, propType, beds, maxBudget) {
   try {
     // Normalize intent to DB value
     const statusFilter = intent === 'rent' ? 'forRent' : intent === 'buy' ? 'forSale' : null;
@@ -40,6 +40,7 @@ async function getMatchingProperties(intent, beds, maxBudget) {
       if (statusFilter) query = query.eq('listing_status', statusFilter);
       if (beds && beds > 0) query = query.eq('bedrooms', beds);
       if (budgetLimit && budgetLimit > 0) query = query.eq('price_amount', budgetLimit);
+      if (propType) query = query.ilike('home_type', `%${propType}%`);
       
       return query;
     };
@@ -59,6 +60,7 @@ async function getMatchingProperties(intent, beds, maxBudget) {
 
       if (statusFilter) query = query.eq('listing_status', statusFilter);
       if (beds && beds > 0) query = query.eq('bedrooms', beds);
+      if (propType) query = query.ilike('home_type', `%${propType}%`);
       if (expandedBudget && expandedBudget > 0) {
           // Find properties between exact budget and budget + 1.5%
           query = query.gt('price_amount', maxBudget).lte('price_amount', expandedBudget);
@@ -563,6 +565,10 @@ export async function POST(req) {
       if (fullText.includes('rent') || fullText.includes('rental') || fullText.includes('apartment') || fullText.includes('lease')) propIntent = 'rent';
       else if (fullText.includes('buy') || fullText.includes('purchase') || fullText.includes('for sale') || fullText.includes('buying')) propIntent = 'buy';
 
+      // Extract property type
+      const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family)/i);
+      const propType = typeMatch ? typeMatch[1].toLowerCase() : null;
+
       // Extract bedrooms
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
@@ -584,9 +590,9 @@ export async function POST(req) {
 
       if (propIntent) {
         // Step 1: Try Supabase first
-        let matchedProperties = await getMatchingProperties(propIntent, propBeds, propBudget);
+        let matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
 
-        if (matchedProperties) {
+        if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity) {
@@ -602,6 +608,9 @@ export async function POST(req) {
 
           // City engagement content — shown while Apify was fetching
           cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Since the user is searching in ${detectedCity}, ${detectedState || ''}, you MUST start your response with a brief engaging intro about ${detectedCity} ONLY IF properties are now included above. Say something like: "While searching for properties in ${detectedCity}, here's a quick look at what makes this area great! 🏙️" then show 2-3 key highlights using expandable buttons BEFORE showing the properties. Use this EXACT button format for city topics (user clicks to learn more):\n[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]\n\nWhen user clicks any of these buttons, provide ONLY 2-3 short bullet points about that topic for ${detectedCity}. Do NOT write long paragraphs. After 2-3 city topics are discussed OR immediately if user wants to skip — show the property cards below.`;
+        } else if (matchedProperties) {
+            // It returned the fallback text message
+            propertyContext = `\n\n${matchedProperties}`;
         }
       }
     }
@@ -734,8 +743,15 @@ Step 8. Parking:
 Step 9. Must-have features:
 "Are there any must-have features?"
 
-Step 10. Show Properties & Appointment:
-After collecting all above info, FIRST search and display matching properties using the data collected. Then ask:
+Step 10. Summarize and Confirm:
+Once all information is collected, you MUST generate a summary and ask for confirmation:
+"To summarize, you're looking for a [Bedrooms]-bedroom [Property Type] in [City] with a budget of [Budget], parking: [Yes/No], pets: [Yes/No]. Is this correct?"
+[BUTTON: Yes] [BUTTON: No]
+
+Step 11. Show Properties & Appointment:
+CRITICAL RULE: DO NOT show properties until the user confirms the summary in Step 10.
+If the user says "No", ask them what they would like to change.
+If the user confirms (says "Yes"), FIRST display the matching properties from your RELEVANT BUSINESS KNOWLEDGE (ensure you ONLY show the requested Property Type, e.g. if they want an Apartment, do NOT show a Condo). Then ask:
 "Would you like to schedule a viewing or speak with an agent about any of these properties?"
 [BUTTON: Schedule a viewing] [BUTTON: Speak with an agent] [BUTTON: Show more listings]
 
