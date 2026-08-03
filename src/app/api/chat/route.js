@@ -29,18 +29,31 @@ async function getMatchingProperties(intent, beds, maxBudget) {
     // Normalize intent to DB value
     const statusFilter = intent === 'rent' ? 'forRent' : intent === 'buy' ? 'forSale' : null;
 
-    let query = supabase
-      .from('morton_grove_properties')
-      .select('listing_status, home_type, address_full, price_amount, price_formatted, bedrooms, bathrooms, main_image, property_url')
-      .not('main_image', 'is', null)
-      .not('property_url', 'is', null)
-      .limit(3);
+    const buildQuery = (budgetLimit) => {
+      let query = supabase
+        .from('morton_grove_properties')
+        .select('listing_status, home_type, address_full, price_amount, price_formatted, bedrooms, bathrooms, main_image, property_url')
+        .not('main_image', 'is', null)
+        .not('property_url', 'is', null)
+        .limit(4);
 
-    if (statusFilter) query = query.eq('listing_status', statusFilter);
-    if (beds && beds > 0) query = query.eq('bedrooms', beds);
-    if (maxBudget && maxBudget > 0) query = query.lte('price_amount', maxBudget);
+      if (statusFilter) query = query.eq('listing_status', statusFilter);
+      if (beds && beds > 0) query = query.eq('bedrooms', beds);
+      if (budgetLimit && budgetLimit > 0) query = query.lte('price_amount', budgetLimit);
+      
+      return query;
+    };
 
-    const { data, error } = await query;
+    // Try exact or under budget first
+    let { data, error } = await buildQuery(maxBudget);
+
+    // If no results, try 1.5x the budget
+    if (!data || data.length === 0) {
+      const expandedBudget = maxBudget ? maxBudget * 1.5 : null;
+      const res = await buildQuery(expandedBudget);
+      data = res.data;
+      error = res.error;
+    }
 
     if (error || !data || data.length === 0) return null;
 

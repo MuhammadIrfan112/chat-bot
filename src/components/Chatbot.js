@@ -712,6 +712,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                           <img
                             src={src} alt={alt || 'Property'}
                             style={{ maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '8px', display: 'block' }}
+                            referrerPolicy="no-referrer"
                             {...props}
                           />
                         )
@@ -747,7 +748,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                             >
                               <div style={{ position: 'relative' }}>
                                 <div style={{ position: 'absolute', top: '6px', left: '6px', background: '#10b981', color: 'white', fontSize: '12px', fontWeight: 'bold', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 2 }}>{i + 1}</div>
-                                <img src={prop.image_url} alt={prop.address} style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} />
+                                <img src={prop.image_url} alt={prop.address} style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} referrerPolicy="no-referrer" />
+
                                 <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>📸 View Photos</div>
                               </div>
                               <div style={{ padding: '8px 10px 10px' }}>
@@ -831,6 +833,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                   src={galleryModal.images[galleryModal.activeIdx]}
                   alt="Property"
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  referrerPolicy="no-referrer"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 {/* Prev Arrow */}
@@ -862,6 +865,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                     alt={`Photo ${ti + 1}`}
                     onClick={() => setGalleryModal(prev => ({ ...prev, activeIdx: ti }))}
                     style={{ width: '60px', height: '45px', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', flexShrink: 0, border: ti === galleryModal.activeIdx ? '2px solid #10b981' : '2px solid transparent', opacity: ti === galleryModal.activeIdx ? 1 : 0.6, transition: 'opacity 0.2s, border 0.2s' }}
+                    referrerPolicy="no-referrer"
                     onError={(e) => { e.target.parentElement.removeChild(e.target); }}
                   />
                 ))}
