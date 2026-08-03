@@ -625,27 +625,26 @@ CRITICAL RULES:
         });
       }
 
-      // Filter by bedrooms
-      if (bedsMatch > 0) {
-        const bFiltered = allCarouselProps.filter(p => parseInt(p.bedrooms) >= bedsMatch);
-        if (bFiltered.length > 0) allCarouselProps = bFiltered;
-      }
+      // ── STEP 1: Extract bedrooms & bathrooms from chat history ──────────
+      const lcChat = fullChatText.toLowerCase();
+      const bathsMatch = lcChat.match(/(\d+)\s*(?:bath|bathroom|baths)/);
+      const bathsNeeded = bathsMatch ? parseInt(bathsMatch[1]) : 0;
 
-      // Filter by budget from chat history
-      const budgetMatchCarousel = fullChatText.match(/\$([\d,]+)/) || fullChatText.match(/(\d{3,}),?(\d{3})/);
-      if (budgetMatchCarousel) {
-        const raw = budgetMatchCarousel[0].replace(/[^0-9]/g, '');
-        const maxBudget = parseInt(raw);
-        if (maxBudget > 10000) {
-          const withinBudget = allCarouselProps.filter(item => {
-            const priceNum = parseInt(String(item.price || '').replace(/[^0-9]/g, ''));
-            return priceNum > 0 && priceNum <= maxBudget;
-          });
-          if (withinBudget.length > 0) allCarouselProps = withinBudget;
-        }
+      // ── STEP 2: Extract budget (supports $700k, $700,000, 4m, $4.5m etc.) ─
+      let maxBudget = 0;
+      const budgetMillionMatch = fullChatText.match(/\$?([\d.]+)\s*m(?:illion)?/i);
+      const budgetKMatch = fullChatText.match(/\$?([\d.]+)\s*k\b/i);
+      const budgetPlainMatch = fullChatText.match(/\$\s*([\d,]+)/);
+      if (budgetMillionMatch) {
+        maxBudget = Math.round(parseFloat(budgetMillionMatch[1]) * 1_000_000);
+      } else if (budgetKMatch) {
+        maxBudget = Math.round(parseFloat(budgetKMatch[1]) * 1_000);
+      } else if (budgetPlainMatch) {
+        maxBudget = parseInt(budgetPlainMatch[1].replace(/,/g, ''));
       }
+      console.log("Parsed maxBudget:", maxBudget, "| bedsMatch:", bedsMatch, "| bathsNeeded:", bathsNeeded);
 
-      // Strict city filter
+      // ── STEP 3: City strict filter ──────────────────────────────────────
       if (cityMatch) {
         const strictCity = allCarouselProps.filter(p =>
           String(p.city || '').toLowerCase().includes(cityMatch.toLowerCase())
@@ -653,9 +652,56 @@ CRITICAL RULES:
         if (strictCity.length > 0) allCarouselProps = strictCity;
       }
 
-      // Normalize to expected format (Limit to 4 most relevant)
-      if (allCarouselProps.length > 0) {
-        propertiesList = allCarouselProps.slice(0, 4).map(p => ({
+      // ── STEP 4: Bedroom filter ──────────────────────────────────────────
+      if (bedsMatch > 0) {
+        const bFiltered = allCarouselProps.filter(p => parseInt(p.bedrooms) >= bedsMatch);
+        if (bFiltered.length > 0) allCarouselProps = bFiltered;
+      }
+
+      // ── STEP 5: Bathroom filter ─────────────────────────────────────────
+      if (bathsNeeded > 0) {
+        const bathFiltered = allCarouselProps.filter(p => parseInt(p.bathrooms) >= bathsNeeded);
+        if (bathFiltered.length > 0) allCarouselProps = bathFiltered;
+      }
+
+      // ── STEP 6: Smart Budget Filter (exact → +1.5% buffer → professional sorry) ──
+      const NEEDS_BUDGET_FILTER = maxBudget > 10000;
+      let finalProps = [];
+
+      if (NEEDS_BUDGET_FILTER) {
+        // Pass 1: Exact budget
+        const exactFit = allCarouselProps.filter(item => {
+          const priceNum = parseInt(String(item.price || '').replace(/[^0-9]/g, ''));
+          return priceNum > 0 && priceNum <= maxBudget;
+        });
+
+        if (exactFit.length >= 1) {
+          finalProps = exactFit.slice(0, 4);
+          console.log("Pass 1 (exact budget) found:", finalProps.length);
+        } else {
+          // Pass 2: Allow up to 1.5% overflow
+          const buffer = Math.round(maxBudget * 0.015);
+          const slightOverBudget = allCarouselProps.filter(item => {
+            const priceNum = parseInt(String(item.price || '').replace(/[^0-9]/g, ''));
+            return priceNum > 0 && priceNum <= maxBudget + buffer;
+          });
+
+          if (slightOverBudget.length >= 1) {
+            finalProps = slightOverBudget.slice(0, 4);
+            console.log("Pass 2 (+1.5% buffer) found:", finalProps.length);
+          } else {
+            finalProps = [];
+            console.log("No properties found within budget range, sending professional sorry.");
+          }
+        }
+      } else {
+        // No budget mentioned — just show top 4 by city + beds + baths
+        finalProps = allCarouselProps.slice(0, 4);
+      }
+
+      // ── STEP 7: Normalize and return ──────────────────────────────────
+      if (finalProps.length > 0) {
+        propertiesList = finalProps.map(p => ({
           mls_number: p.mls_number || p.mlsNumber || '',
           price: p.price || 'Contact for Price',
           address: p.address || '',
@@ -668,6 +714,8 @@ CRITICAL RULES:
           image_url: (p.images && p.images[0]) || '',
           url: p.url || ''
         }));
+      } else if (NEEDS_BUDGET_FILTER) {
+        replyText = `I'm sorry, but we currently don't have any listings that match your criteria — ${bedsMatch > 0 ? `${bedsMatch} bedrooms` : ''}${bathsNeeded > 0 ? `, ${bathsNeeded} bathrooms` : ''} in ${cityMatch || 'your area'} within a budget of $${maxBudget.toLocaleString()}.\n\nWould you like to explore properties with a slightly higher budget, a different city, or adjusted requirements? I'd be happy to help you find the perfect match! 🏡`;
       }
       console.log("Final propertiesList length:", propertiesList?.length || 0);
     }
