@@ -39,23 +39,39 @@ async function getMatchingProperties(intent, beds, maxBudget) {
 
       if (statusFilter) query = query.eq('listing_status', statusFilter);
       if (beds && beds > 0) query = query.eq('bedrooms', beds);
-      if (budgetLimit && budgetLimit > 0) query = query.lte('price_amount', budgetLimit);
+      if (budgetLimit && budgetLimit > 0) query = query.eq('price_amount', budgetLimit);
       
       return query;
     };
 
-    // Try exact or under budget first
+    // Try EXACT budget first
     let { data, error } = await buildQuery(maxBudget);
 
-    // If no results, try 1.5x the budget
+    // If no results, try 1.5% increased budget
     if (!data || data.length === 0) {
-      const expandedBudget = maxBudget ? maxBudget * 1.5 : null;
-      const res = await buildQuery(expandedBudget);
+      const expandedBudget = maxBudget ? maxBudget + (maxBudget * 0.015) : null;
+      let query = supabase
+        .from('morton_grove_properties')
+        .select('listing_status, home_type, address_full, price_amount, price_formatted, bedrooms, bathrooms, main_image, property_url')
+        .not('main_image', 'is', null)
+        .not('property_url', 'is', null)
+        .limit(4);
+
+      if (statusFilter) query = query.eq('listing_status', statusFilter);
+      if (beds && beds > 0) query = query.eq('bedrooms', beds);
+      if (expandedBudget && expandedBudget > 0) {
+          // Find properties between exact budget and budget + 1.5%
+          query = query.gt('price_amount', maxBudget).lte('price_amount', expandedBudget);
+      }
+      
+      const res = await query;
       data = res.data;
       error = res.error;
     }
 
-    if (error || !data || data.length === 0) return null;
+    if (error || !data || data.length === 0) {
+        return "I'm sorry, but we currently don't have any properties that perfectly match your specific requirements and budget. However, our inventory updates frequently! If you are open to slightly adjusting your budget, bedroom requirements, or preferred locations, I can show you some excellent alternatives.";
+    }
 
     const cards = data.map(p => {
       const status = p.listing_status === 'forRent' ? '🔵 For Rent' : '🟢 For Sale';
