@@ -44,6 +44,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [showCalendly, setShowCalendly] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
   const [galleryModal, setGalleryModal] = useState(null); // { property, images, activeIdx }
+  const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
+  const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
 
   // ── Closing flow state ─────────────────────────────────────────
   // Tracks which step of the closing conversation we're in
@@ -88,7 +90,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     botId: null,
     botName: 'RealtyPropFlow AI',
     botAvatar: 'AI',
-    primaryColor: '#C9A227',
+    primaryColor: '#1E6FD9',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
 
@@ -549,6 +551,15 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
            return '';
         });
         
+        // Parse [MULTI_BUTTON: text] tags
+        const multiButtons = [];
+        const multiPattern = /\[MULTI_BUTTON:\s*(.*?)\]/g;
+        let multiMatch;
+        while ((multiMatch = multiPattern.exec(text)) !== null) {
+          multiButtons.push(multiMatch[1].trim());
+        }
+        text = text.replace(/\[MULTI_BUTTON:\s*.*?\]/g, '');
+
         // Parse [START_LEAD_CAPTURE]
         if (text.includes('[START_LEAD_CAPTURE]')) {
            startLead = true;
@@ -560,11 +571,21 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         if (buttons.length > 0) {
            newModelMsg.quickReplies = buttons;
         }
+        if (multiButtons.length > 0) {
+          newModelMsg.multiSelectOptions = multiButtons;
+        }
         if (data.properties && data.properties.length > 0) {
            newModelMsg.properties = data.properties;
         }
 
         setMessages(prev => [...prev, newModelMsg]);
+        // Activate multi-select if needed
+        if (multiButtons.length > 0) {
+          setMultiSelectOptions(multiButtons);
+          setMultiSelected([]);
+        } else {
+          setMultiSelectOptions([]);
+        }
         
         if (startLead && !leadCaptured && leadStep === null && closingStep === null) {
           setTimeout(() => {
@@ -819,16 +840,35 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
             </div>
           )}
 
-          {!showCalendly && messages.length > 1 && (
-            <div style={{ padding: '6px 12px', borderTop: '1px solid #F3F4F6' }}>
+          {/* Multi-select buttons (e.g., for features like Garage, Pool, Basement) */}
+          {multiSelectOptions.length > 0 && (
+            <div className={styles.quickReplies} style={{ flexWrap: 'wrap' }}>
+              {multiSelectOptions.map((opt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setMultiSelected(prev =>
+                    prev.includes(opt) ? prev.filter(x => x !== opt) : [...prev, opt]
+                  )}
+                  className={`${styles.multiBtn} ${multiSelected.includes(opt) ? styles.multiBtnActive : ''}`}
+                >
+                  {multiSelected.includes(opt) ? '✓ ' : ''}{opt}
+                </button>
+              ))}
               <button
-                onClick={() => setShowCalendly(true)}
-                style={{ width: '100%', padding: '9px', backgroundColor: '#FF7B2C', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}
+                className={styles.multiSubmitBtn}
+                onClick={() => {
+                  const selection = multiSelected.length > 0 ? multiSelected.join(', ') : 'None';
+                  setMultiSelectOptions([]);
+                  setMultiSelected([]);
+                  handleSend(selection);
+                }}
               >
-                📅 Book a Free Discovery Call
+                ✓ Confirm Selection
               </button>
             </div>
           )}
+
+
 
           {leadStep && (
             <div style={{
@@ -854,17 +894,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && activeQuickReplies.length === 0) handleSend(); }}
-              placeholder={activeQuickReplies.length > 0 ? 'Please select an option above...' : getPlaceholder()}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+              placeholder={getPlaceholder()}
               className={styles.input}
-              disabled={activeQuickReplies.length > 0}
-              style={{ opacity: activeQuickReplies.length > 0 ? 0.6 : 1, cursor: activeQuickReplies.length > 0 ? 'not-allowed' : 'text' }}
             />
             <button 
               onClick={() => handleSend()} 
               className={styles.sendBtn}
-              disabled={activeQuickReplies.length > 0}
-              style={{ opacity: activeQuickReplies.length > 0 ? 0.5 : 1, cursor: activeQuickReplies.length > 0 ? 'not-allowed' : 'pointer' }}
             >
               Send
             </button>
