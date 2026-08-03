@@ -1,16 +1,24 @@
+/* ═══════════════════════════════════════════════════════════
+   CHATBOT — FULLY RESPONSIVE (Mobile / Tablet / Desktop)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Base container (floating anchor) ─────────────────────── */
 .chatbotContainer {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 99999;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* ══════════════════════════════════════════════
+   FLOATING BUTTON (closed state)
+══════════════════════════════════════════════ */
 .floatingBtn {
   background: linear-gradient(135deg, #1E6FD9, #3B91FF);
   color: #ffffff;
   border: none;
-  padding: 14px 22px;
+  padding: 14px 24px;
   border-radius: 50px;
   font-size: 15px;
   font-weight: 700;
@@ -19,65 +27,40 @@
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   letter-spacing: -0.01em;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .floatingBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30,111,217,0.55);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(30,111,217,0.55);
 }
 
-/* ── Mobile circular icon button ──────────────────────────── */
+/* Mobile circular icon-only button */
 .floatingBtnMobile {
-  width: 62px;
-  height: 62px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   padding: 0;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
+  font-size: 26px;
   justify-content: center;
   box-shadow: 0 6px 24px rgba(30,111,217,0.55), 0 2px 10px rgba(0,0,0,0.25);
 }
 
-/* ── Mobile container ──────────────────────────────────────── */
-/* Closed state: bottom-right circular button */
-.mobileContainer {
-  bottom: 20px;
-  right: 16px;
-}
-
-/* Mobile chat window — compact bottom panel */
-.mobileContainer .chatWindow {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 3vw !important;
-  right: 3vw !important;
-  width: 94vw !important;
-  height: 480px !important;
-  border-radius: 20px 20px 0 0 !important;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.25) !important;
-  overflow: hidden !important;
-}
-
-/* ── Tablet container ─────────────────────────────────────── */
-.tabletContainer {
-  bottom: 20px;
-  right: 20px;
-}
-
-/* Tablet chat window */
-.tabletContainer .chatWindow {
-  width: 360px;
-  height: 500px;
-  border-radius: 18px;
-}
-
+/* ══════════════════════════════════════════════
+   CHAT WINDOW — DESKTOP default
+   (bottom-right corner popup, 380×540)
+══════════════════════════════════════════════ */
 .chatWindow {
-  width: 340px;
-  height: 460px;
+  position: fixed;
+  bottom: 90px;
+  right: 24px;
+  width: 380px;
+  height: 560px;
   background-color: #FFFFFF;
   border-radius: 22px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.1);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18), 0 4px 20px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -86,16 +69,19 @@
   min-height: 0;
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Main UI chatbot (chatbot-flow.vercel.app) gets extra height ─── */
+/* Main UI chatbot (global embed) gets extra height */
 .globalChatWindow {
-  height: 570px;
+  height: 600px;
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+/* ══════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════ */
 .header {
   background: linear-gradient(135deg, var(--primary, #1E6FD9) 0%, #3B91FF 100%);
   color: #ffffff;
@@ -104,6 +90,7 @@
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  flex-shrink: 0;
 }
 
 .headerInfo {
@@ -115,77 +102,85 @@
 .avatar {
   background-color: white;
   color: var(--primary, #1E6FD9);
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 .title {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 15px;
+  letter-spacing: -0.01em;
 }
 
 .status {
-  font-size: 12px;
-  color: #1AB8A0;
+  font-size: 11px;
+  opacity: 0.9;
+  margin-top: 1px;
 }
 
 .closeBtn {
-  background: rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.2);
   border: none;
-  color: inherit;
+  color: white;
   font-size: 16px;
   cursor: pointer;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .closeBtn:hover {
-  background: rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.35);
 }
 
+/* ══════════════════════════════════════════════
+   MESSAGES AREA
+══════════════════════════════════════════════ */
 .messagesArea {
   flex: 1;
   min-height: 0;
-  padding: 20px;
+  padding: 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
+/* ── Message bubbles ──────────────────────── */
 .message {
-  max-width: 80%;
+  max-width: 82%;
   padding: 12px 16px;
   border-radius: 18px;
   font-size: 14px;
   line-height: 1.6;
   word-wrap: break-word;
   white-space: pre-wrap;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .modelMsg {
   background-color: #F1F5F9;
   color: #1F2937;
   align-self: flex-start;
-  border-radius: 18px;
   border-bottom-left-radius: 4px;
   border: 1px solid #E5E7EB;
-  margin-left: 0;
 }
 
-.modelMsg p, .modelMsg h1, .modelMsg h2, .modelMsg h3, .modelMsg li, .modelMsg strong, .modelMsg span {
+.modelMsg p, .modelMsg h1, .modelMsg h2, .modelMsg h3,
+.modelMsg li, .modelMsg strong, .modelMsg span {
   color: #111827 !important;
 }
 
@@ -199,18 +194,22 @@
 }
 
 .userMsg {
-  background-color: var(--primary, #1E6FD9);
+  background: linear-gradient(135deg, var(--primary, #1E6FD9), #3B91FF);
   color: white;
   align-self: flex-end;
   border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(30,111,217,0.25);
 }
 
+/* ══════════════════════════════════════════════
+   QUICK REPLY BUTTONS
+══════════════════════════════════════════════ */
 .quickReplies {
-  padding: 6px 16px 14px 20px;
+  padding: 4px 14px 12px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: flex-start;
+  flex-shrink: 0;
 }
 
 .qrBtn {
@@ -218,73 +217,85 @@
   border: none;
   color: white;
   padding: 10px 18px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.qrBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
-  filter: brightness(1.05);
-}
-
-/* ── Multi-select toggle buttons ───────────────────────────── */
-.multiBtn {
-  background: #F0F7FF;
-  border: 2px solid #1E6FD9;
-  color: #1E6FD9;
-  padding: 10px 18px;
-  border-radius: 20px;
+  border-radius: 22px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(30,111,217,0.25);
+  line-height: 1.3;
+}
+
+.qrBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(30,111,217,0.35);
+  filter: brightness(1.08);
+}
+
+.qrBtn:active {
+  transform: translateY(0);
+}
+
+/* ══════════════════════════════════════════════
+   MULTI-SELECT BUTTONS (features step)
+══════════════════════════════════════════════ */
+.multiBtn {
+  background: #F0F7FF;
+  border: 2px solid var(--primary, #1E6FD9);
+  color: var(--primary, #1E6FD9);
+  padding: 10px 18px;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
 }
 
 .multiBtn:hover {
   background: #DBEAFE;
+  transform: translateY(-1px);
 }
 
 .multiBtnActive {
-  background: linear-gradient(135deg, #1E6FD9, #3B91FF);
-  border-color: #1E6FD9;
+  background: linear-gradient(135deg, var(--primary, #1E6FD9), #3B91FF);
+  border-color: transparent;
   color: white;
+  box-shadow: 0 3px 10px rgba(30,111,217,0.25);
 }
 
 .multiSubmitBtn {
-  margin-top: 8px;
   width: 100%;
-  padding: 10px;
-  background: linear-gradient(135deg, #1E6FD9, #3B91FF);
+  margin-top: 4px;
+  padding: 11px;
+  background: linear-gradient(135deg, var(--primary, #1E6FD9), #3B91FF);
   color: white;
   border: none;
-  border-radius: 20px;
+  border-radius: 22px;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(30,111,217,0.3);
+  box-shadow: 0 4px 12px rgba(30,111,217,0.3);
   transition: all 0.2s ease;
 }
 
 .multiSubmitBtn:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.08);
   transform: translateY(-1px);
 }
 
+/* ══════════════════════════════════════════════
+   INPUT AREA
+══════════════════════════════════════════════ */
 .inputArea {
-  padding: 12px 14px;
+  padding: 10px 14px 12px;
   background-color: white;
   border-top: 1px solid rgba(0,0,0,0.07);
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .input {
@@ -297,19 +308,20 @@
   background-color: #F9FAFB;
   transition: all 0.2s ease;
   color: #111827;
+  min-width: 0;
 }
 
 .input:focus {
-  border-color: var(--primary, #C9A227);
+  border-color: var(--primary, #1E6FD9);
   background-color: white;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 3px rgba(30,111,217,0.12);
 }
 
 .sendBtn {
   background: linear-gradient(135deg, var(--primary, #1E6FD9), #3B91FF);
   color: white;
   border: none;
-  padding: 0 18px;
+  padding: 0 20px;
   height: 42px;
   border-radius: 24px;
   font-weight: 700;
@@ -317,6 +329,8 @@
   font-size: 14px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(30,111,217,0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sendBtn:hover {
@@ -324,17 +338,25 @@
   box-shadow: 0 4px 12px rgba(30,111,217,0.45);
 }
 
+/* ══════════════════════════════════════════════
+   TYPING INDICATOR
+══════════════════════════════════════════════ */
 .typing {
   display: flex;
   gap: 4px;
-  padding: 16px;
+  padding: 14px 16px;
   align-items: center;
+  background: #F1F5F9;
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  align-self: flex-start;
+  max-width: 70px;
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
-  background-color: #6B6560;
+  width: 7px;
+  height: 7px;
+  background-color: #9CA3AF;
   border-radius: 50%;
   animation: bounce 1.4s infinite ease-in-out both;
 }
@@ -343,127 +365,170 @@
 .dot:nth-child(2) { animation-delay: -0.16s; }
 
 @keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+  0%, 80%, 100% { transform: scale(0.4); opacity: 0.5; }
+  40%           { transform: scale(1);   opacity: 1; }
 }
 
-/* ── RESPONSIVE: Tablet (max 768px) ──────────────────────── */
-@media (max-width: 768px) {
-  /* Container stays fixed at bottom-right, never stretches */
+/* ══════════════════════════════════════════════
+   DESKTOP EMBED (forced desktop inside iframe)
+══════════════════════════════════════════════ */
+.forceDesktop .chatWindow {
+  position: relative !important;
+  bottom: auto !important;
+  right: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+
+
+/* ══════════════════════════════════════════════
+   TABLET  (≤ 1024px)
+   Medium side-panel style
+══════════════════════════════════════════════ */
+@media (max-width: 1024px) and (min-width: 601px) {
   .chatbotContainer:not(.forceDesktop) {
     bottom: 20px;
-    right: 16px;
-    left: auto;
-    width: auto;
+    right: 20px;
   }
 
-  .chatbotContainer:not(.forceDesktop) .chatWindow {
-    position: fixed;
-    bottom: 80px;
-    right: 16px;
-    left: 16px;
-    width: auto;
-    height: 75vh;
-    max-height: 580px;
-    border-radius: 18px;
+  .chatWindow {
+    bottom: 84px;
+    right: 20px;
+    width: 360px;
+    height: 520px;
+    border-radius: 20px;
   }
 
-  .floatingBtn {
-    font-size: 14px;
-    padding: 12px 18px;
-  }
-
-  .message {
-    font-size: 14px;
-    padding: 12px 15px;
-  }
-
-  .messagesArea {
-    padding: 14px;
-    gap: 10px;
-  }
-
-  .quickReplies {
-    padding: 0 14px 10px;
-    gap: 8px;
+  .globalChatWindow {
+    height: 560px;
   }
 
   .qrBtn {
-    font-size: 14px;
-    padding: 10px 16px;
+    font-size: 13px;
+    padding: 9px 16px;
   }
 }
 
-/* ── RESPONSIVE: Mobile (max 480px) ──────────────────────── */
-@media (max-width: 480px) {
-  /* Button always stays visible bottom-right — never hides */
+
+/* ══════════════════════════════════════════════
+   MOBILE  (≤ 600px)
+   Full-screen overlay sliding up from bottom
+══════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* Container: floating button stays bottom-right */
   .chatbotContainer:not(.forceDesktop) {
-    bottom: 20px;
+    bottom: 16px;
     right: 16px;
     left: auto;
     width: auto;
   }
 
-  /* Chat window opens above the button, full-width */
-  .chatbotContainer:not(.forceDesktop) .chatWindow {
-    position: fixed;
-    bottom: 80px;
-    right: 0;
-    left: 0;
-    width: 100vw;
-    height: 85vh;
-    border-radius: 20px 20px 0 0;
+  /* Chat window: full-screen from the very bottom */
+  .chatbotContainer:not(.forceDesktop) .chatWindow,
+  .chatbotContainer:not(.forceDesktop) .globalChatWindow {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    animation: mobileSlideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  .floatingBtn {
-    font-size: 14px;
-    padding: 13px 20px;
-    white-space: nowrap;
+  @keyframes mobileSlideUp {
+    from { opacity: 0; transform: translateY(100%); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* Larger avatar + title in header on mobile */
   .header {
-    padding: 16px 18px;
+    padding: 18px 16px 14px;
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
   }
 
+  .avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 17px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .status {
+    font-size: 12px;
+  }
+
+  .closeBtn {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  /* More breathing room in messages */
   .messagesArea {
-    padding: 12px;
-    gap: 8px;
+    padding: 14px 14px;
+    gap: 10px;
   }
 
   .message {
-    max-width: 92%;
-    font-size: 14px;
-    padding: 11px 14px;
+    max-width: 88%;
+    font-size: 15px;
+    padding: 12px 16px;
+    line-height: 1.65;
   }
 
-  .inputArea {
-    padding: 10px 12px;
-    padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 12px);
-    margin-bottom: 6px;
-  }
-
-  .input {
-    font-size: 16px; /* prevents iOS zoom on focus */
-    padding: 10px 14px;
-  }
-
-  .sendBtn {
-    padding: 0 16px;
-    height: 42px;
-    font-size: 14px;
-  }
-
+  /* Buttons: full-width stacked for easy tapping */
   .quickReplies {
-    padding: 0 12px 10px;
-    gap: 8px;
+    padding: 4px 14px 10px;
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
   }
 
   .qrBtn {
     font-size: 15px;
-    padding: 12px 18px;
+    padding: 14px 20px;
     text-align: center;
     width: 100%;
+    border-radius: 14px;
+    white-space: normal;
+  }
+
+  .multiBtn {
+    font-size: 15px;
+    padding: 13px 18px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .multiSubmitBtn {
+    padding: 14px;
+    font-size: 15px;
+    border-radius: 14px;
+  }
+
+  /* Input area with safe-area support for iPhone home bar */
+  .inputArea {
+    padding: 10px 14px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+  }
+
+  .input {
+    font-size: 16px; /* prevents iOS auto-zoom */
+    padding: 12px 16px;
+    border-radius: 26px;
+  }
+
+  .sendBtn {
+    height: 46px;
+    padding: 0 20px;
+    font-size: 15px;
+    border-radius: 26px;
   }
 }
