@@ -568,6 +568,41 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
            text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
         }
 
+        // Parse [PROPERTY_CARD] blocks
+        const parsedProperties = [];
+        const cardRegex = /\[PROPERTY_CARD\]([\s\S]*?)\[\/PROPERTY_CARD\]/g;
+        text = text.replace(cardRegex, (match, cardContent) => {
+          const prop = {};
+          
+          const typeMatch = cardContent.match(/Type:\s*(.*)/);
+          if (typeMatch) prop.property_type = typeMatch[1].trim();
+          
+          const addressMatch = cardContent.match(/Address:\s*(.*)/);
+          if (addressMatch) {
+             prop.address = addressMatch[1].trim();
+             const parts = prop.address.split(',');
+             if (parts.length > 1) prop.city = parts[1].trim();
+          }
+          
+          const priceMatch = cardContent.match(/Price:\s*(.*)/);
+          if (priceMatch) prop.price = priceMatch[1].trim();
+          
+          const bedsMatch = cardContent.match(/Beds:\s*(.*?)\s*\|/);
+          if (bedsMatch) prop.bedrooms = bedsMatch[1].trim();
+          
+          const bathsMatch = cardContent.match(/Baths:\s*(.*)/);
+          if (bathsMatch) prop.bathrooms = bathsMatch[1].trim();
+          
+          const imageMatch = cardContent.match(/Image:\s*(.*)/);
+          if (imageMatch) prop.image_url = imageMatch[1].trim();
+          
+          const linkMatch = cardContent.match(/Link:\s*(.*)/);
+          if (linkMatch) prop.url = linkMatch[1].trim();
+          
+          parsedProperties.push(prop);
+          return ''; // Remove the text block from the message
+        });
+
         // The backend now parses the carousel tag and sends properties synchronously!
         const newModelMsg = { role: 'model', parts: [{ text: text.trim() }] };
         if (buttons.length > 0) {
@@ -576,8 +611,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         if (multiButtons.length > 0) {
           newModelMsg.multiSelectOptions = multiButtons;
         }
-        if (data.properties && data.properties.length > 0) {
-           newModelMsg.properties = data.properties;
+        
+        // Combine properties from backend data or parsed cards
+        const allProperties = [...(data.properties || []), ...parsedProperties];
+        if (allProperties.length > 0) {
+           newModelMsg.properties = allProperties;
         }
 
         setMessages(prev => [...prev, newModelMsg]);
