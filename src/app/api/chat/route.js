@@ -23,6 +23,47 @@ function getRelevantFaqs(userQuery) {
   return '';
 }
 
+// Search properties from Supabase
+async function getMatchingProperties(intent, beds, maxBudget) {
+  try {
+    // Normalize intent to DB value
+    const statusFilter = intent === 'rent' ? 'forRent' : intent === 'buy' ? 'forSale' : null;
+
+    let query = supabase
+      .from('morton_grove_properties')
+      .select('listing_status, home_type, address_full, price_amount, price_formatted, bedrooms, bathrooms, main_image, property_url')
+      .not('main_image', 'is', null)
+      .not('property_url', 'is', null)
+      .limit(3);
+
+    if (statusFilter) query = query.eq('listing_status', statusFilter);
+    if (beds && beds > 0) query = query.eq('bedrooms', beds);
+    if (maxBudget && maxBudget > 0) query = query.lte('price_amount', maxBudget);
+
+    const { data, error } = await query;
+
+    if (error || !data || data.length === 0) return null;
+
+    const cards = data.map(p => {
+      const status = p.listing_status === 'forRent' ? '🔵 For Rent' : '🟢 For Sale';
+      return `[PROPERTY_CARD]
+Status: ${status}
+Type: ${p.home_type || 'Property'}
+Address: ${p.address_full || 'Morton Grove, IL'}
+Price: ${p.price_formatted || 'Contact for price'}
+Beds: ${p.bedrooms || '?'} | Baths: ${p.bathrooms || '?'}
+Image: ${p.main_image}
+Link: ${p.property_url}
+[/PROPERTY_CARD]`;
+    });
+
+    return cards.join('\n\n');
+  } catch (e) {
+    console.error('Property search error:', e);
+    return null;
+  }
+}
+
 async function liveScrapeWebsite(url) {
   if (!url) return '';
   try {
@@ -415,8 +456,40 @@ export async function POST(req) {
       faqContext = getRelevantFaqs(userQuery);
     }
 
-    const knowledgeSection = (knowledge || faqContext)
-      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}`
+    // --- Morton Grove Property Matching ---
+    let propertyContext = '';
+    if (isRealEstate) {
+      // Detect intent from conversation
+      const fullText = fullChatText.toLowerCase();
+      let propIntent = null;
+      if (fullText.includes('rent') || fullText.includes('rental') || fullText.includes('apartment') || fullText.includes('lease')) propIntent = 'rent';
+      else if (fullText.includes('buy') || fullText.includes('purchase') || fullText.includes('for sale') || fullText.includes('buying')) propIntent = 'buy';
+
+      // Extract bedrooms from user message
+      const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
+      const propBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
+
+      // Extract budget from user message
+      const budgetMatch = fullText.match(/\$?([\d,]+)k?\s*(?:\/mo|per month|month|budget|max|under)?/);
+      let propBudget = 0;
+      if (budgetMatch) {
+        const raw = budgetMatch[1].replace(/,/g, '');
+        propBudget = raw.endsWith('k') ? parseInt(raw) * 1000 : parseInt(raw);
+        if (propBudget < 500) propBudget = propBudget * 1000; // handle "2k" style
+        if (propBudget > 50000 && propIntent === 'rent') propBudget = 0; // ignore sale prices for rent
+      }
+
+      // Only fetch if user seems to be in property search mode
+      if (propIntent) {
+        const matchedProperties = await getMatchingProperties(propIntent, propBeds, propBudget);
+        if (matchedProperties) {
+          propertyContext = `\n\nMORTON GROVE AVAILABLE PROPERTIES (Real listings from database. Show these as property cards with image, price, address, beds/baths and Zillow link):\n${matchedProperties}`;
+        }
+      }
+    }
+
+    const knowledgeSection = (knowledge || faqContext || propertyContext)
+      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${propertyContext}`
       : '';
 
     const qualifyingQuestions = isRealEstate
