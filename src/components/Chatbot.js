@@ -301,7 +301,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     setLeadStep(null);
     setMessages(prev => [...prev, {
       role: 'model',
-      parts: [{ text: `Thank you, ${name}! 🎉 Your details are saved. We can continue our chat now, what else would you like to know?` }]
+      parts: [{ text: `Thank you, ${name}! 🎉 Your information has been saved.\n\nIs there anything else I can do for you? We will talk to you soon.` }]
     }]);
   };
 
@@ -591,24 +591,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         
         if (startLead && !leadCaptured && leadStep === null && closingStep === null) {
           setTimeout(() => {
-            // Extract city from conversation for personalized message
-            let detectedCity = 'your preferred';
-            for (let i = 0; i < messages.length; i++) {
-              const m = messages[i];
-              if (m.role === 'user') {
-                const t = m.parts[0]?.text || '';
-                if (t.match(/milton|toronto|brampton|mississauga|oakville|hamilton|london/i)) {
-                  detectedCity = t.match(/milton|toronto|brampton|mississauga|oakville|hamilton|london/i)[0];
-                  break;
-                }
-              }
-            }
             setMessages(prev => [...prev, {
               role: 'model',
-              parts: [{ text: `Great, I have your requirements! There are many beautiful properties available in the ${detectedCity} area — let me have a look and come back to you. 🏡\n\nWould you like **Mr. Adnan Alvi** to call you back?` }],
-              quickReplies: ['✅ Yes, please call me', '❌ No, thank you']
+              parts: [{ text: `Great! I'd be happy to arrange a viewing for you. To get started, may I have your **full name** please?` }],
+              inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
             }]);
-            setClosingStep('ask_callback');
+            setLeadStep('name');
           }, 1500);
         }
       } else {
