@@ -205,32 +205,32 @@
    QUICK REPLY BUTTONS
 ══════════════════════════════════════════════ */
 .quickReplies {
-  padding: 4px 14px 12px;
+  padding: 4px 16px 12px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .qrBtn {
-  background: var(--primary, #1E6FD9);
-  border: none;
-  color: white;
-  padding: 10px 18px;
-  border-radius: 22px;
+  background: white;
+  border: 1.5px solid var(--primary, #1E6FD9);
+  color: var(--primary, #1E6FD9);
+  padding: 9px 18px;
+  border-radius: 24px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  box-shadow: 0 3px 10px rgba(30,111,217,0.25);
-  line-height: 1.3;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 
 .qrBtn:hover {
+  background: var(--primary, #1E6FD9);
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(30,111,217,0.35);
-  filter: brightness(1.08);
+  box-shadow: 0 4px 12px rgba(30,111,217,0.2);
 }
 
 .qrBtn:active {
@@ -485,18 +485,18 @@
 
   /* Buttons: full-width stacked for easy tapping */
   .quickReplies {
-    padding: 4px 14px 10px;
+    padding: 8px 14px 12px;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
 
   .qrBtn {
-    font-size: 15px;
-    padding: 14px 20px;
+    font-size: 14px;
+    padding: 12px 18px;
     text-align: center;
     width: 100%;
-    border-radius: 14px;
+    border-radius: 16px;
     white-space: normal;
   }
 
