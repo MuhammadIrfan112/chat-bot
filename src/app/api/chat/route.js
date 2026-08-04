@@ -574,7 +574,13 @@ export async function POST(req) {
       const detectedCity = cityMatch ? cityMatch[1].trim().replace(/\s+/g, ' ') : null;
       const detectedState = cityMatch ? cityMatch[2].toUpperCase() : null;
 
-      if (propIntent) {
+      // Only trigger property search after user has provided city + budget + beds
+      // AND has confirmed the summary with "yes"
+      const lastUserMsg = userQuery.toLowerCase().trim();
+      const hasConfirmedSummary = (lastUserMsg === 'yes' || lastUserMsg === 'yes.' || lastUserMsg === 'yeah' || lastUserMsg === 'correct' || lastUserMsg === 'that\'s correct');
+      const hasEnoughInfo = propIntent && detectedCity && propBeds > 0 && propBudget > 0;
+
+      if (hasEnoughInfo && hasConfirmedSummary) {
         const cityLower = (detectedCity || '').toLowerCase().trim();
         const isMortonGrove = cityLower === 'morton grove' || cityLower === '';
 
