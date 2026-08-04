@@ -624,7 +624,7 @@ When user clicks any button, give ONLY 2-3 short bullet points. Do NOT write ess
       }
     }
 
-    const knowledgeSection = (knowledge || faqContext || propertyContext)
+    const knowledgeSection = (knowledge || faqContext || cityEngagementContext || propertyContext)
       ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${cityEngagementContext}${propertyContext}`
       : '';
 
@@ -696,7 +696,7 @@ Once all information is collected, you MUST generate a summary and ask for confi
 Is this information correct?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 11. Show Properties:
+Step 11. Show Properties ONLY:
 If the user confirms the information is correct (e.g. they select "Yes"), reply EXACTLY with this phrasing and the hidden tag on a new line:
 
 "Great! Let me share a few listings with you."
@@ -707,12 +707,8 @@ CRITICAL ANTI-HALLUCINATION RULE: DO NOT WRITE OUT PROPERTY DETAILS, PRICES, OR 
 
 If the user says "No", ask them what information they would like to correct and update your understanding.
 
-Step 12. Ask for interest (LEAD CAPTURE TRIGGER):
-After outputting the carousel tag, wait for the user to respond. Do NOT ask "Would you like me to show a few more properties". Just say:
-"Let me know if you'd like to arrange a viewing for any of these!"
-[BUTTON: Arrange to see a property]
-
-If they choose "Arrange to see a property" or say Yes to arranging a viewing, reply ONLY with exactly this hidden tag:
+Step 12. Lead Capture:
+If the user specifically asks to arrange a viewing, reply ONLY with exactly this hidden tag:
 [START_LEAD_CAPTURE]
 
 DO NOT ask for their name, phone, or email manually. The [START_LEAD_CAPTURE] tag will automatically trigger the UI to collect their Name, Phone, Email, and Time Preference.
