@@ -574,18 +574,22 @@ export async function POST(req) {
       const detectedCity = cityMatch ? cityMatch[1].trim().replace(/\s+/g, ' ') : null;
       const detectedState = cityMatch ? cityMatch[2].toUpperCase() : null;
 
-
-
       if (propIntent) {
-        // Step 1: Try Supabase first
-        let matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
+        const cityLower = (detectedCity || '').toLowerCase().trim();
+        const isMortonGrove = cityLower === 'morton grove' || cityLower === '';
+
+        let matchedProperties = null;
+        if (isMortonGrove) {
+          // Only query local DB if city is Morton Grove (or not set)
+          matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
+        }
 
         if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
-        } else if (detectedCity) {
-          // Not in DB — start Apify run asynchronously (returns in ~2 seconds)
-          console.log(`[Route] No DB results for ${detectedCity}, ${detectedState} — starting Apify run...`);
+        } else if (detectedCity && !isMortonGrove) {
+          // Different city — skip DB entirely, go straight to Apify
+          console.log(`[Route] City is ${detectedCity} (not Morton Grove) — starting Apify run...`);
           apifyRunId = await startApifyRun(detectedCity, detectedState || 'IL', propIntent);
 
           if (apifyRunId) {
@@ -599,6 +603,13 @@ Then show these clickable topic buttons:
 When user clicks any button, give ONLY 2-3 short bullet points. Do NOT write essays. The property results will appear automatically below when ready.`;
           } else {
             propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
+          }
+        } else if (detectedCity && isMortonGrove) {
+          // Morton Grove city but no DB match — try Apify
+          console.log(`[Route] No DB results for Morton Grove — starting Apify run...`);
+          apifyRunId = await startApifyRun(detectedCity, detectedState || 'IL', propIntent);
+          if (apifyRunId) {
+            cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Searching for live listings in ${detectedCity}. While results load, show city buttons:\n[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >]`;
           }
         } else if (matchedProperties) {
           // Fallback message (no city detected)
@@ -740,15 +751,11 @@ Once all information is collected, you MUST generate a summary and ask for confi
 "To summarize, you're looking for a [Bedrooms]-bedroom [Property Type] in [City] with a budget of [Budget], parking: [Yes/No], pets: [Yes/No]. Is this correct?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 11. Show Properties & Appointment:
+Step 11. Show Properties ONLY:
 CRITICAL RULE: DO NOT show properties until the user confirms the summary in Step 10.
 If the user says "No", ask them what they would like to change.
-If the user confirms (says "Yes"), FIRST display the matching properties from your RELEVANT BUSINESS KNOWLEDGE (ensure you ONLY show the requested Property Type, e.g. if they want an Apartment, do NOT show a Condo). Then ask:
-"Would you like to schedule a viewing or speak with an agent about any of these properties?"
-[BUTTON: Schedule a viewing] [BUTTON: Speak with an agent] [BUTTON: Show more listings]
-
-If they choose "Schedule a viewing" or "Speak with an agent", reply ONLY with exactly this hidden tag:
-[START_LEAD_CAPTURE]
+If the user confirms (says "Yes"), IMMEDIATELY show the matching properties from your RELEVANT BUSINESS KNOWLEDGE. Do NOT ask any follow-up questions. Do NOT say "Would you like to schedule" or anything else. ONLY show the property cards. Ensure you ONLY show the exact requested Property Type (e.g. if they asked for Apartment, do NOT show Condo or Townhouse).
+After properties are shown, wait for the user to ask a follow-up or take action.
 
 
 PATH 3 — SELLING OR HOME VALUE:
