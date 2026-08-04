@@ -600,13 +600,14 @@ export async function POST(req) {
 
           if (apifyRunId) {
             // Tell AI to show city engagement while Apify processes in background
-            cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: You are now searching for properties in ${detectedCity}, ${detectedState || ''}. While the property search runs in the background, start your response with:
-"🔍 Searching for properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
+            cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 11 (ACTIVE BACKGROUND SEARCH):
+You are currently searching for properties in ${detectedCity}, ${detectedState || ''}. 
+Because the search is running in the background, you MUST override Step 11. DO NOT show any property cards yet.
+Instead, reply EXACTLY with this:
+"🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
 
-Then show these clickable topic buttons:
-[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]
-
-When user clicks any button, give ONLY 2-3 short bullet points. Do NOT write essays. The property results will appear automatically below when ready.`;
+Then show these clickable topic buttons on a new line:
+[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]`;
           } else {
             propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
           }
@@ -697,13 +698,7 @@ Is this information correct?"
 [BUTTON: Yes] [BUTTON: No]
 
 Step 11. Show Properties ONLY:
-If the user confirms the information is correct (e.g. they select "Yes"), reply EXACTLY with this phrasing and the hidden tag on a new line:
-
-"Great! Let me share a few listings with you."
-[SHOW_PROPERTIES_CAROUSEL:City:Beds]
-
-(Replace City with the requested city name, and Beds with the requested bedroom count number. Example: [SHOW_PROPERTIES_CAROUSEL:Milton:3])
-CRITICAL ANTI-HALLUCINATION RULE: DO NOT WRITE OUT PROPERTY DETAILS, PRICES, OR DESCRIPTIONS MANUALLY IN TEXT. EVER. ONLY USE THE TAG. THE SYSTEM WILL RENDER THE CAROUSEL FOR YOU.
+If the user confirms the information is correct (e.g. they select "Yes"), IMMEDIATELY show the matching properties from your RELEVANT BUSINESS KNOWLEDGE. Do NOT ask any follow-up questions. ONLY show the property cards. Ensure you ONLY show the exact requested Property Type.
 
 If the user says "No", ask them what information they would like to correct and update your understanding.
 
