@@ -108,9 +108,9 @@ async function fetchApifyProperties(city, state, intent, beds, maxBudget) {
 
     console.log(`[Apify] Live scraping: ${searchUrl}`);
 
-    // Call Apify synchronously — wait up to 90 seconds
+    // Call Apify synchronously — wait up to 45 seconds (safe within Vercel 60s limit)
     const runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}&waitForFinish=90`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}&waitForFinish=45`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

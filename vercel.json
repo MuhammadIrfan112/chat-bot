@@ -1,1 +1,8 @@
-{"crons":[{"path":"/api/cron/scrape-cities","schedule":"0 2 * * *"}]}
+{
+  "functions": {
+    "src/app/api/chat/route.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [{"path":"/api/cron/scrape-cities","schedule":"0 2 * * *"}]
+}
