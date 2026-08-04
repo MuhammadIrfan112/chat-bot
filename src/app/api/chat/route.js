@@ -604,8 +604,6 @@ When user clicks any button, give ONLY 2-3 short bullet points. Do NOT write ess
           // Fallback message (no city detected)
           propertyContext = `\n\n${matchedProperties}`;
         }
-      }
-
         }
       }
     }
