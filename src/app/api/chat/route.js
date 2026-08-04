@@ -548,14 +548,24 @@ export async function POST(req) {
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
 
-      // Extract budget — require at least 3 digits to avoid matching bedroom/bathroom numbers
-      const budgetMatch = fullText.match(/\$?([\d,]{3,})k?\s*(?:\/mo|per month|month|budget|max|under)?/);
+      // Smart budget extractor — handles: 3500, $3500, 3.5k, $3.5k, 3,500, $3,500/mo
       let propBudget = 0;
-      if (budgetMatch) {
-        const raw = budgetMatch[1].replace(/,/g, '');
-        propBudget = parseInt(raw);
-        if (propBudget < 500) propBudget = propBudget * 1000;
-        if (propBudget > 50000 && propIntent === 'rent') propBudget = 0;
+      const fullTextOrig = fullChatText; // preserve original casing for budget search
+
+      // Pattern 1: k-shorthand — "3.5k", "3k", "$3.5k", "$4k" (must be near budget context OR standalone)
+      const kMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*k\b/i);
+      // Pattern 2: 4+ digit plain number or comma-formatted — "3500", "$3,500", "3,500"
+      const plainMatch = fullTextOrig.match(/\$?([\d]{4,}|\d{1,3},\d{3})\s*(?:\/mo|per\s*month|month|budget|max|under)?/i);
+
+      if (kMatch) {
+        propBudget = Math.round(parseFloat(kMatch[1]) * 1000);
+      } else if (plainMatch) {
+        propBudget = parseInt(plainMatch[1].replace(/,/g, ''));
+      }
+
+      // Safety: if budget looks like a year (e.g. 2024, 2025) or unreasonably large for rent, reset
+      if (propIntent === 'rent' && (propBudget > 50000 || (propBudget >= 2024 && propBudget <= 2030 && !kMatch))) {
+        propBudget = 0;
       }
 
       // Extract city from conversation — multiple patterns for robustness
