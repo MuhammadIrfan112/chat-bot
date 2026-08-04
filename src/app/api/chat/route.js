@@ -614,9 +614,9 @@ export async function POST(req) {
 
           if (apifyRunId) {
             // Tell AI to show city engagement while Apify processes in background
-            cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 11 (ACTIVE BACKGROUND SEARCH):
+            cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 12 (ACTIVE BACKGROUND SEARCH):
 You are currently searching for properties in ${detectedCity}, ${detectedState || ''}. 
-Because the search is running in the background, you MUST override Step 11. DO NOT show any property cards yet.
+Because the search is running in the background, you MUST override Step 12. DO NOT show any property cards yet.
 Instead, reply EXACTLY with this:
 "🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
 
@@ -778,17 +778,21 @@ Step 8. Must-have features:
 Step 9. Budget:
 "What is your maximum monthly budget for this rental?"
 
-Step 10. Summarize and Confirm:
+Step 10. Timeline:
+"When are you thinking of moving in?"
+[BUTTON: Immediately] [BUTTON: Next month] [BUTTON: In 2-3 months] [BUTTON: Not sure yet]
+
+Step 11. Summarize and Confirm:
 Once all information is collected, you MUST generate a summary and ask for confirmation:
-"To summarize, you're looking for a [Bedrooms]-bedroom [Property Type] in [City] with a budget of [Budget], parking: [Yes/No], pets: [Yes/No]. Is this correct?"
+"To summarize, you're looking for a [Bedrooms]-bedroom [Property Type] in [City] with a budget of [Budget], parking: [Yes/No], pets: [Yes/No], and moving [Timeline]. Is this correct?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 11. Show Properties ONLY:
-CRITICAL RULE: DO NOT show properties until the user confirms the summary in Step 10.
+Step 12. Show Properties ONLY:
+CRITICAL RULE: DO NOT show properties until the user confirms the summary in Step 11.
 If the user says "No", ask them what they would like to change.
 If the user confirms (says "Yes"), follow these rules STRICTLY:
 
-**RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 11 in the prompt:**
+**RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 12 in the prompt:**
 Follow it EXACTLY. Show the searching/loading message and the city engagement buttons. Do NOT show any properties yet. The properties will load automatically.
 
 **RULE B — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
