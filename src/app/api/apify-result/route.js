@@ -36,23 +36,28 @@ export async function GET(req) {
     if (!itemsRes.ok) return Response.json({ status: 'failed' });
 
     const items = await itemsRes.json();
+    console.log('[apify-result] Raw items count:', items?.length, 'First item keys:', items?.[0] ? Object.keys(items[0]) : 'none');
+    
     if (!items || items.length === 0) return Response.json({ status: 'empty' });
 
-    // Format as property objects for frontend
+    // Format as property objects — accept any item that has at least a price or address
     const properties = items
-      .filter(p => (p.mainImage || p.imgSrc) && (p.propertyUrl || p.detailUrl))
+      .filter(p => p.price || p.listingPrice || p.address || p.streetAddress || p.zpid)
       .slice(0, 4)
       .map(p => ({
-        image_url: p.mainImage || p.imgSrc || '',
-        url: p.propertyUrl || p.detailUrl || '',
-        address: p.listingAddress?.full || p.address || 'Unknown',
-        price: p.listingPrice?.formatted || p.price || 'Contact for price',
-        bedrooms: p.bedrooms || '?',
-        bathrooms: p.bathrooms || '?',
-        property_type: p.homeType || p.cardType || 'Property',
-        listing_status: p.listingStatus === 'forRent' ? '🔵 For Rent' : '🟢 For Sale'
+        image_url: p.mainImage || p.imgSrc || p.hdpData?.homeInfo?.miniCardPhotos?.[0]?.url || p.carouselPhotos?.[0]?.url || p.photos?.[0] || '',
+        url: p.propertyUrl || p.detailUrl || p.hdpData?.homeInfo?.detailUrl || (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : ''),
+        address: p.address || p.streetAddress || p.listingAddress?.full || p.hdpData?.homeInfo?.streetAddress || 'Unknown Address',
+        price: p.price || p.listingPrice?.formatted || p.hdpData?.homeInfo?.price?.toString() || p.unformattedPrice?.toString() || 'Contact for price',
+        bedrooms: p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || '?',
+        bathrooms: p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || '?',
+        property_type: p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property',
+        listing_status: (p.listingStatus === 'forRent' || p.statusText?.toLowerCase()?.includes('rent')) ? '🔵 For Rent' : '🟢 For Sale'
       }));
 
+    console.log('[apify-result] Formatted properties:', properties.length);
+    
+    if (properties.length === 0) return Response.json({ status: 'empty' });
     return Response.json({ status: 'done', properties });
   } catch (e) {
     console.error('[apify-result] Error:', e.message);
