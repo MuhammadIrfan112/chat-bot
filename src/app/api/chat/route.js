@@ -625,8 +625,8 @@ Then show these clickable topic buttons on a new line:
       }
     }
 
-    const knowledgeSection = (knowledge || faqContext || cityEngagementContext || propertyContext)
-      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${cityEngagementContext}${propertyContext}`
+    const knowledgeSection = (knowledge || faqContext || propertyContext)
+      ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${propertyContext}`
       : '';
 
     const qualifyingQuestions = isRealEstate
@@ -699,6 +699,7 @@ Is this information correct?"
 
 Step 11. Show Properties ONLY:
 If the user confirms the information is correct (e.g. they select "Yes"), IMMEDIATELY show the matching properties from your RELEVANT BUSINESS KNOWLEDGE. Do NOT ask any follow-up questions. ONLY show the property cards. Ensure you ONLY show the exact requested Property Type.
+CRITICAL ANTI-HALLUCINATION RULE: NEVER MAKE UP OR INVENT FAKE PROPERTIES. If no properties are provided to you in the prompt, you must say "I'm sorry, I couldn't find any properties matching that right now." Do NOT generate mock data.
 
 If the user says "No", ask them what information they would like to correct and update your understanding.
 
@@ -916,7 +917,8 @@ ${qualifyingQuestions}
 5. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match from the actual inventory.
 6. RESPONSE STYLE: Keep responses short, engaging, and scannable. Use occasional emojis. Use line breaks so it looks clean on mobile.
 ${isRealEstate || isEcommerce ? `7. IMAGES & LINKS: When showing an item from the inventory, you MUST copy and use the EXACT markdown for Image and Link provided in the inventory data.\n8. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `7. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
-${knowledgeSection}${liveInventory}`;
+${knowledgeSection}${liveInventory}
+${cityEngagementContext}`;
     if (!bot_id) {
       systemInstruction = `You are an AI Sales Consultant for RealtyPropFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.
       
