@@ -583,10 +583,23 @@ export async function POST(req) {
         if (propBudget > 50000 && propIntent === 'rent') propBudget = 0;
       }
 
-      // Extract city from conversation
-      const cityMatch = fullText.match(/(?:in|near|at|for)\s+([a-z\s]+),?\s*(il|tx|ca|fl|ny|wa|az|co|ga|nc|oh|mi|pa|nj|va|ma|tn|in|mo|wi|mn|sc|al|la|ky|or|ok|ct|ia|ms|ar|ut|nv|nm|ne|wv|id|hi|me|nh|ri|mt|de|sd|nd|ak|vt|wy)\b/);
-      const detectedCity = cityMatch ? cityMatch[1].trim() : null;
+      // Extract city from conversation — multiple patterns for robustness
+      const stateAbbrs = 'al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy';
+
+      // Pattern 1: "in/near/at/for City, ST"
+      const prefixCityMatch = fullText.match(
+        new RegExp(`(?:in|near|at|for)\\s+([a-z][a-z\\s]{1,30}),?\\s*(${stateAbbrs})\\b`)
+      );
+      // Pattern 2: bare "City, ST" (e.g. user just typed "Chicago, IL")
+      const directCityMatch = fullText.match(
+        new RegExp(`\\b([a-z][a-z\\s]{1,25}),\\s*(${stateAbbrs})\\b`)
+      );
+
+      const cityMatch = prefixCityMatch || directCityMatch;
+      const detectedCity = cityMatch ? cityMatch[1].trim().replace(/\s+/g, ' ') : null;
       const detectedState = cityMatch ? cityMatch[2].toUpperCase() : null;
+
+
 
       if (propIntent) {
         // Step 1: Try Supabase first
