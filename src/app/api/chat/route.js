@@ -95,22 +95,21 @@ Link: ${p.property_url}
   }
 }
 
-// Live Apify Zillow scraper — called when Supabase has no matching properties
-async function fetchApifyProperties(city, state, intent, beds, maxBudget) {
+// Start Apify Zillow scraper run (non-blocking) — returns runId immediately
+async function startApifyRun(city, state, intent) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
     if (!APIFY_TOKEN) return null;
 
-    // Build Zillow search URL based on intent
     const listingType = intent === 'rent' ? 'rentals' : 'homes';
     const citySlug = `${city.toLowerCase().replace(/\s+/g, '-')}-${state.toLowerCase()}`;
     const searchUrl = `https://www.zillow.com/${citySlug}/${listingType}/`;
 
-    console.log(`[Apify] Live scraping: ${searchUrl}`);
+    console.log(`[Apify] Starting async run: ${searchUrl}`);
 
-    // Call Apify synchronously — wait up to 45 seconds (safe within Vercel 60s limit)
+    // Start run WITHOUT waitForFinish — returns immediately with runId
     const runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}&waitForFinish=45`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,45 +122,20 @@ async function fetchApifyProperties(city, state, intent, beds, maxBudget) {
     );
 
     if (!runRes.ok) {
-      console.error('[Apify] Run failed:', runRes.status);
+      console.error('[Apify] Failed to start run:', runRes.status);
       return null;
     }
 
     const runData = await runRes.json();
-    const datasetId = runData?.data?.defaultDatasetId;
-    if (!datasetId) return null;
-
-    // Fetch results from dataset
-    const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=4`
-    );
-    if (!itemsRes.ok) return null;
-
-    const items = await itemsRes.json();
-    if (!items || items.length === 0) return null;
-
-    // Format as property cards
-    const cards = items
-      .filter(p => (p.mainImage || p.imgSrc) && (p.propertyUrl || p.detailUrl))
-      .slice(0, 4)
-      .map(p => {
-        const image = p.mainImage || p.imgSrc;
-        const url = p.propertyUrl || p.detailUrl;
-        const address = p.listingAddress?.full || p.address || `${city}, ${state}`;
-        const price = p.listingPrice?.formatted || p.price || 'Contact for price';
-        const propBeds = p.bedrooms || '?';
-        const propBaths = p.bathrooms || '?';
-        const type = p.homeType || p.cardType || 'Property';
-        const status = p.listingStatus === 'forRent' ? '🔵 For Rent' : '🟢 For Sale';
-        return `[PROPERTY_CARD]\nStatus: ${status}\nType: ${type}\nAddress: ${address}\nPrice: ${price}\nBeds: ${propBeds} | Baths: ${propBaths}\nImage: ${image}\nLink: ${url}\n[/PROPERTY_CARD]`;
-      });
-
-    return cards.length > 0 ? cards.join('\n\n') : null;
+    const runId = runData?.data?.id;
+    console.log(`[Apify] Run started: ${runId}`);
+    return runId || null;
   } catch (e) {
-    console.error('[Apify] Error:', e.message);
+    console.error('[Apify] Start error:', e.message);
     return null;
   }
 }
+
 
 async function liveScrapeWebsite(url) {
   if (!url) return '';
@@ -558,6 +532,7 @@ export async function POST(req) {
     // --- Property Matching: Supabase first, Apify as fallback ---
     let propertyContext = '';
     let cityEngagementContext = '';
+    let apifyRunId = null;
 
     if (isRealEstate) {
       const fullText = fullChatText.toLowerCase();
@@ -606,24 +581,31 @@ export async function POST(req) {
         let matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
 
         if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
-          // Found in database
+          // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity) {
-          // Not in database — trigger Apify live scrape
-          console.log(`[Route] No DB results for ${detectedCity}, ${detectedState} — calling Apify live...`);
-          const liveProperties = await fetchApifyProperties(detectedCity, detectedState || 'IL', propIntent, propBeds, propBudget);
+          // Not in DB — start Apify run asynchronously (returns in ~2 seconds)
+          console.log(`[Route] No DB results for ${detectedCity}, ${detectedState} — starting Apify run...`);
+          apifyRunId = await startApifyRun(detectedCity, detectedState || 'IL', propIntent);
 
-          if (liveProperties) {
-            propertyContext = `\n\nLIVE PROPERTIES FROM ZILLOW (Just found for ${detectedCity}! Show these as property cards with image, address, price, beds/baths and Zillow link):\n${liveProperties}`;
+          if (apifyRunId) {
+            // Tell AI to show city engagement while Apify processes in background
+            cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: You are now searching for properties in ${detectedCity}, ${detectedState || ''}. While the property search runs in the background, start your response with:
+"🔍 Searching for properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
+
+Then show these clickable topic buttons:
+[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]
+
+When user clicks any button, give ONLY 2-3 short bullet points. Do NOT write essays. The property results will appear automatically below when ready.`;
           } else {
-            propertyContext = `\n\nNo properties found for ${detectedCity} at this time. Suggest the user broaden their search or adjust filters.`;
+            propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
           }
-
-          // City engagement content — shown while Apify was fetching
-          cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Since the user is searching in ${detectedCity}, ${detectedState || ''}, you MUST start your response with a brief engaging intro about ${detectedCity} ONLY IF properties are now included above. Say something like: "While searching for properties in ${detectedCity}, here's a quick look at what makes this area great! 🏙️" then show 2-3 key highlights using expandable buttons BEFORE showing the properties. Use this EXACT button format for city topics (user clicks to learn more):\n[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]\n\nWhen user clicks any of these buttons, provide ONLY 2-3 short bullet points about that topic for ${detectedCity}. Do NOT write long paragraphs. After 2-3 city topics are discussed OR immediately if user wants to skip — show the property cards below.`;
         } else if (matchedProperties) {
-            // It returned the fallback text message
-            propertyContext = `\n\n${matchedProperties}`;
+          // Fallback message (no city detected)
+          propertyContext = `\n\n${matchedProperties}`;
+        }
+      }
+
         }
       }
     }
@@ -1138,7 +1120,8 @@ CRITICAL RULES:
 
     return Response.json({ 
       reply: replyText,
-      properties: propertiesList
+      properties: propertiesList,
+      apifyRunId: typeof apifyRunId !== 'undefined' ? apifyRunId : null
     });
   } catch (error) {
     console.error("Chat API Error:", error);

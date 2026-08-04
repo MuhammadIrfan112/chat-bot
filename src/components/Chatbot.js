@@ -48,6 +48,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
   const [likedProperties, setLikedProperties] = useState([]);
   const [dislikedProperties, setDislikedProperties] = useState([]);
+  const [activeApifyRunId, setActiveApifyRunId] = useState(null);
 
   // ── Closing flow state ─────────────────────────────────────────
   // Tracks which step of the closing conversation we're in
@@ -167,6 +168,49 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     }, 3000);
     return () => clearInterval(pollRef.current);
   }, [sessionId, messages.length]);
+
+  // Poll Apify results if a run is active
+  useEffect(() => {
+    if (!activeApifyRunId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}`);
+        const data = await res.json();
+
+        if (data.status === 'done' && data.properties) {
+          clearInterval(interval);
+          setActiveApifyRunId(null);
+          // Append the properties to the LAST model message in the chat
+          setMessages(prev => {
+            const newMessages = [...prev];
+            for (let i = newMessages.length - 1; i >= 0; i--) {
+              if (newMessages[i].role === 'model') {
+                newMessages[i] = {
+                  ...newMessages[i],
+                  properties: data.properties
+                };
+                break;
+              }
+            }
+            return newMessages;
+          });
+        } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
+          clearInterval(interval);
+          setActiveApifyRunId(null);
+          // Just add a simple apology message if scraping failed or returned nothing
+          setMessages(prev => [...prev, { 
+            role: 'model', 
+            parts: [{ text: "I'm sorry, I couldn't find any live properties matching that description right now. Let me know if you want to adjust your search!" }] 
+          }]);
+        }
+      } catch (e) {
+        console.error('Apify polling error:', e);
+      }
+    }, 8000); // Poll every 8 seconds
+
+    return () => clearInterval(interval);
+  }, [activeApifyRunId]);
 
   async function initSession() {
     const visitor_id = getVisitorId();
@@ -619,6 +663,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         }
 
         setMessages(prev => [...prev, newModelMsg]);
+
+        if (data.apifyRunId) {
+          setActiveApifyRunId(data.apifyRunId);
+        }
         // Activate multi-select if needed
         if (multiButtons.length > 0) {
           setMultiSelectOptions(multiButtons);
