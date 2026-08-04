@@ -622,7 +622,15 @@ Instead, reply EXACTLY with this:
 Then show these city info buttons on a new line (use CITY_BTN tag, NOT BUTTON tag):
 [CITY_BTN: 🏫 Schools] [CITY_BTN: 🌳 Parks] [CITY_BTN: 🚇 Transportation] [CITY_BTN: 🛒 Shopping] [CITY_BTN: 🍽️ Dining] [CITY_BTN: 🏥 Healthcare] [CITY_BTN: 🏛️ Community]
 
-For each [CITY_BTN], also include a [CITY_INFO: <btn label> | <2-3 bullet points about ${detectedCity}> ] tag immediately after the button list. This will be shown as an accordion when the user clicks that button.`;
+CRITICALLY IMPORTANT: Immediately below the buttons, you MUST output seven [CITY_INFO] tags (one for each button) containing 2-3 short, realistic bullet points about ${detectedCity}.
+FORMAT EXACTLY LIKE THIS:
+[CITY_INFO: 🏫 Schools | - Bullet 1 \n- Bullet 2]
+[CITY_INFO: 🌳 Parks | - Bullet 1 \n- Bullet 2]
+[CITY_INFO: 🚇 Transportation | - Bullet 1 \n- Bullet 2]
+[CITY_INFO: 🛒 Shopping | - Bullet 1 \n- Bullet 2]
+[CITY_INFO: 🍽️ Dining | - Bullet 1 \n- Bullet 2]
+[CITY_INFO: 🏥 Healthcare | - Bullet 1 \n- Bullet 2]
+[CITY_INFO: 🏛️ Community | - Bullet 1 \n- Bullet 2]`;
           } else {
             propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
           }
