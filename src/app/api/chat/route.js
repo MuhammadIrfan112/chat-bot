@@ -115,8 +115,11 @@ async function startApifyRun(city, state, intent) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           searchUrls: [{ url: searchUrl }],
-          maxItems: 4,
-          proxy: { useApifyProxy: true }
+          maxItems: 6,
+          proxy: { 
+            useApifyProxy: true,
+            apifyProxyGroups: ["RESIDENTIAL"]
+          }
         })
       }
     );
