@@ -619,8 +619,10 @@ Because the search is running in the background, you MUST override Step 11. DO N
 Instead, reply EXACTLY with this:
 "🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
 
-Then show these clickable topic buttons on a new line:
-[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >] [BUTTON: 🛒 Shopping >] [BUTTON: 🍽️ Dining >] [BUTTON: 🏥 Healthcare >] [BUTTON: 🏛️ Community >]`;
+Then show these city info buttons on a new line (use CITY_BTN tag, NOT BUTTON tag):
+[CITY_BTN: 🏫 Schools] [CITY_BTN: 🌳 Parks] [CITY_BTN: 🚇 Transportation] [CITY_BTN: 🛒 Shopping] [CITY_BTN: 🍽️ Dining] [CITY_BTN: 🏥 Healthcare] [CITY_BTN: 🏛️ Community]
+
+For each [CITY_BTN], also include a [CITY_INFO: <btn label> | <2-3 bullet points about ${detectedCity}> ] tag immediately after the button list. This will be shown as an accordion when the user clicks that button.`;
           } else {
             propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
           }

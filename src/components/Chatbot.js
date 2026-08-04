@@ -49,6 +49,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [likedProperties, setLikedProperties] = useState([]);
   const [dislikedProperties, setDislikedProperties] = useState([]);
   const [activeApifyRunId, setActiveApifyRunId] = useState(null);
+  const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
 
   // ── Closing flow state ─────────────────────────────────────────
   // Tracks which step of the closing conversation we're in
@@ -597,6 +598,20 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
            return '';
         });
         
+        // Parse [CITY_BTN: label] tags — city accordion buttons
+        const cityBtns = [];
+        text = text.replace(/\[CITY_BTN:\s*(.*?)\]/g, (match, label) => {
+          cityBtns.push(label.trim());
+          return '';
+        });
+
+        // Parse [CITY_INFO: label | content] tags — accordion content
+        const cityInfoMap = {};
+        text = text.replace(/\[CITY_INFO:\s*(.*?)\|([\s\S]*?)\]/g, (match, label, content) => {
+          cityInfoMap[label.trim()] = content.trim();
+          return '';
+        });
+
         // Parse [MULTI_BUTTON: text] tags
         const multiButtons = [];
         const multiPattern = /\[MULTI_BUTTON:\s*(.*?)\]/g;
@@ -651,6 +666,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         const newModelMsg = { role: 'model', parts: [{ text: text.trim() }] };
         if (buttons.length > 0) {
            newModelMsg.quickReplies = buttons;
+        }
+        if (cityBtns.length > 0) {
+          newModelMsg.cityBtns = cityBtns;
+          newModelMsg.cityInfoMap = cityInfoMap;
         }
         if (multiButtons.length > 0) {
           newModelMsg.multiSelectOptions = multiButtons;
@@ -768,6 +787,66 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                     >
                       {msg.parts[0].text}
                     </ReactMarkdown>
+
+                    {/* City Engagement Accordion Buttons */}
+                    {msg.cityBtns && msg.cityBtns.length > 0 && (
+                      <div style={{ marginTop: '10px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                          {msg.cityBtns.map((btn, bi) => {
+                            const panelKey = `${idx}-${btn}`;
+                            const isOpen = expandedCityPanel === panelKey;
+                            return (
+                              <button
+                                key={bi}
+                                onClick={() => setExpandedCityPanel(isOpen ? null : panelKey)}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '20px',
+                                  border: `1.5px solid ${isOpen ? 'var(--primary)' : '#d1d5db'}`,
+                                  background: isOpen ? 'var(--primary)' : 'white',
+                                  color: isOpen ? 'white' : '#374151',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                {btn} {isOpen ? '▲' : '▼'}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Accordion panels */}
+                        {msg.cityBtns.map((btn, bi) => {
+                          const panelKey = `${idx}-${btn}`;
+                          const isOpen = expandedCityPanel === panelKey;
+                          const info = msg.cityInfoMap?.[btn];
+                          if (!isOpen) return null;
+                          return (
+                            <div key={bi} style={{
+                              background: '#f9fafb',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '10px',
+                              padding: '10px 14px',
+                              marginBottom: '6px',
+                              fontSize: '12px',
+                              color: '#374151',
+                              lineHeight: '1.6',
+                              animation: 'fadeIn 0.2s ease'
+                            }}>
+                              <div style={{ fontWeight: '700', color: 'var(--primary)', marginBottom: '6px' }}>{btn}</div>
+                              {info
+                                ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{info}</ReactMarkdown>
+                                : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Loading info for {btn}...</span>
+                              }
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {msg.properties && msg.properties.length > 0 && (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
