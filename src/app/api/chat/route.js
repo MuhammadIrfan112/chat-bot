@@ -548,8 +548,8 @@ export async function POST(req) {
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
 
-      // Extract budget
-      const budgetMatch = fullText.match(/\$?([\d,]+)k?\s*(?:\/mo|per month|month|budget|max|under)?/);
+      // Extract budget — require at least 3 digits to avoid matching bedroom/bathroom numbers
+      const budgetMatch = fullText.match(/\$?([\d,]{3,})k?\s*(?:\/mo|per month|month|budget|max|under)?/);
       let propBudget = 0;
       if (budgetMatch) {
         const raw = budgetMatch[1].replace(/,/g, '');
@@ -579,6 +579,9 @@ export async function POST(req) {
       const lastUserMsg = userQuery.toLowerCase().trim();
       const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly)/i.test(lastUserMsg);
       const hasEnoughInfo = propIntent && detectedCity && propBeds > 0 && propBudget > 0;
+
+      // DEBUG: log extracted values to Vercel logs
+      console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
 
       if (hasEnoughInfo && hasConfirmedSummary) {
         const cityLower = (detectedCity || '').toLowerCase().trim();
