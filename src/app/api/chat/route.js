@@ -571,18 +571,19 @@ export async function POST(req) {
       // Extract city from conversation — multiple patterns for robustness
       const stateAbbrs = 'al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy';
 
-      // Pattern 1: "in/near/at/for City, ST"
-      const prefixCityMatch = fullText.match(
-        new RegExp(`(?:in|near|at|for)\\s+([a-z][a-z\\s]{1,30}),?\\s*(${stateAbbrs})\\b`)
-      );
-      // Pattern 2: bare "City, ST" (e.g. user just typed "Chicago, IL")
-      const directCityMatch = fullText.match(
-        new RegExp(`\\b([a-z][a-z\\s]{1,25}),\\s*(${stateAbbrs})\\b`)
-      );
+      // Find ALL matches in the entire chat history and take the LAST one (to ignore bot's examples like Chicago, IL)
+      const prefixPattern = new RegExp(`(?:in|near|at|for)\\s+([a-z][a-z\\s]{1,30}),?\\s*(${stateAbbrs})\\b`, 'g');
+      const directPattern = new RegExp(`\\b([a-z][a-z\\s]{1,25}),\\s*(${stateAbbrs})\\b`, 'g');
 
-      const cityMatch = prefixCityMatch || directCityMatch;
-      const detectedCity = cityMatch ? cityMatch[1].trim().replace(/\s+/g, ' ') : null;
-      const detectedState = cityMatch ? cityMatch[2].toUpperCase() : null;
+      const prefixMatches = [...fullText.matchAll(prefixPattern)];
+      const directMatches = [...fullText.matchAll(directPattern)];
+
+      let lastMatch = null;
+      if (prefixMatches.length > 0) lastMatch = prefixMatches[prefixMatches.length - 1];
+      else if (directMatches.length > 0) lastMatch = directMatches[directMatches.length - 1];
+
+      const detectedCity = lastMatch ? lastMatch[1].trim().replace(/\s+/g, ' ') : null;
+      const detectedState = lastMatch ? lastMatch[2].toUpperCase() : null;
 
       // Only trigger property search after user has provided city + budget + beds
       // AND has confirmed the summary with "yes"
