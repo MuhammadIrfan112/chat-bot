@@ -18,12 +18,15 @@ export async function GET(req) {
     const statusData = await statusRes.json();
     const runStatus = statusData?.data?.status;
 
+    console.log(`[apify-result] runId=${runId} status=${runStatus}`);
+
     if (runStatus === 'RUNNING' || runStatus === 'READY' || runStatus === 'CREATED') {
       return Response.json({ status: 'running' });
     }
 
     if (runStatus !== 'SUCCEEDED') {
-      return Response.json({ status: 'failed' });
+      console.log('[apify-result] Run did not succeed:', runStatus);
+      return Response.json({ status: 'failed', runStatus });
     }
 
     // Run finished — fetch results
@@ -31,36 +34,62 @@ export async function GET(req) {
     if (!datasetId) return Response.json({ status: 'failed' });
 
     const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=4`
+      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=6`
     );
     if (!itemsRes.ok) return Response.json({ status: 'failed' });
 
     const items = await itemsRes.json();
-    console.log('[apify-result] Raw items count:', items?.length, 'First item keys:', items?.[0] ? Object.keys(items[0]) : 'none');
+    console.log('[apify-result] Raw items count:', items?.length);
+    if (items?.[0]) {
+      console.log('[apify-result] First item keys:', Object.keys(items[0]));
+      console.log('[apify-result] Sample:', JSON.stringify(items[0]).substring(0, 500));
+    }
     
     if (!items || items.length === 0) return Response.json({ status: 'empty' });
 
-    // Format as property objects — accept any item that has at least a price or address
+    // Map ALL items — no filter, try every possible field name
     const properties = items
-      .filter(p => p.price || p.listingPrice || p.address || p.streetAddress || p.zpid)
       .slice(0, 4)
-      .map(p => ({
-        image_url: p.mainImage || p.imgSrc || p.hdpData?.homeInfo?.miniCardPhotos?.[0]?.url || p.carouselPhotos?.[0]?.url || p.photos?.[0] || '',
-        url: p.propertyUrl || p.detailUrl || p.hdpData?.homeInfo?.detailUrl || (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : ''),
-        address: p.address || p.streetAddress || p.listingAddress?.full || p.hdpData?.homeInfo?.streetAddress || 'Unknown Address',
-        price: p.price || p.listingPrice?.formatted || p.hdpData?.homeInfo?.price?.toString() || p.unformattedPrice?.toString() || 'Contact for price',
-        bedrooms: p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || '?',
-        bathrooms: p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || '?',
-        property_type: p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property',
-        listing_status: (p.listingStatus === 'forRent' || p.statusText?.toLowerCase()?.includes('rent')) ? '🔵 For Rent' : '🟢 For Sale'
-      }));
+      .map(p => {
+        const image = 
+          p.mainImage || p.imgSrc || p.image || p.img ||
+          p.hdpData?.homeInfo?.miniCardPhotos?.[0]?.url ||
+          p.carouselPhotos?.[0]?.url ||
+          (Array.isArray(p.photos) ? p.photos[0] : null) ||
+          p.thumbnail || '';
 
-    console.log('[apify-result] Formatted properties:', properties.length);
-    
-    if (properties.length === 0) return Response.json({ status: 'empty' });
+        const url =
+          p.propertyUrl || p.detailUrl || p.url || p.link ||
+          p.hdpData?.homeInfo?.detailUrl ||
+          (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.zillow.com/homes/for_rent/');
+
+        const address =
+          p.address || p.streetAddress || p.location ||
+          p.listingAddress?.full ||
+          p.hdpData?.homeInfo?.streetAddress ||
+          [p.streetAddress, p.city, p.state].filter(Boolean).join(', ') ||
+          'Unknown Address';
+
+        const price =
+          p.price || p.rentPrice || p.listingPrice?.formatted ||
+          p.hdpData?.homeInfo?.price?.toString() ||
+          p.unformattedPrice?.toString() ||
+          p.zestimate?.toString() ||
+          'Contact for price';
+
+        const beds = p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || '?';
+        const baths = p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || '?';
+        const type = p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property';
+
+        return { image_url: image, url, address, price, bedrooms: beds, bathrooms: baths, property_type: type, listing_status: '🔵 For Rent' };
+      });
+
+    console.log('[apify-result] Mapped properties:', properties.length);
     return Response.json({ status: 'done', properties });
+
   } catch (e) {
     console.error('[apify-result] Error:', e.message);
     return Response.json({ status: 'error' });
   }
 }
+
