@@ -577,7 +577,7 @@ export async function POST(req) {
       // Only trigger property search after user has provided city + budget + beds
       // AND has confirmed the summary with "yes"
       const lastUserMsg = userQuery.toLowerCase().trim();
-      const hasConfirmedSummary = (lastUserMsg === 'yes' || lastUserMsg === 'yes.' || lastUserMsg === 'yeah' || lastUserMsg === 'correct' || lastUserMsg === 'that\'s correct');
+      const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly)/i.test(lastUserMsg);
       const hasEnoughInfo = propIntent && detectedCity && propBeds > 0 && propBudget > 0;
 
       if (hasEnoughInfo && hasConfirmedSummary) {
@@ -708,12 +708,11 @@ CRITICAL ANTI-HALLUCINATION RULE: DO NOT WRITE OUT PROPERTY DETAILS, PRICES, OR 
 If the user says "No", ask them what information they would like to correct and update your understanding.
 
 Step 12. Ask for interest (LEAD CAPTURE TRIGGER):
-After outputting the carousel tag, ask exactly this:
-"Would you like me to show a few more properties, or would you like me to arrange for you to see a property?"
-[BUTTON: Show few more properties] [BUTTON: Arrange to see the property]
+After outputting the carousel tag, wait for the user to respond. Do NOT ask "Would you like me to show a few more properties". Just say:
+"Let me know if you'd like to arrange a viewing for any of these!"
+[BUTTON: Arrange to see a property]
 
-If they choose "Show few more properties", ask them what they would like to adjust (budget, etc.) and repeat step 11.
-If they choose "Arrange to see the property" or say Yes to arranging a viewing, reply ONLY with exactly this hidden tag:
+If they choose "Arrange to see a property" or say Yes to arranging a viewing, reply ONLY with exactly this hidden tag:
 [START_LEAD_CAPTURE]
 
 DO NOT ask for their name, phone, or email manually. The [START_LEAD_CAPTURE] tag will automatically trigger the UI to collect their Name, Phone, Email, and Time Preference.
@@ -724,33 +723,33 @@ Step 1. Identify Property Type:
 "Are you looking to rent an apartment, condo, townhouse, or house?"
 [BUTTON: Apartment] [BUTTON: Condo] [BUTTON: Townhouse] [BUTTON: House]
 
-Step 2. Location (VERY IMPORTANT — ask this before budget):
+Step 2. Location (VERY IMPORTANT — ask this before other requirements):
 "Which city or area are you looking to rent in? (Please mention city and state, e.g., 'Chicago, IL')"
 
-Step 3. Budget:
-"What is your monthly budget?"
-
-Step 4. Bedrooms (ask ONLY bedrooms here):
+Step 3. Bedrooms (ask ONLY bedrooms here):
 "How many bedrooms do you need?"
 [BUTTON: Studio] [BUTTON: 1 Bedroom] [BUTTON: 2 Bedrooms] [BUTTON: 3 Bedrooms] [BUTTON: 4+]
 
-Step 5. Bathrooms (ask ONLY bathrooms here, separate from bedrooms):
+Step 4. Bathrooms (ask ONLY bathrooms here, separate from bedrooms):
 "How many bathrooms do you need?"
 [BUTTON: 1] [BUTTON: 2] [BUTTON: 3+]
 
-Step 6. Occupants:
+Step 5. Occupants:
 "Will anyone else be living with you?"
 
-Step 7. Pets:
+Step 6. Pets:
 "Do you have any pets?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 8. Parking:
+Step 7. Parking:
 "Do you need parking?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 9. Must-have features:
+Step 8. Must-have features:
 "Are there any must-have features?"
+
+Step 9. Budget:
+"What is your maximum monthly budget for this rental?"
 
 Step 10. Summarize and Confirm:
 Once all information is collected, you MUST generate a summary and ask for confirmation:
