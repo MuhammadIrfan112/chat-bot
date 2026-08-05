@@ -103,9 +103,24 @@ async function startApifyRun(city, state, intent) {
 
     const listingType = intent === 'rent' ? 'rentals' : 'homes';
     const citySlug = `${city.toLowerCase().replace(/\s+/g, '-')}-${state.toLowerCase()}`;
-    const searchUrl = `https://www.zillow.com/${citySlug}/${listingType}/`;
+    
+    // Build proper Zillow URL with searchQueryState (required by the actor)
+    const isRent = intent === 'rent';
+    const filterState = isRent
+      ? { isForRent: { value: true }, isForSaleByOwner: { value: false }, isForSaleByAgent: { value: false } }
+      : { isForSaleByOwner: { value: false }, isForSaleByAgent: { value: true } };
 
-    console.log(`[Apify] Starting async run: ${searchUrl}`);
+    const searchQueryState = JSON.stringify({
+      pagination: {},
+      isMapVisible: false,
+      filterState,
+      isListVisible: true,
+      mapZoom: 11
+    });
+
+    const searchUrl = `https://www.zillow.com/${citySlug}/${listingType}/?searchQueryState=${encodeURIComponent(searchQueryState)}`;
+
+    console.log(`[Apify] Starting async run with proper URL`);
 
     // Start run WITHOUT waitForFinish — returns immediately with runId
     const runRes = await fetch(
@@ -614,9 +629,9 @@ export async function POST(req) {
 
           if (apifyRunId) {
             // Tell AI to show city engagement while Apify processes in background
-            cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 12 (ACTIVE BACKGROUND SEARCH):
+            cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 11 AND STEP 12 (ACTIVE BACKGROUND SEARCH):
 You are currently searching for properties in ${detectedCity}, ${detectedState || ''}. 
-Because the search is running in the background, you MUST override Step 12. DO NOT show any property cards yet.
+Because the search is running in the background, you MUST override Step 11 (Buy flow) AND Step 12 (Rent flow). DO NOT show any property cards yet.
 Instead, reply EXACTLY with this:
 "🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
 
@@ -724,8 +739,8 @@ Is this information correct?"
 Step 11. Show Properties ONLY:
 If the user confirms the information is correct (e.g. they select "Yes"), follow these rules STRICTLY:
 
-**RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 11 in the prompt:**
-Follow it EXACTLY. Show the searching/loading message and the city engagement buttons. Do NOT show any properties yet. The properties will load automatically.
+**RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 11 or CRITICAL OVERRIDE FOR STEP 11 AND STEP 12 in the prompt:**
+Follow it EXACTLY. Show the searching/loading message and ALL city engagement buttons (Schools, Parks, Transportation, Shopping, Dining, Healthcare, Community) with their CITY_INFO content. Do NOT show any properties yet. The properties will load automatically.
 
 **RULE B — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
 Show ONLY those exact property cards. Do NOT add, invent, or modify any property details.

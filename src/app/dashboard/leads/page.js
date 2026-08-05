@@ -16,6 +16,16 @@ const getInterestLabel = (industry = 'Other') => {
   return 'Customer Inquiry';
 };
 
+// Extract inquiry text and links separately from property_interest field
+const parseInterest = (raw = '') => {
+  if (!raw) return { inquiry: '', links: [] };
+  const parts = raw.split('Viewed Links:');
+  const inquiry = parts[0].replace('Preferred Callback Time:', '\n⏰ Preferred Time:').trim();
+  const linksRaw = parts[1] ? parts[1].trim() : '';
+  const links = linksRaw.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
+  return { inquiry, links };
+};
+
 export default function LeadsCRM() {
   const [leads, setLeads] = useState([]);
   const [botsMap, setBotsMap] = useState({}); // bot_id -> bot
@@ -124,7 +134,7 @@ export default function LeadsCRM() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-                  {['Name', 'Phone', 'Email', 'Inquiry / Interest', 'Bot', 'Status', 'Received', 'Actions'].map(h => (
+                  {['Name', 'Phone', 'Email', 'Inquiry / Interest', 'Property Links', 'Bot', 'Status', 'Received', 'Actions'].map(h => (
                     <th key={h} style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -136,6 +146,7 @@ export default function LeadsCRM() {
                   const interestLabel = getInterestLabel(bot?.industry || 'Other');
                   const isRealEstate = interestLabel === 'Property Interest';
                   const isEcommerce = interestLabel === 'Product Interest';
+                  const { inquiry, links } = parseInterest(lead.property_interest);
 
                   return (
                     <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
@@ -156,35 +167,51 @@ export default function LeadsCRM() {
                         <a href={`mailto:${lead.email}`} style={{ color: '#818CF8', fontWeight: '500', textDecoration: 'none' }}>{lead.email}</a>
                       </td>
 
-                      {/* Inquiry/Interest */}
-                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '220px' }}>
+                      {/* Inquiry/Interest — text only, no links */}
+                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
                         <div style={{ marginBottom: '4px', fontSize: '11px', fontWeight: '700', color: isRealEstate ? '#A78BFA' : isEcommerce ? '#38BDF8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           {isRealEstate ? '🏠 ' : isEcommerce ? '🛍️ ' : '💬 '}{interestLabel}
                         </div>
-                        <span title={lead.property_interest || ''} style={{ display: 'block', maxWidth: '250px' }}>
-                          {(() => {
-                            if (!lead.property_interest) return '—';
-                            const parts = lead.property_interest.split('Viewed Links:');
-                            const query = parts[0].trim();
-                            const linksText = parts[1] ? parts[1].trim() : '';
-                            return (
-                              <div>
-                                <div style={{ whiteSpace: 'pre-line', fontSize: '12px', lineHeight: '1.5', color: 'var(--text-secondary)' }}>
-                                  {query}
-                                </div>
-                                {linksText && (
-                                  <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    {linksText.split('\\n').filter(l => l.trim()).map((link, idx) => (
-                                      <a key={idx} href={link} target="_blank" rel="noopener noreferrer" style={{ color: '#3B82F6', textDecoration: 'none', fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px', display: 'inline-block', backgroundColor: 'rgba(59, 130, 246, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                                        🔗 View Item {idx + 1}
-                                      </a>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </span>
+                        <div style={{ whiteSpace: 'pre-line', fontSize: '12px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
+                          {inquiry || '—'}
+                        </div>
+                      </td>
+
+                      {/* Property Links — dedicated column */}
+                      <td style={{ padding: '16px 20px', minWidth: '160px' }}>
+                        {links.length === 0 ? (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>—</span>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {links.map((link, idx) => (
+                              <a
+                                key={idx}
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  color: '#3B82F6',
+                                  textDecoration: 'none',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  backgroundColor: 'rgba(59,130,246,0.12)',
+                                  border: '1px solid rgba(59,130,246,0.25)',
+                                  padding: '4px 10px',
+                                  borderRadius: '8px',
+                                  transition: 'all 0.2s',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor='rgba(59,130,246,0.22)'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor='rgba(59,130,246,0.12)'}
+                              >
+                                🔗 Property {idx + 1}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </td>
 
                       {/* Bot Name */}
