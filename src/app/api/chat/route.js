@@ -1118,9 +1118,9 @@ CRITICAL RULES:
       const budgetKMatch = fullChatText.match(/\$([\d.]+)\s*k\b/i);                   // requires $
       const budgetPlainMatch = fullChatText.match(/\$\s*([\d,]{4,})/);                // $700,000 or $700000
       if (budgetMillionMatch) {
-        maxBudget = Math.round(parseFloat(budgetMillionMatch[1]) * 1_000_000);
+        maxBudget = Math.round(parseFloat(budgetMillionMatch[1]) * 1000000);
       } else if (budgetKMatch) {
-        maxBudget = Math.round(parseFloat(budgetKMatch[1]) * 1_000);
+        maxBudget = Math.round(parseFloat(budgetKMatch[1]) * 1000);
       } else if (budgetPlainMatch) {
         maxBudget = parseInt(budgetPlainMatch[1].replace(/,/g, ''));
       }
