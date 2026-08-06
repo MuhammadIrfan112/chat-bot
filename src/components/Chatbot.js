@@ -574,11 +574,19 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     setIsLoading(true);
     messageCount.current += 1;
 
+    const searchParams = new URLSearchParams(window.location.search);
+    const plan = searchParams.get('plan') || 'premium';
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMsg], session_id: sessionId, bot_id: botConfig.botId }),
+        body: JSON.stringify({ 
+          messages: [...messages, userMsg], 
+          session_id: sessionId, 
+          bot_id: botConfig.botId,
+          plan: plan
+        }),
       });
       if (!response.ok) {
         const errData = await response.json();
