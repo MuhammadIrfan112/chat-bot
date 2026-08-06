@@ -282,4 +282,145 @@ button {
   h2 { font-size: 18px !important; }
 }
 
+/* ─────────────────────────────────────────────
+   LANDING PAGE — MOBILE RESPONSIVE
+   ───────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+
+  /* ── Navbar ── */
+  header.glass-panel {
+    padding: 0 18px !important;
+    height: 60px !important;
+  }
+
+  /* ── Hero ── */
+  section[style*="minHeight: '100vh'"],
+  section[style*="min-height: 100vh"] {
+    padding: 90px 18px 60px !important;
+  }
+
+  /* ── All Sections: reduce side padding ── */
+  section {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  /* ── Section top/bottom padding ── */
+  section[style*="padding: '100px"] {
+    padding-top: 56px !important;
+    padding-bottom: 56px !important;
+  }
+
+  /* ── Hero sub-text ── */
+  p[style*="fontSize: '19px'"] {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+  }
+
+  /* ── Logo ticker ── */
+  div[style*="gap: '40px'"] > * {
+    gap: 20px !important;
+  }
+
+  /* ── Feature cards grid ── */
+  div[style*="gridTemplateColumns: 'repeat(3"] {
+    grid-template-columns: 1fr !important;
+  }
+  div[style*="gridTemplateColumns: 'repeat(2"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Testimonials ── */
+  div[style*="minmax(300px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Pricing ── */
+  div[style*="minmax(320px, 1fr)"] {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* ── Contact form 2-col → 1-col ── */
+  div[style*="gridTemplateColumns: '1fr 1fr'"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Contact form card padding ── */
+  div[style*="padding: '48px'"] {
+    padding: 24px !important;
+    border-radius: 20px !important;
+  }
+
+  /* ── Dashboard mockup ── */
+  div[style*="minWidth: '800px'"] {
+    min-width: 600px !important;
+  }
+
+  /* ── Installation card ── */
+  div[style*="gridTemplateColumns: '1fr 2fr'"],
+  div[style*="gridTemplateColumns: '2fr 1fr'"] {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* ── Footer ── */
+  footer {
+    flex-direction: column !important;
+    text-align: center !important;
+    padding: 28px 18px !important;
+    gap: 12px !important;
+  }
+
+  /* ── Hero badge ── */
+  div[style*="borderRadius: '50px'"][style*="marginBottom: '32px'"] {
+    font-size: 11px !important;
+    padding: 5px 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* ── Hero heading tight ── */
+  h1 {
+    font-size: clamp(28px, 8vw, 40px) !important;
+    letter-spacing: -0.02em !important;
+  }
+  h2 {
+    font-size: clamp(22px, 6vw, 32px) !important;
+  }
+  h3 { font-size: 16px !important; }
+
+  /* ── CTA buttons stack ── */
+  div[style*="justifyContent: 'center'"][style*="flexWrap: 'wrap'"] {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  /* ── Install modal ── */
+  div[style*="maxWidth: '560px'"],
+  div[style*="maxWidth: '480px'"],
+  div[style*="maxWidth: '440px'"] {
+    width: 95vw !important;
+    padding: 24px 18px !important;
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+
+  section {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  /* ── Feature card bento ── */
+  .bentoItem { padding: 18px !important; }
+
+  /* Tags / badges flex-wrap */
+  div[style*="gap: '10px'"][style*="flexWrap"] {
+    flex-wrap: wrap !important;
+  }
+}
+
+
 

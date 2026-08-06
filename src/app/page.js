@@ -40,6 +40,7 @@ export default function Home() {
   const [formStatus, setFormStatus] = useState('idle');
   const [authChecking, setAuthChecking] = useState(true);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [installForm, setInstallForm] = useState({ name: '', phone: '', installTime: '', techInfo: '', websiteType: '', hasHostingAccess: '', hostingUser: '', hostingPass: '' });
   const [installStatus, setInstallStatus] = useState('idle'); // idle | submitting | success
 
@@ -122,7 +123,25 @@ export default function Home() {
             Sign up
           </Link>
         </div>
+
+        {/* Mobile Hamburger */}
+        <button className={`${styles.hamburger} ${mobileMenuOpen ? styles.open : ''}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </motion.header>
+
+      {/* Mobile Nav Drawer */}
+      <div className={`${styles.mobileNav} ${mobileMenuOpen ? styles.open : ''}`}>
+        {[['/#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
+          <Link key={href} href={href} className={styles.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>{label}</Link>
+        ))}
+        <div className={styles.mobileNavBtns}>
+          <Link href="/login" className={styles.secondaryBtn} style={{ flex: 1 }} onClick={() => setMobileMenuOpen(false)}>Login</Link>
+          <Link href="/login" className={styles.primaryBtn} style={{ flex: 1 }} onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
+        </div>
+      </div>
 
       {/* ─── HERO ─── */}
       <section ref={heroRef} style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '120px 24px 80px', zIndex: 10, overflow: 'hidden' }}>
