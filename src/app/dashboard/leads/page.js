@@ -48,6 +48,20 @@ export default function LeadsCRM() {
   }, []);
 
   const fetchLeads = async () => {
+    const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true' || localStorage.getItem('isDemo') === 'true';
+    if (isDemo) {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('bot_id', 'demo-real-estate')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setLeads(data);
+      }
+      setLoading(false);
+      return;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     const userId = localStorage.getItem('impersonated_user_id') || session.user.id;

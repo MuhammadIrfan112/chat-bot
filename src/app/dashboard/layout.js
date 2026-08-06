@@ -25,9 +25,25 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     const checkAuthAndSub = async () => {
+      const urlDemo = new URLSearchParams(window.location.search).get('demo') === 'true';
+      if (urlDemo) {
+        localStorage.setItem('isDemo', 'true');
+      }
+      const isDemo = urlDemo || localStorage.getItem('isDemo') === 'true';
+
+      if (isDemo) {
+        setUserEmail('demo@realtypropflow.com');
+        setSubscriptionStatus('Active');
+        setPlanName('premium');
+        setWebsiteType('Real Estate');
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
+        return;
       } else {
         const impEmail = localStorage.getItem('impersonated_user_email');
         if (impEmail) {
@@ -100,6 +116,11 @@ export default function DashboardLayout({ children }) {
   }, [router]);
 
   const handleSignOut = async () => {
+    if (localStorage.getItem('isDemo') === 'true') {
+      localStorage.removeItem('isDemo');
+      router.push('/login');
+      return;
+    }
     await supabase.auth.signOut();
     router.push('/login');
   };
