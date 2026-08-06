@@ -480,13 +480,13 @@ export default function Home() {
               style={{ background: 'rgba(15,23,42,0.9)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s' }}
               whileHover={{ y: -6, borderColor: 'rgba(255,255,255,0.16)' }}>
               <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Standard</h3>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Lead capture only — no live property listings shown.</p>
+              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Lead capture only — no live property listings shown. Perfect for agents focused on qualifying leads.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
                 <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$49</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', '10 Knowledge Training', '300 Leads Collect', 'Lead Capture Only (No Property Listings)'].map((f, i) => (
+                {['1 AI Chatbot', 'Lead Capture Only (No Property Listings)', 'Standard Website Scraping', 'Basic Analytics & Lead Capture', 'Standard Support'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#B8C4BC" strokeWidth={3} />
@@ -504,13 +504,13 @@ export default function Home() {
               whileHover={{ y: -6, boxShadow: '0 0 60px rgba(201,162,39,0.22)' }}>
               <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #D4AF37, #E5C158)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>MOST POPULAR</div>
               <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Premium</h3>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Live property listings shown to buyers & hot leads captured.</p>
+              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Shows live property listings to buyers, captures hot leads, and syncs real estate data.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
                 <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$79</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', 'Live Property Listings Shown to Buyers', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Data Sync from Realtor.ca'].map((f, i) => (
+                {['1 AI Chatbot', 'Live Property Listings Shown to Buyers', 'Real Estate Listings Scraping', 'Data Sync from Realtor.ca', 'Advanced CRM Lead Mapping', 'Live Human Takeover'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#D4AF37" strokeWidth={3} />
