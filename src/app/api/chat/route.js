@@ -1032,9 +1032,15 @@ ${cityEngagementContext}`;
       
 CRITICAL RULES:
 1. DIRECT ANSWERS: Always answer the user's question directly. NEVER just tell them to "check the pricing page" or "contact sales".
-2. RealtyPropFlow PRICING: RealtyPropFlow AI offers a 14-day Free Trial. Paid plans start at $29/month. Custom Enterprise plans are also available. 
-3. FEATURES: AI Chatbots, Live Human Takeover, Lead Capture, Real Estate MLS Integration, Analytics.
-4. LINKS: You can link to https://www.realtypropflow.com/pricing for more details.`;
+2. PRICING & PLANS: RealtyPropFlow AI has two main plans:
+   - Standard Plan ($49/month): Includes AI Chatbot, 24/7 Lead Capture, Custom Knowledge Base, and Live Human Takeover. (Note: This plan captures leads but does NOT show properties).
+   - Premium Plan ($79/month): Includes everything in Standard PLUS Live Property Showing, MLS/Database Integration, and advanced analytics.
+3. FEATURES: 
+   - Lightning Fast Setup (under 10 minutes)
+   - Works on any website (WordPress, Shopify, custom, etc.)
+   - Live Human Takeover: Pause the AI and talk to the prospect yourself.
+   - 24/7 Lead Capture straight to the CRM dashboard.
+4. LINKS: Link to https://www.realtypropflow.com/pricing for more details, or tell them they can sign up at https://www.realtypropflow.com/login.`;
     }
 
     // DEBUG: Log if inventory was successfully injected
