@@ -176,3 +176,110 @@ button {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* ─────────────────────────────────────────────
+   DASHBOARD — MOBILE RESPONSIVE
+   ───────────────────────────────────────────── */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 9999;
+  background: rgba(0,0,0,0.9);
+  border: 1px solid rgba(201,162,39,0.35);
+  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 299;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.open {
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+
+  .dashboard-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -280px;
+    height: 100vh;
+    z-index: 300 !important;
+    transition: left 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+    width: 260px !important;
+    overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.8) !important;
+  }
+
+  .dashboard-sidebar.sidebar-open {
+    left: 0 !important;
+  }
+
+  .dashboard-main {
+    padding: 70px 16px 32px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Horizontal scroll for tables */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 2-col stat cards */
+  .stats-grid-2, .dashboard-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Plans go full width */
+  .plans-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-main {
+    padding: 68px 12px 28px !important;
+  }
+
+  /* 1-col on smallest screens */
+  .stats-grid-2, .dashboard-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Full-width inputs */
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="url"], textarea, select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Page headings */
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px !important; }
+}
+
+

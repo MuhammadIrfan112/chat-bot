@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -18,6 +18,7 @@ export default function DashboardLayout({ children }) {
   const [userEmail, setUserEmail] = useState('');
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const router = useRouter();
@@ -183,19 +184,33 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className={inter.className} style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }}>
+
+      {/* Mobile Sidebar Toggle Button */}
+      <button className="sidebar-toggle" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+        <Menu size={20} />
+      </button>
+
+      {/* Overlay */}
+      <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       
       {/* Ultra Premium Sidebar */}
-      <aside style={{ width: '280px', backgroundColor: 'var(--bg-sidebar)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 10 }}>
+      <aside className={`dashboard-sidebar${sidebarOpen ? ' sidebar-open' : ''}`} style={{ width: '280px', backgroundColor: 'var(--bg-sidebar)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 10 }}>
         
         {/* Glow behind Sidebar */}
         <div style={{ position: 'absolute', top: '10%', left: '-50%', width: '100%', height: '50%', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.1, zIndex: 0, pointerEvents: 'none' }}></div>
 
         {/* Logo Area */}
-        <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '6px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
-            <img src="/logo-icon.png" alt="RealtyPropFlow AI Icon" style={{ height: '20px', width: '20px', objectFit: 'contain' }} />
+        <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '6px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
+              <img src="/logo-icon.png" alt="RealtyPropFlow AI Icon" style={{ height: '20px', width: '20px', objectFit: 'contain' }} />
+            </div>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', color: 'white' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></h2>
           </div>
-          <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', color: 'white' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></h2>
+          {/* Close button on mobile */}
+          <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }} aria-label="Close menu">
+            <X size={20} />
+          </button>
         </div>
         
         {/* Navigation */}
@@ -205,7 +220,7 @@ export default function DashboardLayout({ children }) {
           {navItems.map((item) => {
             const isActive = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
             return (
-              <Link key={item.path} href={item.path} style={{ 
+              <Link key={item.path} href={item.path} onClick={() => setSidebarOpen(false)} style={{ 
                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
                 color: isActive ? 'white' : 'var(--text-secondary)', 
                 backgroundColor: isActive ? 'rgba(255,255,255,0.03)' : 'transparent', 
@@ -296,7 +311,7 @@ export default function DashboardLayout({ children }) {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, padding: '48px 56px', overflowY: 'auto', position: 'relative' }}>
+      <main className="dashboard-main" style={{ flex: 1, padding: '48px 56px', overflowY: 'auto', position: 'relative' }}>
         {impersonatedEmail && (
           <div style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
