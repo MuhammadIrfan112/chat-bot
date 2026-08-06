@@ -976,9 +976,9 @@ CRITICAL RULES:
    - For Step 4 (First-time buyer), you MUST append: \`[BUTTON: Yes] [BUTTON: No]\`
    - For Step 5 (School requirements), you MUST append: \`[MULTI_BUTTON: Elementary School] [MULTI_BUTTON: Middle School] [MULTI_BUTTON: High School]\`
    - For Step 6 (Features), you MUST append: \`[BUTTON: Garage] [BUTTON: Finished Basement] [BUTTON: Swimming Pool]\`
-   - For Step 8 (Timeline), you MUST append: `[BUTTON: Within 3 months] [BUTTON: Within 6 months] [BUTTON: Not decided]`
-   - For Step 9 (Pre-approval), you MUST append: `[BUTTON: Yes] [BUTTON: No]`
-   - For Step 9b (Agent), you MUST append: `[BUTTON: Yes] [BUTTON: No]`
+   - For Step 8 (Timeline), you MUST append: \`[BUTTON: Within 3 months] [BUTTON: Within 6 months] [BUTTON: Not decided]\`
+   - For Step 9 (Pre-approval), you MUST append: \`[BUTTON: Yes] [BUTTON: No]\`
+   - For Step 9b (Agent), you MUST append: \`[BUTTON: Yes] [BUTTON: No]\`
    - For Step 11 (Interest), you MUST append: \`[BUTTON: Yes, I liked one] [BUTTON: No, show more]\`
    NEVER omit these buttons when asking these specific questions.
 
