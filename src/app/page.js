@@ -534,7 +534,6 @@ export default function Home() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
             style={{
-            style={{
               background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1813 40%, #050505 100%)',
               borderRadius: '28px',
               padding: 'clamp(36px, 5vw, 60px)',
