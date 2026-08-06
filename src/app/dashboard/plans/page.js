@@ -58,8 +58,8 @@ export default function PlansPage() {
     {
       name: 'Standard',
       description: 'Lead capture only — no live property listings shown. Perfect for agents focused on qualifying leads.',
-      monthlyPrice: '69',
-      yearlyPrice: '62',
+      monthlyPrice: '49',
+      yearlyPrice: '42',
       icon: <Star size={24} color="#818CF8" />,
       features: [
         '1 AI Chatbot',
@@ -74,8 +74,8 @@ export default function PlansPage() {
     {
       name: 'Premium',
       description: 'Shows live property listings to buyers, captures hot leads, and syncs real estate data.',
-      monthlyPrice: '99',
-      yearlyPrice: '89',
+      monthlyPrice: '79',
+      yearlyPrice: '69',
       icon: <Zap size={24} color="#FBBF24" />,
       features: [
         '1 AI Chatbot',
