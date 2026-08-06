@@ -496,6 +496,18 @@ export async function POST(req) {
         }
       }
     }
+    // ── Demo Bot Fallback (demo-real-estate, demo-ecommerce) ───────────────
+    if (bot_id && bot_id.startsWith('demo-')) {
+      if (bot_id === 'demo-real-estate') {
+        botName = 'Real Estate Bot';
+        websiteUrl = 'https://real-state-23j6.vercel.app';
+        isRealEstateEarly = true;
+      } else if (bot_id === 'demo-ecommerce') {
+        botName = 'NOVA Fashion';
+        websiteUrl = 'https://nova-fashion-demo.vercel.app';
+        isEcommerceEarly = true;
+      }
+    }
 
     if (session_id) {
       const { data: session } = await supabase
