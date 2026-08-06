@@ -632,8 +632,8 @@ export async function POST(req) {
         }
 
         if (plan === 'standard') {
-          // In standard plan, we never show properties, just output [START_LEAD_CAPTURE] after asking the extra question.
-          // Wait, the extra question is handled inside the system instruction.
+          // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
+          // No property context needed here.
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
@@ -653,18 +653,19 @@ Instead, reply EXACTLY with this:
 Then show these city info buttons on a new line (use CITY_BTN tag, NOT BUTTON tag):
 [CITY_BTN: 🏫 Schools] [CITY_BTN: 🌳 Parks] [CITY_BTN: 🚇 Transportation] [CITY_BTN: 🛒 Shopping & Dining] [CITY_BTN: 🏥 Healthcare] [CITY_BTN: 🏡 Neighborhood] [CITY_BTN: 🏘️ Housing Market] [CITY_BTN: 👥 Community] [CITY_BTN: 💡 Buyer Tips]
 
-CRITICALLY IMPORTANT: Immediately below the buttons, you MUST output nine [CITY_INFO] tags with DETAILED, COMPREHENSIVE, REAL information about ${detectedCity}. Each section must be rich and professional — NOT generic placeholders.
+CRITICALLY IMPORTANT: Immediately below the buttons, you MUST output nine [CITY_INFO] tags with DETAILED, COMPREHENSIVE, REAL information about ${detectedCity}. Each section must be rich, professional, and formatted with real paragraphs — NOT bullet lists with literal \\n characters. Use proper spacing and full sentences.
 
-FORMAT EXACTLY LIKE THIS (fill with real city-specific data):
-[CITY_INFO: 🏫 Schools | **Schools in ${detectedCity}**\\n\\n• **Elementary:** List 2-3 actual elementary/primary schools in ${detectedCity} with brief quality notes\\n• **Middle School:** List 1-2 actual middle schools\\n• **High School:** List 1-2 actual high schools with notable programs\\n• **School District:** Name the school district and any ratings/rankings\\n• **Private/Charter Options:** Mention any notable private or charter schools nearby]
-[CITY_INFO: 🌳 Parks | **Parks & Outdoor Recreation in ${detectedCity}**\\n\\n• **Main Parks:** List 2-3 popular parks or recreation areas with what they offer\\n• **Trails & Paths:** Mention cycling paths, walking trails, or nature preserves\\n• **Sports Facilities:** Note any sports fields, courts, or community recreation centers\\n• **Family Spots:** Mention playgrounds, splash pads, or family-friendly outdoor areas]
-[CITY_INFO: 🚇 Transportation | **Getting Around ${detectedCity}**\\n\\n• **Public Transit:** Describe bus routes, subway/metro access, or train stations serving the area\\n• **Major Roads & Highways:** List key highways or expressways for commuters\\n• **Commute Times:** Approximate commute times to nearest major city center\\n• **Airport Access:** Distance to nearest major airport\\n• **Walkability & Biking:** Describe walkability score and bike infrastructure]
-[CITY_INFO: 🛒 Shopping & Dining | **Shopping & Dining in ${detectedCity}**\\n\\n• **Shopping:** Name key malls, plazas, or shopping districts\\n• **Grocery:** Mention major grocery stores (e.g., Whole Foods, Walmart, Costco) nearby\\n• **Restaurants:** Describe the dining scene — cuisines available, local favorites\\n• **Cafes & Nightlife:** Mention coffee shops, bars, or entertainment districts\\n• **Farmers Markets:** Note any local markets or specialty food areas]
-[CITY_INFO: 🏥 Healthcare | **Healthcare in ${detectedCity}**\\n\\n• **Hospitals:** Name 1-2 major hospitals or medical centers serving the area\\n• **Clinics & Urgent Care:** Mention availability of walk-in clinics and specialist offices\\n• **Pharmacies:** Note major pharmacy chains available\\n• **Senior Care:** Mention any senior care or assisted living facilities if relevant\\n• **Mental Health & Wellness:** Note gyms, wellness centers, or mental health services]
-[CITY_INFO: 🏡 Neighborhood | **Neighborhood Character of ${detectedCity}**\\n\\n• **Overall Vibe:** Describe the character (suburban, urban, quiet, family-friendly, trendy, etc.)\\n• **Diversity:** Describe cultural diversity and any notable communities\\n• **Safety:** Mention general safety reputation or crime statistics context\\n• **Street Appeal:** Describe architecture styles, green spaces, sidewalks\\n• **Who Lives Here:** Describe the typical resident profile (families, young professionals, retirees)]
-[CITY_INFO: 🏘️ Housing Market | **Housing Market in ${detectedCity}**\\n\\n• **Average Home Prices:** Give current approximate price ranges for different home types\\n• **Market Trend:** Is it a buyer's or seller's market? Prices rising or stable?\\n• **Property Types:** What types of homes dominate (detached, condos, townhouses)?\\n• **Rental Market:** Describe rental demand and average rent ranges\\n• **Investment Potential:** Is this area growing? Any new developments planned?]
-[CITY_INFO: 👥 Community | **Community Feel in ${detectedCity}**\\n\\n• **Community Events:** Mention festivals, farmers markets, or annual events\\n• **Local Organizations:** Note active community groups, neighborhood associations\\n• **Libraries & Culture:** Mention libraries, art centers, or cultural institutions\\n• **Religious Institutions:** Diversity of places of worship\\n• **Volunteerism & Civic Life:** Describe community engagement culture]
-[CITY_INFO: 💡 Buyer Tips | **Things Buyers Should Know About ${detectedCity}**\\n\\n• **Why Buyers Choose ${detectedCity}:** Top 2-3 reasons buyers are drawn to this area\\n• **Ideal Buyer Profile:** Who is this city best suited for? (families, investors, retirees, etc.)\\n• **Pros:** Top advantages of living in ${detectedCity}\\n• **Cons / Watch Out For:** Honest considerations buyers should weigh\\n• **Pro Tip:** One insider tip for buyers looking in ${detectedCity}]`;
+FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professional sentences and paragraphs):
+[CITY_INFO: 🏫 Schools | **Schools in ${detectedCity}** | ${detectedCity} offers a strong educational environment. The area is served by [School District Name], which includes well-regarded schools such as [Elementary 1] and [Elementary 2] at the primary level, [Middle School Name] for intermediate grades, and [High School Name] known for its [notable programs]. Private and charter options also exist for families seeking alternatives.]
+[CITY_INFO: 🌳 Parks | **Parks & Outdoor Recreation in ${detectedCity}** | Residents of ${detectedCity} enjoy abundant green space. [Park Name 1] is a local favourite, offering [features]. [Park Name 2] provides trails, sports courts, and picnic areas. Cyclists and walkers can explore [trail name], and families frequent [playground/splash pad area] for year-round recreation.]
+[CITY_INFO: 🚇 Transportation | **Getting Around ${detectedCity}** | ${detectedCity} is well connected for commuters. Public transit includes [bus routes/subway lines/GO Train if applicable]. Major highways such as [Highway names] provide quick access to [nearby city]. The nearest major airport is [Airport Name], approximately [X] minutes away. The area also has good walkability in the [neighbourhood/downtown area] and growing cycling infrastructure.]
+[CITY_INFO: 🛒 Shopping & Dining | **Shopping & Dining in ${detectedCity}** | ${detectedCity} offers a diverse shopping and dining experience. Residents shop at [mall/plaza names] and major retailers like Walmart, Costco, and Whole Foods are nearby. The restaurant scene features [cuisine types] with popular spots in [area]. Local cafés, weekend farmers markets, and a vibrant nightlife scene add to the community's charm.]
+[CITY_INFO: 🏥 Healthcare | **Healthcare in ${detectedCity}** | Healthcare access in ${detectedCity} is excellent. The area is served by [Hospital Name], a full-service medical centre, alongside several walk-in clinics and specialist offices. Major pharmacy chains including Shoppers Drug Mart and Rexall are conveniently located throughout the city. Residents also benefit from numerous gyms, wellness studios, and mental health services.]
+[CITY_INFO: 🏡 Neighborhood | **Neighbourhood Character of ${detectedCity}** | ${detectedCity} is known for its [character — e.g., quiet, family-friendly, diverse, vibrant] atmosphere. The area attracts [typical resident profile — e.g., young families, professionals, retirees]. Streets are lined with [architectural styles — e.g., mature trees and detached homes / modern condos], and the community is generally regarded as safe and welcoming, with a strong sense of local identity.]
+[CITY_INFO: 🏘️ Housing Market | **Housing Market in ${detectedCity}** | The housing market in ${detectedCity} is currently [buyer's/seller's] market. Detached homes average around [price range], while condos and townhouses range from [price range]. The market has been [trending up/stable] with growing demand from [buyer profile]. Rental demand remains strong, with average rents for [unit type] sitting around [rent range]. New developments in [area/neighbourhood] signal continued investment in the city.]
+[CITY_INFO: 👥 Community | **Community Feel in ${detectedCity}** | ${detectedCity} has a vibrant and engaged community. Annual events such as [festival/market names] bring residents together. The city has an active network of neighbourhood associations, libraries, and cultural institutions including [examples]. Places of worship represent a diverse range of faiths, and volunteer and civic participation rates are high, reflecting a strong sense of community pride.]
+[CITY_INFO: 💡 Buyer Tips | **What Buyers Should Know About ${detectedCity}** | Buyers are drawn to ${detectedCity} for its [top reasons — e.g., excellent schools, transit access, affordability relative to nearby cities]. It is best suited for [ideal buyer profile]. Key advantages include [pros]. Buyers should be aware of [honest consideration — e.g., competition in certain price ranges, limited inventory in specific neighbourhoods]. Pro tip: [insider advice specific to this city's market].]
+`;
           } else {
             propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
           }
@@ -758,35 +759,28 @@ Is this information correct?"
 
 Step 11. Post-Confirmation Action:
 ${plan === 'standard' ? 
-`If the user confirms the information is correct in Step 10, DO NOT show properties. 
-Instead, you must acknowledge and ask ONE final question based on their profile.
-"Let me find out properties according to your requirements. By the way, would you like me to send you [INSERT OPTION HERE]?"
-
-- If they are a first-time buyer (from Step 4): insert "information on first time buying"
-- If they are looking for an investment property (from Step 1): insert "information on investment properties"
-- Otherwise: insert "information about the buying process"
-
-[BUTTON: Yes] [BUTTON: No]
-
-Step 12. Lead Capture:
-Once the user answers the Step 11 question (Yes/No), reply ONLY with exactly this hidden tag:
+`If the user confirms the information is correct in Step 10, DO NOT search for or show any properties.
+Instead, respond with EXACTLY this message:
+"Perfect! I've noted all your requirements. I'll search for properties that match your needs and get back to you as soon as possible."
+Then immediately reply ONLY with this hidden tag on the next line:
 [START_LEAD_CAPTURE]` 
 : 
-`If the user confirms the information is correct in Step 10, follow these rules STRICTLY:
+`If the user confirms the information is correct in Step 10, follow these rules STRICTLY in order:
 
-**RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 11 or CRITICAL OVERRIDE FOR STEP 11 AND STEP 12 in the prompt:**
-Follow it EXACTLY. Show the searching/loading message and ALL city engagement buttons (Schools, Parks, Transportation, Shopping, Dining, Healthcare, Community) with their CITY_INFO content. Do NOT show any properties yet. The properties will load automatically.
+**RULE A — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
+Immediately show ONLY those exact property cards. Do NOT add, invent, or modify any details.
+⛔ After showing properties, do NOT ask if they want to view more or capture a lead. The conversation continues naturally.
 
-**RULE B — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
-Show ONLY those exact property cards. Do NOT add, invent, or modify any property details.
+**RULE B — IF you see a CRITICAL OVERRIDE FOR STEP 11 or CRITICAL OVERRIDE FOR STEP 11 AND STEP 12 in the prompt:**
+Follow it EXACTLY. This means properties are being fetched live. Show the searching message and ALL city engagement buttons (Schools, Parks, Transportation, Shopping, Dining, Healthcare, Community) with their CITY_INFO content. Do NOT show any properties yet. The properties will arrive automatically.
 
-**RULE C — IF neither of the above exist:**
+**RULE C — IF neither RULE A nor RULE B exist:**
 Do NOT make up properties. Do NOT use general knowledge. Say exactly this:
 "I'm sorry, I couldn't find any live properties matching that right now. Please try again in a moment or let me know if you'd like to adjust your search."
 
-⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings. If the data is not in this prompt, it does not exist.
+⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings. If the data is not explicitly in this prompt, it does not exist.
 
-If the user says "No", ask them what information they would like to correct and update your understanding.
+If the user says "No" to the summary, ask them what information they would like to correct and update your understanding.
 
 Step 12. Lead Capture:
 If the user specifically asks to arrange a viewing, reply ONLY with exactly this hidden tag:
@@ -838,22 +832,30 @@ Once all information is collected, you MUST generate a summary and ask for confi
 "To summarize, you're looking for a [Bedrooms]-bedroom [Property Type] in [City] with a budget of [Budget], parking: [Yes/No], pets: [Yes/No], and moving [Timeline]. Is this correct?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 12. Show Properties ONLY:
+Step 12. Show Properties / Lead Capture:
 CRITICAL RULE: DO NOT show properties until the user confirms the summary in Step 11.
 If the user says "No", ask them what they would like to change.
-If the user confirms (says "Yes"), follow these rules STRICTLY:
+${plan === 'standard' ?
+`If the user confirms (says "Yes"), do NOT search for or show any properties.
+Respond EXACTLY with:
+"Perfect! I've noted your rental requirements. I'll find suitable properties and get back to you very soon."
+Then immediately output:
+[START_LEAD_CAPTURE]`
+:
+`If the user confirms (says "Yes"), follow these rules STRICTLY in order:
 
-**RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 12 in the prompt:**
-Follow it EXACTLY. Show the searching/loading message and the city engagement buttons. Do NOT show any properties yet. The properties will load automatically.
+**RULE A — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
+Immediately show ONLY those exact property cards. Do NOT add, invent, or modify any details.
+⛔ After showing properties, do NOT ask if they want to view more or capture a lead.
 
-**RULE B — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
-Show ONLY those exact property cards. Do NOT add, invent, or modify any property details.
+**RULE B — IF you see a CRITICAL OVERRIDE FOR STEP 12 in the prompt:**
+Follow it EXACTLY. Show the searching message and ALL city engagement buttons with CITY_INFO content. Do NOT show any properties yet.
 
-**RULE C — IF neither of the above exist:**
-Do NOT make up properties. Do NOT use general knowledge. Say exactly this:
+**RULE C — IF neither RULE A nor RULE B exist:**
+Do NOT make up properties. Say exactly this:
 "I'm sorry, I couldn't find any live properties matching that right now. Please try again in a moment or let me know if you'd like to adjust your search."
 
-⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings. If the data is not in this prompt, it does not exist.
+⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings.`}
 
 
 PATH 3 — SELLING OR HOME VALUE:
