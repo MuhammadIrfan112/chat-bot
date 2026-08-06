@@ -791,61 +791,60 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
                     {/* City Engagement Accordion Buttons */}
                     {msg.cityBtns && msg.cityBtns.length > 0 && (
-                      <div style={{ marginTop: '10px' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                      <div style={{ marginTop: '12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           {msg.cityBtns.map((btn, bi) => {
                             const panelKey = `${idx}-${btn}`;
                             const isOpen = expandedCityPanel === panelKey;
+                            const info = msg.cityInfoMap?.[btn];
                             return (
-                              <button
-                                key={bi}
-                                onClick={() => setExpandedCityPanel(isOpen ? null : panelKey)}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '20px',
-                                  border: `1.5px solid ${isOpen ? 'var(--primary)' : '#d1d5db'}`,
-                                  background: isOpen ? 'var(--primary)' : 'white',
-                                  color: isOpen ? 'white' : '#374151',
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}
-                              >
-                                {btn} {isOpen ? '▲' : '▼'}
-                              </button>
+                              <div key={bi}>
+                                <button
+                                  onClick={() => setExpandedCityPanel(isOpen ? null : panelKey)}
+                                  style={{
+                                    width: '100%',
+                                    padding: '10px 14px',
+                                    borderRadius: isOpen ? '10px 10px 0 0' : '10px',
+                                    border: `1.5px solid ${isOpen ? 'var(--primary)' : '#e5e7eb'}`,
+                                    background: isOpen ? 'linear-gradient(90deg, var(--primary) 0%, #6366f1 100%)' : 'white',
+                                    color: isOpen ? 'white' : '#374151',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '8px',
+                                    boxShadow: isOpen ? '0 2px 8px rgba(99,102,241,0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
+                                    textAlign: 'left'
+                                  }}
+                                >
+                                  <span>{btn}</span>
+                                  <span style={{ fontSize: '11px', opacity: 0.8 }}>{isOpen ? '▲' : '▼'}</span>
+                                </button>
+                                {isOpen && (
+                                  <div style={{
+                                    background: '#f8faff',
+                                    border: '1.5px solid var(--primary)',
+                                    borderTop: 'none',
+                                    borderRadius: '0 0 10px 10px',
+                                    padding: '12px 14px',
+                                    fontSize: '12px',
+                                    color: '#374151',
+                                    lineHeight: '1.7',
+                                    animation: 'fadeIn 0.2s ease'
+                                  }}>
+                                    {info
+                                      ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{info}</ReactMarkdown>
+                                      : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Loading info for {btn}...</span>
+                                    }
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
                         </div>
-                        {/* Accordion panels */}
-                        {msg.cityBtns.map((btn, bi) => {
-                          const panelKey = `${idx}-${btn}`;
-                          const isOpen = expandedCityPanel === panelKey;
-                          const info = msg.cityInfoMap?.[btn];
-                          if (!isOpen) return null;
-                          return (
-                            <div key={bi} style={{
-                              background: '#f9fafb',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '10px',
-                              padding: '10px 14px',
-                              marginBottom: '6px',
-                              fontSize: '12px',
-                              color: '#374151',
-                              lineHeight: '1.6',
-                              animation: 'fadeIn 0.2s ease'
-                            }}>
-                              <div style={{ fontWeight: '700', color: 'var(--primary)', marginBottom: '6px' }}>{btn}</div>
-                              {info
-                                ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{info}</ReactMarkdown>
-                                : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Loading info for {btn}...</span>
-                              }
-                            </div>
-                          );
-                        })}
                       </div>
                     )}
 

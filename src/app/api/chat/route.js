@@ -633,20 +633,23 @@ export async function POST(req) {
 You are currently searching for properties in ${detectedCity}, ${detectedState || ''}. 
 Because the search is running in the background, you MUST override Step 11 (Buy flow) AND Step 12 (Rent flow). DO NOT show any property cards yet.
 Instead, reply EXACTLY with this:
-"🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, here's a quick overview of the area! 🏙️"
+"🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️"
 
 Then show these city info buttons on a new line (use CITY_BTN tag, NOT BUTTON tag):
-[CITY_BTN: 🏫 Schools] [CITY_BTN: 🌳 Parks] [CITY_BTN: 🚇 Transportation] [CITY_BTN: 🛒 Shopping] [CITY_BTN: 🍽️ Dining] [CITY_BTN: 🏥 Healthcare] [CITY_BTN: 🏛️ Community]
+[CITY_BTN: 🏫 Schools] [CITY_BTN: 🌳 Parks] [CITY_BTN: 🚇 Transportation] [CITY_BTN: 🛒 Shopping & Dining] [CITY_BTN: 🏥 Healthcare] [CITY_BTN: 🏡 Neighborhood] [CITY_BTN: 🏘️ Housing Market] [CITY_BTN: 👥 Community] [CITY_BTN: 💡 Buyer Tips]
 
-CRITICALLY IMPORTANT: Immediately below the buttons, you MUST output seven [CITY_INFO] tags (one for each button) containing 2-3 short, realistic bullet points about ${detectedCity}.
-FORMAT EXACTLY LIKE THIS:
-[CITY_INFO: 🏫 Schools | - Bullet 1 \n- Bullet 2]
-[CITY_INFO: 🌳 Parks | - Bullet 1 \n- Bullet 2]
-[CITY_INFO: 🚇 Transportation | - Bullet 1 \n- Bullet 2]
-[CITY_INFO: 🛒 Shopping | - Bullet 1 \n- Bullet 2]
-[CITY_INFO: 🍽️ Dining | - Bullet 1 \n- Bullet 2]
-[CITY_INFO: 🏥 Healthcare | - Bullet 1 \n- Bullet 2]
-[CITY_INFO: 🏛️ Community | - Bullet 1 \n- Bullet 2]`;
+CRITICALLY IMPORTANT: Immediately below the buttons, you MUST output nine [CITY_INFO] tags with DETAILED, COMPREHENSIVE, REAL information about ${detectedCity}. Each section must be rich and professional — NOT generic placeholders.
+
+FORMAT EXACTLY LIKE THIS (fill with real city-specific data):
+[CITY_INFO: 🏫 Schools | **Schools in ${detectedCity}**\\n\\n• **Elementary:** List 2-3 actual elementary/primary schools in ${detectedCity} with brief quality notes\\n• **Middle School:** List 1-2 actual middle schools\\n• **High School:** List 1-2 actual high schools with notable programs\\n• **School District:** Name the school district and any ratings/rankings\\n• **Private/Charter Options:** Mention any notable private or charter schools nearby]
+[CITY_INFO: 🌳 Parks | **Parks & Outdoor Recreation in ${detectedCity}**\\n\\n• **Main Parks:** List 2-3 popular parks or recreation areas with what they offer\\n• **Trails & Paths:** Mention cycling paths, walking trails, or nature preserves\\n• **Sports Facilities:** Note any sports fields, courts, or community recreation centers\\n• **Family Spots:** Mention playgrounds, splash pads, or family-friendly outdoor areas]
+[CITY_INFO: 🚇 Transportation | **Getting Around ${detectedCity}**\\n\\n• **Public Transit:** Describe bus routes, subway/metro access, or train stations serving the area\\n• **Major Roads & Highways:** List key highways or expressways for commuters\\n• **Commute Times:** Approximate commute times to nearest major city center\\n• **Airport Access:** Distance to nearest major airport\\n• **Walkability & Biking:** Describe walkability score and bike infrastructure]
+[CITY_INFO: 🛒 Shopping & Dining | **Shopping & Dining in ${detectedCity}**\\n\\n• **Shopping:** Name key malls, plazas, or shopping districts\\n• **Grocery:** Mention major grocery stores (e.g., Whole Foods, Walmart, Costco) nearby\\n• **Restaurants:** Describe the dining scene — cuisines available, local favorites\\n• **Cafes & Nightlife:** Mention coffee shops, bars, or entertainment districts\\n• **Farmers Markets:** Note any local markets or specialty food areas]
+[CITY_INFO: 🏥 Healthcare | **Healthcare in ${detectedCity}**\\n\\n• **Hospitals:** Name 1-2 major hospitals or medical centers serving the area\\n• **Clinics & Urgent Care:** Mention availability of walk-in clinics and specialist offices\\n• **Pharmacies:** Note major pharmacy chains available\\n• **Senior Care:** Mention any senior care or assisted living facilities if relevant\\n• **Mental Health & Wellness:** Note gyms, wellness centers, or mental health services]
+[CITY_INFO: 🏡 Neighborhood | **Neighborhood Character of ${detectedCity}**\\n\\n• **Overall Vibe:** Describe the character (suburban, urban, quiet, family-friendly, trendy, etc.)\\n• **Diversity:** Describe cultural diversity and any notable communities\\n• **Safety:** Mention general safety reputation or crime statistics context\\n• **Street Appeal:** Describe architecture styles, green spaces, sidewalks\\n• **Who Lives Here:** Describe the typical resident profile (families, young professionals, retirees)]
+[CITY_INFO: 🏘️ Housing Market | **Housing Market in ${detectedCity}**\\n\\n• **Average Home Prices:** Give current approximate price ranges for different home types\\n• **Market Trend:** Is it a buyer's or seller's market? Prices rising or stable?\\n• **Property Types:** What types of homes dominate (detached, condos, townhouses)?\\n• **Rental Market:** Describe rental demand and average rent ranges\\n• **Investment Potential:** Is this area growing? Any new developments planned?]
+[CITY_INFO: 👥 Community | **Community Feel in ${detectedCity}**\\n\\n• **Community Events:** Mention festivals, farmers markets, or annual events\\n• **Local Organizations:** Note active community groups, neighborhood associations\\n• **Libraries & Culture:** Mention libraries, art centers, or cultural institutions\\n• **Religious Institutions:** Diversity of places of worship\\n• **Volunteerism & Civic Life:** Describe community engagement culture]
+[CITY_INFO: 💡 Buyer Tips | **Things Buyers Should Know About ${detectedCity}**\\n\\n• **Why Buyers Choose ${detectedCity}:** Top 2-3 reasons buyers are drawn to this area\\n• **Ideal Buyer Profile:** Who is this city best suited for? (families, investors, retirees, etc.)\\n• **Pros:** Top advantages of living in ${detectedCity}\\n• **Cons / Watch Out For:** Honest considerations buyers should weigh\\n• **Pro Tip:** One insider tip for buyers looking in ${detectedCity}]`;
           } else {
             propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
           }
