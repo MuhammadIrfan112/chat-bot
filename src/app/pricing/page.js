@@ -8,7 +8,7 @@ export default function Pricing() {
   const plans = [
     {
       name: "Standard",
-      price: "$69",
+      price: "$49",
       period: "/month",
       description: "Perfect for starting agents. Captures leads intelligently without showing live property listings.",
       features: [
@@ -28,7 +28,7 @@ export default function Pricing() {
     },
     {
       name: "Premium",
-      price: "$99",
+      price: "$79",
       period: "/month",
       description: "For top-producing agents. Shows live property listings to buyers and captures hot leads.",
       features: [

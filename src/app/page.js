@@ -475,18 +475,18 @@ export default function Home() {
             <p style={{ color: '#64748B', fontSize: '17px' }}>Cancel anytime. No hidden fees.</p>
           </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', textAlign: 'left' }}>
-            {/* Starter */}
+            {/* Standard */}
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
               style={{ background: 'rgba(15,23,42,0.9)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s' }}
               whileHover={{ y: -6, borderColor: 'rgba(255,255,255,0.16)' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Starter</h3>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Perfect for small businesses.</p>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Standard</h3>
+              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Lead capture only — no live property listings shown.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$69</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$49</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', '10 Knowledge Training', '300 Leads Collect'].map((f, i) => (
+                {['1 AI Chatbot', '10 Knowledge Training', '300 Leads Collect', 'Lead Capture Only (No Property Listings)'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#B8C4BC" strokeWidth={3} />
@@ -495,22 +495,22 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Link href="/login" className={styles.pricingBtn}>Get Started <ArrowRight size={15} /></Link>
+              <Link href="/login" className={styles.pricingBtn}>Get Standard <ArrowRight size={15} /></Link>
             </motion.div>
 
-            {/* Pro */}
+            {/* Premium */}
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
               style={{ background: 'linear-gradient(160deg, rgba(30,27,60,1) 0%, rgba(15,23,42,1) 100%)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(129,140,248,0.3)', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 0 40px rgba(201,162,39,0.12)', transition: 'all 0.3s' }}
               whileHover={{ y: -6, boxShadow: '0 0 60px rgba(201,162,39,0.22)' }}>
               <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #D4AF37, #E5C158)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>MOST POPULAR</div>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Pro</h3>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>For growing teams & agencies.</p>
+              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Premium</h3>
+              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Live property listings shown to buyers & hot leads captured.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$99</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$79</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Data Sync from Realtor.ca'].map((f, i) => (
+                {['1 AI Chatbot', 'Live Property Listings Shown to Buyers', 'Unlimited Knowledge Training', 'Unlimited Leads Capture', 'Live Human Takeover', 'Data Sync from Realtor.ca'].map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Check size={10} color="#D4AF37" strokeWidth={3} />
@@ -519,7 +519,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <Link href="/login" className={`${styles.pricingBtn} ${styles.pricingBtnPro}`}>Choose Pro <ArrowRight size={15} /></Link>
+              <Link href="/login" className={`${styles.pricingBtn} ${styles.pricingBtnPro}`}>Get Premium <ArrowRight size={15} /></Link>
             </motion.div>
           </div>
         </div>
@@ -534,18 +534,19 @@ export default function Home() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
             style={{
-              background: 'linear-gradient(135deg, #0D0A2A 0%, #13104A 40%, #0A1628 100%)',
+            style={{
+              background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1813 40%, #050505 100%)',
               borderRadius: '28px',
               padding: 'clamp(36px, 5vw, 60px)',
-              border: '1px solid rgba(139,92,246,0.25)',
-              boxShadow: '0 0 80px rgba(99,57,234,0.18), 0 40px 100px rgba(0,0,0,0.4)',
+              border: '1px solid rgba(229,193,88,0.25)',
+              boxShadow: '0 0 80px rgba(229,193,88,0.1), 0 40px 100px rgba(0,0,0,0.6)',
               position: 'relative',
               overflow: 'hidden'
             }}
           >
             {/* Background Glow Effects */}
-            <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: '-80px', right: '-60px', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(229,193,88,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-80px', right: '-60px', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(201,162,39,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
             <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '40px' }}>
               
@@ -558,7 +559,7 @@ export default function Home() {
 
                 <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: '900', color: '#F5F0E1', margin: '0 0 12px 0', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
                   Try Our AI Chatbot{' '}
-                  <span style={{ background: 'linear-gradient(90deg, #A78BFA, #818CF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Free for 30 Days!</span>
+                  <span style={{ background: 'linear-gradient(90deg, #E5C158, #D4AF37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Free for 30 Days!</span>
                 </h2>
                 <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: '1.7', maxWidth: '520px', margin: '0 0 28px 0' }}>
                   See the difference an intelligent chatbot can make for your business. Improve customer support, capture more leads, and delight your visitors.
@@ -590,29 +591,29 @@ export default function Home() {
 
               {/* Right: Price Card */}
               <motion.div
-                whileHover={{ y: -6, boxShadow: '0 0 60px rgba(139,92,246,0.3)' }}
+                whileHover={{ y: -6, boxShadow: '0 0 60px rgba(229,193,88,0.15)' }}
                 style={{
-                  background: 'rgba(0,0,0,0.5)',
-                  border: '1px solid rgba(167,139,250,0.25)',
+                  background: 'rgba(0,0,0,0.6)',
+                  border: '1px solid rgba(229,193,88,0.25)',
                   borderRadius: '24px',
                   padding: '36px 40px',
                   textAlign: 'center',
                   backdropFilter: 'blur(20px)',
                   minWidth: '220px',
-                  boxShadow: '0 0 40px rgba(99,57,234,0.2)',
+                  boxShadow: '0 0 40px rgba(229,193,88,0.1)',
                   transition: 'all 0.3s',
                   flexShrink: 0
                 }}
               >
-                <div style={{ fontSize: '11px', color: '#7C3AED', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>One-Time Fee</div>
+                <div style={{ fontSize: '11px', color: '#E5C158', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>One-Time Fee</div>
                 <div style={{ fontSize: '64px', fontWeight: '900', color: 'white', lineHeight: 1, letterSpacing: '-0.05em', marginBottom: '4px' }}>$99</div>
                 <div style={{ fontSize: '13px', color: '#475569', marginBottom: '8px' }}>No monthly charges ever</div>
-                <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, #7C3AED, #818CF8)', margin: '16px auto', borderRadius: '2px' }} />
+                <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, #E5C158, #D4AF37)', margin: '16px auto', borderRadius: '2px' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#94A3B8', textAlign: 'left', marginBottom: '8px' }}>
                   {['Setup & Installation', 'Configuration & Testing', 'Go-Live Support'].map((item, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(129,140,248,0.2)', border: '1px solid rgba(129,140,248,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Check size={9} color="#818CF8" strokeWidth={3} />
+                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(229,193,88,0.1)', border: '1px solid rgba(229,193,88,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Check size={9} color="#E5C158" strokeWidth={3} />
                       </div>
                       <span>{item}</span>
                     </div>
@@ -632,7 +633,7 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ background: 'linear-gradient(135deg, #0D0A2A, #13104A)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
+            style={{ background: 'linear-gradient(135deg, #0A0A0A, #1A1813)', border: '1px solid rgba(229,193,88,0.3)', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
           >
             {/* Close Button */}
             <button onClick={() => setShowInstallModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'none', border: 'none', color: '#64748B', fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
@@ -642,7 +643,7 @@ export default function Home() {
                 <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
                 <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#F1F5F9', marginBottom: '12px' }}>Thank You Very Much!</h3>
                 <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: 1.6 }}>Our support team will contact you soon to get your chatbot installed.</p>
-                <button onClick={() => setShowInstallModal(false)} style={{ marginTop: '24px', padding: '12px 28px', borderRadius: '50px', background: 'linear-gradient(135deg, #A78BFA, #818CF8)', color: 'white', border: 'none', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Close</button>
+                <button onClick={() => setShowInstallModal(false)} style={{ marginTop: '24px', padding: '12px 28px', borderRadius: '50px', background: 'linear-gradient(135deg, #E5C158, #D4AF37)', color: 'black', border: 'none', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Close</button>
               </div>
             ) : (
               <>
