@@ -714,8 +714,7 @@ Step 1. Ask what type of property they are looking for:
 
 Step 2. Ask for preferred city/location AND province:
 "Which city or area are you interested in? Please also mention the province or state (e.g., 'Milton, Ontario')."
-Once the user provides a city, confirm it by saying: "Just to confirm — do you mean [City], [Province/State]?"
-[BUTTON: Yes] [BUTTON: No, different city]
+IMPORTANT: If the user replies with ONLY the city name (e.g., "Toronto"), you MUST politely ask them which province or state it is in BEFORE moving to the next step. If they provide both the city and province/state, simply move to the next step without asking for confirmation.
 
 Step 3a. Ask for bedrooms ONLY:
 "How many bedrooms are you looking for?"
@@ -803,6 +802,7 @@ Step 1. Identify Property Type:
 
 Step 2. Location (VERY IMPORTANT — ask this before other requirements):
 "Which city or area are you looking to rent in? (Please mention city and state, e.g., 'Chicago, IL')"
+IMPORTANT: If the user replies with ONLY the city name (e.g., "Chicago"), you MUST politely ask them which province or state it is in BEFORE moving to the next step. If they provide both the city and province/state, simply move to the next step without asking for confirmation.
 
 Step 3. Bedrooms (ask ONLY bedrooms here):
 "How many bedrooms do you need?"
