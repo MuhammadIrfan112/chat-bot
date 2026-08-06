@@ -5,10 +5,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(req) {
   const scriptContent = `
 (function() {
-  if (window.RealtyPropFlow_INITIALIZED) return;
-  window.RealtyPropFlow_INITIALIZED = true;
-
   var config = window.CHATBOT_CONFIG || {};
+  var position = config.position === 'left' ? 'left' : 'right';
+  var initFlag = 'RealtyPropFlow_INITIALIZED_' + position;
+
+  if (window[initFlag]) return;
+  window[initFlag] = true;
+
   if (!config.botId) {
     console.error('RealtyPropFlow AI: Missing botId in CHATBOT_CONFIG');
     return;
@@ -31,26 +34,26 @@ export async function GET(req) {
 
   // Create iframe
   var iframe = document.createElement('iframe');
-  iframe.id = 'RealtyPropFlow-chatbot-iframe';
+  iframe.id = 'RealtyPropFlow-chatbot-iframe-' + position;
   
   var isMobile = window.innerWidth <= 768;
   var isTablet = false;
   var timestamp = new Date().getTime();
   var planParams = config.plan ? '&plan=' + encodeURIComponent(config.plan) : '';
-  var iframeUrl = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile' : '?desktop=true') + planParams + '&v=' + timestamp;
+  var iframeUrl = baseUrl + '/bot/' + config.botId + '?position=' + position + (isMobile ? '&device=mobile' : '&desktop=true') + planParams + '&v=' + timestamp;
   iframe.src = iframeUrl;
   
   // Closed: desktop pill button area | mobile: circular button area
   var closedStyle = isMobile
-    ? "position: fixed; bottom: 16px; right: 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
-    : "position: fixed; bottom: 0; right: 0; width: 220px; height: 100px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    ? "position: fixed; bottom: 16px; " + position + ": 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
+    : "position: fixed; bottom: 0; " + position + ": 0; width: 220px; height: 100px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
 
-  var openStyle = "position: fixed; bottom: 0; right: 0; width: 420px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var openStyle = "position: fixed; bottom: 0; " + position + ": 0; width: 420px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   if (isMobile) {
     openStyle = "position: fixed; bottom: 2dvh; left: 3vw; width: 94vw; height: 85dvh; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   } else if (isTablet) {
-    openStyle = "position: fixed; bottom: 0; right: 0; width: 400px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    openStyle = "position: fixed; bottom: 0; " + position + ": 0; width: 400px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   }
 
   iframe.style.cssText = closedStyle;
@@ -61,7 +64,8 @@ export async function GET(req) {
   window.addEventListener('message', function(event) {
     if (event.origin !== baseUrl) return;
     
-    if (event.data && event.data.type === 'CHATBOT_TOGGLE') {
+    // Make sure we only toggle the correct iframe
+    if (event.data && event.data.type === 'CHATBOT_TOGGLE' && event.data.position === position) {
       if (event.data.isOpen) {
         iframe.style.cssText = openStyle;
       } else {

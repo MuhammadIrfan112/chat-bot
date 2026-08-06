@@ -31,6 +31,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [embedPlan, setEmbedPlan] = useState(null);
+  const [embedPosition, setEmbedPosition] = useState('right');
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -65,6 +67,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
   // Device detection — skip if inside a desktop iframe embed
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('plan')) setEmbedPlan(params.get('plan'));
+      if (params.get('position')) setEmbedPosition(params.get('position'));
+    }
+
     if (isDesktopEmbed) {
       // Force desktop mode — iframe handles sizing externally
       setIsMobile(false);
@@ -72,18 +80,16 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       return;
     }
     const checkDevice = () => {
-      // Use parent window width if inside an iframe, else use own window
       let w = window.innerWidth;
       try {
         if (window.parent !== window) {
           w = window.parent.innerWidth || window.innerWidth;
         }
       } catch (e) {
-        // Fallback if blocked by cross-origin policy
         w = window.innerWidth;
       }
       setIsMobile(w <= 768);
-      setIsTablet(false); // Tablet is merged into mobile for full screen chat
+      setIsTablet(false);
     };
     checkDevice();
     window.addEventListener('resize', checkDevice);
@@ -97,6 +103,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     primaryColor: '#1E6FD9',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   };
+
+  const isDemoBot = botConfig.botId === 'demo-real-estate' || botConfig.botId === 'demo-ecommerce';
 
   useEffect(() => {
     if (botConfig?.autoOpen) {
@@ -114,9 +122,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   useEffect(() => {
     if (isOpen && !sessionId) initSession();
     if (typeof window !== 'undefined' && window.parent) {
-      window.parent.postMessage({ type: 'CHATBOT_TOGGLE', isOpen }, '*');
+      window.parent.postMessage({ type: 'CHATBOT_TOGGLE', isOpen, position: embedPosition }, '*');
     }
-  }, [isOpen]);
+  }, [isOpen, embedPosition]);
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -353,6 +361,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     setInput('');
 
     const userMsg = { role: 'user', parts: [{ text: msg }] };
+    const apiMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     
     // Handle Intent Selection
@@ -563,25 +572,22 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       return;
     }
 
-    // ── Loop (REMOVED, handled by AI natively) ─────────
-
     // Normal AI chat
     setIsLoading(true);
     messageCount.current += 1;
 
-    const searchParams = new URLSearchParams(window.location.search);
-    const plan = searchParams.get('plan') || 'premium';
-
     try {
+      const payload = {
+        messages: apiMessages,
+        session_id: sessionId,
+        bot_id: botConfig.botId,
+        plan: embedPlan || 'premium' // Use embedPlan from URL or default to premium
+      };
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: [...messages, userMsg], 
-          session_id: sessionId, 
-          bot_id: botConfig.botId,
-          plan: plan
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const errData = await response.json();
@@ -733,19 +739,23 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     return 'Type your message...';
   };
 
-  const quickReplies = botConfig.botId
-    ? []
-    : ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
+  const showHumanTakeover = !!botConfig.botId && !isHumanTakeover && embedPlan !== 'standard';
+  const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
 
   // Show RE intent options for first message, or RealtyPropFlow quick replies, or nothing
   // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
   const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading' || (botConfig?.name || '').toLowerCase().includes('real state')) && botConfig.botId;
   const lastMsg = messages[messages.length - 1];
   let activeQuickReplies = [];
-  if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {
+
+  if (intentSelected && closingStep && closingStep !== 'open_ended' && showHumanTakeover) {
+    activeQuickReplies = ["🙋‍♀️ Talk to Human"];
+  } else if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {
     activeQuickReplies = lastMsg.quickReplies;
-  } else if (messages.length === 1) {
-    activeQuickReplies = isREBot ? RE_INTENT_OPTIONS : quickReplies;
+  } else if (messages.length === 1 && isREBot) {
+    activeQuickReplies = RE_INTENT_OPTIONS;
+  } else if (messages.length === 1 && !botConfig.botId) {
+    activeQuickReplies = ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
   }
 
   return (
@@ -760,6 +770,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                 <div className={styles.status}>
                   {isHumanTakeover ? '🟡 Live Agent Connected' : '🟢 AI Online'}
                 </div>
+                {isDemoBot && embedPlan && (
+                  <div style={{ marginTop: '2px', fontSize: '10px', background: embedPlan === 'premium' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.15)', color: embedPlan === 'premium' ? '#FDE047' : '#E2E8F0', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {embedPlan === 'premium' ? '👑 Premium Plan' : '📦 Standard Plan'}
+                  </div>
+                )}
               </div>
             </div>
             <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
