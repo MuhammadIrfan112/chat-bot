@@ -56,13 +56,14 @@ export default function PlansPage() {
 
   const plans = [
     {
-      name: 'Starter',
-      description: 'Perfect for simple websites and basic chatbot needs.',
+      name: 'Standard',
+      description: 'Lead capture only — no live property listings shown. Perfect for agents focused on qualifying leads.',
       monthlyPrice: '69',
       yearlyPrice: '62',
       icon: <Star size={24} color="#818CF8" />,
       features: [
         '1 AI Chatbot',
+        'Lead Capture Only (No Property Listings)',
         'Standard Website Scraping',
         'Basic Analytics & Lead Capture',
         'Standard Support'
@@ -71,13 +72,14 @@ export default function PlansPage() {
       planId: 'starter'
     },
     {
-      name: 'Pro',
-      description: 'Advanced AI features for Real Estate and E-commerce.',
+      name: 'Premium',
+      description: 'Shows live property listings to buyers, captures hot leads, and syncs real estate data.',
       monthlyPrice: '99',
       yearlyPrice: '89',
       icon: <Zap size={24} color="#FBBF24" />,
       features: [
         '1 AI Chatbot',
+        'Live Property Listings Shown to Buyers',
         'Real Estate Listings Scraping',
         'Data Sync from Realtor.ca',
         'Advanced CRM Lead Mapping',

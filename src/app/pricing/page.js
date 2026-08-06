@@ -7,36 +7,39 @@ import styles from '../page.module.css';
 export default function Pricing() {
   const plans = [
     {
-      name: "Starter",
+      name: "Standard",
       price: "$69",
       period: "/month",
-      description: "Perfect for starting agents and small agencies looking to automate lead capture.",
+      description: "Perfect for starting agents. Captures leads intelligently without showing live property listings.",
       features: [
         { name: "1 AI Chatbot", included: true },
         { name: "10 Knowledge Training", included: true },
         { name: "300 Leads Collect", included: true },
+        { name: "Lead Capture Only (No Property Listings)", included: true },
         { name: "Live Human Takeover", included: false },
         { name: "Unlimited Knowledge Training", included: false },
         { name: "Unlimited Leads Capture", included: false },
+        { name: "Live Property Listings Shown", included: false },
         { name: "Data Sync from Realtor.ca", included: false },
       ],
-      ctaText: "Start Starter",
+      ctaText: "Start Standard",
       popular: false,
       glow: "rgba(255,255,255,0.05)"
     },
     {
-      name: "Pro",
+      name: "Premium",
       price: "$99",
       period: "/month",
-      description: "For top-producing agents who need advanced features and high volume.",
+      description: "For top-producing agents. Shows live property listings to buyers and captures hot leads.",
       features: [
         { name: "1 AI Chatbot", included: true },
         { name: "Unlimited Knowledge Training", included: true },
         { name: "Unlimited Leads Capture", included: true },
+        { name: "Live Property Listings Shown", included: true },
         { name: "Live Human Takeover", included: true },
         { name: "Data Sync from Realtor.ca", included: true },
       ],
-      ctaText: "Get Pro (Recommended)",
+      ctaText: "Get Premium (Recommended)",
       popular: true,
       glow: "rgba(201,162,39,0.2)"
     }

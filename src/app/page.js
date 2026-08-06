@@ -605,7 +605,7 @@ export default function Home() {
                 }}
               >
                 <div style={{ fontSize: '11px', color: '#7C3AED', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>One-Time Fee</div>
-                <div style={{ fontSize: '64px', fontWeight: '900', color: 'white', lineHeight: 1, letterSpacing: '-0.05em', marginBottom: '4px' }}>$100</div>
+                <div style={{ fontSize: '64px', fontWeight: '900', color: 'white', lineHeight: 1, letterSpacing: '-0.05em', marginBottom: '4px' }}>$99</div>
                 <div style={{ fontSize: '13px', color: '#475569', marginBottom: '8px' }}>No monthly charges ever</div>
                 <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, #7C3AED, #818CF8)', margin: '16px auto', borderRadius: '2px' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#94A3B8', textAlign: 'left', marginBottom: '8px' }}>
