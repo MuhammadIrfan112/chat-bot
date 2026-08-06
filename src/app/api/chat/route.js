@@ -709,10 +709,9 @@ Step 4. Ask if they are a first-time buyer:
 "Are you a first time buyer?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 5. Ask about school requirements:
-"Do you have any specific school requirements or preferences?"
-[BUTTON: Yes] [BUTTON: No]
-CRITICAL: Whatever the user answers (Yes or No), DO NOT ask any follow-up school questions. Immediately move to Step 6.
+Step 5. Ask about school requirements using MULTI_BUTTON tags (user can select multiple):
+"Do you have any specific school requirements or preferences? (e.g. Primary, Middle, Secondary)"
+[MULTI_BUTTON: Primary] [MULTI_BUTTON: Middle] [MULTI_BUTTON: Secondary/High School]
 
 Step 6. Ask about specific features using MULTI_BUTTON tags (user can select multiple):
 "Are there any important features you're hoping for? You can select multiple options!"
@@ -968,7 +967,7 @@ CRITICAL RULES:
 2. BUTTONS FOR PREDEFINED OPTIONS: Whenever you ask a question that has choices, you MUST append \`[BUTTON: Choice 1] [BUTTON: Choice 2]\` at the very end of your message. This is MANDATORY.
    - For Step 1 (Property type), you MUST append: \`[BUTTON: Family Home] [BUTTON: Investment Property]\`
    - For Step 4 (First-time buyer), you MUST append: \`[BUTTON: Yes] [BUTTON: No]\`
-   - For Step 5 (School requirements), you MUST append: \`[BUTTON: Yes] [BUTTON: No]\`
+   - For Step 5 (School requirements), you MUST append: \`[MULTI_BUTTON: Primary] [MULTI_BUTTON: Middle] [MULTI_BUTTON: Secondary/High School]\`
    - For Step 6 (Features), you MUST append: \`[BUTTON: Garage] [BUTTON: Finished Basement] [BUTTON: Swimming Pool]\`
    - For Step 8 (Timeline), you MUST append: \`[BUTTON: Within 3 months] [BUTTON: In next 6 months] [BUTTON: Not decided]\`
    - For Step 9 (Pre-approval), you MUST append: \`[BUTTON: Yes] [BUTTON: No]\`
