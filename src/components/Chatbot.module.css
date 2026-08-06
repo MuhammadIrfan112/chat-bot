@@ -69,9 +69,11 @@
   min-height: 0;
 }
 
-/* Main UI chatbot (global embed) gets extra height */
+/* Main UI chatbot (global embed) matches the iframe sizes perfectly */
 .globalChatWindow {
+  width: 420px;
   height: 600px;
+  bottom: 100px; /* Adjust so it sits nicely above the global chat button */
 }
 
 @keyframes slideUp {
@@ -453,8 +455,8 @@
   }
 
   /* Chat window: full-screen from the very bottom */
-  .chatbotContainer:not(.forceDesktop) .chatWindow,
-  .chatbotContainer:not(.forceDesktop) .globalChatWindow {
+  /* Chat window: full-screen from the very bottom for typical bots */
+  .chatbotContainer:not(.forceDesktop) .chatWindow {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -464,6 +466,24 @@
     height: 100% !important;
     max-height: 100dvh !important;
     border-radius: 0 !important;
+    animation: mobileSlideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Global chatbot exactly matches the iframe style on mobile: 
+     Floating, rounded corners, leaving safe areas */
+  .chatbotContainer:not(.forceDesktop) .globalChatWindow {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 2dvh !important;
+    left: 3vw !important;
+    right: auto !important;
+    width: 94vw !important;
+    height: 85dvh !important;
+    max-height: 85dvh !important;
+    border-radius: 22px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
     animation: mobileSlideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
