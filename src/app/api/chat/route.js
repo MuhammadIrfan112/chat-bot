@@ -420,7 +420,7 @@ async function fetchCityPropertyData(botId, fullChatText) {
 
 export async function POST(req) {
   try {
-    const { messages, session_id, bot_id } = await req.json();
+    const { messages, session_id, bot_id, plan = 'premium' } = await req.json();
 
     let botName = 'AI Assistant';
     let websiteUrl = 'this website';
@@ -619,7 +619,10 @@ export async function POST(req) {
           matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
         }
 
-        if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
+        if (plan === 'standard') {
+          // In standard plan, we never show properties, just output [START_LEAD_CAPTURE] after asking the extra question.
+          // Wait, the extra question is handled inside the system instruction.
+        } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity && !isMortonGrove) {
@@ -742,8 +745,23 @@ Once all information is collected (including agent status from Step 9b), you MUS
 Is this information correct?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 11. Show Properties ONLY:
-If the user confirms the information is correct (e.g. they select "Yes"), follow these rules STRICTLY:
+Step 11. Post-Confirmation Action:
+${plan === 'standard' ? 
+`If the user confirms the information is correct in Step 10, DO NOT show properties. 
+Instead, you must acknowledge and ask ONE final question based on their profile.
+"Let me find out properties according to your requirements. By the way, would you like me to send you [INSERT OPTION HERE]?"
+
+- If they are a first-time buyer (from Step 4): insert "information on first time buying"
+- If they are looking for an investment property (from Step 1): insert "information on investment properties"
+- Otherwise: insert "information about the buying process"
+
+[BUTTON: Yes] [BUTTON: No]
+
+Step 12. Lead Capture:
+Once the user answers the Step 11 question (Yes/No), reply ONLY with exactly this hidden tag:
+[START_LEAD_CAPTURE]` 
+: 
+`If the user confirms the information is correct in Step 10, follow these rules STRICTLY:
 
 **RULE A — IF you see a CRITICAL OVERRIDE FOR STEP 11 or CRITICAL OVERRIDE FOR STEP 11 AND STEP 12 in the prompt:**
 Follow it EXACTLY. Show the searching/loading message and ALL city engagement buttons (Schools, Parks, Transportation, Shopping, Dining, Healthcare, Community) with their CITY_INFO content. Do NOT show any properties yet. The properties will load automatically.
@@ -761,7 +779,7 @@ If the user says "No", ask them what information they would like to correct and 
 
 Step 12. Lead Capture:
 If the user specifically asks to arrange a viewing, reply ONLY with exactly this hidden tag:
-[START_LEAD_CAPTURE]
+[START_LEAD_CAPTURE]`}
 
 DO NOT ask for their name, phone, or email manually. The [START_LEAD_CAPTURE] tag will automatically trigger the UI to collect their Name, Phone, Email, and Time Preference.
 

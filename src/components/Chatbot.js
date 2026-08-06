@@ -264,16 +264,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     const viewedLinks = extractViewedLinks();
     
     // Parse conversation to extract structured real estate requirements
-    let propertyType = 'Not specified';
-    let city = 'Not specified';
-    let bedsBaths = 'Not specified';
-    let firstTimeBuyer = 'Not specified';
-    let schoolReqs = 'Not specified';
-    let features = 'Not specified';
-    let budget = 'Not specified';
-    let timeline = 'Not specified';
-    let preApproved = 'Not specified';
-    let likedProperty = 'Not specified';
+    let propertyType = 'Unknown', city = 'Unknown', bedsBaths = 'Unknown', firstTimeBuyer = 'Unknown', schoolReqs = 'Unknown', features = 'Unknown', budget = 'Unknown', timeline = 'Unknown', preApproved = 'Unknown', likedProperty = 'None', agentStatus = 'Unknown', extraInfoReq = 'None';
 
     for (let i = 0; i < messages.length - 1; i++) {
       const msg = messages[i];
@@ -298,12 +289,16 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
           features = ans;
         } else if (text.includes('maximum budget') || text.includes('your budget')) {
           budget = ans;
-        } else if (text.includes('purchase by') || text.includes('aiming to purchase')) {
+        } else if (text.includes('purchase by') || text.includes('aiming to purchase') || text.includes('planning to purchase')) {
           timeline = ans;
         } else if (text.includes('pre-approved')) {
           preApproved = ans;
+        } else if (text.includes('working with any other real estate agent')) {
+          agentStatus = ans;
         } else if (text.includes('interested in') || text.includes('property did you like') || text.includes('like any of these')) {
           likedProperty = ans;
+        } else if (text.includes('information on first time buying') || text.includes('information on investment properties') || text.includes('information about the buying process')) {
+          extraInfoReq = ans;
         }
       }
     }
@@ -312,7 +307,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
     let finalPropertyInterest = '';
     if (isRealEstate) {
-      finalPropertyInterest = `📋 Real Estate Requirements:\n• Property Type: ${propertyType}\n• Target City: ${city}\n• Bedrooms/Baths: ${bedsBaths}\n• First-Time Buyer: ${firstTimeBuyer}\n• School Preference: ${schoolReqs}\n• Desired Features: ${features}\n• Max Budget: ${budget}\n• Target Timeline: ${timeline}\n• Pre-Approved: ${preApproved}\n• Liked Property: ${likedProperty}`;
+      finalPropertyInterest = `📋 Real Estate Requirements:\n• Property Type: ${propertyType}\n• Target City: ${city}\n• Bedrooms/Baths: ${bedsBaths}\n• First-Time Buyer: ${firstTimeBuyer}\n• School Preference: ${schoolReqs}\n• Desired Features: ${features}\n• Max Budget: ${budget}\n• Target Timeline: ${timeline}\n• Pre-Approved: ${preApproved}\n• Agent Status: ${agentStatus}\n• Extra Info Requested: ${extraInfoReq}\n• Liked Property: ${likedProperty}`;
     } else {
       // Create a fallback summary of what they asked for
       finalPropertyInterest = messages

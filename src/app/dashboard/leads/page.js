@@ -16,14 +16,26 @@ const getInterestLabel = (industry = 'Other') => {
   return 'Customer Inquiry';
 };
 
-// Extract inquiry text and links separately from property_interest field
+// Extract inquiry text, links, and lead temperature from property_interest field
 const parseInterest = (raw = '') => {
-  if (!raw) return { inquiry: '', links: [] };
-  const parts = raw.split('Viewed Links:');
+  if (!raw) return { inquiry: '', links: [], temperature: null };
+  
+  let temperature = null;
+  let textToParse = raw;
+  
+  // Extract Lead Temperature if present
+  const tempMatch = raw.match(/\[Lead Temperature:\s*(.*?)\]/);
+  if (tempMatch) {
+    temperature = tempMatch[1];
+    textToParse = raw.replace(tempMatch[0], '').trim();
+  }
+
+  const parts = textToParse.split('Viewed Links:');
   const inquiry = parts[0].replace('Preferred Callback Time:', '\n⏰ Preferred Time:').trim();
   const linksRaw = parts[1] ? parts[1].trim() : '';
   const links = linksRaw.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
-  return { inquiry, links };
+  
+  return { inquiry, links, temperature };
 };
 
 export default function LeadsCRM() {
@@ -169,8 +181,23 @@ export default function LeadsCRM() {
 
                       {/* Inquiry/Interest — text only, no links */}
                       <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
-                        <div style={{ marginBottom: '4px', fontSize: '11px', fontWeight: '700', color: isRealEstate ? '#A78BFA' : isEcommerce ? '#38BDF8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          {isRealEstate ? '🏠 ' : isEcommerce ? '🛍️ ' : '💬 '}{interestLabel}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: isRealEstate ? '#A78BFA' : isEcommerce ? '#38BDF8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {isRealEstate ? '🏠 ' : isEcommerce ? '🛍️ ' : '💬 '}{interestLabel}
+                          </span>
+                          {temperature && (
+                            <span style={{ 
+                              fontSize: '10px', 
+                              fontWeight: '700', 
+                              padding: '2px 8px', 
+                              borderRadius: '12px', 
+                              backgroundColor: temperature.includes('Hot') ? 'rgba(239, 68, 68, 0.15)' : temperature.includes('Warm') ? 'rgba(245, 158, 11, 0.15)' : 'rgba(107, 114, 128, 0.15)',
+                              color: temperature.includes('Hot') ? '#EF4444' : temperature.includes('Warm') ? '#F59E0B' : '#9CA3AF',
+                              border: `1px solid ${temperature.includes('Hot') ? 'rgba(239, 68, 68, 0.3)' : temperature.includes('Warm') ? 'rgba(245, 158, 11, 0.3)' : 'rgba(107, 114, 128, 0.3)'}`
+                            }}>
+                              {temperature}
+                            </span>
+                          )}
                         </div>
                         <div style={{ whiteSpace: 'pre-line', fontSize: '12px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
                           {inquiry || '—'}

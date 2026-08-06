@@ -9,6 +9,28 @@ export async function POST(req) {
     }
 
     let finalInterest = property_interest || '';
+
+    // Calculate Lead Temperature based on Timeline and Pre-Approval
+    if (finalInterest.includes('Target Timeline:') && finalInterest.includes('Pre-Approved:')) {
+      const timelineMatch = finalInterest.match(/Target Timeline:\s*(.*)/);
+      const preApprovedMatch = finalInterest.match(/Pre-Approved:\s*(.*)/);
+      
+      const timelineStr = timelineMatch ? timelineMatch[1].toLowerCase() : '';
+      const preApprovedStr = preApprovedMatch ? preApprovedMatch[1].toLowerCase() : '';
+
+      const isImmediate = timelineStr.includes('3 months') || timelineStr.includes('immediately');
+      const isApproved = preApprovedStr.includes('yes');
+
+      let leadTemp = '🧊 Cold Lead';
+      if (isImmediate && isApproved) {
+        leadTemp = '🔥 Hot Lead';
+      } else if (isImmediate || isApproved) {
+        leadTemp = '🌡️ Warm Lead';
+      }
+
+      finalInterest = `[Lead Temperature: ${leadTemp}]\n\n${finalInterest}`;
+    }
+
     if (time_preference) {
       finalInterest += `\n\nPreferred Callback Time:\n${time_preference}`;
     }
