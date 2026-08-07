@@ -569,7 +569,7 @@ export async function POST(req) {
 
       // --- NEW LOGIC: Use AI structured summary as primary source of truth ---
       const recentSummary = [...messages].reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize')));
-      let sumCity = null, sumState = null, sumBeds = 0, sumBudget = 0, sumType = null;
+      let sumCity = null, sumState = null, sumBeds = 0, sumBudget = 0, sumType = null, sumFeatures = null;
       if (recentSummary) {
         const sumText = recentSummary.parts[0].text;
         const locMatch = sumText.match(/Location:\s*([^,\n]+)(?:,\s*([^\n]+))?/i) || sumText.match(/in\s+([a-zA-Z\s]+),\s*([a-zA-Z\s]+)\b/i);
