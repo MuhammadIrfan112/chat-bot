@@ -567,39 +567,50 @@ export async function POST(req) {
       if (fullText.includes('rent') || fullText.includes('rental') || fullText.includes('apartment') || fullText.includes('lease')) propIntent = 'rent';
       else if (fullText.includes('buy') || fullText.includes('purchase') || fullText.includes('for sale') || fullText.includes('buying')) propIntent = 'buy';
 
-      // Extract property type
-      const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family)/i);
-      const propType = typeMatch ? typeMatch[1].toLowerCase() : null;
-
-      // Extract bedrooms
-      const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
-      const propBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
-
-      // Smart budget extractor — handles: 3500, $3500, 3.5k, $3.5k, 3,500, $3,500/mo
-      let propBudget = 0;
-      const fullTextOrig = fullChatText; // preserve original casing for budget search
-
-      // Pattern 1: k-shorthand — "3.5k", "3k", "$3.5k", "$4k" (must be near budget context OR standalone)
-      const kMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*k\b/i);
-      // Pattern 2: 4+ digit plain number or comma-formatted — "3500", "$3,500", "3,500"
-      const plainMatch = fullTextOrig.match(/\$?([\d]{4,}|\d{1,3},\d{3})\s*(?:\/mo|per\s*month|month|budget|max|under)?/i);
-
-      if (kMatch) {
-        propBudget = Math.round(parseFloat(kMatch[1]) * 1000);
-      } else if (plainMatch) {
-        propBudget = parseInt(plainMatch[1].replace(/,/g, ''));
+      // --- NEW LOGIC: Use AI structured summary as primary source of truth ---
+      const recentSummary = [...messages].reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize')));
+      let sumCity = null, sumState = null, sumBeds = 0, sumBudget = 0, sumType = null;
+      if (recentSummary) {
+        const sumText = recentSummary.parts[0].text;
+        const locMatch = sumText.match(/Location:\s*([^,\n]+)(?:,\s*([^\n]+))?/i) || sumText.match(/in\s+([a-zA-Z\s]+),\s*([a-zA-Z\s]+)\b/i);
+        if (locMatch && locMatch[1]) {
+          sumCity = locMatch[1].trim().replace(/\[|\]/g, '');
+          if (locMatch[2]) sumState = locMatch[2].trim().replace(/\[|\]/g, '');
+        }
+        const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
+        if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
+        
+        const budMatch = sumText.match(/budget(?: of|:)?\s*\$?([\d,]+)/i);
+        if (budMatch) sumBudget = parseInt(budMatch[1].replace(/,/g, ''));
+        
+        const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
+        if (typeMatch) sumType = typeMatch[1].trim().toLowerCase();
       }
 
-      // Safety: if budget looks like a year (e.g. 2024, 2025) or unreasonably large for rent, reset
-      if (propIntent === 'rent' && (propBudget > 50000 || (propBudget >= 2024 && propBudget <= 2030 && !kMatch))) {
+      // Extract property type (fallback)
+      const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family)/i);
+      const propType = sumType || (typeMatch ? typeMatch[1].toLowerCase() : null);
+
+      // Extract bedrooms (fallback)
+      const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
+      const propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
+
+      // Smart budget extractor (fallback)
+      let propBudget = sumBudget > 0 ? sumBudget : 0;
+      if (propBudget === 0) {
+        const fullTextOrig = fullChatText; 
+        const kMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*k\b/i);
+        const plainMatch = fullTextOrig.match(/\$?([\d]{4,}|\d{1,3},\d{3})\s*(?:\/mo|per\s*month|month|budget|max|under)?/i);
+        if (kMatch) propBudget = Math.round(parseFloat(kMatch[1]) * 1000);
+        else if (plainMatch) propBudget = parseInt(plainMatch[1].replace(/,/g, ''));
+      }
+
+      if (propIntent === 'rent' && (propBudget > 50000 || (propBudget >= 2024 && propBudget <= 2030))) {
         propBudget = 0;
       }
 
       // Extract city from conversation — multiple patterns for robustness
-      // Extract city from conversation — multiple patterns for robustness
       const stateAbbrs = 'al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy|on|ab|bc|mb|nb|nl|ns|nt|nu|pe|qc|sk|yt|ontario|alberta|columbia|manitoba|brunswick|scotia|quebec|saskatchewan|texas|california|florida|york';
-
-      // Find ALL matches in the entire chat history and take the LAST one (to ignore bot's examples like Chicago, IL)
       const prefixPattern = new RegExp(`(?:in|near|at|for)\\s+([a-z][a-z\\s]{1,30}),?\\s*(${stateAbbrs})\\b`, 'g');
       const directPattern = new RegExp(`\\b([a-z][a-z\\s]{1,25}),\\s*(${stateAbbrs})\\b`, 'g');
       const genericCityPattern = new RegExp(`(?:in|near|at)\\s+([a-z][a-z\\s]{2,20})(?:\\s|$)`, 'g');
@@ -608,32 +619,22 @@ export async function POST(req) {
       const directMatches = [...fullText.matchAll(directPattern)];
       const genericMatches = [...fullText.matchAll(genericCityPattern)];
 
-      let lastMatch = null;
-      let detectedCity = null;
-      let detectedState = null;
+      let detectedCity = sumCity;
+      let detectedState = sumState;
 
-      if (prefixMatches.length > 0) {
-        lastMatch = prefixMatches[prefixMatches.length - 1];
-        detectedCity = lastMatch[1].trim().replace(/\s+/g, ' ');
-        detectedState = lastMatch[2].toUpperCase();
-      } else if (directMatches.length > 0) {
-        lastMatch = directMatches[directMatches.length - 1];
-        detectedCity = lastMatch[1].trim().replace(/\s+/g, ' ');
-        detectedState = lastMatch[2].toUpperCase();
-      } else if (genericMatches.length > 0) {
-        // Fallback for single city names without state (e.g. "in Milton")
-        detectedCity = genericMatches[genericMatches.length - 1][1].trim();
-        detectedState = '';
-      }
-
-      // Ultimate Fallback: Extract from the structured AI summary if available
-      const recentSummary = [...messages].reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize')));
-      if (recentSummary) {
-        const summaryText = recentSummary.parts[0].text;
-        const locMatch = summaryText.match(/Location:\s*([^,\n]+)(?:,\s*([^\n]+))?/i) || summaryText.match(/in\s+([a-zA-Z\s]+),\s*([a-zA-Z\s]+)\b/i);
-        if (locMatch && locMatch[1]) {
-          detectedCity = locMatch[1].trim().replace(/\[|\]/g, '');
-          if (locMatch[2]) detectedState = locMatch[2].trim().replace(/\[|\]/g, '');
+      if (!detectedCity) {
+        let lastMatch = null;
+        if (prefixMatches.length > 0) {
+          lastMatch = prefixMatches[prefixMatches.length - 1];
+          detectedCity = lastMatch[1].trim().replace(/\s+/g, ' ');
+          detectedState = lastMatch[2].toUpperCase();
+        } else if (directMatches.length > 0) {
+          lastMatch = directMatches[directMatches.length - 1];
+          detectedCity = lastMatch[1].trim().replace(/\s+/g, ' ');
+          detectedState = lastMatch[2].toUpperCase();
+        } else if (genericMatches.length > 0) {
+          detectedCity = genericMatches[genericMatches.length - 1][1].trim();
+          detectedState = '';
         }
       }
 
