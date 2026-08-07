@@ -819,6 +819,18 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     return 'Type your message...';
   };
 
+  const resetChat = () => {
+    setMessages([{ role: 'model', parts: [{ text: botConfig.welcomeMessage }] }]);
+    setInput('');
+    setIntentSelected(false);
+    setSessionId(null);
+    setIsHumanTakeover(false);
+    setIsLoading(false);
+    setClosingStep(null);
+    setClosingData({ name: '', phone: '', email: '', time: '' });
+    messageCount.current = 0;
+  };
+
   const showHumanTakeover = !!botConfig.botId && !isHumanTakeover && embedPlan !== 'standard';
   const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
 
@@ -857,7 +869,30 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
                 )}
               </div>
             </div>
-            <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                title="New Chat"
+                onClick={resetChat}
+                style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  border: 'none',
+                  color: '#fff',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  fontSize: '18px',
+                  lineHeight: '1',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+              >+</button>
+              <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
+            </div>
           </div>
 
           <div className={styles.messagesArea}>
