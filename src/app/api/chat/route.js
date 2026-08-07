@@ -626,6 +626,17 @@ export async function POST(req) {
         detectedState = '';
       }
 
+      // Ultimate Fallback: Extract from the structured AI summary if available
+      const recentSummary = [...messages].reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize')));
+      if (recentSummary) {
+        const summaryText = recentSummary.parts[0].text;
+        const locMatch = summaryText.match(/Location:\s*([^,\n]+)(?:,\s*([^\n]+))?/i) || summaryText.match(/in\s+([a-zA-Z\s]+),\s*([a-zA-Z\s]+)\b/i);
+        if (locMatch && locMatch[1]) {
+          detectedCity = locMatch[1].trim().replace(/\[|\]/g, '');
+          if (locMatch[2]) detectedState = locMatch[2].trim().replace(/\[|\]/g, '');
+        }
+      }
+
       // Only trigger property search after user has provided city + budget + beds
       // AND has confirmed the summary with "yes"
       const lastUserMsg = userQuery.toLowerCase().trim();
