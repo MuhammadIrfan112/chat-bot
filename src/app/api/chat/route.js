@@ -644,7 +644,7 @@ export async function POST(req) {
       // Only trigger property search after user has provided city + budget + beds
       // AND has confirmed the summary with "yes"
       const lastUserMsg = userQuery.toLowerCase().trim();
-      const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly)/i.test(lastUserMsg);
+      const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg);
       // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
       const isDemoBot = bot_id === 'demo-real-estate';
       const hasEnoughInfo = isDemoBot
@@ -700,15 +700,20 @@ Image: ${img}
 Link: #demo-property-${i}
 [/PROPERTY_CARD]`);
           }
-          matchedProperties = generatedCards.join('\\n\\n');
+          matchedProperties = generatedCards.join('\n\n');
 
-          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}\n\nCRITICAL INSTRUCTION: There are 20 properties available. 
+          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
+${matchedProperties}
+
+CRITICAL INSTRUCTION: There are 20 properties available. 
 You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 20. 
+CRITICAL: You MUST output the properties EXACTLY as they appear using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
+
 After showing the 4 properties, you MUST include these two buttons:
 [BUTTON: Show more properties]
 [BUTTON: I like one of these properties!]
 
-If the user clicks/asks to "Show more properties", show the NEXT 4 properties and show the buttons again. Keep doing this for every "show more" request.`;
+If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
