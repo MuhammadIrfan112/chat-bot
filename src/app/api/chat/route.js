@@ -634,6 +634,32 @@ export async function POST(req) {
         if (plan === 'standard') {
           // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
           // No property context needed here.
+        } else if (bot_id === 'demo-real-estate') {
+          // Demo Premium: Generate fake properties that perfectly match the user's requirements
+          const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
+          const p1Price = propBudget > 0 ? propBudget * 0.95 : 650000;
+          const p2Price = propBudget > 0 ? propBudget * 0.85 : 550000;
+          
+          matchedProperties = `
+[PROPERTY_CARD]
+ID: DEMO-101
+Address: 123 Maple Street, ${detectedCity || 'Milton'}, ${detectedState || 'ON'}
+Price: ${formatPrice(p1Price)}
+Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
+Type: ${propType || 'Detached House'}
+Image: https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80
+Features: Beautiful ${propType || 'home'} in the heart of ${detectedCity || 'the city'} featuring a spacious layout, modern kitchen, and a large backyard.
+
+[PROPERTY_CARD]
+ID: DEMO-102
+Address: 456 Oak Avenue, ${detectedCity || 'Milton'}, ${detectedState || 'ON'}
+Price: ${formatPrice(p2Price)}
+Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
+Type: ${propType || 'Detached House'}
+Image: https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80
+Features: Stunning newly renovated ${propType || 'property'} with premium finishes, natural light, and close to excellent schools and parks.
+          `;
+          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
