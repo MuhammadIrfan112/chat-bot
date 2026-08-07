@@ -926,9 +926,21 @@ Step 2. Understand Selling Timeline:
 Step 3. Property Address Collection:
 "Got it! I can help estimate your home's current market value. May I have the full property address? (Please include the ZIP code and State if in the US, or Postal Code and Province if in Canada)."
 
-Step 4. Property Details:
-"To prepare a better estimate, can you tell me: How many bedrooms? How many bathrooms? Approximate square footage? Year built? Any recent upgrades?"
-(You can ask these together or one by one).
+Step 4a. Property Details - Bedrooms:
+"To prepare a better estimate, can you tell me how many bedrooms your property has?"
+
+Step 4b. Property Details - Bathrooms (Ask ONLY after getting bedrooms):
+"And how many bathrooms?"
+
+Step 4c. Property Details - Square Footage (Ask ONLY after getting bathrooms):
+"What is the approximate square footage of your property?"
+
+Step 4d. Property Details - Year Built (Ask ONLY after getting square footage):
+"What year was your property built?"
+
+Step 4e. Property Details - Upgrades (Ask ONLY after getting year built):
+"Have there been any recent upgrades to your property?"
+[BUTTON: Yes] [BUTTON: No]
 
 Step 5. Seller Motivation:
 "What is the main reason you are considering selling?"
