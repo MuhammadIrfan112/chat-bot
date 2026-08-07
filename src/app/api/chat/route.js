@@ -779,6 +779,7 @@ Step 9b. Ask about real estate agent:
 Step 10. Summarize and Confirm:
 Once all information is collected (including agent status from Step 9b), you MUST generate a summary and ask for confirmation using EXACTLY this format:
 
+Here's what I have for your home search:
 Location: [City, State]
 Property: [Property Type]
 Bedrooms: [Bedrooms]
@@ -867,8 +868,21 @@ Step 10. Timeline:
 [BUTTON: Immediately] [BUTTON: Next month] [BUTTON: In 2-3 months] [BUTTON: Not sure yet]
 
 Step 11. Summarize and Confirm:
-Once all information is collected, you MUST generate a summary and ask for confirmation:
-"To summarize, you're looking for a [Bedrooms]-bedroom [Property Type] in [City] with a budget of [Budget], parking: [Yes/No], pets: [Yes/No], and moving [Timeline]. Is this correct?"
+Once all information is collected, you MUST generate a summary and ask for confirmation using EXACTLY this format:
+
+Here's what I have for your home search:
+Location: [City, State]
+Property: [Property Type]
+Bedrooms: [Bedrooms]
+Bathrooms: [Bathrooms]
+Occupants: [Number]
+Pets: [Yes/No]
+Parking: [Yes/No]
+Must-have features: [Features]
+Maximum budget: [Budget]
+Moving timeline: [Timeline]
+
+Does everything look correct?
 [BUTTON: Yes] [BUTTON: No]
 
 Step 12. Show Properties / Lead Capture:
