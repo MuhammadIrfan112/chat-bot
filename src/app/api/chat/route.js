@@ -668,66 +668,47 @@ export async function POST(req) {
           // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
           // No property context needed here.
         } else if (bot_id === 'demo-real-estate') {
-          // Demo Premium: Generate fake properties that perfectly match the user's requirements
+          // Demo Premium: Generate 20 fake properties that perfectly match the user's requirements
           const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
           const baseBudget = propBudget > 0 ? propBudget : 700000;
           
-          matchedProperties = `
-[PROPERTY_CARD]
-ID: DEMO-101
-Address: 123 Maple Street, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(baseBudget * 0.95)}
-Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
-Type: ${propType || 'Detached House'}
-Image: https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80
-Features: Beautiful ${propType || 'home'} featuring a spacious layout, modern kitchen, and a large backyard.
+          const images = [
+            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+            'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
+            'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+            'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+            'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80',
+            'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80'
+          ];
+          
+          let generatedCards = [];
+          for (let i = 1; i <= 20; i++) {
+            // vary price slightly between 80% and 100% of budget
+            const priceVariance = 0.8 + (Math.random() * 0.2); 
+            const price = baseBudget * priceVariance;
+            const img = images[i % images.length];
+            
+            generatedCards.push(`[PROPERTY_CARD]
+Status: ${propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'}
+Type: ${propType || 'Family Home'}
+Address: ${i * 10 + 15} Demo Street, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(price)}
+Beds: ${propBeds || 4} | Baths: ${Math.max(1, (propBeds || 4) - 1)}
+Image: ${img}
+Link: #demo-property-${i}
+[/PROPERTY_CARD]`);
+          }
+          matchedProperties = generatedCards.join('\\n\\n');
 
-[PROPERTY_CARD]
-ID: DEMO-102
-Address: 456 Oak Avenue, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(baseBudget * 0.85)}
-Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
-Type: ${propType || 'Detached House'}
-Image: https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80
-Features: Stunning newly renovated ${propType || 'property'} with premium finishes, natural light, and close to excellent schools and parks.
+          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}\n\nCRITICAL INSTRUCTION: There are 20 properties available. 
+You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 20. 
+After showing the 4 properties, you MUST include these two buttons:
+[BUTTON: Show more properties]
+[BUTTON: I like one of these properties!]
 
-[PROPERTY_CARD]
-ID: DEMO-103
-Address: 789 Pine Lane, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(baseBudget * 0.90)}
-Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
-Type: ${propType || 'Detached House'}
-Image: https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80
-Features: Fantastic location with a beautiful open concept living space. Move-in ready and perfect for a growing family.
-
-[PROPERTY_CARD]
-ID: DEMO-104
-Address: 321 Elm Drive, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(baseBudget * 0.98)}
-Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
-Type: ${propType || 'Detached House'}
-Image: https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80
-Features: Custom built ${propType || 'home'} with luxury amenities, double car garage, and a gorgeous finished basement.
-
-[PROPERTY_CARD]
-ID: DEMO-105
-Address: 555 Cedar Blvd, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(baseBudget * 0.82)}
-Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
-Type: ${propType || 'Detached House'}
-Image: https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80
-Features: Amazing value! This beautiful property features hardwood floors throughout and a massive master bedroom suite.
-
-[PROPERTY_CARD]
-ID: DEMO-106
-Address: 888 Birch Way, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(baseBudget * 0.88)}
-Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
-Type: ${propType || 'Detached House'}
-Image: https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80
-Features: A rare find in this highly sought-after neighborhood! Features smart home technology and professional landscaping.
-          `;
-          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}\n\nCRITICAL INSTRUCTION: There are 6 properties available. You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 6. Save the remaining 2 properties in your memory. If the user replies asking to "show more", "see more", or "next", only then show the remaining 2 properties.`;
+If the user clicks/asks to "Show more properties", show the NEXT 4 properties and show the buttons again. Keep doing this for every "show more" request.`;
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
