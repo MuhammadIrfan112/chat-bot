@@ -173,7 +173,7 @@ export default function LeadsCRM() {
                   const interestLabel = getInterestLabel(bot?.industry || 'Other');
                   const isRealEstate = interestLabel === 'Property Interest';
                   const isEcommerce = interestLabel === 'Product Interest';
-                  const { inquiry, links } = parseInterest(lead.property_interest);
+                  const { inquiry, links, temperature } = parseInterest(lead.property_interest);
 
                   return (
                     <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
