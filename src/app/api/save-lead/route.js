@@ -45,7 +45,13 @@ export async function POST(req) {
       property_interest: finalInterest || null,
       chatbot_source: chatbot_source || 'Website'
     };
-    if (bot_id) insertData.bot_id = bot_id;
+
+    // Fix UUID error: Supabase bot_id must be a UUID.
+    if (bot_id && bot_id.startsWith('demo-')) {
+      insertData.chatbot_source = bot_id; // Store "demo-real-estate" in source instead
+    } else if (bot_id) {
+      insertData.bot_id = bot_id;
+    }
 
     const { error } = await supabase
       .from('leads')

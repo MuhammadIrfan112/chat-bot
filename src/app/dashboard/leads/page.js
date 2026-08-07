@@ -53,7 +53,8 @@ export default function LeadsCRM() {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('bot_id', 'demo-real-estate')
+        .is('bot_id', null)
+        .eq('chatbot_source', 'demo-real-estate')
         .order('created_at', { ascending: false });
       if (!error && data) {
         setLeads(data);
