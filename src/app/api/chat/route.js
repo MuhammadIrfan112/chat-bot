@@ -580,8 +580,11 @@ export async function POST(req) {
         const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
         if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
         
-        const budMatch = sumText.match(/budget(?: of|:)?\s*\$?([\d,]+)/i);
-        if (budMatch) sumBudget = parseInt(budMatch[1].replace(/,/g, ''));
+        const budMatch = sumText.match(/Maximum budget:\s*\$?([\d,]+)/i) || sumText.match(/budget(?:\s+of|:)?\s*\$?([\d,]+(?:k)?)/i);
+        if (budMatch) {
+          const raw = budMatch[1].replace(/,/g, '');
+          sumBudget = raw.toLowerCase().endsWith('k') ? parseFloat(raw) * 1000 : parseInt(raw);
+        }
         
         const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
         if (typeMatch) sumType = typeMatch[1].trim().toLowerCase();
@@ -642,7 +645,11 @@ export async function POST(req) {
       // AND has confirmed the summary with "yes"
       const lastUserMsg = userQuery.toLowerCase().trim();
       const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly)/i.test(lastUserMsg);
-      const hasEnoughInfo = propIntent && detectedCity && propBeds > 0 && propBudget > 0;
+      // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
+      const isDemoBot = bot_id === 'demo-real-estate';
+      const hasEnoughInfo = isDemoBot
+        ? (detectedCity || recentSummary) && hasConfirmedSummary
+        : propIntent && detectedCity && propBeds > 0 && propBudget > 0;
 
       // DEBUG: log extracted values to Vercel logs
       console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
