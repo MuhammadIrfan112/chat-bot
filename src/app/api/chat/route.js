@@ -596,21 +596,35 @@ export async function POST(req) {
       }
 
       // Extract city from conversation — multiple patterns for robustness
-      const stateAbbrs = 'al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy';
+      // Extract city from conversation — multiple patterns for robustness
+      const stateAbbrs = 'al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy|on|ab|bc|mb|nb|nl|ns|nt|nu|pe|qc|sk|yt|ontario|alberta|columbia|manitoba|brunswick|scotia|quebec|saskatchewan|texas|california|florida|york';
 
       // Find ALL matches in the entire chat history and take the LAST one (to ignore bot's examples like Chicago, IL)
       const prefixPattern = new RegExp(`(?:in|near|at|for)\\s+([a-z][a-z\\s]{1,30}),?\\s*(${stateAbbrs})\\b`, 'g');
       const directPattern = new RegExp(`\\b([a-z][a-z\\s]{1,25}),\\s*(${stateAbbrs})\\b`, 'g');
+      const genericCityPattern = new RegExp(`(?:in|near|at)\\s+([a-z][a-z\\s]{2,20})(?:\\s|$)`, 'g');
 
       const prefixMatches = [...fullText.matchAll(prefixPattern)];
       const directMatches = [...fullText.matchAll(directPattern)];
+      const genericMatches = [...fullText.matchAll(genericCityPattern)];
 
       let lastMatch = null;
-      if (prefixMatches.length > 0) lastMatch = prefixMatches[prefixMatches.length - 1];
-      else if (directMatches.length > 0) lastMatch = directMatches[directMatches.length - 1];
+      let detectedCity = null;
+      let detectedState = null;
 
-      const detectedCity = lastMatch ? lastMatch[1].trim().replace(/\s+/g, ' ') : null;
-      const detectedState = lastMatch ? lastMatch[2].toUpperCase() : null;
+      if (prefixMatches.length > 0) {
+        lastMatch = prefixMatches[prefixMatches.length - 1];
+        detectedCity = lastMatch[1].trim().replace(/\s+/g, ' ');
+        detectedState = lastMatch[2].toUpperCase();
+      } else if (directMatches.length > 0) {
+        lastMatch = directMatches[directMatches.length - 1];
+        detectedCity = lastMatch[1].trim().replace(/\s+/g, ' ');
+        detectedState = lastMatch[2].toUpperCase();
+      } else if (genericMatches.length > 0) {
+        // Fallback for single city names without state (e.g. "in Milton")
+        detectedCity = genericMatches[genericMatches.length - 1][1].trim();
+        detectedState = '';
+      }
 
       // Only trigger property search after user has provided city + budget + beds
       // AND has confirmed the summary with "yes"
@@ -637,29 +651,64 @@ export async function POST(req) {
         } else if (bot_id === 'demo-real-estate') {
           // Demo Premium: Generate fake properties that perfectly match the user's requirements
           const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
-          const p1Price = propBudget > 0 ? propBudget * 0.95 : 650000;
-          const p2Price = propBudget > 0 ? propBudget * 0.85 : 550000;
+          const baseBudget = propBudget > 0 ? propBudget : 700000;
           
           matchedProperties = `
 [PROPERTY_CARD]
 ID: DEMO-101
-Address: 123 Maple Street, ${detectedCity || 'Milton'}, ${detectedState || 'ON'}
-Price: ${formatPrice(p1Price)}
+Address: 123 Maple Street, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(baseBudget * 0.95)}
 Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
 Type: ${propType || 'Detached House'}
 Image: https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80
-Features: Beautiful ${propType || 'home'} in the heart of ${detectedCity || 'the city'} featuring a spacious layout, modern kitchen, and a large backyard.
+Features: Beautiful ${propType || 'home'} featuring a spacious layout, modern kitchen, and a large backyard.
 
 [PROPERTY_CARD]
 ID: DEMO-102
-Address: 456 Oak Avenue, ${detectedCity || 'Milton'}, ${detectedState || 'ON'}
-Price: ${formatPrice(p2Price)}
+Address: 456 Oak Avenue, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(baseBudget * 0.85)}
 Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
 Type: ${propType || 'Detached House'}
 Image: https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80
 Features: Stunning newly renovated ${propType || 'property'} with premium finishes, natural light, and close to excellent schools and parks.
+
+[PROPERTY_CARD]
+ID: DEMO-103
+Address: 789 Pine Lane, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(baseBudget * 0.90)}
+Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
+Type: ${propType || 'Detached House'}
+Image: https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80
+Features: Fantastic location with a beautiful open concept living space. Move-in ready and perfect for a growing family.
+
+[PROPERTY_CARD]
+ID: DEMO-104
+Address: 321 Elm Drive, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(baseBudget * 0.98)}
+Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
+Type: ${propType || 'Detached House'}
+Image: https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80
+Features: Custom built ${propType || 'home'} with luxury amenities, double car garage, and a gorgeous finished basement.
+
+[PROPERTY_CARD]
+ID: DEMO-105
+Address: 555 Cedar Blvd, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(baseBudget * 0.82)}
+Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
+Type: ${propType || 'Detached House'}
+Image: https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80
+Features: Amazing value! This beautiful property features hardwood floors throughout and a massive master bedroom suite.
+
+[PROPERTY_CARD]
+ID: DEMO-106
+Address: 888 Birch Way, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(baseBudget * 0.88)}
+Specs: ${propBeds || 4} Beds, ${Math.max(1, (propBeds || 4) - 1)} Baths
+Type: ${propType || 'Detached House'}
+Image: https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80
+Features: A rare find in this highly sought-after neighborhood! Features smart home technology and professional landscaping.
           `;
-          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
+          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}\n\nCRITICAL INSTRUCTION: There are 6 properties available. You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 6. Save the remaining 2 properties in your memory. If the user replies asking to "show more", "see more", or "next", only then show the remaining 2 properties.`;
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
