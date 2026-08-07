@@ -371,33 +371,57 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
     // Parse property summary from the structured summary if available
     const summaryMsg = allMsgs.slice().reverse().find(m => m.role === 'model' && m.parts?.[0]?.text?.includes('Location:'));
+    let sumOccupants = '', sumPets = '', sumParking = '', sumRentTimeline = '';
+    
     if (summaryMsg) {
       const st = summaryMsg.parts[0].text;
       const loc = st.match(/Location:\s*(.+)/)?.[1]?.trim(); if (loc) sumCity = loc;
       const prop = st.match(/Property:\s*(.+)/)?.[1]?.trim(); if (prop) sumPropType = prop;
       const b = st.match(/Bedrooms:\s*(.+)/)?.[1]?.trim(); if (b) sumBeds = b;
       const bth = st.match(/Bathrooms:\s*(.+)/)?.[1]?.trim(); if (bth) sumBaths = bth;
-      const feat = st.match(/Important features:\s*(.+)/)?.[1]?.trim(); if (feat) sumFeatures = feat;
+      const feat = st.match(/(?:Important|Must-have) features:\s*(.+)/)?.[1]?.trim(); if (feat) sumFeatures = feat;
       const bud = st.match(/Maximum budget:\s*(.+)/)?.[1]?.trim(); if (bud) sumBudget = bud;
       const tl = st.match(/Purchase timeline:\s*(.+)/)?.[1]?.trim(); if (tl) sumTimeline = tl;
       const mg = st.match(/Mortgage:\s*(.+)/)?.[1]?.trim(); if (mg) sumMortgage = mg;
       const sc = st.match(/School preference:\s*(.+)/)?.[1]?.trim(); if (sc) sumSchool = sc;
+      // Rent specific fields
+      const occ = st.match(/Occupants:\s*(.+)/)?.[1]?.trim(); if (occ) sumOccupants = occ;
+      const pets = st.match(/Pets:\s*(.+)/)?.[1]?.trim(); if (pets) sumPets = pets;
+      const park = st.match(/Parking:\s*(.+)/)?.[1]?.trim(); if (park) sumParking = park;
+      const rentTl = st.match(/Moving timeline:\s*(.+)/)?.[1]?.trim(); if (rentTl) sumRentTimeline = rentTl;
     }
 
     const isStandard = embedPlan === 'standard';
     let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.`;
     if (isStandard) {
-      const reqLines = [
-        sumBeds ? `🏡 ${sumBeds}-bedroom ${sumPropType || 'property'}` : '',
-        sumCity ? `📍 ${sumCity}` : '',
-        sumBaths ? `🛁 ${sumBaths} bathrooms` : '',
-        sumFeatures ? `✨ ${sumFeatures}` : '',
-        sumBudget ? `💰 Up to ${sumBudget}` : '',
-        sumMortgage ? `🏦 Mortgage ${sumMortgage.toLowerCase()}` : '',
-        sumTimeline ? `📅 Looking to purchase ${sumTimeline.toLowerCase()}` : '',
-      ].filter(Boolean).join('\n');
+      const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline;
+      let reqLines = [];
+      
+      if (isRent) {
+        reqLines = [
+          sumBeds ? `🏡 ${sumBeds}-bedroom ${sumPropType || 'rental'}` : '',
+          sumCity ? `📍 ${sumCity}` : '',
+          sumBaths ? `🛁 ${sumBaths} bathrooms` : '',
+          sumOccupants ? `👥 Occupants: ${sumOccupants}` : '',
+          sumPets ? `🐾 Pets: ${sumPets}` : '',
+          sumParking ? `🚗 Parking: ${sumParking}` : '',
+          sumFeatures && sumFeatures !== 'None' ? `✨ Features: ${sumFeatures}` : '',
+          sumBudget ? `💰 Budget: ${sumBudget}` : '',
+          sumRentTimeline ? `📅 Moving in: ${sumRentTimeline.toLowerCase()}` : '',
+        ];
+      } else {
+        reqLines = [
+          sumBeds ? `🏡 ${sumBeds}-bedroom ${sumPropType || 'property'}` : '',
+          sumCity ? `📍 ${sumCity}` : '',
+          sumBaths ? `🛁 ${sumBaths} bathrooms` : '',
+          sumFeatures && sumFeatures !== 'None' ? `✨ Features: ${sumFeatures}` : '',
+          sumBudget ? `💰 Up to ${sumBudget}` : '',
+          (sumMortgage && sumMortgage.toLowerCase() !== 'not pre-approved') ? `🏦 Mortgage pre-approved` : '',
+          sumTimeline ? `📅 Looking to purchase ${sumTimeline.toLowerCase()}` : '',
+        ];
+      }
 
-      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to our real estate team.\n\n**Your requirements:**\n${reqLines}\n\n**What happens next?**\nAn agent from our team will review your requirements and look for properties that closely match your search. They will contact you during your preferred **${time_preference}** hours to discuss suitable properties and the next steps.\n\nWe're looking forward to helping you find the right home! 🏡`;
+      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to our real estate team.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**What happens next?**\nAn agent from our team will review your requirements and look for properties that closely match your search. They will contact you during your preferred **${time_preference}** hours to discuss suitable properties and the next steps.\n\nWe're looking forward to helping you find the right home! 🏡`;
     }
 
     setMessages(prev => [...prev, {
