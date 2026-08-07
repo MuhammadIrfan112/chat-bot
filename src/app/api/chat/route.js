@@ -588,11 +588,15 @@ export async function POST(req) {
         
         const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
         if (typeMatch) sumType = typeMatch[1].trim().toLowerCase();
+        
+        const featMatch = sumText.match(/Important features:\s*([^\n]+)/i);
+        if (featMatch) sumFeatures = featMatch[1].trim();
       }
 
       // Extract property type (fallback)
       const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family)/i);
       const propType = sumType || (typeMatch ? typeMatch[1].toLowerCase() : null);
+      const propFeatures = sumFeatures || 'Beautiful property with modern finishes';
 
       // Extract bedrooms (fallback)
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
@@ -696,6 +700,7 @@ Type: ${propType || 'Family Home'}
 Address: ${i * 10 + 15} Demo Street, ${detectedCity || 'the city'}, ${detectedState || ''}
 Price: ${formatPrice(price)}
 Beds: ${propBeds || 4} | Baths: ${Math.max(1, (propBeds || 4) - 1)}
+Features: Includes ${propFeatures}
 Image: ${img}
 Link: #demo-property-${i}
 [/PROPERTY_CARD]`);
@@ -775,6 +780,7 @@ COMMUNICATION STYLE:
 - Be friendly, professional, and conversational.
 - Ask ONE question at a time. Never bundle multiple questions.
 - Briefly acknowledge the user's input with enthusiasm before asking the next question. ⛔ CRITICAL: NEVER say "Great choice!" or "Great choice." Use "Great!", "Awesome!", or "Excellent!" instead.
+- CRITICAL SPACING RULE: Keep the acknowledgment and the next question on the EXACT SAME LINE. DO NOT add newlines, paragraphs, or line breaks between them. Example: "Awesome! How many bedrooms are you looking for?"
 - Provide value before requesting personal information.
 - Make the visitor feel helped, not pressured.
 - Keep responses concise and easy to read on mobile.
@@ -861,6 +867,7 @@ Then immediately reply ONLY with this hidden tag on the next line:
 
 **RULE A — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
 Immediately show ONLY those exact property cards. Do NOT add, invent, or modify any details.
+CRITICAL: Even if the properties do not perfectly match every single one of the user's requirements (e.g., missing features), you MUST STILL SHOW THEM. Do not reject them. Say "Here are some properties that closely match your criteria:" and show them.
 ⛔ After showing properties, do NOT ask if they want to view more or capture a lead. The conversation continues naturally.
 
 **RULE B — IF you see a CRITICAL OVERRIDE FOR STEP 11 or CRITICAL OVERRIDE FOR STEP 11 AND STEP 12 in the prompt:**
