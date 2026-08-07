@@ -69,7 +69,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('plan')) setEmbedPlan(params.get('plan'));
+      // Try URL param first, then window.CHATBOT_CONFIG.plan (injected by server)
+      const planFromUrl = params.get('plan');
+      const planFromConfig = window.CHATBOT_CONFIG?.plan;
+      if (planFromUrl) setEmbedPlan(planFromUrl);
+      else if (planFromConfig) setEmbedPlan(planFromConfig);
       if (params.get('position')) setEmbedPosition(params.get('position'));
     }
 

@@ -29,6 +29,10 @@ export default async function BotEmbedPage({ params, searchParams }) {
     }
   }
 
+  // Determine plan — from URL ?plan= param or hardcode premium for demo bots
+  const planFromUrl = resolvedSearchParams.plan || '';
+  const botPlan = planFromUrl || (botId === 'demo-real-estate' ? 'premium' : 'premium');
+
   // Inject config into window so Chatbot.js can use it
   const scriptContent = `
     window.CHATBOT_CONFIG = {
@@ -36,7 +40,8 @@ export default async function BotEmbedPage({ params, searchParams }) {
       botName: "${bot.name || 'RealtyPropFlow AI'}",
       botAvatar: "${bot.bot_avatar || '🤖'}",
       primaryColor: "${bot.primary_color || '#4F46E5'}",
-      welcomeMessage: "${bot.welcome_message || 'Hi there! 👋 How can I help you today?'}"
+      welcomeMessage: "${bot.welcome_message || 'Hi there! 👋 How can I help you today?'}",
+      plan: "${botPlan}"
     };
   `;
 
