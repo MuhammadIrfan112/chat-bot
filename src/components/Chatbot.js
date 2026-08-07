@@ -348,9 +348,61 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
 
     setLeadCaptured(true);
     setLeadStep(null);
+
+    // Build requirements summary from conversation
+    const allMsgs = messages;
+    let propType = '', city = '', beds = '', baths = '', features = '', budget = '', timeline = '', mortgage = '', school = '';
+    for (let i = 0; i < allMsgs.length - 1; i++) {
+      const m = allMsgs[i]; const n = allMsgs[i+1];
+      if (m.role === 'model' && n.role === 'user') {
+        const t = (m.parts?.[0]?.text || '').toLowerCase();
+        const a = (n.parts?.[0]?.text || '').trim();
+        if (!a) continue;
+        if (t.includes('property type') || (t.includes('family home') && t.includes('investment'))) propType = a;
+        else if (t.includes('city') || t.includes('area are you interested')) city = a;
+        else if (t.includes('bedrooms') && t.includes('bathrooms')) { beds = a.split(' ')[0] || a; baths = a.split(' ').slice(-2).join(' ') || a; }
+        else if (t.includes('school')) school = a;
+        else if (t.includes('important features')) features = a;
+        else if (t.includes('budget')) budget = a;
+        else if (t.includes('planning to purchase') || t.includes('aiming to purchase') || t.includes('purchase by')) timeline = a;
+        else if (t.includes('pre-approved')) mortgage = a.toLowerCase().includes('yes') ? 'Pre-approved' : 'Not pre-approved';
+      }
+    }
+
+    // Parse property summary from the structured summary if available
+    const summaryMsg = allMsgs.slice().reverse().find(m => m.role === 'model' && m.parts?.[0]?.text?.includes('Location:'));
+    if (summaryMsg) {
+      const st = summaryMsg.parts[0].text;
+      const loc = st.match(/Location:\s*(.+)/)?.[1]?.trim(); if (loc) city = loc;
+      const prop = st.match(/Property:\s*(.+)/)?.[1]?.trim(); if (prop) propType = prop;
+      const b = st.match(/Bedrooms:\s*(.+)/)?.[1]?.trim(); if (b) beds = b;
+      const bth = st.match(/Bathrooms:\s*(.+)/)?.[1]?.trim(); if (bth) baths = bth;
+      const feat = st.match(/Important features:\s*(.+)/)?.[1]?.trim(); if (feat) features = feat;
+      const bud = st.match(/Maximum budget:\s*(.+)/)?.[1]?.trim(); if (bud) budget = bud;
+      const tl = st.match(/Purchase timeline:\s*(.+)/)?.[1]?.trim(); if (tl) timeline = tl;
+      const mg = st.match(/Mortgage:\s*(.+)/)?.[1]?.trim(); if (mg) mortgage = mg;
+      const sc = st.match(/School preference:\s*(.+)/)?.[1]?.trim(); if (sc) school = sc;
+    }
+
+    const isStandard = embedPlan === 'standard';
+    let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.`;
+    if (isStandard) {
+      const reqLines = [
+        beds ? `🏡 ${beds}-bedroom ${propType || 'property'}` : '',
+        city ? `📍 ${city}` : '',
+        baths ? `🛁 ${baths} bathrooms` : '',
+        features ? `✨ ${features}` : '',
+        budget ? `💰 Up to ${budget}` : '',
+        mortgage ? `🏦 Mortgage ${mortgage.toLowerCase()}` : '',
+        timeline ? `📅 Looking to purchase ${timeline.toLowerCase()}` : '',
+      ].filter(Boolean).join('\n');
+
+      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to our real estate team.\n\n**Your requirements:**\n${reqLines}\n\n**What happens next?**\nAn agent from our team will review your requirements and look for properties that closely match your search. They will contact you during your preferred **${time_preference}** hours to discuss suitable properties and the next steps.\n\nWe're looking forward to helping you find the right home! 🏡`;
+    }
+
     setMessages(prev => [...prev, {
       role: 'model',
-      parts: [{ text: `Thank you, ${name}! 🎉 Your information has been saved.\n\nIs there anything else I can do for you? We will talk to you soon.` }]
+      parts: [{ text: confirmMsg }]
     }]);
   };
 
@@ -375,7 +427,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       setLeadStep('phone');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Nice to meet you, ${msg}! 👋` }],
+        parts: [{ text: `What is the best phone number for our agent to reach you?` }],
         inputCard: { icon: '📞', label: 'Phone Number', placeholder: 'e.g. 0300-1234567 or +92 300 1234567...' }
       }]);
       return;
@@ -395,7 +447,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       setLeadStep('email');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Perfect! 📧` }],
+        parts: [{ text: `And what email address should we use to send you matching property information and follow-up details?` }],
         inputCard: { icon: '✉️', label: 'Email Address', placeholder: 'e.g. name@example.com...' }
       }]);
       return;
@@ -415,8 +467,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       setLeadStep('time');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Got it! Lastly, what time works best for you?` }],
-        inputCard: { icon: '🕒', label: 'Time Preference', placeholder: 'e.g. Tomorrow morning, or Anytime...' }
+        parts: [{ text: `What time is usually best for our agent to reach you?` }],
+        quickReplies: ['🌅 Morning', '☀️ Afternoon', '🌆 Evening', '🕐 Anytime']
       }]);
       return;
     }
@@ -708,7 +760,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
           setTimeout(() => {
             setMessages(prev => [...prev, {
               role: 'model',
-              parts: [{ text: `Great! I'd be happy to arrange a viewing for you. To get started, may I have your **full name** please?` }],
+              parts: [{ text: `What name should our agent use when contacting you?` }],
               inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
             }]);
             setLeadStep('name');
