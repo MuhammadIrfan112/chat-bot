@@ -10,6 +10,12 @@ export default function AdminPage() {
   const [userBots, setUserBots] = useState({}); // { userId: [bots] }
   const [botsLoading, setBotsLoading] = useState({});
 
+  // Add Client Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', email: '', password: '', phone: '', industry: 'Real Estate' });
+  const [isAdding, setIsAdding] = useState(false);
+  const [addResult, setAddResult] = useState(null);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -96,6 +102,30 @@ export default function AdminPage() {
     setDeletingUser(null);
   };
 
+  const handleAddClient = async (e) => {
+    e.preventDefault();
+    setIsAdding(true);
+    setAddResult(null);
+    try {
+      const res = await fetch('/api/superadmin/add-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addForm)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAddResult({ type: 'success', bot: data.bot });
+        fetchUsers(); // Refresh list
+        setAddForm({ name: '', email: '', password: '', phone: '', industry: 'Real Estate' });
+      } else {
+        setAddResult({ type: 'error', message: data.error || 'Failed to add client' });
+      }
+    } catch (err) {
+      setAddResult({ type: 'error', message: 'Network error. Please try again.' });
+    }
+    setIsAdding(false);
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
@@ -104,6 +134,12 @@ export default function AdminPage() {
           <p style={{ color: '#6B7280', marginTop: '4px' }}>Click on a client to see & manage their chatbots individually.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{ padding: '10px 16px', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}
+          >
+            ➕ Add Client
+          </button>
           <a
             href="/superadmin/bulk-scrape"
             style={{ padding: '10px 16px', backgroundColor: '#C9A227', color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', textDecoration: 'none', fontSize: '14px' }}
@@ -115,6 +151,65 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      {showAddModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: '#111827' }}>Add New Client</h2>
+              <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            </div>
+            
+            {addResult?.type === 'success' ? (
+              <div style={{ backgroundColor: '#F0FDF4', color: '#166534', padding: '16px', borderRadius: '8px', border: '1px solid #BBF7D0' }}>
+                <h3 style={{ margin: '0 0 12px 0' }}>✅ Client & Chatbot Created!</h3>
+                <p style={{ margin: '0 0 16px 0', fontSize: '14px' }}>The client can now log in using the email and password you set. Here is their chatbot embed code:</p>
+                <textarea 
+                  readOnly 
+                  rows={8}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB' }}
+                  value={`<!-- AI Chatbot by RealtyPropFlow -->
+<script>
+  window.CHATBOT_CONFIG = {
+    botId: "${addResult.bot.id}",
+    welcomeMessage: "${addResult.bot.welcome_message}"
+  };
+</script>
+<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-widget.js" defer></script>`}
+                />
+                <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ width: '100%', marginTop: '16px', padding: '12px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
+              </div>
+            ) : (
+              <form onSubmit={handleAddClient} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {addResult?.type === 'error' && (
+                  <div style={{ backgroundColor: '#FEF2F2', color: '#991B1B', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>
+                    {addResult.message}
+                  </div>
+                )}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Client Name (Agent Name)</label>
+                  <input required type="text" value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="e.g. John Smith" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Email</label>
+                  <input required type="email" value={addForm.email} onChange={e => setAddForm({...addForm, email: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="client@example.com" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Password</label>
+                  <input required type="text" value={addForm.password} onChange={e => setAddForm({...addForm, password: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Set a secure password" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Phone Number (Optional)</label>
+                  <input type="text" value={addForm.phone} onChange={e => setAddForm({...addForm, phone: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="+1 234 567 8900" />
+                </div>
+                <button type="submit" disabled={isAdding} style={{ padding: '12px', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '8px', cursor: isAdding ? 'not-allowed' : 'pointer', fontWeight: '700', marginTop: '8px', opacity: isAdding ? 0.7 : 1 }}>
+                  {isAdding ? 'Creating Client...' : 'Create Client & Chatbot'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#6B7280' }}>Loading clients...</div>
