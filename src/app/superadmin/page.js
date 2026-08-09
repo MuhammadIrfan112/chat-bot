@@ -16,6 +16,9 @@ export default function AdminPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [addResult, setAddResult] = useState(null);
 
+  // Embed Code Modal
+  const [codeModal, setCodeModal] = useState(null); // { bot }
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -128,6 +131,47 @@ export default function AdminPage() {
 
   return (
     <div>
+      {/* ── Embed Code Modal ───────────────────────────────────── */}
+      {codeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: '#111827' }}>📋 Embed Code — {codeModal.name}</h2>
+              <button onClick={() => setCodeModal(null)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+            </div>
+            <p style={{ fontSize: '14px', color: '#6B7280', marginBottom: '16px' }}>Copy and paste this code on the client's website, just before the <code>&lt;/body&gt;</code> tag:</p>
+            <textarea
+              readOnly
+              rows={9}
+              style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB', resize: 'vertical', boxSizing: 'border-box' }}
+              value={`<!-- AI Chatbot by RealtyPropFlow -->
+<script>
+  window.CHATBOT_CONFIG = {
+    botId: "${codeModal.id}",
+    welcomeMessage: "${codeModal.welcome_message || 'Hi there! 👋 How can I help you today?'}"
+  };
+</script>
+<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-widget.js" defer></script>`}
+            />
+            <button
+              onClick={() => {
+                const code = `<!-- AI Chatbot by RealtyPropFlow -->
+<script>
+  window.CHATBOT_CONFIG = {
+    botId: "${codeModal.id}",
+    welcomeMessage: "${codeModal.welcome_message || 'Hi there! 👋 How can I help you today?'}"
+  };
+</script>
+<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-widget.js" defer></script>`;
+                navigator.clipboard.writeText(code);
+              }}
+              style={{ width: '100%', marginTop: '14px', padding: '12px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}
+            >
+              📋 Copy to Clipboard
+            </button>
+          </div>
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0 }}>👥 Clients & Chatbots</h1>
@@ -316,6 +360,16 @@ export default function AdminPage() {
                             }}>
                               {bot.status === 'Active' ? '🟢 Active' : '🔴 Inactive'}
                             </span>
+                            <button
+                              onClick={() => setCodeModal(bot)}
+                              style={{
+                                padding: '7px 14px', borderRadius: '7px', border: '1px solid #4F46E5', fontWeight: '600', cursor: 'pointer', fontSize: '12px',
+                                backgroundColor: 'white',
+                                color: '#4F46E5',
+                              }}
+                            >
+                              📋 Get Code
+                            </button>
                             <button
                               onClick={() => toggleBotStatus(bot)}
                               style={{

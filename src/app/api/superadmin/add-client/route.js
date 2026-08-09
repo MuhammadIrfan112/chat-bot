@@ -8,7 +8,8 @@ export async function POST(req) {
       return Response.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
-    // 1. Create the user in Auth
+    // 1. Try to create the user in Auth
+    let userId;
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: password,
@@ -16,32 +17,51 @@ export async function POST(req) {
     });
 
     if (authError) {
-      return Response.json({ error: authError.message }, { status: 400 });
+      // If user already exists, find them
+      if (authError.message?.toLowerCase().includes('already') || authError.message?.toLowerCase().includes('exists')) {
+        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+        const existingUser = listData?.users?.find(u => u.email === email);
+        if (!existingUser) {
+          return Response.json({ error: authError.message }, { status: 400 });
+        }
+        userId = existingUser.id;
+        // Update password for the existing user
+        await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+      } else {
+        return Response.json({ error: authError.message }, { status: 400 });
+      }
+    } else {
+      userId = authData.user.id;
     }
 
-    const userId = authData.user.id;
-
-    // 2. Insert into users_subscription
+    // 2. Upsert into users_subscription (safe if already exists)
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 365); // 1 year trial by default for superadmin created
+    trialEndDate.setDate(trialEndDate.getDate() + 365);
     
-    const { error: subError } = await supabaseAdmin.from('users_subscription').insert({
+    const { error: subError } = await supabaseAdmin.from('users_subscription').upsert({
       user_id: userId,
       status: 'Active',
       email: email,
       plan: 'premium',
       trial_ends_at: trialEndDate.toISOString()
-    });
+    }, { onConflict: 'user_id' });
 
     if (subError) {
-      // Log but don't fail — user is created in Auth, subscription insert is secondary
       console.error("Sub insert error (non-fatal):", subError.message);
     }
 
-    // 3. Create a default chatbot
+    // 3. Check if bot already exists
+    const { data: existingBots } = await supabaseAdmin.from('bots').select('*').eq('user_id', userId).limit(1);
+    
+    if (existingBots && existingBots.length > 0) {
+      // Bot already exists — return it
+      return Response.json({ success: true, bot: existingBots[0] });
+    }
+
+    // 4. Create a default chatbot
     const { data: botData, error: botError } = await supabaseAdmin.from('bots').insert({
       user_id: userId,
-      name: name, // Using client name as default agent name
+      name: name,
       industry: industry || 'Real Estate',
       welcome_message: 'Hi there! 👋 Welcome to RealtyPropFlow. How can I assist you with your real estate journey today?',
       primary_color: '#4F46E5',
@@ -50,7 +70,7 @@ export async function POST(req) {
     }).select().single();
 
     if (botError) {
-      return Response.json({ error: "User created but failed to create bot." }, { status: 500 });
+      return Response.json({ error: "User created but failed to create bot: " + botError.message }, { status: 500 });
     }
 
     return Response.json({ success: true, bot: botData });
