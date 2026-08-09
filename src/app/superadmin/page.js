@@ -201,7 +201,7 @@ export default function AdminPage() {
           <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ margin: 0, fontSize: '20px', color: '#111827' }}>Add New Client</h2>
-              <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7280', padding: '4px' }}>✕</button>
             </div>
             
             {addResult?.type === 'success' ? (

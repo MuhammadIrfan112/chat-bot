@@ -19,13 +19,16 @@ export async function POST(req) {
     if (authError) {
       // If user already exists, find them
       if (authError.message?.toLowerCase().includes('already') || authError.message?.toLowerCase().includes('exists')) {
-        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = listData?.users?.find(u => u.email === email);
-        if (!existingUser) {
+        // Find existing user ID by querying users_subscription
+        const { data: existingSub } = await supabaseAdmin.from('users_subscription').select('user_id').eq('email', email).single();
+        
+        if (!existingSub) {
+          // If we can't find their user_id, just return the error
           return Response.json({ error: authError.message }, { status: 400 });
         }
-        userId = existingUser.id;
-        // Update password for the existing user
+        userId = existingSub.user_id;
+        
+        // Update password for the existing user (optional, but requested by user to allow overriding)
         await supabaseAdmin.auth.admin.updateUserById(userId, { password });
       } else {
         return Response.json({ error: authError.message }, { status: 400 });
