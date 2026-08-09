@@ -42,6 +42,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   const [leadData, setLeadData] = useState({ name: '', phone: '', email: '', time_preference: '', property_interest: '' });
   const [botIndustry, setBotIndustry] = useState('Loading');
   const [sessionId, setSessionId] = useState('');
+  const [mounted, setMounted] = useState(false);
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
@@ -121,6 +122,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
   // Default to qualifying bot for all client bots, even if industry is 'Other' or missing.
   // It will use Real Estate logic by default.
   const isQualifyingBot = isClientBot && botIndustry !== 'Loading';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
 
   useEffect(() => {
@@ -838,6 +843,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     activeQuickReplies = ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
   }
 
+  if (!mounted) return null;
+
   return (
     <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
       {isOpen ? (
@@ -1232,7 +1239,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
           onClick={() => setIsOpen(true)}
           title="Chat with us"
         >
-          {isMobile ? '💬' : '💬 Chat with us'}
+          {botConfig.botAvatar || '💬'}
         </button>
       )}
     </div>
