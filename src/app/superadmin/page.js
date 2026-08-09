@@ -272,13 +272,16 @@ export default function AdminPage() {
                   </div>
                   <div>
                     <div style={{ fontWeight: '700', color: '#111827', fontSize: '15px' }}>{user.email || 'Email not captured'}</div>
-                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       Joined: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'} &nbsp;·&nbsp;
                       {(() => { const t = getTrialInfo(user); if (!t) return null; return t.expired ? <span style={{ color: '#EF4444', fontWeight: '700' }}>⏰ Trial Expired</span> : <span style={{ color: t.daysLeft <= 3 ? '#F59E0B' : '#10B981', fontWeight: '700' }}>🕐 {t.daysLeft} days trial left</span>; })()}
                       &nbsp;·&nbsp;
-                      <span style={{ color: '#4F46E5', fontWeight: '600' }}>
-                        {expandedUser === user.user_id ? '▲ Hide Bots' : '▼ View Bots'}
-                      </span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); toggleUserExpand(user.user_id); }}
+                        style={{ padding: '4px 10px', backgroundColor: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {expandedUser === user.user_id ? '▲ Hide Bots' : '▼ View Bots & Get Code'}
+                      </button>
                     </div>
                   </div>
                 </div>
