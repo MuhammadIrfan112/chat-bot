@@ -18,16 +18,32 @@ const getInterestLabel = (industry = 'Other') => {
 
 // Extract inquiry text, links, and lead temperature from property_interest field
 const parseInterest = (raw = '') => {
-  if (!raw) return { inquiry: '', links: [], temperature: null };
+  if (!raw) return { leadType: 'Other', inquiry: '', links: [], temperature: null };
   
   let temperature = null;
+  let leadType = 'Buying Home'; // Default fallback
   let textToParse = raw;
   
   // Extract Lead Temperature if present
   const tempMatch = raw.match(/\[Lead Temperature:\s*(.*?)\]/);
   if (tempMatch) {
     temperature = tempMatch[1];
-    textToParse = raw.replace(tempMatch[0], '').trim();
+    textToParse = textToParse.replace(tempMatch[0], '').trim();
+  }
+
+  // Extract Lead Type if present
+  const typeMatch = textToParse.match(/\[Lead Type:\s*(.*?)\]/);
+  if (typeMatch) {
+    leadType = typeMatch[1];
+    textToParse = textToParse.replace(typeMatch[0], '').trim();
+  } else {
+    // Fallback for older leads without the [Lead Type: ] tag
+    const lower = textToParse.toLowerCase();
+    if (lower.includes('occupants:') || lower.includes('pets:') || lower.includes('moving timeline:')) {
+      leadType = 'Renting Home';
+    } else if (lower.includes('estimated market value') || lower.includes('sell quickly') || lower.includes('reason for selling')) {
+      leadType = 'Selling Home';
+    }
   }
 
   const parts = textToParse.split('Viewed Links:');
@@ -35,13 +51,14 @@ const parseInterest = (raw = '') => {
   const linksRaw = parts[1] ? parts[1].trim() : '';
   const links = linksRaw.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
   
-  return { inquiry, links, temperature };
+  return { leadType, inquiry, links, temperature };
 };
 
 export default function LeadsCRM() {
   const [leads, setLeads] = useState([]);
   const [botsMap, setBotsMap] = useState({}); // bot_id -> bot
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('All');
 
   useEffect(() => {
     fetchLeads();
@@ -146,6 +163,30 @@ export default function LeadsCRM() {
         ))}
       </div>
 
+      {/* Tabs Row */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '4px' }}>
+        {['All', 'Buying Home', 'Renting Home', 'Selling Home'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '20px',
+              border: '1px solid',
+              borderColor: activeTab === tab ? 'var(--text-primary)' : 'var(--border)',
+              backgroundColor: activeTab === tab ? 'var(--text-primary)' : 'transparent',
+              color: activeTab === tab ? 'var(--bg-card)' : 'var(--text-secondary)',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
       {/* Leads Table */}
       <div className="glass-panel" style={{ borderRadius: '16px', overflow: 'hidden' }}>
         {loading ? (
@@ -167,16 +208,20 @@ export default function LeadsCRM() {
                 </tr>
               </thead>
               <tbody>
-                {leads.map((lead, i) => {
+                {leads.filter(lead => {
+                  if (activeTab === 'All') return true;
+                  const { leadType } = parseInterest(lead.property_interest);
+                  return leadType === activeTab;
+                }).map((lead, i, arr) => {
                   const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
                   const bot = botsMap[lead.bot_id];
                   const interestLabel = getInterestLabel(bot?.industry || 'Other');
                   const isRealEstate = interestLabel === 'Property Interest';
                   const isEcommerce = interestLabel === 'Product Interest';
-                  const { inquiry, links, temperature } = parseInterest(lead.property_interest);
+                  const { leadType, inquiry, links, temperature } = parseInterest(lead.property_interest);
 
                   return (
-                    <tr key={lead.id} style={{ borderBottom: i < leads.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <tr key={lead.id} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                       {/* Name */}
                       <td style={{ padding: '16px 20px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{lead.name || '—'}</td>
                       
@@ -197,8 +242,8 @@ export default function LeadsCRM() {
                       {/* Inquiry/Interest — text only, no links */}
                       <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: isRealEstate ? '#A78BFA' : isEcommerce ? '#38BDF8' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {isRealEstate ? '🏠 ' : isEcommerce ? '🛍️ ' : '💬 '}{interestLabel}
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: leadType.includes('Selling') ? '#F59E0B' : leadType.includes('Rent') ? '#EC4899' : '#A78BFA', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {leadType}
                           </span>
                           {temperature && (
                             <span style={{ 

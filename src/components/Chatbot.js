@@ -315,11 +315,43 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
       }
     }
 
+    // Parse property summary from the structured summary if available
+    const summaryMsg = allMsgs.slice().reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('market value')));
+    let sumOccupants = '', sumPets = '', sumParking = '', sumRentTimeline = '';
+    
+    if (summaryMsg) {
+      const st = summaryMsg.parts[0].text;
+      const loc = st.match(/Location:\s*(.+)/)?.[1]?.trim(); if (loc) sumCity = loc;
+      const prop = st.match(/Property:\s*(.+)/)?.[1]?.trim(); if (prop) sumPropType = prop;
+      const b = st.match(/Bedrooms:\s*(.+)/)?.[1]?.trim(); if (b) sumBeds = b;
+      const bth = st.match(/Bathrooms:\s*(.+)/)?.[1]?.trim(); if (bth) sumBaths = bth;
+      const feat = st.match(/(?:Important|Must-have) features:\s*(.+)/)?.[1]?.trim(); if (feat) sumFeatures = feat;
+      const bud = st.match(/Maximum budget:\s*(.+)/)?.[1]?.trim(); if (bud) sumBudget = bud;
+      const tl = st.match(/Purchase timeline:\s*(.+)/)?.[1]?.trim(); if (tl) sumTimeline = tl;
+      const mg = st.match(/Mortgage:\s*(.+)/)?.[1]?.trim(); if (mg) sumMortgage = mg;
+      const sc = st.match(/School preference:\s*(.+)/)?.[1]?.trim(); if (sc) sumSchool = sc;
+      // Rent specific fields
+      const occ = st.match(/Occupants:\s*(.+)/)?.[1]?.trim(); if (occ) sumOccupants = occ;
+      const pets = st.match(/Pets:\s*(.+)/)?.[1]?.trim(); if (pets) sumPets = pets;
+      const park = st.match(/Parking:\s*(.+)/)?.[1]?.trim(); if (park) sumParking = park;
+      const rentTl = st.match(/Moving timeline:\s*(.+)/)?.[1]?.trim(); if (rentTl) sumRentTimeline = rentTl;
+    }
+
     const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
 
     let finalPropertyInterest = '';
+    const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline || allMsgs.some(m => m.parts[0].text.toLowerCase().includes('looking to rent'));
+    const isSell = allMsgs.some(m => m.parts[0].text.toLowerCase().includes('understand your home\'s value') || m.parts[0].text.toLowerCase().includes('considering selling'));
+    const leadType = isSell ? 'Selling Home' : isRent ? 'Renting Home' : 'Buying Home';
+
     if (isRealEstate) {
-      finalPropertyInterest = `📋 Real Estate Requirements:\n• Property Type: ${propertyType}\n• Target City: ${city}\n• Bedrooms/Baths: ${bedsBaths}\n• First-Time Buyer: ${firstTimeBuyer}\n• School Preference: ${schoolReqs}\n• Desired Features: ${features}\n• Max Budget: ${budget}\n• Target Timeline: ${timeline}\n• Pre-Approved: ${preApproved}\n• Agent Status: ${agentStatus}\n• Extra Info Requested: ${extraInfoReq}\n• Liked Property: ${likedProperty}`;
+      if (isSell) {
+        finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Seller Details:\n• Reason for selling: ${messages.find(m=>m.parts[0].text.toLowerCase().includes('reason you are considering selling')) ? 'Captured in chat' : 'Not specified'}\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Timeline: ${timeline || 'Not specified'}`;
+      } else if (isRent) {
+        finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Renter Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Occupants: ${sumOccupants || 'Not specified'}\n• Pets: ${sumPets || 'Not specified'}\n• Moving Timeline: ${sumRentTimeline || 'Not specified'}`;
+      } else {
+        finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Buyer Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Pre-Approved: ${sumMortgage || preApproved || 'Not specified'}\n• Timeline: ${sumTimeline || timeline || 'Not specified'}\n• First-Time Buyer: ${firstTimeBuyer || 'Not specified'}`;
+      }
     } else {
       // Create a fallback summary of what they asked for
       finalPropertyInterest = messages
@@ -343,57 +375,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
         })
       });
       const result = await res.json();
-      if (!res.ok) {
-        console.error('Lead save failed:', result);
-      }
+      if (!res.ok) console.error('Lead save failed:', result);
     } catch (err) {
       console.error('Lead save error:', err);
     }
 
     setLeadCaptured(true);
     setLeadStep(null);
-
-    // Build requirements summary from conversation
-    const allMsgs = messages;
-    let sumPropType = '', sumCity = '', sumBeds = '', sumBaths = '', sumFeatures = '', sumBudget = '', sumTimeline = '', sumMortgage = '', sumSchool = '';
-    for (let i = 0; i < allMsgs.length - 1; i++) {
-      const m = allMsgs[i]; const n = allMsgs[i+1];
-      if (m.role === 'model' && n.role === 'user') {
-        const t = (m.parts?.[0]?.text || '').toLowerCase();
-        const a = (n.parts?.[0]?.text || '').trim();
-        if (!a) continue;
-        if (t.includes('property type') || (t.includes('family home') && t.includes('investment'))) sumPropType = a;
-        else if (t.includes('city') || t.includes('area are you interested')) sumCity = a;
-        else if (t.includes('bedrooms') && t.includes('bathrooms')) { sumBeds = a.split(' ')[0] || a; sumBaths = a.split(' ').slice(-2).join(' ') || a; }
-        else if (t.includes('school')) sumSchool = a;
-        else if (t.includes('important features')) sumFeatures = a;
-        else if (t.includes('budget')) sumBudget = a;
-        else if (t.includes('planning to purchase') || t.includes('aiming to purchase') || t.includes('purchase by')) sumTimeline = a;
-        else if (t.includes('pre-approved')) sumMortgage = a.toLowerCase().includes('yes') ? 'Pre-approved' : 'Not pre-approved';
-      }
-    }
-
-    // Parse property summary from the structured summary if available
-    const summaryMsg = allMsgs.slice().reverse().find(m => m.role === 'model' && m.parts?.[0]?.text?.includes('Location:'));
-    let sumOccupants = '', sumPets = '', sumParking = '', sumRentTimeline = '';
-    
-    if (summaryMsg) {
-      const st = summaryMsg.parts[0].text;
-      const loc = st.match(/Location:\s*(.+)/)?.[1]?.trim(); if (loc) sumCity = loc;
-      const prop = st.match(/Property:\s*(.+)/)?.[1]?.trim(); if (prop) sumPropType = prop;
-      const b = st.match(/Bedrooms:\s*(.+)/)?.[1]?.trim(); if (b) sumBeds = b;
-      const bth = st.match(/Bathrooms:\s*(.+)/)?.[1]?.trim(); if (bth) sumBaths = bth;
-      const feat = st.match(/(?:Important|Must-have) features:\s*(.+)/)?.[1]?.trim(); if (feat) sumFeatures = feat;
-      const bud = st.match(/Maximum budget:\s*(.+)/)?.[1]?.trim(); if (bud) sumBudget = bud;
-      const tl = st.match(/Purchase timeline:\s*(.+)/)?.[1]?.trim(); if (tl) sumTimeline = tl;
-      const mg = st.match(/Mortgage:\s*(.+)/)?.[1]?.trim(); if (mg) sumMortgage = mg;
-      const sc = st.match(/School preference:\s*(.+)/)?.[1]?.trim(); if (sc) sumSchool = sc;
-      // Rent specific fields
-      const occ = st.match(/Occupants:\s*(.+)/)?.[1]?.trim(); if (occ) sumOccupants = occ;
-      const pets = st.match(/Pets:\s*(.+)/)?.[1]?.trim(); if (pets) sumPets = pets;
-      const park = st.match(/Parking:\s*(.+)/)?.[1]?.trim(); if (park) sumParking = park;
-      const rentTl = st.match(/Moving timeline:\s*(.+)/)?.[1]?.trim(); if (rentTl) sumRentTimeline = rentTl;
-    }
 
     const isStandard = embedPlan === 'standard';
     let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.`;

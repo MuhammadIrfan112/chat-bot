@@ -332,7 +332,7 @@ export default function DashboardLayout({ children }) {
         )}
 
         {/* ⏰ Trial Countdown Banner */}
-        {(subscriptionStatus !== 'Inactive' || trialDaysLeft !== null) && (
+        {subscriptionStatus !== 'Active' && (subscriptionStatus !== 'Inactive' || trialDaysLeft !== null) && (
           <div style={{
             background: subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.05)' : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.05)' : 'rgba(79,70,229,0.05)',
             border: `1px solid ${
