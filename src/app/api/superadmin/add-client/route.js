@@ -29,15 +29,13 @@ export async function POST(req) {
       user_id: userId,
       status: 'Active',
       email: email,
-      name: name,
-      plan_name: 'Premium',
-      trial_ends_at: trialEndDate.toISOString(),
-      role: 'user'
+      plan: 'premium',
+      trial_ends_at: trialEndDate.toISOString()
     });
 
     if (subError) {
-      console.error("Sub error", subError);
-      return Response.json({ error: "User created but failed to save profile." }, { status: 500 });
+      // Log but don't fail — user is created in Auth, subscription insert is secondary
+      console.error("Sub insert error (non-fatal):", subError.message);
     }
 
     // 3. Create a default chatbot
