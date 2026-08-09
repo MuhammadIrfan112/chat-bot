@@ -24,8 +24,15 @@ export default function SuperAdminLayout({ children }) {
     }
     // Get logged-in user email for display
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setUserEmail(session.user.email);
-      else router.push('/login');
+      if (session) {
+        setUserEmail(session.user.email);
+        if (session.user.email === 'irfangull2288@gmail.com') {
+          setAuthed(true);
+          sessionStorage.setItem(SESSION_KEY, 'true');
+        }
+      } else {
+        router.push('/login');
+      }
       setLoading(false);
     });
   }, [router]);
