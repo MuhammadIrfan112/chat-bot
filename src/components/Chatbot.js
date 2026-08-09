@@ -1239,7 +1239,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
           onClick={() => setIsOpen(true)}
           title="Chat with us"
         >
-          💬
+          {isMobile ? '💬' : '💬 Chat with us'}
         </button>
       )}
     </div>
