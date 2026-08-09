@@ -82,7 +82,7 @@ export default function Login() {
         router.push('/dashboard');
       } else {
         // Login success or row already exists - check role to redirect correctly
-        if (sub?.role === 'superadmin') {
+        if (sub?.role === 'superadmin' || email === 'irfangull2288@gmail.com') {
           router.push('/superadmin');
         } else {
           router.push('/dashboard');
