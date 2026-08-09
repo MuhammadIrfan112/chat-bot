@@ -528,6 +528,49 @@ export async function POST(req) {
     }
     const knowledge = await getRelevantKnowledge(userQuery, bot_id);
 
+    // Fetch Agent Profile from knowledge_base
+    let agentProfileSection = '';
+    if (bot_id && !bot_id.startsWith('demo-')) {
+      const { data: profileKb } = await supabase
+        .from('knowledge_base')
+        .select('content')
+        .eq('bot_id', bot_id)
+        .eq('source', 'Agent Profile Data')
+        .single();
+      if (profileKb?.content) {
+        try {
+          const p = JSON.parse(profileKb.content);
+          const areasServed = [
+            ...(p.cities_served || []),
+            ...(p.neighborhoods || []),
+            ...(p.communities || [])
+          ];
+          const areasNotServed = p.areas_not_served || [];
+          agentProfileSection = `
+
+=== AGENT IDENTITY — READ CAREFULLY ===
+You represent ${p.full_name || botName}${p.title ? `, ${p.title}` : ''}${p.brokerage ? ` at ${p.brokerage}` : ''}.
+${p.years_experience ? `They have ${p.years_experience} years of experience in real estate.` : ''}
+${p.specialties?.length ? `Specialties: ${p.specialties.join(', ')}.` : ''}
+${p.languages?.length ? `Languages spoken: ${p.languages.join(', ')}.` : ''}
+
+CONTACT INFO (Use this when users ask):
+${p.phone ? `Phone: ${p.phone}` : ''}\n${p.email ? `Email: ${p.email}` : ''}\n${p.office_address ? `Office: ${p.office_address}` : ''}\n${p.business_hours ? `Hours: ${p.business_hours}` : ''}\n${p.booking_link ? `Booking: ${p.booking_link}` : ''}\n${p.website_url ? `Website: ${p.website_url}` : ''}
+${p.facebook ? `Facebook: ${p.facebook}` : ''}\n${p.instagram ? `Instagram: ${p.instagram}` : ''}\n${p.linkedin ? `LinkedIn: ${p.linkedin}` : ''}
+
+SERVICE AREAS (STRICTLY ENFORCE THIS):
+${areasServed.length ? `I serve ONLY these areas: ${areasServed.join(', ')}.` : ''}
+${p.zip_codes?.length ? `ZIP/Postal codes: ${p.zip_codes.join(', ')}.` : ''}
+${p.counties?.length ? `Counties: ${p.counties.join(', ')}.` : ''}
+${p.condo_buildings?.length ? `Specialized condo buildings: ${p.condo_buildings.join(', ')}.` : ''}
+${areasNotServed.length ? `
+⛔ I DO NOT serve these areas: ${areasNotServed.join(', ')}. If a user asks about any of these areas, ALWAYS politely say: "I specialize in [service area], and unfortunately I don't cover [requested area]. However, I can refer you to a trusted agent in that area! Would you like me to help you with properties in my service areas instead?"` : ''}
+=== END AGENT IDENTITY ===
+`;
+        } catch {}
+      }
+    }
+
     // Build dynamic prompt based on bot industry
     let botData = null;
     if (bot_id === 'demo-real-estate') {
@@ -1153,7 +1196,7 @@ ${qualifyingQuestions}
 5. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match from the actual inventory.
 6. RESPONSE STYLE: Keep responses short, engaging, and scannable. Use occasional emojis. Use line breaks so it looks clean on mobile. ⛔ NEVER say "Great choice!" anywhere in any response. If you want to acknowledge a good selection, use ONLY "Great!" or "Awesome!" instead.
 ${isRealEstate || isEcommerce ? `7. IMAGES & LINKS: When showing an item from the inventory, you MUST copy and use the EXACT markdown for Image and Link provided in the inventory data.\n8. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `7. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
-${knowledgeSection}${liveInventory}
+${agentProfileSection}${knowledgeSection}${liveInventory}
 ${cityEngagementContext}`;
     if (!bot_id) {
       systemInstruction = `You are an AI Sales Consultant for RealtyPropFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.

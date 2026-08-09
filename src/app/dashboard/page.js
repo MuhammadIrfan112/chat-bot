@@ -1,273 +1,367 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Plus, Users, Database, MessageSquare, ChevronRight, Inbox, Trash2, ShieldAlert, Home, ShoppingBag, TrendingUp, Eye, Tag } from 'lucide-react';
 
-export default function Dashboard() {
-  const [stats, setStats] = useState({ leads: 0, knowledge: 0, chats: 0 });
-  const [loading, setLoading] = useState(true);
-  const [hasBot, setHasBot] = useState(false);
-  const [recentLeads, setRecentLeads] = useState([]);
-  const [websiteType, setWebsiteType] = useState('');
+const inputStyle = {
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: '10px',
+  border: '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: 'rgba(255,255,255,0.05)',
+  color: 'white',
+  fontSize: '14px',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+const labelStyle = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: '600',
+  color: '#94A3B8',
+  marginBottom: '6px',
+};
 
-  const fetchStats = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+const sectionStyle = {
+  backgroundColor: 'rgba(255,255,255,0.03)',
+  borderRadius: '16px',
+  border: '1px solid rgba(255,255,255,0.08)',
+  padding: '28px',
+  marginBottom: '24px',
+};
 
-    const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
-    const type = session.user.user_metadata?.website_type || 'other';
-    setWebsiteType(type);
+const sectionTitleStyle = {
+  fontSize: '15px',
+  fontWeight: '800',
+  color: 'white',
+  marginBottom: '20px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+};
 
-    const { data: bots } = await supabase.from('bots').select('id').eq('user_id', userId);
+const gridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+  gap: '16px',
+};
 
-    if (!bots || bots.length === 0) {
-      setHasBot(false);
-      setLoading(false);
-      return;
+function TagInput({ value, onChange, placeholder }) {
+  const [input, setInput] = useState('');
+  const tags = value || [];
+
+  const add = () => {
+    const trimmed = input.trim();
+    if (trimmed && !tags.includes(trimmed)) {
+      onChange([...tags, trimmed]);
     }
-
-    setHasBot(true);
-    const botIds = bots.map(b => b.id);
-
-    const [leadsRes, kbRes, chatsRes, recentRes] = await Promise.all([
-      supabase.from('leads').select('id', { count: 'exact' }).in('bot_id', botIds),
-      supabase.from('knowledge_base').select('id', { count: 'exact' }).in('bot_id', botIds),
-      supabase.from('chat_sessions').select('id', { count: 'exact' }).in('bot_id', botIds),
-      supabase.from('leads').select('*').in('bot_id', botIds).order('created_at', { ascending: false }).limit(5)
-    ]);
-
-    setStats({
-      leads: leadsRes.count || 0,
-      knowledge: kbRes.count || 0,
-      chats: chatsRes.count || 0
-    });
-    setRecentLeads(recentRes.data || []);
-    setLoading(false);
+    setInput('');
   };
 
-  const deleteLead = async (id) => {
-    await supabase.from('leads').delete().eq('id', id);
-    fetchStats();
-  };
-
-  const timeAgo = (dateStr) => {
-    const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return new Date(dateStr).toLocaleDateString();
-  };
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
-  };
-
-  // ─── REAL ESTATE specific stat cards ───
-  const realEstateStats = [
-    { label: 'Buyer Leads Captured', value: stats.leads, icon: <Users size={24} />, color: 'var(--success)', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.2)', accent: 'var(--success)' },
-    { label: 'Properties in Knowledge Base', value: stats.knowledge, icon: <Home size={24} />, color: 'var(--primary)', bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.2)', accent: 'var(--primary)' },
-    { label: 'Total Chat Sessions', value: stats.chats, icon: <MessageSquare size={24} />, color: 'var(--warning)', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)', accent: 'var(--warning)' },
-  ];
-
-  // ─── E-COMMERCE specific stat cards ───
-  const ecommerceStats = [
-    { label: 'Customer Leads Captured', value: stats.leads, icon: <ShoppingBag size={24} />, color: '#F472B6', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)', accent: '#F472B6' },
-    { label: 'Products in Knowledge Base', value: stats.knowledge, icon: <Tag size={24} />, color: 'var(--primary)', bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.2)', accent: 'var(--primary)' },
-    { label: 'Total Chat Sessions', value: stats.chats, icon: <TrendingUp size={24} />, color: 'var(--warning)', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)', accent: 'var(--warning)' },
-  ];
-
-  const activeStats = websiteType === 'ecommerce' ? ecommerceStats : realEstateStats;
-
-  const isRealEstate = websiteType === 'real-estate';
-  const isEcommerce = websiteType === 'ecommerce';
+  const remove = (tag) => onChange(tags.filter(t => t !== tag));
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible">
-
-      {/* ─── Header ─── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
-        <div>
-          <motion.div variants={itemVariants} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', marginBottom: '10px', background: isEcommerce ? 'rgba(244,114,182,0.12)' : 'rgba(99,102,241,0.12)', border: isEcommerce ? '1px solid rgba(244,114,182,0.3)' : '1px solid rgba(99,102,241,0.3)', color: isEcommerce ? '#F472B6' : 'var(--primary)' }}>
-            {isEcommerce ? <ShoppingBag size={13} /> : <Home size={13} />}
-            {isEcommerce ? 'E-Commerce Dashboard' : isRealEstate ? 'Real Estate Dashboard' : 'Dashboard'}
-          </motion.div>
-          <motion.h1 variants={itemVariants} style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>Overview</motion.h1>
-          <motion.p variants={itemVariants} style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
-            {isEcommerce ? 'Track customer queries, product interest & leads.' : isRealEstate ? 'Track buyer leads, property interest & chat sessions.' : 'Track your chatbot performance and recent leads.'}
-          </motion.p>
-        </div>
-
-        {hasBot && (
-          <motion.div variants={itemVariants}>
-            <Link href="/dashboard/chatbots" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #818CF8 0%, #4F46E5 100%)', color: 'white', padding: '10px 18px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', transition: 'all 0.2s', boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)' }}>
-              <Plus size={18} />
-              New Chatbot
-            </Link>
-          </motion.div>
-        )}
+    <div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          placeholder={placeholder}
+          style={{ ...inputStyle, flex: 1 }}
+        />
+        <button type="button" onClick={add} style={{ padding: '10px 16px', borderRadius: '10px', backgroundColor: '#4F46E5', color: 'white', border: 'none', cursor: 'pointer', fontWeight: '700', whiteSpace: 'nowrap' }}>
+          + Add
+        </button>
       </div>
-
-      {/* ─── Empty State ─── */}
-      {!hasBot && !loading && (
-        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '40px', borderRadius: '24px', marginBottom: '40px', display: 'flex', gap: '32px', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.2, zIndex: 0 }}></div>
-          <div style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, rgba(129,140,248,0.2), rgba(79,70,229,0.2))', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--primary-glow)', position: 'relative', zIndex: 1 }}>
-            <ShieldAlert size={40} color="var(--primary)" />
-          </div>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>
-              {isEcommerce ? 'Welcome to Your E-Commerce Hub! 🛒' : isRealEstate ? 'Welcome to Your Real Estate Hub! 🏠' : 'Welcome to RealtyPropFlow AI'}
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
-              {isEcommerce
-                ? "You don't have any chatbots yet. Deploy your AI shopping assistant to capture customer leads and answer product queries 24/7."
-                : isRealEstate
-                  ? "You don't have any chatbots yet. Deploy your AI property assistant to capture buyer leads and answer property queries 24/7."
-                  : "You don't have any chatbots yet. Create your first intelligent assistant in seconds to start capturing leads on autopilot."}
-            </p>
-            <Link href="/dashboard/chatbots" style={{ background: 'linear-gradient(90deg, #818CF8, #4F46E5)', color: 'white', padding: '12px 24px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)' }}>
-              Create Your First Chatbot
-              <ChevronRight size={18} />
-            </Link>
-          </div>
-        </motion.div>
-      )}
-
-      {/* ─── Stat Cards ─── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}>
-        {activeStats.map((stat, i) => (
-          <motion.div key={i} variants={itemVariants} className="glass-panel" style={{ padding: '24px', borderRadius: '16px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: stat.accent }}></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{stat.label}</div>
-                {loading ? (
-                  <div style={{ width: '40px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', marginTop: '8px', animation: 'pulse 1.5s infinite' }}></div>
-                ) : (
-                  <div style={{ fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{stat.value}</div>
-                )}
-              </div>
-              <div style={{ padding: '10px', background: stat.bg, borderRadius: '12px', color: stat.color, border: `1px solid ${stat.border}` }}>
-                {stat.icon}
-              </div>
-            </div>
-          </motion.div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {tags.map(tag => (
+          <span key={tag} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '20px', backgroundColor: 'rgba(99,102,241,0.2)', color: '#A5B4FC', fontSize: '13px', fontWeight: '600' }}>
+            {tag}
+            <button type="button" onClick={() => remove(tag)} style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>×</button>
+          </span>
         ))}
       </div>
-
-      {/* ─── E-Commerce Quick Tips ─── */}
-      {isEcommerce && (
-        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '20px 24px', borderRadius: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid rgba(244,114,182,0.2)', background: 'rgba(244,114,182,0.04)' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(244,114,182,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Tag size={20} color="#F472B6" />
-          </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '2px' }}>Pro Tip for E-Commerce</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Upload your product catalogue to the Knowledge Base so your chatbot can answer product queries, pricing, and availability instantly.</div>
-          </div>
-          <Link href="/dashboard/knowledge" style={{ flexShrink: 0, background: 'rgba(244,114,182,0.15)', color: '#F472B6', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(244,114,182,0.3)' }}>
-            Add Products <ChevronRight size={15} />
-          </Link>
-        </motion.div>
-      )}
-
-      {/* ─── Real Estate Quick Tips ─── */}
-      {isRealEstate && (
-        <motion.div variants={itemVariants} className="glass-panel" style={{ padding: '20px 24px', borderRadius: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid rgba(99,102,241,0.2)', background: 'rgba(99,102,241,0.04)' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Eye size={20} color="var(--primary)" />
-          </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '2px' }}>Pro Tip for Real Estate</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Upload your property listings, area details, and FAQs to the Knowledge Base so buyers get instant answers on pricing, location, and availability.</div>
-          </div>
-          <Link href="/dashboard/knowledge" style={{ flexShrink: 0, background: 'rgba(99,102,241,0.15)', color: 'var(--primary)', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(99,102,241,0.3)' }}>
-            Add Listings <ChevronRight size={15} />
-          </Link>
-        </motion.div>
-      )}
-
-      {/* ─── Recent Leads Table ─── */}
-      <motion.div variants={itemVariants} className="glass-panel" style={{ borderRadius: '16px', overflow: 'hidden' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>
-            {isEcommerce ? '🛍️ Recent Customer Leads' : isRealEstate ? '🏠 Recent Buyer Leads' : 'Recent CRM Leads'}
-          </h2>
-          <Link href="/dashboard/leads" style={{ fontSize: '13px', fontWeight: '600', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            View All
-            <ChevronRight size={16} />
-          </Link>
-        </div>
-
-        {recentLeads.length === 0 ? (
-          <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-            <div style={{ width: '56px', height: '56px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--text-muted)' }}>
-              <Inbox size={24} />
-            </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '15px', fontWeight: '500' }}>
-              {isEcommerce ? 'No customer leads yet. Your AI shopping assistant will capture them!' : isRealEstate ? 'No buyer leads yet. Your AI property assistant will capture them!' : 'No leads captured yet.'}
-            </p>
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'rgba(0,0,0,0.2)', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Name</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Email / Contact</th>
-                  {isRealEstate && <th style={{ padding: '16px 24px', fontWeight: '700' }}>Interest</th>}
-                  {isEcommerce && <th style={{ padding: '16px 24px', fontWeight: '700' }}>Product Interest</th>}
-                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Status</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '700' }}>Time</th>
-                  <th style={{ padding: '16px 24px', fontWeight: '700', textAlign: 'right' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentLeads.map((lead) => (
-                  <tr key={lead.id} style={{ borderTop: '1px solid var(--border)', fontSize: '14px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                    <td style={{ padding: '20px 24px', fontWeight: '600', color: 'var(--text-primary)' }}>{lead.name || '—'}</td>
-                    <td style={{ padding: '20px 24px', color: 'var(--text-secondary)' }}>{lead.email}</td>
-                    {(isRealEstate || isEcommerce) && <td style={{ padding: '20px 24px', color: 'var(--text-secondary)', fontSize: '13px' }}>{lead.interest || '—'}</td>}
-                    <td style={{ padding: '20px 24px' }}>
-                      <span style={{
-                        background: lead.status === 'New Lead' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
-                        color: lead.status === 'New Lead' ? 'var(--success)' : 'var(--warning)',
-                        padding: '6px 12px', borderRadius: '50px', fontSize: '12px', fontWeight: '700',
-                        border: lead.status === 'New Lead' ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(245,158,11,0.2)'
-                      }}>
-                        {lead.status || 'New Lead'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '20px 24px', color: 'var(--text-muted)', fontSize: '13px' }}>{timeAgo(lead.created_at)}</td>
-                    <td style={{ padding: '20px 24px', textAlign: 'right' }}>
-                      <button onClick={() => deleteLead(lead.id)} title="Delete Lead" style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = 'var(--danger)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </motion.div>
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }`}</style>
-    </motion.div>
+    </div>
   );
 }
 
+export default function AgentProfilePage() {
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+  const [botId, setBotId] = useState(null);
+  const [kbRecordId, setKbRecordId] = useState(null);
+  const [userId, setUserId] = useState(null);
+
+  const [profile, setProfile] = useState({
+    // 1. Agent Information
+    full_name: '',
+    title: '',
+    brokerage: '',
+    years_experience: '',
+    phone: '',
+    email: '',
+    office_address: '',
+    business_hours: '',
+    booking_link: '',
+    website_url: '',
+    facebook: '',
+    instagram: '',
+    linkedin: '',
+    twitter: '',
+    // 2. Specialties & Languages
+    specialties: [],
+    languages: [],
+    // 3. Service Areas
+    cities_served: [],
+    neighborhoods: [],
+    zip_codes: [],
+    counties: [],
+    communities: [],
+    condo_buildings: [],
+    // 4. Areas NOT served
+    areas_not_served: [],
+  });
+
+  const setField = (key, val) => setProfile(prev => ({ ...prev, [key]: val }));
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const uid = localStorage.getItem('impersonated_user_id') || session.user.id;
+    setUserId(uid);
+
+    // Get bot info
+    const { data: bots } = await supabase.from('bots').select('id, name').eq('user_id', uid).limit(1);
+    if (bots && bots.length > 0) {
+      setBotId(bots[0].id);
+      if (!profile.full_name) setField('full_name', bots[0].name || '');
+    }
+
+    // Get subscription info for email/phone pre-fill
+    const { data: sub } = await supabase.from('users_subscription').select('name, email').eq('user_id', uid).single();
+
+    // Load existing profile from knowledge_base
+    const botIdToUse = bots?.[0]?.id;
+    let existingProfile = null;
+    if (botIdToUse) {
+      const { data: kb } = await supabase
+        .from('knowledge_base')
+        .select('id, content')
+        .eq('bot_id', botIdToUse)
+        .eq('source', 'Agent Profile Data')
+        .single();
+
+      if (kb && kb.content) {
+        try { existingProfile = JSON.parse(kb.content); setKbRecordId(kb.id); } catch {}
+      }
+    }
+
+    // Merge: existing profile > subscription data > bot name
+    setProfile(prev => ({
+      ...prev,
+      full_name: existingProfile?.full_name || bots?.[0]?.name || sub?.name || '',
+      email: existingProfile?.email || sub?.email || session.user.email || '',
+      ...(existingProfile || {}),
+    }));
+    setLoading(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = userId || session?.user?.id;
+
+    // 1. Sync name to bots table
+    if (botId && profile.full_name) {
+      await supabase.from('bots').update({ name: profile.full_name }).eq('id', botId);
+    }
+
+    // 2. Save full profile to knowledge_base
+    const profileJson = JSON.stringify(profile);
+    if (kbRecordId) {
+      await supabase.from('knowledge_base').update({ content: profileJson }).eq('id', kbRecordId);
+    } else if (botId) {
+      const { data: inserted } = await supabase.from('knowledge_base').insert({
+        user_id: uid,
+        bot_id: botId,
+        content: profileJson,
+        source: 'Agent Profile Data',
+      }).select().single();
+      if (inserted) setKbRecordId(inserted.id);
+    }
+
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  if (loading) return (
+    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+      Loading your profile...
+    </div>
+  );
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'white', margin: 0 }}>👤 My Agent Profile</h1>
+          <p style={{ color: '#94A3B8', marginTop: '4px', fontSize: '14px' }}>
+            Your AI chatbot will use this information to represent you accurately to clients.
+          </p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{ padding: '12px 28px', background: saved ? '#10B981' : 'linear-gradient(90deg, #818CF8, #4F46E5)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.8 : 1, transition: 'all 0.3s' }}
+        >
+          {saving ? 'Saving...' : saved ? '✅ Saved!' : 'Save Profile'}
+        </button>
+      </div>
+
+      <form onSubmit={handleSave}>
+
+        {/* Section 1: Personal & Professional Info */}
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>🏅 Personal & Professional Information</div>
+          <div style={gridStyle}>
+            <div>
+              <label style={labelStyle}>Agent Full Name *</label>
+              <input style={inputStyle} value={profile.full_name} onChange={e => setField('full_name', e.target.value)} placeholder="e.g. Sarah Johnson" />
+              <p style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>This updates the chatbot name automatically.</p>
+            </div>
+            <div>
+              <label style={labelStyle}>Title / License</label>
+              <input style={inputStyle} value={profile.title} onChange={e => setField('title', e.target.value)} placeholder="e.g. Realtor®, Broker, Sales Rep" />
+            </div>
+            <div>
+              <label style={labelStyle}>Brokerage / Company</label>
+              <input style={inputStyle} value={profile.brokerage} onChange={e => setField('brokerage', e.target.value)} placeholder="e.g. RE/MAX Professionals" />
+            </div>
+            <div>
+              <label style={labelStyle}>Years of Experience</label>
+              <input style={inputStyle} type="number" min="0" value={profile.years_experience} onChange={e => setField('years_experience', e.target.value)} placeholder="e.g. 12" />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <label style={labelStyle}>Specialties (press Enter or click + Add)</label>
+            <TagInput value={profile.specialties} onChange={v => setField('specialties', v)} placeholder="e.g. Luxury Homes, First-Time Buyers..." />
+          </div>
+          <div style={{ marginTop: '16px' }}>
+            <label style={labelStyle}>Languages Spoken</label>
+            <TagInput value={profile.languages} onChange={v => setField('languages', v)} placeholder="e.g. English, Spanish, Urdu..." />
+          </div>
+        </div>
+
+        {/* Section 2: Contact & Links */}
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>📞 Contact & Links</div>
+          <div style={gridStyle}>
+            <div>
+              <label style={labelStyle}>Phone Number</label>
+              <input style={inputStyle} value={profile.phone} onChange={e => setField('phone', e.target.value)} placeholder="e.g. +1 416-555-0123" />
+            </div>
+            <div>
+              <label style={labelStyle}>Email Address</label>
+              <input style={inputStyle} type="email" value={profile.email} onChange={e => setField('email', e.target.value)} placeholder="your@email.com" />
+            </div>
+            <div>
+              <label style={labelStyle}>Office Address</label>
+              <input style={inputStyle} value={profile.office_address} onChange={e => setField('office_address', e.target.value)} placeholder="123 Main St, Toronto, ON" />
+            </div>
+            <div>
+              <label style={labelStyle}>Business Hours</label>
+              <input style={inputStyle} value={profile.business_hours} onChange={e => setField('business_hours', e.target.value)} placeholder="e.g. Mon–Fri 9am–6pm, Sat 10am–4pm" />
+            </div>
+            <div>
+              <label style={labelStyle}>Booking / Appointment Link</label>
+              <input style={inputStyle} value={profile.booking_link} onChange={e => setField('booking_link', e.target.value)} placeholder="https://calendly.com/yourname" />
+            </div>
+            <div>
+              <label style={labelStyle}>Website URL</label>
+              <input style={inputStyle} value={profile.website_url} onChange={e => setField('website_url', e.target.value)} placeholder="https://yourwebsite.com" />
+            </div>
+          </div>
+
+          <div style={{ ...gridStyle, marginTop: '16px' }}>
+            <div>
+              <label style={labelStyle}>Facebook URL</label>
+              <input style={inputStyle} value={profile.facebook} onChange={e => setField('facebook', e.target.value)} placeholder="https://facebook.com/..." />
+            </div>
+            <div>
+              <label style={labelStyle}>Instagram URL</label>
+              <input style={inputStyle} value={profile.instagram} onChange={e => setField('instagram', e.target.value)} placeholder="https://instagram.com/..." />
+            </div>
+            <div>
+              <label style={labelStyle}>LinkedIn URL</label>
+              <input style={inputStyle} value={profile.linkedin} onChange={e => setField('linkedin', e.target.value)} placeholder="https://linkedin.com/in/..." />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Service Areas */}
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}>🗺️ Areas I Serve</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={labelStyle}>Cities / Towns</label>
+              <TagInput value={profile.cities_served} onChange={v => setField('cities_served', v)} placeholder="e.g. Milton, Mississauga, Toronto..." />
+            </div>
+            <div>
+              <label style={labelStyle}>Neighborhoods</label>
+              <TagInput value={profile.neighborhoods} onChange={v => setField('neighborhoods', v)} placeholder="e.g. Scarborough Village, Lakeshore..." />
+            </div>
+            <div>
+              <label style={labelStyle}>ZIP / Postal Codes</label>
+              <TagInput value={profile.zip_codes} onChange={v => setField('zip_codes', v)} placeholder="e.g. L9T, M5V, 90210..." />
+            </div>
+            <div>
+              <label style={labelStyle}>Counties</label>
+              <TagInput value={profile.counties} onChange={v => setField('counties', v)} placeholder="e.g. Halton County, Peel Region..." />
+            </div>
+            <div>
+              <label style={labelStyle}>Communities / Master-Planned Areas</label>
+              <TagInput value={profile.communities} onChange={v => setField('communities', v)} placeholder="e.g. Bronte Creek, Hawthorne Village..." />
+            </div>
+            <div>
+              <label style={labelStyle}>Condo Buildings / Complexes</label>
+              <TagInput value={profile.condo_buildings} onChange={v => setField('condo_buildings', v)} placeholder="e.g. One Yonge, The Vue..." />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Areas NOT Served */}
+        <div style={{ ...sectionStyle, borderColor: 'rgba(239,68,68,0.2)' }}>
+          <div style={{ ...sectionTitleStyle, color: '#FCA5A5' }}>🚫 Areas I Do NOT Serve</div>
+          <TagInput value={profile.areas_not_served} onChange={v => setField('areas_not_served', v)} placeholder="e.g. Vancouver, Calgary, Ottawa..." />
+          <p style={{ fontSize: '12px', color: '#64748B', marginTop: '8px' }}>
+            The AI will politely redirect users asking about these areas to a trusted local partner.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: '40px' }}>
+          <button
+            type="submit"
+            disabled={saving}
+            style={{ padding: '14px 36px', background: saved ? '#10B981' : 'linear-gradient(90deg, #818CF8, #4F46E5)', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.8 : 1 }}
+          >
+            {saving ? 'Saving...' : saved ? '✅ Saved!' : 'Save Profile'}
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  );
+}
