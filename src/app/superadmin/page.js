@@ -143,7 +143,7 @@ export default function AdminPage() {
             <textarea
               readOnly
               rows={9}
-              style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB', resize: 'vertical', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB', resize: 'vertical', boxSizing: 'border-box', color: '#111827' }}
               value={`<!-- AI Chatbot by RealtyPropFlow -->
 <script>
   window.CHATBOT_CONFIG = {
@@ -211,7 +211,7 @@ export default function AdminPage() {
                 <textarea 
                   readOnly 
                   rows={8}
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB' }}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB', color: '#111827' }}
                   value={`<!-- AI Chatbot by RealtyPropFlow -->
 <script>
   window.CHATBOT_CONFIG = {

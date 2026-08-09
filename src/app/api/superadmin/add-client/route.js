@@ -45,17 +45,33 @@ export async function POST(req) {
       userId = authData.user.id;
     }
 
-    // 2. Upsert into users_subscription (safe if already exists)
+    // 2. Safely add to users_subscription
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 365);
     
-    const { error: subError } = await supabaseAdmin.from('users_subscription').upsert({
-      user_id: userId,
-      status: 'Active',
-      email: email,
-      plan: 'premium',
-      trial_ends_at: trialEndDate.toISOString()
-    }, { onConflict: 'user_id' });
+    // Check if subscription exists first
+    const { data: existingSubData } = await supabaseAdmin.from('users_subscription').select('id').eq('user_id', userId).single();
+    
+    let subError;
+    if (existingSubData) {
+      // Update existing
+      const res = await supabaseAdmin.from('users_subscription').update({
+        status: 'Active',
+        plan: 'premium',
+        trial_ends_at: trialEndDate.toISOString()
+      }).eq('user_id', userId);
+      subError = res.error;
+    } else {
+      // Insert new
+      const res = await supabaseAdmin.from('users_subscription').insert({
+        user_id: userId,
+        status: 'Active',
+        email: email,
+        plan: 'premium',
+        trial_ends_at: trialEndDate.toISOString()
+      });
+      subError = res.error;
+    }
 
     if (subError) {
       console.error("Sub insert error (non-fatal):", subError.message);
