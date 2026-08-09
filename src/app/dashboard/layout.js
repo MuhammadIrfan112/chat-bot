@@ -179,7 +179,6 @@ export default function DashboardLayout({ children }) {
 
   const navItems = [
     { name: 'My Profile', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'My Chatbots', path: '/dashboard/chatbots', icon: <MessageSquare size={20} /> },
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'CRM Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
     { name: 'Chat History', path: '/dashboard/chat-history', icon: <MessageSquare size={20} /> },
