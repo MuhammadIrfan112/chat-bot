@@ -33,12 +33,12 @@
 }
 
 .floatingBtn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(0,0,0,0.22);
 }
 
 .floatingBtn:active {
-  transform: scale(0.95);
+  transform: translateY(-1px);
 }
 
 /* Mobile circular icon-only button */
