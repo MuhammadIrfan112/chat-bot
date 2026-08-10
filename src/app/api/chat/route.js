@@ -541,7 +541,9 @@ export async function POST(req) {
       ? supabase.from('knowledge_base').select('content').eq('bot_id', bot_id).eq('source', 'Agent Profile Data').single()
       : Promise.resolve({ data: null });
 
-    const [knowledge, { data: profileKb }] = await Promise.all([fetchKnowledge, fetchProfile]);
+    const results = await Promise.all([fetchKnowledge, fetchProfile]);
+    const knowledge = results[0];
+    const profileKb = results[1]?.data || null;
 
     // Format Agent Profile
     let agentProfileSection = '';
