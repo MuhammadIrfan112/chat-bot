@@ -98,6 +98,7 @@ export default function AgentProfilePage() {
 
   const [botAvatar, setBotAvatar] = useState('🤖');
   const [primaryColor, setPrimaryColor] = useState('#4F46E5');
+  const [welcomeMessage, setWelcomeMessage] = useState('');
   const [avatarMode, setAvatarMode] = useState('emoji');
   const [imagePreview, setImagePreview] = useState(null);
   const fileRef = useRef(null);
@@ -152,6 +153,7 @@ export default function AgentProfilePage() {
       setBotId(bots[0].id);
       if (!profile.full_name) setField('full_name', bots[0].name || '');
       setPrimaryColor(bots[0].primary_color || '#4F46E5');
+      setWelcomeMessage(bots[0].welcome_message || '');
       const av = bots[0].bot_avatar || '🤖';
       if (av.startsWith('http') || av.startsWith('/')) {
         setAvatarMode('image');
@@ -229,12 +231,13 @@ export default function AgentProfilePage() {
     const { data: { session } } = await supabase.auth.getSession();
     const uid = userId || session?.user?.id;
 
-    // 1. Sync name to bots table and avatar/color
+    // 1. Sync name, avatar, color, and welcome message to bots table
     if (botId) {
       await supabase.from('bots').update({ 
         name: profile.full_name,
         primary_color: primaryColor,
-        bot_avatar: botAvatar
+        bot_avatar: botAvatar,
+        welcome_message: welcomeMessage
       }).eq('id', botId);
     }
 
@@ -386,6 +389,23 @@ export default function AgentProfilePage() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Welcome Message */}
+          <div style={{ marginTop: '24px' }}>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              💬 Welcome Message
+            </label>
+            <textarea
+              value={welcomeMessage}
+              onChange={(e) => setWelcomeMessage(e.target.value)}
+              rows={4}
+              placeholder={`e.g. I'm Sarah's virtual real estate assistant, here to help you explore homes...`}
+              style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.6', fontFamily: 'inherit' }}
+            />
+            <p style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+              This is the first message clients see when they open the chatbot.
+            </p>
           </div>
         </div>
 
