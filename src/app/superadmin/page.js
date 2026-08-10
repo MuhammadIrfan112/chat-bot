@@ -153,7 +153,7 @@ export default function AdminPage() {
     welcomeMessage: "${codeModal.welcome_message || 'Hi there! 👋 How can I help you today?'}"
   };
 </script>
-<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-widget.js" defer></script>`}
+<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-embed.js" defer></script>`}
             />
             <button
               onClick={() => {
@@ -164,7 +164,7 @@ export default function AdminPage() {
     welcomeMessage: "${codeModal.welcome_message || 'Hi there! 👋 How can I help you today?'}"
   };
 </script>
-<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-widget.js" defer></script>`;
+<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-embed.js" defer></script>`;
                 navigator.clipboard.writeText(code);
               }}
               style={{ width: '100%', marginTop: '14px', padding: '12px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}
@@ -221,7 +221,7 @@ export default function AdminPage() {
     welcomeMessage: "${addResult.bot.welcome_message}"
   };
 </script>
-<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-widget.js" defer></script>`}
+<script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-embed.js" defer></script>`}
                 />
                 <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ width: '100%', marginTop: '16px', padding: '12px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
               </div>
