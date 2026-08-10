@@ -9,12 +9,10 @@
   }
 
   // Use the script source URL to determine the API domain dynamically
-  // If the script is loaded from https://incandescent-lokum.netlify.app/chatbot-embed.js
-  // Then the base URL is https://incandescent-lokum.netlify.app
   var scripts = document.getElementsByTagName('script');
   var baseUrl = '';
   for (var i = 0; i < scripts.length; i++) {
-    if (scripts[i].src && scripts[i].src.includes('chatbot-embed.js')) {
+    if (scripts[i].src && (scripts[i].src.includes('chatbot-embed.js') || scripts[i].src.includes('chatbot-widget.js'))) {
       var urlObj = new URL(scripts[i].src);
       baseUrl = urlObj.origin;
       break;
@@ -22,7 +20,6 @@
   }
 
   if (!baseUrl) {
-    // Fallback if we couldn't parse the script URL
     baseUrl = 'https://www.realtypropflow.com';
   }
 
@@ -35,17 +32,20 @@
   var iframeUrl = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile&v=' + timestamp : '?desktop=true&v=' + timestamp);
   iframe.src = iframeUrl;
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
+  iframe.scrolling = 'no'; // ✅ Prevents internal scrollbar gap
+  iframe.frameBorder = '0';
+  iframe.allowTransparency = 'true';
   
-  // Initial styles: Small size just for the floating button
-  var closedStyle = "position: fixed; bottom: 10px; right: 10px; width: 220px; height: 90px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
-  var openStyle = "position: fixed; bottom: 10px; right: 10px; width: 390px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  // Closed state: only button size visible, no scrollbar gap
+  var closedStyle = "position: fixed; bottom: 20px; right: 20px; width: 200px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
+  var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 390px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
   
   if (isMobile) {
-    openStyle = "position: fixed; bottom: 0; right: 0; width: 100vw; height: 100vh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light;";
+    closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 180px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
+    openStyle = "position: fixed; bottom: 0; right: 0; width: 100vw; height: 100vh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
   }
 
   iframe.style.cssText = closedStyle;
-  iframe.allowTransparency = "true";
   
   document.body.appendChild(iframe);
 
