@@ -477,20 +477,20 @@ export async function POST(req) {
           }
         }
         
-        // 🏡 Real Estate: Scrape website and fetch from city DB
+        // 🏡 Real Estate: Scrape website and fetch from city DB (CONCURRENTLY)
         if (isRealEstateEarly) {
-          if (websiteUrl) {
-            // 5 second timeout so scraping never blocks the chat response
-            const scrapeWithTimeout = Promise.race([
-              liveScrapeWebsite(websiteUrl),
-              new Promise(resolve => setTimeout(() => resolve(''), 5000))
-            ]);
-            const websiteData = await scrapeWithTimeout;
-            if (websiteData) {
-              liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
-            }
+          const fetchWebsite = websiteUrl ? Promise.race([
+            liveScrapeWebsite(websiteUrl),
+            new Promise(resolve => setTimeout(() => resolve(''), 3500))
+          ]) : Promise.resolve('');
+          
+          const fetchCity = fetchCityPropertyData(bot_id, fullChatText);
+
+          const [websiteData, cityListings] = await Promise.all([fetchWebsite, fetchCity]);
+
+          if (websiteData) {
+            liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
           }
-          const cityListings = await fetchCityPropertyData(bot_id, fullChatText);
           if (cityListings) {
             liveInventory = (liveInventory || '') + cityListings;
           }
@@ -535,27 +535,26 @@ export async function POST(req) {
         return Response.json({ reply: null, human_takeover: true });
       }
     }
-    const knowledge = await getRelevantKnowledge(userQuery, bot_id);
+    // Run Knowledge and Profile fetches concurrently
+    const fetchKnowledge = getRelevantKnowledge(userQuery, bot_id);
+    const fetchProfile = (bot_id && !bot_id.startsWith('demo-')) 
+      ? supabase.from('knowledge_base').select('content').eq('bot_id', bot_id).eq('source', 'Agent Profile Data').single()
+      : Promise.resolve({ data: null });
 
-    // Fetch Agent Profile from knowledge_base
+    const [knowledge, { data: profileKb }] = await Promise.all([fetchKnowledge, fetchProfile]);
+
+    // Format Agent Profile
     let agentProfileSection = '';
-    if (bot_id && !bot_id.startsWith('demo-')) {
-      const { data: profileKb } = await supabase
-        .from('knowledge_base')
-        .select('content')
-        .eq('bot_id', bot_id)
-        .eq('source', 'Agent Profile Data')
-        .single();
-      if (profileKb?.content) {
-        try {
-          const p = JSON.parse(profileKb.content);
-          const areasServed = [
-            ...(p.cities_served || []),
-            ...(p.neighborhoods || []),
-            ...(p.communities || [])
-          ];
-          const areasNotServed = p.areas_not_served || [];
-          agentProfileSection = `
+    if (profileKb?.content) {
+      try {
+        const p = JSON.parse(profileKb.content);
+        const areasServed = [
+          ...(p.cities_served || []),
+          ...(p.neighborhoods || []),
+          ...(p.communities || [])
+        ];
+        const areasNotServed = p.areas_not_served || [];
+        agentProfileSection = `
 
 === AGENT IDENTITY — READ CAREFULLY ===
 You represent ${p.full_name || botName}${p.title ? `, ${p.title}` : ''}${p.brokerage ? ` at ${p.brokerage}` : ''}.
@@ -576,8 +575,7 @@ ${areasNotServed.length ? `
 ⛔ I DO NOT serve these areas: ${areasNotServed.join(', ')}. If a user asks about any of these areas, ALWAYS politely say: "I specialize in [service area], and unfortunately I don't cover [requested area]. However, I can refer you to a trusted agent in that area! Would you like me to help you with properties in my service areas instead?"` : ''}
 === END AGENT IDENTITY ===
 `;
-        } catch {}
-      }
+      } catch {}
     }
 
     // Build dynamic prompt based on bot industry
