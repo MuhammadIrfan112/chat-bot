@@ -27,7 +27,7 @@ const RE_INTENT_OPTIONS = [
   "❓ I have a general real estate question"
 ];
 
-export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
+export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, initialConfig = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -101,13 +101,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false }) {
     return () => window.removeEventListener('resize', checkDevice);
   }, [isDesktopEmbed]);
 
-  const botConfig = typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
+  const botConfig = initialConfig || (typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
     botName: 'RealtyPropFlow AI',
     botAvatar: 'AI',
     primaryColor: '#1E6FD9',
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
-  };
+  });
 
   const isDemoBot = botConfig.botId === 'demo-real-estate' || botConfig.botId === 'demo-ecommerce';
 

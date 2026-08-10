@@ -332,12 +332,11 @@ export default function DashboardLayout({ children }) {
         )}
 
         {/* ⏰ Trial Countdown Banner */}
-        {subscriptionStatus !== 'Active' && (subscriptionStatus !== 'Inactive' || trialDaysLeft !== null) && (
+        {subscriptionStatus && subscriptionStatus.toLowerCase() !== 'active' && (subscriptionStatus.toLowerCase() !== 'inactive' || trialDaysLeft !== null) && (
           <div style={{
-            background: subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.05)' : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.05)' : 'rgba(79,70,229,0.05)',
+            background: subscriptionStatus.toLowerCase() === 'inactive' ? 'rgba(239,68,68,0.05)' : 'rgba(79,70,229,0.05)',
             border: `1px solid ${
-              subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.3)'
-              : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.3)'
+              subscriptionStatus.toLowerCase() === 'inactive' ? 'rgba(239,68,68,0.3)'
               : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.3)'
               : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.3)'
               : 'rgba(79,70,229,0.3)'
@@ -350,21 +349,19 @@ export default function DashboardLayout({ children }) {
             justifyContent: 'space-between',
             gap: '20px',
             flexWrap: 'wrap',
-            boxShadow: subscriptionStatus === 'Inactive' ? '0 8px 25px rgba(239,68,68,0.15)' : subscriptionStatus === 'Active' ? '0 4px 15px rgba(16,185,129,0.1)' : '0 4px 15px rgba(0,0,0,0.1)'
+            boxShadow: subscriptionStatus.toLowerCase() === 'inactive' ? '0 8px 25px rgba(239,68,68,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{
                 width: '50px', height: '50px', borderRadius: '14px', flexShrink: 0,
-                background: subscriptionStatus === 'Active' ? 'rgba(16,185,129,0.2)' : subscriptionStatus === 'Inactive' ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
+                background: subscriptionStatus.toLowerCase() === 'inactive' ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
               }}>
-                {subscriptionStatus === 'Active' ? '🎉' : subscriptionStatus === 'Inactive' ? '🔒' : trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
+                {subscriptionStatus.toLowerCase() === 'inactive' ? '🔒' : trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
               </div>
               <div>
                 <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>
-                  {subscriptionStatus === 'Active'
-                    ? `✅ ${planName.charAt(0).toUpperCase() + planName.slice(1)} Plan Active — ${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'}`
-                    : subscriptionStatus === 'Inactive'
+                  {subscriptionStatus.toLowerCase() === 'inactive'
                     ? '⛔ Your 15-day free trial has ended. Your chatbot is now paused.'
                     : trialDaysLeft === 0
                     ? '⛔ Last Day! Your trial ends today'
@@ -374,9 +371,7 @@ export default function DashboardLayout({ children }) {
                   }
                 </div>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: '1.5' }}>
-                  {subscriptionStatus === 'Active'
-                    ? `Your chatbot is fully active and all features are unlocked. (${billingCycle === 'yearly' ? 'Annual billing' : 'Monthly billing'})`
-                    : subscriptionStatus === 'Inactive'
+                  {subscriptionStatus.toLowerCase() === 'inactive'
                     ? 'Your chatbot visitors are seeing a paused message. Purchase a plan below to reactivate instantly.'
                     : 'Upgrade now to ensure your chatbot never stops working for your visitors.'
                   }

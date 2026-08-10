@@ -37,12 +37,12 @@
 }
 
 .floatingBtn:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 14px 30px rgba(0,0,0,0.22);
+  transform: scale(1.05);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.2);
 }
 
 .floatingBtn:active {
-  transform: translateY(-2px);
+  transform: scale(0.97);
   box-shadow: 0 6px 14px rgba(0,0,0,0.15);
 }
 

@@ -33,22 +33,24 @@ export default async function BotEmbedPage({ params, searchParams }) {
   const planFromUrl = resolvedSearchParams.plan || '';
   const botPlan = planFromUrl || (botId === 'demo-real-estate' ? 'premium' : 'premium');
 
+  const initialConfig = {
+    botId: bot.id,
+    botName: bot.name || 'RealtyPropFlow AI',
+    botAvatar: bot.bot_avatar || '🤖',
+    primaryColor: bot.primary_color || '#4F46E5',
+    welcomeMessage: bot.welcome_message || 'Hi there! 👋 How can I help you today?',
+    plan: botPlan
+  };
+
   // Inject config into window so Chatbot.js can use it
   const scriptContent = `
-    window.CHATBOT_CONFIG = {
-      botId: "${bot.id}",
-      botName: "${bot.name || 'RealtyPropFlow AI'}",
-      botAvatar: "${bot.bot_avatar || '🤖'}",
-      primaryColor: "${bot.primary_color || '#4F46E5'}",
-      welcomeMessage: "${bot.welcome_message || 'Hi there! 👋 How can I help you today?'}",
-      plan: "${botPlan}"
-    };
+    window.CHATBOT_CONFIG = ${JSON.stringify(initialConfig)};
   `;
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: 'transparent', backgroundColor: 'transparent' }}>
       <script dangerouslySetInnerHTML={{ __html: scriptContent }} />
-      <Chatbot isDesktopEmbed={isDesktopEmbed} />
+      <Chatbot isDesktopEmbed={isDesktopEmbed} initialConfig={initialConfig} />
       
       {/* Force transparent background on all wrapper elements */}
       <style dangerouslySetInnerHTML={{ __html: `
