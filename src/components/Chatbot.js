@@ -858,7 +858,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
               title="Dashboard Login"
             >
               <div className={styles.headerInfo}>
-                <div className={styles.avatar}>{botConfig.botAvatar}</div>
+                <div className={styles.avatar}>
+                  {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
+                    <img src={botConfig.botAvatar} alt="Bot Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    botConfig.botAvatar
+                  )}
+                </div>
                 <div>
                   <div className={styles.title}>{botConfig.botName}</div>
                   <div className={styles.status}>
@@ -1239,7 +1245,14 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           onClick={() => setIsOpen(true)}
           title="Chat with us"
         >
-          {isMobile ? '💬' : '💬 Chat with us'}
+          {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
+            <div style={{ width: isMobile ? '40px' : '24px', height: isMobile ? '40px' : '24px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+              <img src={botConfig.botAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ) : (
+            <span>{isMobile ? (botConfig.botAvatar || '💬') : (botConfig.botAvatar || '💬')}</span>
+          )}
+          {!isMobile && <span>Chat with us</span>}
         </button>
       )}
     </div>
