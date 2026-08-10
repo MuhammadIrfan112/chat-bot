@@ -123,6 +123,8 @@
   font-size: 15px;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  overflow: hidden;
+  padding: 0;
 }
 
 .title {
@@ -511,6 +513,7 @@
     width: 42px;
     height: 42px;
     font-size: 17px;
+    overflow: hidden;
   }
 
   .title {
