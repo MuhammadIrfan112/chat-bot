@@ -1,8 +1,11 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req) {
+  const debugLog = [];
+  
   try {
     const { name, email, password, phone, industry } = await req.json();
+    debugLog.push(`Input: name=${name}, email=${email}`);
 
     if (!email || !password || !name) {
       return Response.json({ error: "Name, email, and password are required" }, { status: 400 });
@@ -17,6 +20,7 @@ export async function POST(req) {
     });
 
     if (authError) {
+      debugLog.push(`Auth error: ${authError.message}`);
       // If user already exists, find them
       if (authError.message?.toLowerCase().includes('already') || authError.message?.toLowerCase().includes('exists')) {
         // Find existing user ID by querying auth.admin.listUsers
@@ -25,24 +29,24 @@ export async function POST(req) {
         while (true) {
           const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
           if (listError || !listData?.users || listData.users.length === 0) break;
-          
           existingUser = listData.users.find(u => u.email === email);
           if (existingUser) break;
+          if (listData.users.length < 1000) break; // no more pages
           page++;
         }
         
         if (!existingUser) {
-          return Response.json({ error: authError.message }, { status: 400 });
+          return Response.json({ error: authError.message, debug: debugLog }, { status: 400 });
         }
         userId = existingUser.id;
-        
-        // Update password for the existing user (optional, but requested by user to allow overriding)
+        debugLog.push(`Found existing auth user: ${userId}`);
         await supabaseAdmin.auth.admin.updateUserById(userId, { password });
       } else {
-        return Response.json({ error: authError.message }, { status: 400 });
+        return Response.json({ error: authError.message, debug: debugLog }, { status: 400 });
       }
     } else {
       userId = authData.user.id;
+      debugLog.push(`New auth user created: ${userId}`);
     }
 
     // 2. Safely add to users_subscription
@@ -50,8 +54,14 @@ export async function POST(req) {
     trialEndDate.setDate(trialEndDate.getDate() + 365);
     
     // Check if subscription exists first
-    const { data: existingSubData } = await supabaseAdmin.from('users_subscription').select('id').eq('user_id', userId).single();
+    const { data: existingSubData, error: subCheckErr } = await supabaseAdmin
+      .from('users_subscription')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
     
+    debugLog.push(`Sub check result: existingSubData=${JSON.stringify(existingSubData)}, err=${subCheckErr?.message}`);
+
     let subError;
     if (existingSubData) {
       // Update existing
@@ -61,6 +71,7 @@ export async function POST(req) {
         trial_ends_at: trialEndDate.toISOString()
       }).eq('user_id', userId);
       subError = res.error;
+      debugLog.push(`Sub UPDATE result: err=${subError?.message}`);
     } else {
       // Insert new
       const res = await supabaseAdmin.from('users_subscription').insert({
@@ -71,18 +82,23 @@ export async function POST(req) {
         trial_ends_at: trialEndDate.toISOString()
       });
       subError = res.error;
+      debugLog.push(`Sub INSERT result: err=${subError?.message}`);
     }
 
     if (subError) {
-      console.error("Sub insert error (non-fatal):", subError.message);
+      // This is now FATAL — we need to know if it fails
+      return Response.json({ 
+        error: `Failed to save subscription: ${subError.message}`, 
+        debug: debugLog 
+      }, { status: 500 });
     }
 
     // 3. Check if bot already exists
     const { data: existingBots } = await supabaseAdmin.from('bots').select('*').eq('user_id', userId).limit(1);
     
     if (existingBots && existingBots.length > 0) {
-      // Bot already exists — return it
-      return Response.json({ success: true, bot: existingBots[0] });
+      debugLog.push(`Bot already exists: ${existingBots[0].id}`);
+      return Response.json({ success: true, bot: existingBots[0], debug: debugLog });
     }
 
     // 4. Create a default chatbot
@@ -97,12 +113,13 @@ export async function POST(req) {
     }).select().single();
 
     if (botError) {
-      return Response.json({ error: "User created but failed to create bot: " + botError.message }, { status: 500 });
+      return Response.json({ error: "User created but failed to create bot: " + botError.message, debug: debugLog }, { status: 500 });
     }
 
-    return Response.json({ success: true, bot: botData });
+    debugLog.push(`Bot created: ${botData.id}`);
+    return Response.json({ success: true, bot: botData, debug: debugLog });
   } catch (error) {
     console.error("Add Client Error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message, debug: debugLog }, { status: 500 });
   }
 }

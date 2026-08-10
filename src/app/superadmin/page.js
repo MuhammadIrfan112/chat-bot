@@ -116,12 +116,14 @@ export default function AdminPage() {
         body: JSON.stringify(addForm)
       });
       const data = await res.json();
+      console.log('Add Client Response:', data); // always log full response
       if (data.success) {
         setAddResult({ type: 'success', bot: data.bot });
         fetchUsers(); // Refresh list
         setAddForm({ name: '', email: '', password: '', phone: '', industry: 'Real Estate' });
       } else {
-        setAddResult({ type: 'error', message: data.error || 'Failed to add client' });
+        const debugInfo = data.debug ? `\n\nDebug: ${data.debug.join(' → ')}` : '';
+        setAddResult({ type: 'error', message: (data.error || 'Failed to add client') + debugInfo });
       }
     } catch (err) {
       setAddResult({ type: 'error', message: 'Network error. Please try again.' });
