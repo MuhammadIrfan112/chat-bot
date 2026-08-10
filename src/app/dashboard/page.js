@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
+import { Upload, Palette, Bot, Image as ImageIcon } from 'lucide-react';
 
 const inputStyle = {
   width: '100%',
@@ -95,6 +96,12 @@ export default function AgentProfilePage() {
   const [kbRecordId, setKbRecordId] = useState(null);
   const [userId, setUserId] = useState(null);
 
+  const [botAvatar, setBotAvatar] = useState('🤖');
+  const [primaryColor, setPrimaryColor] = useState('#4F46E5');
+  const [avatarMode, setAvatarMode] = useState('emoji');
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileRef = useRef(null);
+
   const [profile, setProfile] = useState({
     // 1. Agent Information
     full_name: '',
@@ -140,10 +147,20 @@ export default function AgentProfilePage() {
     setUserId(uid);
 
     // Get bot info
-    const { data: bots } = await supabase.from('bots').select('id, name').eq('user_id', uid).limit(1);
+    const { data: bots } = await supabase.from('bots').select('*').eq('user_id', uid).limit(1);
     if (bots && bots.length > 0) {
       setBotId(bots[0].id);
       if (!profile.full_name) setField('full_name', bots[0].name || '');
+      setPrimaryColor(bots[0].primary_color || '#4F46E5');
+      const av = bots[0].bot_avatar || '🤖';
+      if (av.startsWith('http') || av.startsWith('/')) {
+        setAvatarMode('image');
+        setImagePreview(av);
+        setBotAvatar(av);
+      } else {
+        setAvatarMode('emoji');
+        setBotAvatar(av);
+      }
     }
 
     // Get subscription info for email/phone pre-fill
@@ -175,6 +192,36 @@ export default function AgentProfilePage() {
     setLoading(false);
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image must be less than 2MB");
+      return;
+    }
+
+    const tempUrl = URL.createObjectURL(file);
+    setImagePreview(tempUrl);
+    setAvatarMode('image');
+    setBotAvatar(tempUrl); // Optimistic UI
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `avatars/${userId}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage.from('bot_avatars').upload(filePath, file);
+
+    if (uploadError) {
+      alert('Error uploading image: ' + uploadError.message);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('bot_avatars').getPublicUrl(filePath);
+    setBotAvatar(publicUrl);
+    setImagePreview(publicUrl);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -182,9 +229,13 @@ export default function AgentProfilePage() {
     const { data: { session } } = await supabase.auth.getSession();
     const uid = userId || session?.user?.id;
 
-    // 1. Sync name to bots table
-    if (botId && profile.full_name) {
-      await supabase.from('bots').update({ name: profile.full_name }).eq('id', botId);
+    // 1. Sync name to bots table and avatar/color
+    if (botId) {
+      await supabase.from('bots').update({ 
+        name: profile.full_name,
+        primary_color: primaryColor,
+        bot_avatar: botAvatar
+      }).eq('id', botId);
     }
 
     // 2. Save full profile to knowledge_base
@@ -232,6 +283,111 @@ export default function AgentProfilePage() {
       </div>
 
       <form onSubmit={handleSave}>
+      
+        {/* Chatbot Appearance Section */}
+        <div style={sectionStyle}>
+          <div style={sectionTitleStyle}><Bot size={18} /> Chatbot Appearance</div>
+          <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '20px' }}>
+            Customize how your AI assistant looks when chatting with clients on your website.
+          </p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+            {/* Avatar Selection */}
+            <div>
+              <label style={labelStyle}>Bot Avatar</label>
+              
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setAvatarMode('emoji')}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', backgroundColor: avatarMode === 'emoji' ? 'rgba(79,70,229,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${avatarMode === 'emoji' ? '#4F46E5' : 'rgba(255,255,255,0.1)'}`, color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  😀 Emoji
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvatarMode('image')}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', backgroundColor: avatarMode === 'image' ? 'rgba(79,70,229,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${avatarMode === 'image' ? '#4F46E5' : 'rgba(255,255,255,0.1)'}`, color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <ImageIcon size={16} /> Image
+                </button>
+              </div>
+
+              {avatarMode === 'emoji' ? (
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {['🤖', '👩', '👨', '👩‍💼', '👨‍💼', '🦸‍♀️', '🦸‍♂️', '🧠', '🏡', '🏢'].map(emoji => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setBotAvatar(emoji)}
+                      style={{ fontSize: '24px', width: '48px', height: '48px', borderRadius: '12px', background: botAvatar === emoji ? 'rgba(79,70,229,0.3)' : 'rgba(255,255,255,0.05)', border: botAvatar === emoji ? '2px solid #4F46E5' : '1px solid transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    ref={fileRef}
+                    style={{ display: 'none' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      {imagePreview ? (
+                        <img src={imagePreview} alt="Avatar Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <Bot size={24} color="#94A3B8" />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current.click()}
+                      style={{ padding: '10px 16px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '600' }}
+                    >
+                      <Upload size={16} /> Upload Photo
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '11px', color: '#64748B', marginTop: '8px' }}>Recommended: Square image, max 2MB.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Brand Color Selection */}
+            <div>
+              <label style={labelStyle}><Palette size={14} style={{ display: 'inline', marginRight: '6px' }} /> Brand Color</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <input
+                  type="color"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  style={{ width: '48px', height: '48px', padding: 0, border: 'none', borderRadius: '12px', cursor: 'pointer', backgroundColor: 'transparent' }}
+                />
+                <input
+                  type="text"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  style={{ ...inputStyle, width: '120px' }}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#0EA5E9', '#000000'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setPrimaryColor(color)}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: color, border: primaryColor === color ? '2px solid white' : '2px solid transparent', cursor: 'pointer', boxShadow: primaryColor === color ? '0 0 0 2px rgba(255,255,255,0.2)' : 'none' }}
+                    title={color}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Section 1: Personal & Professional Info */}
         <div style={sectionStyle}>
