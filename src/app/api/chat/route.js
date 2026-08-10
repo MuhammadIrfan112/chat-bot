@@ -480,7 +480,12 @@ export async function POST(req) {
         // 🏡 Real Estate: Scrape website and fetch from city DB
         if (isRealEstateEarly) {
           if (websiteUrl) {
-            const websiteData = await liveScrapeWebsite(websiteUrl);
+            // 5 second timeout so scraping never blocks the chat response
+            const scrapeWithTimeout = Promise.race([
+              liveScrapeWebsite(websiteUrl),
+              new Promise(resolve => setTimeout(() => resolve(''), 5000))
+            ]);
+            const websiteData = await scrapeWithTimeout;
             if (websiteData) {
               liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
             }
@@ -490,9 +495,13 @@ export async function POST(req) {
             liveInventory = (liveInventory || '') + cityListings;
           }
         }
-        // 🛒 E-commerce: Use live scraping only
+        // 🛒 E-commerce: Use live scraping only (with timeout)
         if (!liveInventory && websiteUrl) {
-          liveInventory = await liveScrapeWebsite(websiteUrl);
+          const scrapeWithTimeout = Promise.race([
+            liveScrapeWebsite(websiteUrl),
+            new Promise(resolve => setTimeout(() => resolve(''), 5000))
+          ]);
+          liveInventory = await scrapeWithTimeout;
         }
       }
     }
@@ -572,19 +581,15 @@ ${areasNotServed.length ? `
     }
 
     // Build dynamic prompt based on bot industry
+    // Reuse bot data already fetched above (avoid duplicate DB call)
     let botData = null;
     if (bot_id === 'demo-real-estate') {
       botData = { name: 'Real Estate Bot', industry: 'Real Estate' };
     } else if (bot_id === 'demo-ecommerce') {
       botData = { name: 'E-Commerce Bot', industry: 'E-Commerce' };
     } else if (bot_id) {
-      const { data: b, error } = await supabase.from('bots').select('name, industry').eq('id', bot_id).single();
-      if (error) {
-        const { data: fallback } = await supabase.from('bots').select('name').eq('id', bot_id).single();
-        botData = fallback;
-      } else {
-        botData = b;
-      }
+      // bot was already fetched at the top — reuse isRealEstateEarly/isEcommerceEarly
+      botData = { name: botName, industry: isRealEstateEarly ? 'Real Estate' : isEcommerceEarly ? 'E-Commerce' : 'Custom' };
     }
     
     // Determine industry from database column
