@@ -16,10 +16,6 @@ export default function Billing() {
   const billingCycle = searchParams.get('cycle');
   const price = searchParams.get('price');
 
-  useEffect(() => {
-    fetchStatus();
-  }, []);
-
   const fetchStatus = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
@@ -39,6 +35,10 @@ export default function Billing() {
       }
     }
   };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
 
   const handlePayNow = async () => {
     setPaying(true);

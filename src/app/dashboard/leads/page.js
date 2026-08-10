@@ -60,10 +60,6 @@ export default function LeadsCRM() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
   const fetchLeads = async () => {
     const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true' || localStorage.getItem('isDemo') === 'true';
     if (isDemo) {
@@ -120,6 +116,12 @@ export default function LeadsCRM() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  
 
   const updateStatus = async (id, status) => {
     await supabase.from('leads').update({ status }).eq('id', id);

@@ -10,10 +10,6 @@ export default function KnowledgeBase() {
   const [hasBot, setHasBot] = useState(false);
   const [botId, setBotId] = useState(null);
 
-  useEffect(() => {
-    fetchKnowledge();
-  }, []);
-
   const fetchKnowledge = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -42,6 +38,11 @@ export default function KnowledgeBase() {
       setKnowledge(data);
     }
   };
+
+  useEffect(() => {
+    fetchKnowledge();
+  }, []);
+  
 
   const handleUploadText = async () => {
     if (!text.trim() || !botId) return;

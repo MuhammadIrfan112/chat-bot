@@ -2,6 +2,35 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
+const StatCard = ({ icon, label, value, sub, color, loading }) => (
+  <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div>
+        <div style={{ fontSize: '13px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+        <div style={{ fontSize: '40px', fontWeight: '800', color: color || '#111827', marginTop: '8px', lineHeight: 1 }}>{loading ? '...' : value}</div>
+        {sub && <div style={{ fontSize: '13px', color: '#10B981', marginTop: '8px', fontWeight: '600' }}>{sub}</div>}
+      </div>
+      <div style={{ fontSize: '32px' }}>{icon}</div>
+    </div>
+  </div>
+);
+
+// Simple bar chart component
+const BarChart = ({ data }) => {
+  const max = Math.max(...data.map(d => d.value), 1);
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '120px', padding: '0 8px' }}>
+      {data.map((item, i) => (
+        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: '#4F46E5' }}>{item.value}</div>
+          <div style={{ width: '100%', backgroundColor: '#4F46E5', borderRadius: '6px 6px 0 0', height: `${(item.value / max) * 90}px`, minHeight: '4px', transition: 'height 0.5s ease' }} />
+          <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '500', textAlign: 'center' }}>{item.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export default function Analytics() {
   const [stats, setStats] = useState({
     totalMessages: 0,
@@ -14,10 +43,6 @@ export default function Analytics() {
   });
   const [recentLeads, setRecentLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
 
   const fetchAnalytics = async () => {
     setLoading(true);
@@ -37,7 +62,7 @@ export default function Analytics() {
     const botIds = bots.map(b => b.id);
 
     const [messagesRes, leadsRes, sessionsRes] = await Promise.all([
-      supabase.from('chat_messages').select('id', { count: 'exact' }), // We will filter messages by session bot_id later if needed, for now just global is ok or we can leave it as we don't have bot_id on messages directly
+      supabase.from('chat_messages').select('id', { count: 'exact' }),
       supabase.from('leads').select('*').in('bot_id', botIds).order('created_at', { ascending: false }),
       supabase.from('chat_sessions').select('id', { count: 'exact' }).in('bot_id', botIds),
     ]);
@@ -61,34 +86,9 @@ export default function Analytics() {
     setLoading(false);
   };
 
-  const StatCard = ({ icon, label, value, sub, color }) => (
-    <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-          <div style={{ fontSize: '40px', fontWeight: '800', color: color || '#111827', marginTop: '8px', lineHeight: 1 }}>{loading ? '...' : value}</div>
-          {sub && <div style={{ fontSize: '13px', color: '#10B981', marginTop: '8px', fontWeight: '600' }}>{sub}</div>}
-        </div>
-        <div style={{ fontSize: '32px' }}>{icon}</div>
-      </div>
-    </div>
-  );
-
-  // Simple bar chart component
-  const BarChart = ({ data }) => {
-    const max = Math.max(...data.map(d => d.value), 1);
-    return (
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '120px', padding: '0 8px' }}>
-        {data.map((item, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '700', color: '#4F46E5' }}>{item.value}</div>
-            <div style={{ width: '100%', backgroundColor: '#4F46E5', borderRadius: '6px 6px 0 0', height: `${(item.value / max) * 90}px`, minHeight: '4px', transition: 'height 0.5s ease' }} />
-            <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '500', textAlign: 'center' }}>{item.label}</div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
 
   return (
     <div>

@@ -9,46 +9,6 @@ export default function LiveChat() {
   const [adminInput, setAdminInput] = useState('');
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    fetchSessions();
-
-    // Auto-refresh sessions every 5 seconds
-    const interval = setInterval(fetchSessions, 5000);
-
-    // Also use Realtime as backup
-    const sessionSub = supabase
-      .channel('sessions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_sessions' }, fetchSessions)
-      .subscribe();
-
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(sessionSub);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!activeSession) return;
-    fetchMessages(activeSession.id);
-
-    // Realtime: listen for new messages in active session
-    const msgSub = supabase
-      .channel(`messages-${activeSession.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages',
-        filter: `session_id=eq.${activeSession.id}`
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new]);
-      })
-      .subscribe();
-
-    return () => supabase.removeChannel(msgSub);
-  }, [activeSession]);
-
-
-
   const fetchSessions = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
@@ -73,6 +33,24 @@ export default function LiveChat() {
     }
   };
 
+  useEffect(() => {
+    fetchSessions();
+
+    // Auto-refresh sessions every 5 seconds
+    const interval = setInterval(fetchSessions, 5000);
+
+    // Also use Realtime as backup
+    const sessionSub = supabase
+      .channel('sessions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_sessions' }, fetchSessions)
+      .subscribe();
+
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(sessionSub);
+    };
+  }, []);
+
   const fetchMessages = async (sessionId) => {
     const { data } = await supabase
       .from('chat_messages')
@@ -81,6 +59,30 @@ export default function LiveChat() {
       .order('created_at', { ascending: true });
     setMessages(data || []);
   };
+
+  useEffect(() => {
+    if (!activeSession) return;
+    fetchMessages(activeSession.id);
+
+    // Realtime: listen for new messages in active session
+    const msgSub = supabase
+      .channel(`messages-${activeSession.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `session_id=eq.${activeSession.id}`
+      }, (payload) => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(msgSub);
+  }, [activeSession]);
+
+
+
+  
 
   const handleTakeover = async (sessionId, takeover) => {
     await fetch('/api/takeover', {

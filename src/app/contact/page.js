@@ -89,7 +89,7 @@ export default function ContactUs() {
             Get in Touch
           </div>
           <h1 style={{ fontSize: 'clamp(40px, 6vw, 64px)', fontWeight: '800', marginBottom: '24px', lineHeight: 1.1, color: '#F8FAFC', letterSpacing: '-0.03em' }}>
-            Let's talk about your <span style={{ color: '#E5C158' }}>growth</span>.
+            Let&apos;s talk about your <span style={{ color: '#E5C158' }}>growth</span>.
           </h1>
           <p style={{ fontSize: '18px', color: '#94A3B8', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
             Have questions about RealtyPropFlow? Our team is here to help you set up your AI assistant and scale your real estate business.
@@ -149,7 +149,7 @@ export default function ContactUs() {
             style={{ background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '48px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
           >
             <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#F1F5F9', marginBottom: '8px' }}>Send a Message</h2>
-            <p style={{ color: '#94A3B8', fontSize: '15px', marginBottom: '32px' }}>Fill out the form below and we'll get back to you within 24 hours.</p>
+            <p style={{ color: '#94A3B8', fontSize: '15px', marginBottom: '32px' }}>Fill out the form below and we&apos;ll get back to you within 24 hours.</p>
 
             {formStatus === 'success' ? (
               <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', padding: '32px', borderRadius: '16px', textAlign: 'center' }}>

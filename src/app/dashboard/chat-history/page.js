@@ -8,15 +8,6 @@ export default function ChatHistory() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
-
-  useEffect(() => {
-    if (!activeSession) return;
-    fetchMessages(activeSession.id);
-  }, [activeSession]);
-
   const fetchSessions = async () => {
     setLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
@@ -44,6 +35,10 @@ export default function ChatHistory() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
   const fetchMessages = async (sessionId) => {
     const { data } = await supabase
       .from('chat_messages')
@@ -52,6 +47,15 @@ export default function ChatHistory() {
       .order('created_at', { ascending: true });
     setMessages(data || []);
   };
+
+  useEffect(() => {
+    if (!activeSession) return;
+    fetchMessages(activeSession.id);
+  }, [activeSession]);
+
+  
+
+  
 
   const timeAgo = (d) => {
     const diff = Math.floor((new Date() - new Date(d)) / 1000);
