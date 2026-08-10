@@ -108,6 +108,7 @@ export default function AgentProfilePage() {
     full_name: '',
     title: '',
     brokerage: '',
+    state_province: '',
     years_experience: '',
     phone: '',
     email: '',
@@ -425,6 +426,10 @@ export default function AgentProfilePage() {
             <div>
               <label style={labelStyle}>Brokerage / Company</label>
               <input style={inputStyle} value={profile.brokerage} onChange={e => setField('brokerage', e.target.value)} placeholder="e.g. RE/MAX Professionals" />
+            </div>
+            <div>
+              <label style={labelStyle}>State / Province</label>
+              <input style={inputStyle} value={profile.state_province} onChange={e => setField('state_province', e.target.value)} placeholder="e.g. Ontario, California, Texas" />
             </div>
             <div>
               <label style={labelStyle}>Years of Experience</label>

@@ -559,17 +559,18 @@ export async function POST(req) {
         agentProfileSection = `
 
 === AGENT IDENTITY — READ CAREFULLY ===
-You represent ${p.full_name || botName}${p.title ? `, ${p.title}` : ''}${p.brokerage ? ` at ${p.brokerage}` : ''}.
+You represent ${p.full_name || botName}${p.title ? `, ${p.title}` : ''}${p.brokerage ? ` at ${p.brokerage}` : ''}${p.state_province ? `, based in ${p.state_province}` : ''}.
 ${p.years_experience ? `They have ${p.years_experience} years of experience in real estate.` : ''}
 ${p.specialties?.length ? `Specialties: ${p.specialties.join(', ')}.` : ''}
 ${p.languages?.length ? `Languages spoken: ${p.languages.join(', ')}.` : ''}
 
 CONTACT INFO (Use this when users ask):
-${p.phone ? `Phone: ${p.phone}` : ''}\n${p.email ? `Email: ${p.email}` : ''}\n${p.office_address ? `Office: ${p.office_address}` : ''}\n${p.business_hours ? `Hours: ${p.business_hours}` : ''}\n${p.booking_link ? `Booking: ${p.booking_link}` : ''}\n${p.website_url ? `Website: ${p.website_url}` : ''}
+${p.phone ? `Phone: ${p.phone}` : ''}\n${p.email ? `Email: ${p.email}` : ''}\n${p.office_address ? `Office: ${p.office_address}` : ''}\n${p.state_province ? `State/Province: ${p.state_province}` : ''}\n${p.business_hours ? `Hours: ${p.business_hours}` : ''}\n${p.booking_link ? `Booking: ${p.booking_link}` : ''}\n${p.website_url ? `Website: ${p.website_url}` : ''}
 ${p.facebook ? `Facebook: ${p.facebook}` : ''}\n${p.instagram ? `Instagram: ${p.instagram}` : ''}\n${p.linkedin ? `LinkedIn: ${p.linkedin}` : ''}
 
 SERVICE AREAS (STRICTLY ENFORCE THIS):
 ${areasServed.length ? `I serve ONLY these areas: ${areasServed.join(', ')}.` : ''}
+${p.state_province ? `Primary operating state/province: ${p.state_province}.` : ''}
 ${p.zip_codes?.length ? `ZIP/Postal codes: ${p.zip_codes.join(', ')}.` : ''}
 ${p.counties?.length ? `Counties: ${p.counties.join(', ')}.` : ''}
 ${p.condo_buildings?.length ? `Specialized condo buildings: ${p.condo_buildings.join(', ')}.` : ''}
