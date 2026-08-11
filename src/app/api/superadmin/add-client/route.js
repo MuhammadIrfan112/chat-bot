@@ -51,7 +51,7 @@ export async function POST(req) {
 
     // 2. Safely add to users_subscription
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 365);
+    trialEndDate.setDate(trialEndDate.getDate() + 15);
     
     // Check if subscription exists first
     const { data: existingSubData, error: subCheckErr } = await supabaseAdmin
