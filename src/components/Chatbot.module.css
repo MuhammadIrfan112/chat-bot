@@ -65,8 +65,8 @@
   position: fixed;
   bottom: 88px;
   right: 24px;
-  width: 380px;
-  height: 560px;
+  width: 370px;
+  height: 480px;
   background-color: #FFFFFF;
   border-radius: 22px;
   box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 4px 20px rgba(0,0,0,0.1);
@@ -80,8 +80,8 @@
 
 /* Main UI chatbot matches the iframe sizes perfectly */
 .globalChatWindow {
-  width: 420px;
-  height: 600px;
+  width: 400px;
+  height: 520px;
   bottom: 96px;
 }
 
@@ -164,11 +164,11 @@
 .messagesArea {
   flex: 1;
   min-height: 0;
-  padding: 16px;
+  padding: 12px 14px 8px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
@@ -218,10 +218,10 @@
    QUICK REPLY BUTTONS
 ══════════════════════════════════════════════ */
 .quickReplies {
-  padding: 4px 16px 12px;
+  padding: 4px 12px 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -229,21 +229,21 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 9px 18px;
-  border-radius: 24px;
-  font-size: 14px;
+  padding: 6px 13px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .qrBtn:hover {
   background: var(--primary, #1E6FD9);
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30,111,217,0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(30,111,217,0.2);
 }
 
 .qrBtn:active {
