@@ -1666,7 +1666,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
   // Show RE intent options for first message, or RealtyPropFlow quick replies, or nothing
   // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
-  const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading' || (botConfig?.name || '').toLowerCase().includes('real state')) && botConfig.botId;
+  const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading' ||
+    (botConfig?.botName || '').toLowerCase().includes('real estate') ||
+    (botConfig?.botName || '').toLowerCase().includes('realty') ||
+    (botConfig?.botName || '').toLowerCase().includes('property')
+  ) && !!botConfig.botId;
   const lastMsg = messages[messages.length - 1];
   let activeQuickReplies = [];
 
@@ -1674,7 +1678,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     activeQuickReplies = ["🙋‍♀️ Talk to Human"];
   } else if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {
     activeQuickReplies = lastMsg.quickReplies;
-  } else if (messages.length === 1 && isREBot) {
+  } else if (!intentSelected && isREBot) {
+    // Show intent buttons until user picks one
     activeQuickReplies = RE_INTENT_OPTIONS;
   } else if (messages.length === 1 && !botConfig.botId) {
     activeQuickReplies = ["How do I create a chatbot?", "What is the pricing?", "Does it capture leads?"];
