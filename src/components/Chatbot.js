@@ -252,7 +252,25 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         })
       });
       const data = await response.json();
-      if (data.session_id) setSessionId(data.session_id);
+      if (data.session && data.session.id) {
+        setSessionId(data.session.id);
+        
+        // Fetch previous messages for this session so the user can continue where they left off
+        try {
+          const histRes = await fetch(`/api/poll-messages?session_id=${data.session.id}&fetch_history=true`);
+          const histData = await histRes.json();
+          if (histData.history && histData.history.length > 0) {
+            const formattedHistory = histData.history.map(msg => ({
+              role: msg.role === 'user' ? 'user' : 'model',
+              parts: [{ text: msg.role === 'admin' ? `👨 (Agent): ${msg.content}` : msg.content }]
+            }));
+            // Only set if we don't already have messages (to avoid overriding active session)
+            setMessages(prev => prev.length === 0 ? formattedHistory : prev);
+          }
+        } catch (err) {
+          console.error("Error fetching chat history:", err);
+        }
+      }
     } catch (e) {
       console.error("Session Init Error:", e);
     }
