@@ -76,6 +76,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     timeline: '', furnished: '', expected_rent: '', has_agent: '', priority: ''
   });
 
+  // ── Home Value Flow ───────────────────────────────────────────
+  const [homeValueStep, setHomeValueStep] = useState(null);
+  const [homeValueData, setHomeValueData] = useState({
+    address: '', bedsBaths: '', renovations: '', condition: '',
+    reason: '', timeline: '', expected_rent: '', has_agent: ''
+  });
+
   const messagesEndRef = useRef(null);
   const messageCount = useRef(0);
   const pollRef = useRef(null);
@@ -420,6 +427,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     // Use passed goal or fallback to state (avoid stale closure)
     const resolvedGoal = goalOverride || buyHomeData?.goal;
     const isRentOut = !resolvedGoal && rentOutStep === null && rentOutData?.prop_type;
+    const isHomeValue = !resolvedGoal && !isRentOut && homeValueStep === null && homeValueData?.address;
 
     setLeadCaptured(true);
     setLeadStep(null);
@@ -427,7 +435,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     const isStandard = embedPlan === 'standard';
     let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.\n\nFeel free to ask me anything else! 😊`;
     
-    if (isRentOut) {
+    if (isHomeValue) {
+      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️/🛁 ${homeValueData.bedsBaths}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time with a personalized valuation based on your property and the local market.\n\nIs there anything else I can help you with?`;
+    } else if (isRentOut) {
       confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time to discuss the next steps, help you find the right tenant, and maximize your rental income.\n\n**We’re excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
     } else if (resolvedGoal === 'Investment Property') {
       confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\nA real estate professional will connect with you at your preferred **${time_preference}** time to discuss your investment goals and available opportunities.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
@@ -947,6 +957,144 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: `Thanks! I’ve got a clear picture of your rental plans. 👍\n\nPlease share your **contact details** below, and an agent will follow up with you about the property, answer any questions, and help you get started.` }]
+      }]);
+      setLeadStep('name');
+      return;
+    }
+
+    // ── Home Value Flow ────────────────────────────────────────────
+    if ((msg.includes("home's value") || msg.includes("💰 I want to know my home's value")) && !homeValueStep) {
+      setHomeValueStep('address');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Absolutely! I can help you get a better idea of what your property may be worth. What’s the address of the property?` }],
+        inputCard: { icon: '📍', label: 'Property Address', placeholder: 'e.g. 123 Main St, Chicago, IL...' }
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'address') {
+      setHomeValueData(prev => ({ ...prev, address: msg }));
+      setHomeValueStep('beds_baths');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `About how many bedrooms and bathrooms does the property have?` }],
+        inputCard: { icon: '🛏️', label: 'Beds and Baths', placeholder: 'e.g. 3 beds, 2 baths...' }
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'beds_baths') {
+      setHomeValueData(prev => ({ ...prev, bedsBaths: msg }));
+      setHomeValueStep('renovations');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thanks! Have you made any recent updates or renovations to the property? If so, what did you update and about when was it completed?` }],
+        quickReplies: ['No recent updates', 'Kitchen updated', 'Bathroom updated', 'New roof/HVAC']
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'renovations') {
+      setHomeValueData(prev => ({ ...prev, renovations: msg }));
+      setHomeValueStep('condition');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How would you describe the overall condition of the home—move-in ready, some updates needed, or does it need significant work?` }],
+        quickReplies: ['✨ Move-in ready', '🛠️ Some updates needed', '🚧 Needs significant work']
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'condition') {
+      setHomeValueData(prev => ({ ...prev, condition: msg }));
+      setHomeValueStep('reason');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Just so I can point you in the right direction, are you thinking about selling the property, renting it out, or mainly curious about its current value?` }],
+        quickReplies: ['🏠 Selling', '🔑 Renting it out', '🤔 Just curious']
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'reason') {
+      const isSell = msg.toLowerCase().includes('sell');
+      const isRent = msg.toLowerCase().includes('rent');
+      
+      setHomeValueData(prev => ({ ...prev, reason: msg }));
+
+      if (isSell) {
+        setHomeValueStep('timeline');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `When are you hoping to sell the property?` }],
+          quickReplies: ['As soon as possible', 'Within 1-3 months', 'Later this year', 'Not sure yet']
+        }]);
+        return;
+      } else if (isRent) {
+        setHomeValueStep('timeline');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `When are you hoping to have the property available for rent?` }],
+          quickReplies: ['As soon as possible', 'Within 1-3 months', 'Later this year', 'Not sure yet']
+        }]);
+        return;
+      } else {
+        // Just curious
+        setHomeValueStep(null);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Got it! We can help you get a better estimate of your home’s current market value.\n\nPlease share your contact details, and an agent can follow up with a more personalized valuation based on your property and the local market.` }]
+        }]);
+        setLeadStep('name');
+        return;
+      }
+    }
+
+    if (homeValueStep === 'timeline') {
+      setHomeValueData(prev => ({ ...prev, timeline: msg }));
+      
+      const isRent = homeValueData.reason.toLowerCase().includes('rent');
+      if (isRent) {
+        setHomeValueStep('expected_rent');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Do you have a monthly rent in mind, or would you like help estimating what the property could rent for?` }],
+          quickReplies: ['I have a price in mind', 'Help me estimate the rent']
+        }]);
+      } else {
+        // Selling
+        setHomeValueStep('has_agent');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Are you currently working with a real estate agent for this?` }],
+          quickReplies: ['✅ Yes', '❌ No']
+        }]);
+      }
+      return;
+    }
+
+    if (homeValueStep === 'expected_rent') {
+      setHomeValueData(prev => ({ ...prev, expected_rent: msg }));
+      setHomeValueStep('has_agent');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you currently working with a real estate agent or property manager for the rental?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'has_agent') {
+      const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      setHomeValueData(prev => ({ ...prev, has_agent: hasAgent ? 'Yes' : 'No' }));
+      setHomeValueStep(null);
+      
+      const action = homeValueData.reason.toLowerCase().includes('sell') ? 'sell your home' : 'rent out your property';
+      
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thanks for the details! We can definitely help you get a highly accurate valuation and discuss your plans to ${action}.\n\nPlease share your contact details below, and an agent will follow up with you.` }]
       }]);
       setLeadStep('name');
       return;
