@@ -301,7 +301,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     return Array.from(links);
   };
 
-  const saveLead = async (name, phone, email, time_preference) => {
+  const saveLead = async (name, phone, email, time_preference, goalOverride) => {
     const viewedLinks = extractViewedLinks();
     
     // Parse conversation to extract structured real estate requirements
@@ -409,14 +409,17 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       console.error('Lead save error:', err);
     }
 
+    // Use passed goal or fallback to state (avoid stale closure)
+    const resolvedGoal = goalOverride || buyHomeData?.goal;
+
     setLeadCaptured(true);
     setLeadStep(null);
 
     const isStandard = embedPlan === 'standard';
-    let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.`;
+    let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.\n\nFeel free to ask me anything else! 😊`;
     
-    if (buyHomeData?.goal === 'Investment Property') {
-      confirmMsg = `Thank you! Your information has been submitted. 🎉\n\nYour call is all set. A real estate professional will connect with you at the scheduled time to discuss your home search and answer any questions.\n\nWe look forward to speaking with you! 🏡`;
+    if (resolvedGoal === 'Investment Property') {
+      confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\nA real estate professional will connect with you at your preferred **${time_preference}** time to discuss your investment goals and available opportunities.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
     } else if (isStandard) {
       const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline;
       let reqLines = [];
@@ -445,7 +448,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         ];
       }
 
-      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to our real estate team.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**What happens next?**\nAn agent from our team will review your requirements and look for properties that closely match your search. They will contact you during your preferred **${time_preference}** hours to discuss suitable properties and the next steps.\n\nWe're looking forward to helping you find the right home! 🏡`;
+      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to our real estate team.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**What happens next?**\nAn agent from our team will review your requirements and look for properties that closely match your search. They will contact you during your preferred **${time_preference}** hours to discuss suitable properties and the next steps.\n\nWe're looking forward to helping you find the right home! 🏡\n\nIs there anything else you'd like to know?`;
     }
 
     setMessages(prev => [...prev, {
@@ -838,8 +841,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (leadStep === 'time') {
+      const currentGoal = buyHomeData?.goal; // capture before state updates
       setLeadData(prev => ({ ...prev, time_preference: msg }));
-      await saveLead(leadData.name, leadData.phone, leadData.email, msg);
+      await saveLead(leadData.name, leadData.phone, leadData.email, msg, currentGoal);
       return;
     }
 
