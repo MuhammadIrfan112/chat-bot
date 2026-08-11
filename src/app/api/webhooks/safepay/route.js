@@ -56,6 +56,26 @@ export async function POST(req) {
           console.error('Supabase update error:', error);
           return Response.json({ error: 'Database update failed' }, { status: 500 });
         }
+
+        // Insert billing history record
+        const planLabel = (metadata.plan === 'pro') ? 'premium' : 'standard';
+        const amount = metadata.plan === 'pro'
+          ? (metadata.cycle === 'yearly' ? '$69' : '$79')
+          : (metadata.cycle === 'yearly' ? '$42' : '$49');
+        const startDate = new Date();
+        await supabase.from('billing_history').insert({
+          user_id: metadata.user_id,
+          plan: planLabel,
+          billing_cycle: metadata.cycle || 'monthly',
+          amount: amount,
+          start_date: startDate.toISOString(),
+          end_date: trialEnd.toISOString(),
+          status: 'Active',
+          assigned_by: 'self'
+        });
+
+        // Update all bots to active
+        await supabase.from('bots').update({ plan: planLabel, status: 'Active' }).eq('user_id', metadata.user_id);
         
         console.log(`Safepay Webhook: Successfully activated subscription for user ${metadata.user_id}`);
       }

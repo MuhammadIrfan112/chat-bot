@@ -19,6 +19,12 @@ export default function AdminPage() {
   // Embed Code Modal
   const [codeModal, setCodeModal] = useState(null); // { bot }
 
+  // Assign Plan Modal
+  const [assignModal, setAssignModal] = useState(null); // { userId, email }
+  const [assignForm, setAssignForm] = useState({ plan: 'starter', cycle: 'monthly', note: '' });
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assignResult, setAssignResult] = useState(null);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -105,6 +111,32 @@ export default function AdminPage() {
     setDeletingUser(null);
   };
 
+  const handleAssignPlan = async (e) => {
+    e.preventDefault();
+    if (!assignModal) return;
+    setIsAssigning(true);
+    setAssignResult(null);
+    try {
+      const res = await fetch('/api/superadmin/assign-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: assignModal.userId, ...assignForm })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAssignResult({ type: 'success', plan: data.plan, endDate: data.endDate });
+        // Update user status in local state
+        setUsers(prev => prev.map(u => u.user_id === assignModal.userId ? { ...u, status: 'Active' } : u));
+        fetchUsers();
+      } else {
+        setAssignResult({ type: 'error', message: data.error || 'Failed to assign plan' });
+      }
+    } catch (err) {
+      setAssignResult({ type: 'error', message: 'Network error.' });
+    }
+    setIsAssigning(false);
+  };
+
   const handleAddClient = async (e) => {
     e.preventDefault();
     setIsAdding(true);
@@ -133,6 +165,57 @@ export default function AdminPage() {
 
   return (
     <div>
+      {/* ── Assign Plan Modal ──────────────────────────────────── */}
+      {assignModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '480px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', color: '#111827' }}>💳 Assign Plan — {assignModal.email}</h2>
+              <button onClick={() => { setAssignModal(null); setAssignResult(null); }} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#6B7280' }}>✕</button>
+            </div>
+
+            {assignResult?.type === 'success' ? (
+              <div style={{ backgroundColor: '#F0FDF4', color: '#166534', padding: '20px', borderRadius: '10px', border: '1px solid #BBF7D0', textAlign: 'center' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
+                <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>Plan Activated!</div>
+                <div style={{ fontSize: '14px' }}>{assignResult.plan.charAt(0).toUpperCase() + assignResult.plan.slice(1)} plan active until {new Date(assignResult.endDate).toLocaleDateString()}</div>
+                <button onClick={() => { setAssignModal(null); setAssignResult(null); }} style={{ marginTop: '16px', padding: '10px 24px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>Done</button>
+              </div>
+            ) : (
+              <form onSubmit={handleAssignPlan} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {assignResult?.type === 'error' && (
+                  <div style={{ backgroundColor: '#FEF2F2', color: '#991B1B', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>{assignResult.message}</div>
+                )}
+                <div>
+                  <label style={{ display: 'block', fontWeight: '700', fontSize: '14px', marginBottom: '8px', color: '#374151' }}>Select Plan</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" onClick={() => setAssignForm(p => ({...p, plan: 'starter'}))} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: assignForm.plan === 'starter' ? '2px solid #4F46E5' : '1px solid #D1D5DB', backgroundColor: assignForm.plan === 'starter' ? '#EEF2FF' : 'white', color: '#374151', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}>📦 Standard</button>
+                    <button type="button" onClick={() => setAssignForm(p => ({...p, plan: 'pro'}))} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: assignForm.plan === 'pro' ? '2px solid #F59E0B' : '1px solid #D1D5DB', backgroundColor: assignForm.plan === 'pro' ? '#FFFBEB' : 'white', color: '#374151', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}>👑 Premium</button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: '700', fontSize: '14px', marginBottom: '8px', color: '#374151' }}>Billing Cycle</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" onClick={() => setAssignForm(p => ({...p, cycle: 'monthly'}))} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: assignForm.cycle === 'monthly' ? '2px solid #4F46E5' : '1px solid #D1D5DB', backgroundColor: assignForm.cycle === 'monthly' ? '#EEF2FF' : 'white', color: '#374151', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Monthly</button>
+                    <button type="button" onClick={() => setAssignForm(p => ({...p, cycle: 'yearly'}))} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: assignForm.cycle === 'yearly' ? '2px solid #4F46E5' : '1px solid #D1D5DB', backgroundColor: assignForm.cycle === 'yearly' ? '#EEF2FF' : 'white', color: '#374151', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Yearly</button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: '700', fontSize: '14px', marginBottom: '8px', color: '#374151' }}>Note / Card Reference (Optional)</label>
+                  <input type="text" value={assignForm.note} onChange={e => setAssignForm(p => ({...p, note: e.target.value}))} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} placeholder="e.g. Card ending 1234, paid via Easypaisa" />
+                </div>
+                <div style={{ backgroundColor: '#F9FAFB', borderRadius: '8px', padding: '12px', fontSize: '13px', color: '#6B7280' }}>
+                  💰 Amount: <strong style={{ color: '#111827' }}>{assignForm.plan === 'pro' ? (assignForm.cycle === 'yearly' ? '$69/mo (billed yearly)' : '$79/mo') : (assignForm.cycle === 'yearly' ? '$42/mo (billed yearly)' : '$49/mo')}</strong>
+                  &nbsp;·&nbsp; Expires: <strong style={{ color: '#111827' }}>{(() => { const d = new Date(); assignForm.cycle === 'yearly' ? d.setFullYear(d.getFullYear()+1) : d.setMonth(d.getMonth()+1); return d.toLocaleDateString(); })()}</strong>
+                </div>
+                <button type="submit" disabled={isAssigning} style={{ padding: '13px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: isAssigning ? 'not-allowed' : 'pointer', opacity: isAssigning ? 0.7 : 1 }}>
+                  {isAssigning ? '⏳ Activating...' : '✅ Activate Plan'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
       {/* ── Embed Code Modal ───────────────────────────────────── */}
       {codeModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
@@ -357,32 +440,17 @@ export default function AdminPage() {
                             </div>
                             <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '3px' }}>🌐 {bot.website_url}</div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{
-                              padding: '3px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: '700',
-                              backgroundColor: bot.status === 'Active' ? '#D1FAE5' : '#FEE2E2',
-                              color: bot.status === 'Active' ? '#065F46' : '#991B1B'
-                            }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <span style={{ padding: '3px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: '700', backgroundColor: bot.status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: bot.status === 'Active' ? '#065F46' : '#991B1B' }}>
                               {bot.status === 'Active' ? '🟢 Active' : '🔴 Inactive'}
                             </span>
-                            <button
-                              onClick={() => setCodeModal(bot)}
-                              style={{
-                                padding: '7px 14px', borderRadius: '7px', border: '1px solid #4F46E5', fontWeight: '600', cursor: 'pointer', fontSize: '12px',
-                                backgroundColor: 'white',
-                                color: '#4F46E5',
-                              }}
-                            >
+                            <button onClick={() => { setAssignModal({ userId: user.user_id, email: user.email }); setAssignForm({ plan: 'starter', cycle: 'monthly', note: '' }); setAssignResult(null); }} style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #10B981', fontWeight: '600', cursor: 'pointer', fontSize: '12px', backgroundColor: '#ECFDF5', color: '#065F46' }}>
+                              💳 Assign Plan
+                            </button>
+                            <button onClick={() => setCodeModal(bot)} style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #4F46E5', fontWeight: '600', cursor: 'pointer', fontSize: '12px', backgroundColor: 'white', color: '#4F46E5' }}>
                               📋 Get Code
                             </button>
-                            <button
-                              onClick={() => toggleBotStatus(bot)}
-                              style={{
-                                padding: '7px 14px', borderRadius: '7px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '12px',
-                                backgroundColor: bot.status === 'Active' ? '#FEE2E2' : '#4F46E5',
-                                color: bot.status === 'Active' ? '#991B1B' : 'white',
-                              }}
-                            >
+                            <button onClick={() => toggleBotStatus(bot)} style={{ padding: '7px 14px', borderRadius: '7px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '12px', backgroundColor: bot.status === 'Active' ? '#FEE2E2' : '#4F46E5', color: bot.status === 'Active' ? '#991B1B' : 'white' }}>
                               {bot.status === 'Active' ? 'Deactivate' : '✓ Activate Bot'}
                             </button>
                           </div>
