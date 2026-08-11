@@ -16,12 +16,12 @@ export async function GET(req) {
 
     const { data, error } = await supabase
       .from('bots')
-      .select('name, industry')
+      .select('name, industry, plan')
       .eq('id', bot_id)
       .single();
 
-    if (error || !data) return Response.json({ industry: 'Other' });
-    return Response.json({ industry: data.industry || 'Other', name: data.name });
+    if (error || !data) return Response.json({ industry: 'Other', plan: 'standard' });
+    return Response.json({ industry: data.industry || 'Other', name: data.name, plan: data.plan || 'standard' });
   } catch (e) {
     return Response.json({ industry: 'Other' });
   }

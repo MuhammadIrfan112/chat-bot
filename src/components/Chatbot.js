@@ -106,6 +106,18 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     timeline: '', furnished: '', expected_rent: '', has_agent: '', priority: ''
   });
 
+  // ── Looking to Rent Flow ────────────────────────────────────────
+  const [rentStep, setRentStep] = useState(null);
+  const [rentData, setRentData] = useState({
+    prop_type: '', city: '', bedrooms: '', bathrooms: '', budget: '', move_in: '', pets: '', has_agent: ''
+  });
+
+  // ── Thinking About Selling Flow ─────────────────────────────────
+  const [sellStep, setSellStep] = useState(null);
+  const [sellData, setSellData] = useState({
+    address: '', prop_type: '', bedrooms: '', bathrooms: '', condition: '', timeline: '', reason: '', has_agent: ''
+  });
+
   // ── Home Value Flow ───────────────────────────────────────────
   const [homeValueStep, setHomeValueStep] = useState(null);
   const [homeValueData, setHomeValueData] = useState({
@@ -199,8 +211,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     if (botConfig.botId) {
       fetch(`/api/bot-info?bot_id=${botConfig.botId}`)
         .then(r => r.json())
-        .then(d => { setBotIndustry(d.industry || 'Real Estate'); }) // default to RE if missing
-        .catch(() => { setBotIndustry('Real Estate'); }); // fallback on error
+        .then(d => {
+          setBotIndustry(d.industry || 'Real Estate');
+          // Set plan from DB (overrides URL param if DB has a value)
+          if (d.plan) setEmbedPlan(d.plan);
+        })
+        .catch(() => { setBotIndustry('Real Estate'); });
     } else {
       setBotIndustry('Other'); // SaaS landing page
     }
@@ -833,6 +849,141 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       }]);
       
       setLeadStep('name'); // trigger lead capture directly
+      return;
+    }
+
+    // ── Looking to Rent Flow ──────────────────────────────────────────
+    if ((msg.includes("looking to rent") || msg.includes("🔑 I'm looking to rent")) && !rentStep) {
+      setRentStep('prop_type');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Great! I'd love to help you find the perfect rental. Let me ask a few quick questions.\n\nWhat type of property are you looking for?` }],
+        quickReplies: ['🏢 Apartment/Condo', '🏘️ Townhouse', '🏡 Detached House', '🏚 Semi-Detached', '🤷 Flexible']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'prop_type') {
+      setRentData(prev => ({ ...prev, prop_type: msg }));
+      setRentStep('city');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Which city or area are you looking to rent in?` }]
+      }]);
+      return;
+    }
+
+    if (rentStep === 'city') {
+      setRentData(prev => ({ ...prev, city: msg }));
+      setRentStep('bedrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How many bedrooms do you need?` }],
+        quickReplies: ['Studio', '1 Bedroom', '2 Bedrooms', '3 Bedrooms', '4+ Bedrooms']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'bedrooms') {
+      setRentData(prev => ({ ...prev, bedrooms: msg }));
+      setRentStep('budget');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What is your monthly budget for rent?` }],
+        quickReplies: ['Under $1,500/mo', '$1,500–$2,000/mo', '$2,000–$2,500/mo', '$2,500–$3,000/mo', '$3,000+/mo']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'budget') {
+      setRentData(prev => ({ ...prev, budget: msg }));
+      setRentStep('move_in');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `When are you looking to move in?` }],
+        quickReplies: ['ASAP', 'Within 1 month', 'Within 2–3 months', 'Flexible']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'move_in') {
+      const rd = { ...rentData, move_in: msg };
+      setRentData(rd);
+      setRentStep(null);
+      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${msg}\n\nPlease share your contact details so our agent can send you matching listings right away!`;
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: summaryText }]
+      }]);
+      setLeadStep('name');
+      return;
+    }
+
+    // ── Thinking About Selling Flow ─────────────────────────────────────
+    if ((msg.includes("thinking about selling") || msg.includes("🏠 I'm thinking about selling my home")) && !sellStep) {
+      setSellStep('address');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `I can help you understand what your home is worth and guide you through the selling process! 🏡\n\nWhat is the address of the property you're looking to sell?` }],
+        inputCard: { icon: '📍', label: 'Property Address', placeholder: 'e.g. 123 Main St, Milton, ON...' }
+      }]);
+      return;
+    }
+
+    if (sellStep === 'address') {
+      setSellData(prev => ({ ...prev, address: msg }));
+      setSellStep('prop_type');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What type of property is it?` }],
+        quickReplies: ['🏡 Detached Home', '🏘️ Townhouse', '🏢 Condo', '🏚 Semi-Detached', '💡 Other']
+      }]);
+      return;
+    }
+
+    if (sellStep === 'prop_type') {
+      setSellData(prev => ({ ...prev, prop_type: msg }));
+      setSellStep('bedrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How many bedrooms and bathrooms does the property have?` }],
+        inputCard: { icon: '🛏️', label: 'Bedrooms & Bathrooms', placeholder: 'e.g. 3 beds, 2 baths...' }
+      }]);
+      return;
+    }
+
+    if (sellStep === 'bedrooms') {
+      setSellData(prev => ({ ...prev, bedrooms: msg }));
+      setSellStep('condition');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How would you describe the condition of the home?` }],
+        quickReplies: ['✨ Move-in ready', '🛠️ Needs some updates', '🚧 Needs significant work']
+      }]);
+      return;
+    }
+
+    if (sellStep === 'condition') {
+      setSellData(prev => ({ ...prev, condition: msg }));
+      setSellStep('timeline');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `When are you hoping to sell?` }],
+        quickReplies: ['As soon as possible', 'Within 1–3 months', 'Within 6 months', 'Just exploring options']
+      }]);
+      return;
+    }
+
+    if (sellStep === 'timeline') {
+      const sd = { ...sellData, timeline: msg };
+      setSellData(sd);
+      setSellStep(null);
+      const summaryText = `Great! Here's a summary of your property:\n📍 Address: ${sd.address}\n🏠 Type: ${sd.prop_type}\n🛏️ ${sd.bedrooms}\n🛠️ Condition: ${sd.condition}\n📅 Timeline: ${msg}\n\nOne of our agents will prepare a detailed market valuation for your home and reach out to you shortly. Please share your contact details below!`;
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: summaryText }]
+      }]);
+      setLeadStep('name');
       return;
     }
 
