@@ -526,12 +526,6 @@ export async function POST(req) {
         .single();
 
       if (session?.is_human_takeover) {
-        const lastMsg = messages[messages.length - 1];
-        await supabase.from('chat_messages').insert({
-          session_id,
-          role: 'user',
-          content: lastMsg?.parts?.[0]?.text || ''
-        });
         return Response.json({ reply: null, human_takeover: true });
       }
     }
@@ -1404,13 +1398,7 @@ CRITICAL RULES:
     }
     console.log("=================================");
 
-    if (session_id) {
-      await supabase.from('chat_messages').insert([
-        { session_id, role: 'user', content: userQuery },
-        { session_id, role: 'model', content: replyText }
-      ]);
-    }
-
+    // DB saving is now handled completely by the frontend to ensure all quick replies and local flow messages are captured.
     return Response.json({ 
       reply: replyText,
       properties: propertiesList,

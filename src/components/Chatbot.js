@@ -63,6 +63,36 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [closingStep, setClosingStep] = useState(null);
   const [closingData, setClosingData] = useState({ name: '', phone: '', email: '', time: '' });
 
+  const messagesEndRef = useRef(null);
+  const messageCount = useRef(0);
+  const savedMsgCount = useRef(0);
+  const pollRef = useRef(null);
+
+  // Sync all messages to DB automatically
+  useEffect(() => {
+    if (!sessionId || !messages || messages.length === 0) return;
+    
+    if (messages.length > savedMsgCount.current) {
+      const newMsgs = messages.slice(savedMsgCount.current);
+      savedMsgCount.current = messages.length;
+
+      newMsgs.forEach(msg => {
+        // Don't save loading messages
+        if (msg.role === 'model' && (msg.parts[0].text === '...' || msg.parts[0].text.includes('Searching live listings'))) return;
+
+        fetch('/api/send-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            role: msg.role,
+            content: msg.parts[0].text
+          })
+        }).catch(err => console.error("Failed to sync message to DB", err));
+      });
+    }
+  }, [messages, sessionId]);
+
   const [buyHomeStep, setBuyHomeStep] = useState(null);
   const [buyHomeData, setBuyHomeData] = useState({
     goal: '', city: '', type: '', bedrooms: '', bathrooms: '', firstTime: '', features: '', schools: '', budget: '', timeline: '', mortgage: '', agent: '',
