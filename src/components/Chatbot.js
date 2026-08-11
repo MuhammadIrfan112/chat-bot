@@ -388,6 +388,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     // Parse property summary from the structured summary if available
     const summaryMsg = messages.slice().reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('market value')));
     let sumOccupants = '', sumPets = '', sumParking = '', sumRentTimeline = '';
+    let sumCity = '', sumPropType = '', sumBeds = '', sumBaths = '', sumFeatures = '', sumBudget = '', sumTimeline = '', sumMortgage = '', sumSchool = '';
     
     if (summaryMsg) {
       const st = summaryMsg.parts[0].text;
