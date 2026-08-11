@@ -40,17 +40,17 @@ export default function AdminPage() {
   };
 
   const resetTrialTo15Days = async (userId) => {
-    const newEnd = new Date();
-    newEnd.setDate(newEnd.getDate() + 15);
-    const { error } = await supabase
-      .from('users_subscription')
-      .update({ trial_ends_at: newEnd.toISOString() })
-      .eq('user_id', userId);
-    if (!error) {
+    const res = await fetch('/api/superadmin/reset-trial', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, days: 15 })
+    });
+    const data = await res.json();
+    if (data.success) {
       alert('Trial reset to 15 days from today ✅');
       fetchUsers();
     } else {
-      alert('Error: ' + error.message);
+      alert('Error: ' + (data.error || 'Could not reset trial'));
     }
   };
 

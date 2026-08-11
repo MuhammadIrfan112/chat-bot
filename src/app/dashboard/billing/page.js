@@ -129,46 +129,25 @@ export default function Billing() {
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             
-            {/* Safepay (Pakistan) */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-panel" style={{ padding: '32px', borderRadius: '24px', textAlign: 'center', border: '2px solid rgba(16, 185, 129, 0.3)' }}>
-              <div style={{ width: '64px', height: '64px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Smartphone size={32} />
+            {/* Stripe (International & Local) */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel" style={{ padding: '32px', borderRadius: '24px', textAlign: 'center', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+              <div style={{ width: '64px', height: '64px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <Globe size={32} />
               </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>Pakistan</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Pay securely via Debit/Credit Card, JazzCash, or EasyPaisa.</p>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>Credit / Debit Card</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Pay securely via Stripe (Visa, Mastercard, Amex, Apple Pay).</p>
               <button
                 onClick={handlePayNow}
                 disabled={paying}
                 style={{
                   width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
-                  background: paying ? 'rgba(255,255,255,0.1)' : 'linear-gradient(90deg, #10B981, #059669)',
+                  background: paying ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #6366F1, #4F46E5)',
                   color: 'white', padding: '14px', borderRadius: '12px', border: 'none',
                   fontWeight: '700', fontSize: '16px', cursor: paying ? 'not-allowed' : 'pointer',
-                  boxShadow: paying ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.4)', transition: 'all 0.2s'
+                  boxShadow: paying ? 'none' : '0 4px 15px rgba(99, 102, 241, 0.4)', transition: 'all 0.2s'
                 }}
               >
-                {paying ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</> : <><Lock size={18} /> Pay via Safepay</>}
-              </button>
-            </motion.div>
-
-            {/* Stripe (International) */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel" style={{ padding: '32px', borderRadius: '24px', textAlign: 'center', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-              <div style={{ width: '64px', height: '64px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Globe size={32} />
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>International</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Pay securely via Stripe (Visa, Mastercard, Amex, Apple Pay).</p>
-              <button
-                onClick={() => setPayError("Stripe integration is pending client keys.")}
-                style={{
-                  width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
-                  background: 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                  color: 'white', padding: '14px', borderRadius: '12px', border: 'none',
-                  fontWeight: '700', fontSize: '16px', cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)', transition: 'all 0.2s'
-                }}
-              >
-                <Lock size={18} /> Pay via Stripe
+                {paying ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</> : <><Lock size={18} /> Pay via Stripe</>}
               </button>
             </motion.div>
 
