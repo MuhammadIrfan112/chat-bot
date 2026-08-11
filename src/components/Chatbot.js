@@ -360,7 +360,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     // Parse property summary from the structured summary if available
-    const summaryMsg = allMsgs.slice().reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('market value')));
+    const summaryMsg = messages.slice().reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('market value')));
     let sumOccupants = '', sumPets = '', sumParking = '', sumRentTimeline = '';
     
     if (summaryMsg) {
@@ -384,8 +384,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
 
     let finalPropertyInterest = '';
-    const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline || allMsgs.some(m => m.parts[0].text.toLowerCase().includes('looking to rent'));
-    const isSell = allMsgs.some(m => m.parts[0].text.toLowerCase().includes('understand your home\'s value') || m.parts[0].text.toLowerCase().includes('considering selling'));
+    const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline || messages.some(m => m.parts[0].text.toLowerCase().includes('looking to rent'));
+    const isSell = messages.some(m => m.parts[0].text.toLowerCase().includes('understand your home\'s value') || m.parts[0].text.toLowerCase().includes('considering selling'));
     const leadType = isSell ? 'Selling Home' : isRent ? 'Renting Home' : 'Buying Home';
 
     if (isRealEstate) {
