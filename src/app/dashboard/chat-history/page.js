@@ -70,6 +70,20 @@ export default function ChatHistory() {
     return new Date(d).toLocaleDateString();
   };
 
+  const deleteSession = async (sessionId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this conversation? This cannot be undone.')) return;
+    // Delete messages first (foreign key)
+    await supabase.from('chat_messages').delete().eq('session_id', sessionId);
+    // Then delete session
+    await supabase.from('chat_sessions').delete().eq('id', sessionId);
+    // Update UI
+    setSessions(prev => prev.filter(s => s.id !== sessionId));
+    if (activeSession?.id === sessionId) {
+      setActiveSession(null);
+      setMessages([]);
+    }
+  };
+
   return (
     <div>
       <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>📜 Chat History</h1>
@@ -110,6 +124,25 @@ export default function ChatHistory() {
                     <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>
                       👤 Visitor {s.visitor_id?.slice(-4)}
                     </div>
+                    <button
+                      onClick={e => { e.stopPropagation(); deleteSession(s.id); }}
+                      title="Delete conversation"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#EF4444',
+                        cursor: 'pointer',
+                        opacity: 0.5,
+                        fontSize: '14px',
+                        padding: '2px 4px',
+                        borderRadius: '6px',
+                        transition: 'opacity 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
+                    >
+                      🗑️
+                    </button>
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{timeAgo(s.created_at)}</div>
                 </div>
@@ -137,6 +170,27 @@ export default function ChatHistory() {
                     Started {new Date(activeSession.created_at).toLocaleString()}
                   </div>
                 </div>
+                <button
+                  onClick={() => deleteSession(activeSession.id)}
+                  style={{
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    color: '#EF4444',
+                    cursor: 'pointer',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                >
+                  🗑️ Delete Conversation
+                </button>
               </div>
 
               {/* Messages */}
