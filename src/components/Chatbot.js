@@ -62,6 +62,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [closingStep, setClosingStep] = useState(null);
   const [closingData, setClosingData] = useState({ name: '', phone: '', email: '', time: '' });
 
+  const [buyHomeStep, setBuyHomeStep] = useState(null);
+  const [buyHomeData, setBuyHomeData] = useState({
+    goal: '', city: '', type: '', bedrooms: '', bathrooms: '', firstTime: '', features: '', schools: '', budget: '', timeline: '', mortgage: '', agent: ''
+  });
+
   const messagesEndRef = useRef(null);
   const messageCount = useRef(0);
   const pollRef = useRef(null);
@@ -440,6 +445,208 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     // Handle Intent Selection
     if (!intentSelected && botIndustry === 'Real Estate') {
       setIntentSelected(true);
+    }
+
+    // ── Buy a Home Flow ─────────────────────────────────────────
+    if (msg.includes("I'm looking to buy a home") && !buyHomeStep) {
+      setBuyHomeStep('goal');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you looking for a family home or an investment property?` }],
+        quickReplies: ['🏡 Family Home', '💰 Investment Property']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'goal') {
+      if (msg.toLowerCase().includes('family home')) {
+        setBuyHomeData(prev => ({ ...prev, goal: 'Family Home' }));
+        setBuyHomeStep('city');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Great! 🏡 ${botConfig.botName || 'Shawna Roongsang'} has helped 20+ families find their perfect home in the area, so you're in great hands!\n\nI'll ask you a few quick questions to understand exactly what you're looking for.\n\nWhich city or area are you interested in?` }]
+        }]);
+      } else {
+        setBuyHomeStep(null);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Let's discuss your investment property needs.` }]
+        }]);
+      }
+      return;
+    }
+
+    if (buyHomeStep === 'city') {
+      setBuyHomeData(prev => ({ ...prev, city: msg }));
+      setBuyHomeStep('type');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `what type of home are you looking for? You can select multiple options!` }]
+      }]);
+      setMultiSelectOptions(['🏢 Condo', '🏘️ Townhouse', 'Detached', 'Semi Detached', '🏡 Duplex / Multi-family home', '🌳 Villa / Luxury home', '🤷 Other']);
+      return;
+    }
+
+    if (buyHomeStep === 'type') {
+      setBuyHomeData(prev => ({ ...prev, type: msg }));
+      setBuyHomeStep('bedrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `${buyHomeData.city || 'That city'} is a fantastic area! It has great communities and strong property values.\n\nHow many bedrooms are you looking for?` }],
+        quickReplies: ['1+', '2+', '3+', '4+', '5+']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'bedrooms') {
+      setBuyHomeData(prev => ({ ...prev, bedrooms: msg }));
+      setBuyHomeStep('bathrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `And how many bathrooms?` }],
+        quickReplies: ['1+', '2+', '3+', '4+']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'bathrooms') {
+      setBuyHomeData(prev => ({ ...prev, bathrooms: msg }));
+      setBuyHomeStep('first_time');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you a first-time buyer?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'first_time') {
+      const isFirst = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      setBuyHomeData(prev => ({ ...prev, firstTime: isFirst ? 'Yes' : 'No' }));
+      setBuyHomeStep('features');
+      
+      const replyText = isFirst 
+        ? `That’s exciting—congratulations on taking the first step toward owning your first home! 🏡\n\nFirst-time buyers may have access to special financing and assistance programs, and we can help you understand your options, budget, neighborhoods, and available homes.\n\nAre there any important features you’re looking for? You can select multiple options!`
+        : `Since you’re an experienced homebuyer, let’s focus on what’s most important for your next purchase—whether that’s more space, a new neighborhood, a better commute, or a specific budget.\n\nAre there any important features you’re looking for? You can select multiple options!`;
+      
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: replyText }] }]);
+      setMultiSelectOptions(['Swimming Pool', 'Finished Basement', 'Large Backyard', 'Garage', 'Renovated Kitchen', 'Open Concept']);
+      return;
+    }
+
+    if (buyHomeStep === 'features') {
+      setBuyHomeData(prev => ({ ...prev, features: msg }));
+      setBuyHomeStep('schools');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Do you have any specific school requirements? You can select multiple options!` }]
+      }]);
+      setMultiSelectOptions(['High School', 'Elementary School', 'Middle School', 'Top-rated district', 'Walking distance']);
+      return;
+    }
+
+    if (buyHomeStep === 'schools') {
+      setBuyHomeData(prev => ({ ...prev, schools: msg }));
+      setBuyHomeStep('budget');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What is your maximum budget?` }],
+        quickReplies: ['Under $500k', '$500k - $750k', '$750k - $1M', '$1M+']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'budget') {
+      setBuyHomeData(prev => ({ ...prev, budget: msg }));
+      setBuyHomeStep('timeline');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Thanks! When are you planning to purchase?` }],
+        quickReplies: ['ASAP', '1-3 months', '3-6 months', 'Just browsing']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'timeline') {
+      setBuyHomeData(prev => ({ ...prev, timeline: msg }));
+      setBuyHomeStep('mortgage');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Have you been pre-approved for a mortgage?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'mortgage') {
+      const isPreApproved = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      setBuyHomeData(prev => ({ ...prev, mortgage: isPreApproved ? 'Pre-approved' : 'Not pre-approved' }));
+      setBuyHomeStep('agent');
+      
+      const replyParts = [];
+      if (!isPreApproved) {
+        replyParts.push(`That’s okay— Getting preapproved can help you understand your potential budget and what loan options may be available to you.`);
+      }
+      replyParts.push(`Are you currently working with any other real estate agent?`);
+      
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: replyParts.join('\n\n') }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'agent') {
+      const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      const newBuyData = { ...buyHomeData, agent: hasAgent ? 'Yes' : 'No' };
+      setBuyHomeData(newBuyData);
+      setBuyHomeStep('summary');
+
+      let replyParts = [];
+      if (hasAgent) {
+        replyParts.push(`Thanks for letting me know! How are things going with your current agent—are you happy with them, or are you considering a change? If you have an agreement with them, do you know when it ends?\n\nSince you’re already working with a real estate agent, we’ll respect that relationship. If you need help with anything else related to your home search or mortgage, I’m happy to help.`);
+      } else {
+        replyParts.push(`Got it! Since you’re not currently working with another agent, I can help you take the next step.`);
+      }
+
+      const summaryText = `Here's what I have for your home search:\nLocation: ${newBuyData.city}\nProperty: Family Home\nBedrooms: ${newBuyData.bedrooms}\nBathrooms: ${newBuyData.bathrooms}\nImportant features: ${newBuyData.features}\nSchool preference: ${newBuyData.schools}\nMaximum budget: ${newBuyData.budget}\nFirst-time buyer: ${newBuyData.firstTime}\nMortgage: ${newBuyData.mortgage}\nPurchase timeline: ${newBuyData.timeline}\nCurrently working with an agent: ${newBuyData.agent}\n\nDoes everything look correct?`;
+
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: replyParts.join('\n\n') }]
+      }, {
+        role: 'model',
+        parts: [{ text: summaryText }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'summary') {
+      setBuyHomeStep(null);
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        if (embedPlan === 'standard' || !embedPlan) {
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{ text: `Thanks! I’ve noted your requirements. Please provide your contact details below, and an agent will be in touch to help you with your home search.` }]
+          }]);
+          setLeadStep('name');
+          return;
+        } else {
+          // Premium: override the msg to trigger property search via AI
+          const searchPrompt = `My requirements: ${buyHomeData.bedrooms} beds in ${buyHomeData.city}, budget ${buyHomeData.budget}. Please show me properties.`;
+          apiMessages.pop(); // remove "yes"
+          apiMessages.push({ role: 'user', parts: [{ text: searchPrompt }] });
+        }
+      } else {
+         setMessages(prev => [...prev, {
+           role: 'model',
+           parts: [{ text: `No problem. Let me know what you'd like to change.` }]
+         }]);
+         return;
+      }
     }
 
     // ── Lead info collection ────────────────────────────────────
