@@ -5,8 +5,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const PLAN_PRICES = {
-  starter: { monthly: 69, yearly: 62 }, // 10% off: $69 * 0.9 = $62.1 → $62/month ($744/year)
-  pro: { monthly: 99, yearly: 89 }      // 10% off: $99 * 0.9 = $89.1 → $89/month ($1068/year)
+  starter: { monthly: 49, yearly: 42 }, // $49/mo, $42/mo billed yearly ($504/year)
+  pro: { monthly: 79, yearly: 69 }      // $79/mo, $69/mo billed yearly ($828/year)
 };
 
 export async function POST(req) {
