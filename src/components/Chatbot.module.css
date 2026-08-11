@@ -185,7 +185,7 @@
   max-width: 82%;
   padding: 10px 14px;
   border-radius: 18px;
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.6;
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -237,9 +237,9 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 16px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -265,9 +265,9 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 16px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -291,12 +291,12 @@
 
 .multiSubmitBtn {
   margin-top: 6px;
-  padding: 5px 14px;
+  padding: 7px 18px;
   background: var(--primary, #1E6FD9);
   color: white;
   border: none;
   border-radius: 16px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(30,111,217,0.3);
