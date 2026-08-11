@@ -496,12 +496,12 @@
   .chatbotContainer:not(.forceDesktop) .globalChatWindow {
     position: fixed !important;
     top: auto !important;
-    bottom: 2dvh !important;
+    bottom: 2vh !important;
     left: 3vw !important;
     right: auto !important;
     width: 94vw !important;
-    height: 85dvh !important;
-    max-height: 85dvh !important;
+    height: 85vh !important;
+    max-height: 85vh !important;
     border-radius: 22px !important;
     overflow: hidden !important;
     border: 1px solid rgba(0,0,0,0.1) !important;

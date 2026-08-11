@@ -52,7 +52,7 @@ export async function GET(req) {
   var openStyle = "position: fixed; bottom: 20px; " + position + ": 16px; width: 420px; height: 600px; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22); transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   if (isMobile) {
-    openStyle = "position: fixed; bottom: 2dvh; left: 3vw; width: 94vw; height: 85dvh; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    openStyle = "position: fixed; bottom: 2vh; left: 3%; width: 94%; height: 85vh; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   } else if (isTablet) {
     openStyle = "position: fixed; bottom: 20px; " + position + ": 16px; width: 400px; height: 600px; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22); transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   }
