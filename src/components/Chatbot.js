@@ -492,8 +492,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setBuyHomeStep('bedrooms');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `${buyHomeData.city || 'That city'} is a fantastic area! It has great communities and strong property values.\n\nHow many bedrooms are you looking for?` }],
-        quickReplies: ['1+', '2+', '3+', '4+', '5+']
+        parts: [{ text: `${buyHomeData.city || 'That city'} is a fantastic area! It has great communities and strong property values.\n\nHow many bedrooms are you looking for?` }]
       }]);
       return;
     }
@@ -503,8 +502,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setBuyHomeStep('bathrooms');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `And how many bathrooms?` }],
-        quickReplies: ['1+', '2+', '3+', '4+']
+        parts: [{ text: `And how many bathrooms?` }]
       }]);
       return;
     }
@@ -530,7 +528,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         : `Since you’re an experienced homebuyer, let’s focus on what’s most important for your next purchase—whether that’s more space, a new neighborhood, a better commute, or a specific budget.\n\nAre there any important features you’re looking for? You can select multiple options!`;
       
       setMessages(prev => [...prev, { role: 'model', parts: [{ text: replyText }] }]);
-      setMultiSelectOptions(['Swimming Pool', 'Finished Basement', 'Large Backyard', 'Garage', 'Renovated Kitchen', 'Open Concept']);
+      setMultiSelectOptions(['🌊 Swimming Pool', '🏠 Basement', '🚗 Garage']);
       return;
     }
 
@@ -541,7 +539,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         role: 'model',
         parts: [{ text: `Do you have any specific school requirements? You can select multiple options!` }]
       }]);
-      setMultiSelectOptions(['High School', 'Elementary School', 'Middle School', 'Top-rated district', 'Walking distance']);
+      setMultiSelectOptions(['🏦 Primary School', '🏢 Middle School', '🏧 Elementary School']);
       return;
     }
 
@@ -550,8 +548,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setBuyHomeStep('budget');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `What is your maximum budget?` }],
-        quickReplies: ['Under $500k', '$500k - $750k', '$750k - $1M', '$1M+']
+        parts: [{ text: `What is your maximum budget?` }]
       }]);
       return;
     }
@@ -562,7 +559,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: `Thanks! When are you planning to purchase?` }],
-        quickReplies: ['ASAP', '1-3 months', '3-6 months', 'Just browsing']
+        quickReplies: ['Within 3 months', 'Within 6 months', 'Not sure yet']
       }]);
       return;
     }
