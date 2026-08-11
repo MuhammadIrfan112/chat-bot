@@ -126,6 +126,34 @@ export default function AdminPage() {
     setDeletingUser(null);
   };
 
+  const handlePayWithStripe = async (e) => {
+    e.preventDefault();
+    if (!assignModal) return;
+    setIsAssigning(true);
+    setAssignResult(null);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: assignForm.plan === 'premium' ? 'pro' : 'starter',
+          cycle: assignForm.cycle,
+          userId: assignModal.userId,
+          userEmail: assignModal.email || 'no-email@realtypropflow.com'
+        })
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setAssignResult({ type: 'error', message: data.error || 'Failed to start Stripe checkout' });
+      }
+    } catch (err) {
+      setAssignResult({ type: 'error', message: 'Network error.' });
+    }
+    setIsAssigning(false);
+  };
+
   const handleAssignPlan = async (e) => {
     e.preventDefault();
     if (!assignModal) return;
@@ -223,9 +251,14 @@ export default function AdminPage() {
                   💰 Amount: <strong style={{ color: '#111827' }}>{assignForm.plan === 'pro' ? (assignForm.cycle === 'yearly' ? '$69/mo (billed yearly)' : '$79/mo') : (assignForm.cycle === 'yearly' ? '$42/mo (billed yearly)' : '$49/mo')}</strong>
                   &nbsp;·&nbsp; Expires: <strong style={{ color: '#111827' }}>{(() => { const d = new Date(); assignForm.cycle === 'yearly' ? d.setFullYear(d.getFullYear()+1) : d.setMonth(d.getMonth()+1); return d.toLocaleDateString(); })()}</strong>
                 </div>
-                <button type="submit" disabled={isAssigning} style={{ padding: '13px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '15px', cursor: isAssigning ? 'not-allowed' : 'pointer', opacity: isAssigning ? 0.7 : 1 }}>
-                  {isAssigning ? '⏳ Activating...' : '✅ Activate Plan'}
-                </button>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <button type="button" onClick={handleAssignPlan} disabled={isAssigning} style={{ padding: '13px', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: isAssigning ? 'not-allowed' : 'pointer', opacity: isAssigning ? 0.7 : 1 }}>
+                    {isAssigning ? '...' : 'Activate Manually (Free)'}
+                  </button>
+                  <button type="button" onClick={handlePayWithStripe} disabled={isAssigning} style={{ padding: '13px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '14px', cursor: isAssigning ? 'not-allowed' : 'pointer', opacity: isAssigning ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    {isAssigning ? 'Processing...' : <>💳 Pay & Activate (Stripe)</>}
+                  </button>
+                </div>
               </form>
             )}
           </div>
