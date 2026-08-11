@@ -2081,6 +2081,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         <button
           className={`${styles.floatingBtn} ${isMobile ? styles.floatingBtnMobile : ''}`}
           onClick={() => setIsOpen(true)}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            setIsOpen(true);
+          }}
           title="Chat with us"
         >
           {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
