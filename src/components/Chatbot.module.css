@@ -557,30 +557,28 @@
   .quickReplies {
     padding: 8px 14px 12px;
     flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    align-items: flex-start;
+    gap: 5px;
   }
 
   .qrBtn {
-    font-size: 14px;
-    padding: 12px 18px;
-    text-align: center;
-    width: 100%;
+    font-size: 11px;
+    padding: 4px 10px;
     border-radius: 16px;
-    white-space: normal;
+    white-space: nowrap;
   }
 
   .multiBtn {
-    font-size: 15px;
-    padding: 13px 18px;
-    width: 100%;
+    font-size: 11px;
+    padding: 4px 10px;
+    width: auto;
     text-align: center;
   }
 
   .multiSubmitBtn {
-    padding: 14px;
-    font-size: 15px;
-    border-radius: 14px;
+    padding: 5px 14px;
+    font-size: 11px;
+    border-radius: 16px;
   }
 
   /* Input area with safe-area support for iPhone home bar */
