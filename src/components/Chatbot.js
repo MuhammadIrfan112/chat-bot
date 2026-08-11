@@ -64,7 +64,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
   const [buyHomeStep, setBuyHomeStep] = useState(null);
   const [buyHomeData, setBuyHomeData] = useState({
-    goal: '', city: '', type: '', bedrooms: '', bathrooms: '', firstTime: '', features: '', schools: '', budget: '', timeline: '', mortgage: '', agent: ''
+    goal: '', city: '', type: '', bedrooms: '', bathrooms: '', firstTime: '', features: '', schools: '', budget: '', timeline: '', mortgage: '', agent: '',
+    inv_type: '', inv_prop_type: '', inv_downpayment: '', inv_location: '', inv_experience: '', inv_financing: '', inv_return: ''
   });
 
   const messagesEndRef = useRef(null);
@@ -395,7 +396,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     const isStandard = embedPlan === 'standard';
     let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.`;
-    if (isStandard) {
+    
+    if (buyHomeData?.goal === 'Investment Property') {
+      confirmMsg = `Thank you! Your information has been submitted. 🎉\n\nYour call is all set. A real estate professional will connect with you at the scheduled time to discuss your home search and answer any questions.\n\nWe look forward to speaking with you! 🏡`;
+    } else if (isStandard) {
       const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline;
       let reqLines = [];
       
@@ -467,10 +471,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           parts: [{ text: `Great! 🏡 ${botConfig.botName || 'Shawna Roongsang'} has helped 20+ families find their perfect home in the area, so you're in great hands!\n\nI'll ask you a few quick questions to understand exactly what you're looking for.\n\nWhich city or area are you interested in?` }]
         }]);
       } else {
-        setBuyHomeStep(null);
+        setBuyHomeData(prev => ({ ...prev, goal: 'Investment Property' }));
+        setBuyHomeStep('inv_type');
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: `Let's discuss your investment property needs.` }]
+          parts: [{ text: `What type of investment are you considering?` }],
+          quickReplies: ['Long-term rental', 'Short-term rental', 'Fix-and-flip', 'Multi-family investment', 'Build-to-rent', 'Not sure yet']
         }]);
       }
       return;
@@ -644,6 +650,121 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
          }]);
          return;
       }
+    }
+
+    // ── Investment Property Flow ────────────────────────────────
+    if (buyHomeStep === 'inv_type') {
+      setBuyHomeData(prev => ({ ...prev, inv_type: msg }));
+      setBuyHomeStep('inv_prop_type');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What type of property are you interested in?` }],
+        quickReplies: ['Single-family home', 'Condo', 'Townhouse', '2–4 unit property', 'Larger multi-family property', 'Commercial property', 'Not sure yet']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_prop_type') {
+      setBuyHomeData(prev => ({ ...prev, inv_prop_type: msg }));
+      setBuyHomeStep('inv_budget');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What’s your approximate investment budget?` }],
+        quickReplies: ['Under $200K', '$200K–$300K', '$300K–$500K', '$500K–$750K', '$750K–$1M', '$1M+', 'Not sure yet']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_budget') {
+      setBuyHomeData(prev => ({ ...prev, inv_budget: msg }));
+      setBuyHomeStep('inv_downpayment');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How much are you planning to put toward the purchase?` }],
+        quickReplies: ['Less than 20%', '20%–30%', '30%–50%', '50%+', 'I’m not sure yet']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_downpayment') {
+      setBuyHomeData(prev => ({ ...prev, inv_downpayment: msg }));
+      setBuyHomeStep('inv_factors');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What matters most to you in an investment property? You can select multiple options.` }]
+      }]);
+      setMultiSelectOptions(['Monthly rental income', 'Long-term appreciation', 'High rental demand', 'Low maintenance', 'Lower property taxes', 'Strong neighborhood growth', 'Quick resale potential', 'Diversifying my investments']);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_factors') {
+      setBuyHomeData(prev => ({ ...prev, features: msg })); // reusing features state for multi-select
+      setBuyHomeStep('inv_location');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you focused on a specific area, or are you open to different markets?` }],
+        quickReplies: ['Specific neighborhood/city', 'Anywhere nearby', 'Anywhere in the state', 'Open to different markets']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_location') {
+      setBuyHomeData(prev => ({ ...prev, inv_location: msg }));
+      setBuyHomeStep('inv_timeline');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `When are you hoping to purchase your investment property?` }],
+        quickReplies: ['As soon as possible', 'Within 3 months', '3–6 months', '6–12 months', 'Just exploring']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_timeline') {
+      setBuyHomeData(prev => ({ ...prev, timeline: msg }));
+      setBuyHomeStep('inv_experience');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Have you invested in real estate before?` }],
+        quickReplies: ['Yes, I own investment properties', 'Yes, but I’ve sold my previous investments', 'No, this would be my first investment property']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_experience') {
+      setBuyHomeData(prev => ({ ...prev, inv_experience: msg }));
+      setBuyHomeStep('inv_financing');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How do you plan to finance the investment?` }],
+        quickReplies: ['Cash', 'Conventional mortgage', 'Investment/property loan', 'HELOC or other financing', 'Not sure yet']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_financing') {
+      setBuyHomeData(prev => ({ ...prev, inv_financing: msg }));
+      setBuyHomeStep('inv_return');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What kind of return are you hoping to achieve?` }],
+        quickReplies: ['Monthly cash flow', 'Long-term appreciation', 'Both', 'I’m not sure yet']
+      }]);
+      return;
+    }
+
+    if (buyHomeStep === 'inv_return') {
+      setBuyHomeData(prev => ({ ...prev, inv_return: msg }));
+      setBuyHomeStep(null); // End of wizard
+      
+      const replyText = `Perfect! We have a good picture of what you’re looking for. 🎯\n\nThe next step is to connect you with ${botConfig.botName || 'our agent'} who can help you explore your options and answer any questions.\n\nWould you like to schedule a quick call?\n\nShare your contact information below, and we’ll help you find a convenient time.`;
+      
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: replyText }]
+      }]);
+      
+      setLeadStep('name'); // trigger lead capture directly
+      return;
     }
 
     // ── Lead info collection ────────────────────────────────────
