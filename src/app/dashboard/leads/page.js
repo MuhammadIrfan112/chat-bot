@@ -72,6 +72,7 @@ export default function LeadsCRM() {
   const [botsMap, setBotsMap] = useState({}); // bot_id -> bot
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
+  const [selectedLeadId, setSelectedLeadId] = useState(null);
 
   const fetchLeads = async () => {
     const isDemo = new URLSearchParams(window.location.search).get('demo') === 'true' || localStorage.getItem('isDemo') === 'true';
@@ -223,6 +224,7 @@ export default function LeadsCRM() {
                   <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Lead Temp</th>
                   <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Nature</th>
                   <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -267,6 +269,31 @@ export default function LeadsCRM() {
                           ))}
                         </select>
                       </td>
+                      <td style={{ padding: '16px 20px' }}>
+                        <button
+                          onClick={() => {
+                            setSelectedLeadId(lead.id);
+                            setActiveTab(leadType);
+                            setTimeout(() => {
+                              const el = document.getElementById(`lead-card-${lead.id}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 100);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '10px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            background: 'linear-gradient(135deg, #818CF8, #4F46E5)',
+                            color: 'white',
+                            border: 'none',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          👁 View
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -284,7 +311,21 @@ export default function LeadsCRM() {
               const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
 
               return (
-                <div key={lead.id} className="glass-panel" style={{ padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div
+                  id={`lead-card-${lead.id}`}
+                  key={lead.id}
+                  className="glass-panel"
+                  style={{
+                    padding: '24px',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    border: selectedLeadId === lead.id ? '2px solid #818CF8' : '1px solid var(--border)',
+                    boxShadow: selectedLeadId === lead.id ? '0 0 0 4px rgba(129,140,248,0.15)' : undefined,
+                    transition: 'border 0.3s, box-shadow 0.3s'
+                  }}
+                >
                   
                   {/* Header Row */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
