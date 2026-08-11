@@ -478,7 +478,7 @@
   /* Chat window: full-screen from the very bottom */
   /* Chat window: fills the floating widget iframe on mobile */
   .chatbotContainer:not(.forceDesktop) .chatWindow {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
