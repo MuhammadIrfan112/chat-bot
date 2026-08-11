@@ -155,7 +155,8 @@ export default function PlansPage() {
         </motion.div>
       )}
 
-      {/* ── Plans Section ─────────────────────────────────────── */}
+      {/* ── Plans Section (Hidden if Active/Trialing) ─────────────────────────────────────── */}
+      {isExpired && (
       <div id="plans">
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>
@@ -209,6 +210,7 @@ export default function PlansPage() {
           ))}
         </div>
       </div>
+      )}
 
       {/* ── Billing History ───────────────────────────────────── */}
       <div style={{ marginTop: '60px' }}>
