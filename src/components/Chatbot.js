@@ -113,10 +113,6 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     reason: '', timeline: '', expected_rent: '', has_agent: ''
   });
 
-  const messagesEndRef = useRef(null);
-  const messageCount = useRef(0);
-  const pollRef = useRef(null);
-
   // Device detection — skip if inside a desktop iframe embed
   useEffect(() => {
     if (typeof window !== 'undefined') {
