@@ -7,6 +7,7 @@ export default function ChatHistory() {
   const [activeSession, setActiveSession] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -40,12 +41,16 @@ export default function ChatHistory() {
   }, []);
 
   const fetchMessages = async (sessionId) => {
-    const { data } = await supabase
+    setLoadingMessages(true);
+    setMessages([]);
+    const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
       .eq('session_id', sessionId)
       .order('created_at', { ascending: true });
+    if (error) console.error('fetchMessages error:', error);
     setMessages(data || []);
+    setLoadingMessages(false);
   };
 
   useEffect(() => {
@@ -136,8 +141,10 @@ export default function ChatHistory() {
 
               {/* Messages */}
               <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {messages.length === 0 ? (
+                {loadingMessages ? (
                   <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '40px' }}>Loading messages...</div>
+                ) : messages.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '40px' }}>No messages found for this conversation.</div>
                 ) : (
                   messages.map((msg, i) => (
                     <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
