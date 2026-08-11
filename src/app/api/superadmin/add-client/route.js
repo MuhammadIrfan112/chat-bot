@@ -103,7 +103,7 @@ export async function POST(req) {
 
     // 4. Create a default chatbot
     const firstName = name.trim().split(' ')[0]; // Extract first name only
-    const defaultWelcomeMessage = `I'm ${firstName}'s virtual real estate assistant, here to help you explore homes, answer questions, and make your buying or selling journey easier. 🏡\n\nWhether you're just exploring or ready to take the next step, I'm happy to help.`;
+    const defaultWelcomeMessage = `Hi there! 👋\nI'm ${firstName}'s virtual assistant, here to help you explore homes, answer questions, and make your buying or selling journey easier.\n\nWhat brings you in today?`;
 
     const { data: botData, error: botError } = await supabaseAdmin.from('bots').insert({
       user_id: userId,
