@@ -42,7 +42,7 @@
   
   if (isMobile) {
     closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 180px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
-    openStyle = "position: fixed; bottom: 0; right: 0; width: 100vw; height: 100vh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
+    openStyle = "position: fixed; bottom: 16px; right: 16px; width: calc(100vw - 32px); height: calc(100dvh - 32px); max-height: 590px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden; border-radius: 20px; box-sizing: border-box;";
   }
 
   iframe.style.cssText = closedStyle;
