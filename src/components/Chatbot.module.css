@@ -62,9 +62,9 @@
    (bottom-right corner popup, 380×540)
 ══════════════════════════════════════════════ */
 .chatWindow {
-  position: fixed;
-  bottom: 88px;
-  right: 24px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
   width: 370px;
   height: 530px;
   background-color: #FFFFFF;
@@ -78,11 +78,9 @@
   min-height: 0;
 }
 
-/* Main UI chatbot matches the iframe sizes perfectly */
 .globalChatWindow {
   width: 400px;
   height: 570px;
-  bottom: 96px;
 }
 
 @keyframes slideUp {
@@ -444,7 +442,6 @@
   }
 
   .chatWindow {
-    bottom: 84px;
     right: 20px;
     width: 360px;
     height: 520px;
