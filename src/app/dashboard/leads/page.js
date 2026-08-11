@@ -50,8 +50,21 @@ const parseInterest = (raw = '') => {
   const inquiry = parts[0].replace('Preferred Callback Time:', '\n⏰ Preferred Time:').trim();
   const linksRaw = parts[1] ? parts[1].trim() : '';
   const links = linksRaw.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
+
+  // Parse structured data from bullet points
+  const details = {};
+  inquiry.split('\n').forEach(line => {
+    const cleanLine = line.replace(/^[•\-\s📋]+/, '').trim();
+    if (cleanLine.includes(':')) {
+      const [key, ...valueParts] = cleanLine.split(':');
+      const val = valueParts.join(':').trim();
+      if (val && val !== 'Not specified' && val !== 'Unknown') {
+        details[key.trim().replace(/^⏰ |^📍 |^🛏️ |^🛁 |^🚗 |^✨ |^💰 |^📅 |^👥 |^🐾 |^🏦 |^🛠️ /, '')] = val;
+      }
+    }
+  });
   
-  return { leadType, inquiry, links, temperature };
+  return { leadType, inquiry, links, temperature, details };
 };
 
 export default function LeadsCRM() {
@@ -189,66 +202,175 @@ export default function LeadsCRM() {
         ))}
       </div>
 
-      {/* Leads Table */}
-      <div className="glass-panel" style={{ borderRadius: '16px', overflow: 'hidden' }}>
+      {/* Leads Content */}
+      <div className={activeTab === 'All' ? "glass-panel" : ""} style={{ borderRadius: '16px', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading leads...</div>
+          <div className="glass-panel" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading leads...</div>
         ) : leads.length === 0 ? (
-          <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <div className="glass-panel" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📭</div>
             <h3 style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>No leads yet</h3>
             <p>When visitors share their info in the chatbot, they will appear here.</p>
           </div>
-        ) : (
+        ) : activeTab === 'All' ? (
+          /* COMPACT ALL LEADS TABLE */
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-                  {['Name', 'Phone', 'Email', 'Inquiry / Interest', 'Property Links', 'Bot', 'Status', 'Received', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
+                  <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Date</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Name / Contact</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Lead Temp</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Nature</th>
+                  <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {leads.filter(lead => {
-                  if (activeTab === 'All') return true;
-                  const { leadType } = parseInterest(lead.property_interest);
-                  return leadType === activeTab;
-                }).map((lead, i, arr) => {
+                {leads.map((lead, i, arr) => {
+                  const { leadType, temperature } = parseInterest(lead.property_interest);
                   const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
-                  const bot = botsMap[lead.bot_id];
-                  const interestLabel = getInterestLabel(bot?.industry || 'Other');
-                  const isRealEstate = interestLabel === 'Property Interest';
-                  const isEcommerce = interestLabel === 'Product Interest';
-                  const { leadType, inquiry, links, temperature } = parseInterest(lead.property_interest);
-
                   return (
                     <tr key={lead.id} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                      {/* Name */}
-                      <td style={{ padding: '16px 20px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{lead.name || '—'}</td>
-                      
-                      {/* Phone */}
-                      <td style={{ padding: '16px 20px', whiteSpace: 'nowrap' }}>
-                        {lead.phone_number ? (
-                          <a href={`tel:${lead.phone_number}`} style={{ color: '#34D399', fontWeight: '600', textDecoration: 'none' }}>
-                            📞 {lead.phone_number}
-                          </a>
+                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{timeAgo(lead.created_at)}</td>
+                      <td style={{ padding: '16px 20px' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{lead.name || '—'}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.phone_number || lead.email}</div>
+                      </td>
+                      <td style={{ padding: '16px 20px' }}>
+                        {temperature ? (
+                          <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: temperature.toLowerCase() === 'hot' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: temperature.toLowerCase() === 'hot' ? '#EF4444' : '#F59E0B' }}>
+                            🔥 {temperature}
+                          </span>
                         ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
                       </td>
-
-                      {/* Email */}
-                      <td style={{ padding: '16px 20px', whiteSpace: 'nowrap' }}>
-                        <a href={`mailto:${lead.email}`} style={{ color: '#818CF8', fontWeight: '500', textDecoration: 'none' }}>{lead.email}</a>
+                      <td style={{ padding: '16px 20px', fontWeight: '600', color: leadType.includes('Selling') ? '#F59E0B' : leadType.includes('Rent') ? '#EC4899' : '#A78BFA' }}>
+                        {leadType}
                       </td>
+                      <td style={{ padding: '16px 20px' }}>
+                        <select
+                          value={lead.status}
+                          onChange={(e) => updateStatus(lead.id, e.target.value)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            backgroundColor: sc.bg,
+                            color: sc.text,
+                            border: 'none',
+                            outline: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {Object.keys(STATUS_COLORS).map(s => (
+                            <option key={s} value={s} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}>{s}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* DETAILED VERTICAL CARDS (Mobile Friendly) */
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+            {leads.filter(lead => {
+              const { leadType } = parseInterest(lead.property_interest);
+              return leadType === activeTab;
+            }).map((lead) => {
+              const { leadType, details, temperature, inquiry } = parseInterest(lead.property_interest);
+              const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
 
-                      {/* Inquiry/Interest — text only, no links */}
-                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: leadType.includes('Selling') ? '#F59E0B' : leadType.includes('Rent') ? '#EC4899' : '#A78BFA', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {leadType}
-                          </span>
-                          {temperature && (
-                            <span style={{ 
+              return (
+                <div key={lead.id} className="glass-panel" style={{ padding: '24px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  
+                  {/* Header Row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Dated: {new Date(lead.created_at).toLocaleDateString()}</div>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lead.name || 'Unknown Name'}</div>
+                    </div>
+                    {temperature && (
+                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
+                        🔥 {temperature}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Contact Info */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Phone</div>
+                      <div style={{ fontWeight: '600', color: '#34D399' }}>{lead.phone_number ? <a href={`tel:${lead.phone_number}`} style={{ color: 'inherit', textDecoration: 'none' }}>{lead.phone_number}</a> : '—'}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Email</div>
+                      <div style={{ fontWeight: '500', color: '#818CF8', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lead.email ? <a href={`mailto:${lead.email}`} style={{ color: 'inherit', textDecoration: 'none' }}>{lead.email}</a> : '—'}</div>
+                    </div>
+                  </div>
+
+                  {/* Parsed Details List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {Object.entries(details).length > 0 ? (
+                      Object.entries(details).map(([key, val]) => {
+                        // Skip some redundant fields we might not want to highlight as strongly
+                        if (key.toLowerCase().includes('buyer requirements') || key.toLowerCase().includes('lead type')) return null;
+                        
+                        return (
+                          <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', minWidth: '100px' }}>{key}</span>
+                            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', textAlign: 'right' }}>{val}</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      // Fallback if no structured details were parsed
+                      <div style={{ fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'pre-wrap' }}>{inquiry}</div>
+                    )}
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <select
+                      value={lead.status}
+                      onChange={(e) => updateStatus(lead.id, e.target.value)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        backgroundColor: sc.bg,
+                        color: sc.text,
+                        border: 'none',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {Object.keys(STATUS_COLORS).map(s => (
+                        <option key={s} value={s} style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-primary)' }}>{s}</option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() => { if(window.confirm('Delete this lead?')) deleteLead(lead.id) }}
+                      style={{ padding: '6px', background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', opacity: '0.7', transition: '0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
+                      title="Delete Lead"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>                            <span style={{ 
                               fontSize: '10px', 
                               fontWeight: '700', 
                               padding: '2px 8px', 
