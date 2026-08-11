@@ -424,7 +424,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const rentTl = st.match(/Moving timeline:\s*(.+)/)?.[1]?.trim(); if (rentTl) sumRentTimeline = rentTl;
     }
 
-    const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
+    const isRealEstate = botIndustry !== 'E-Commerce';
 
     let finalPropertyInterest = '';
     const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline || messages.some(m => m.parts[0].text.toLowerCase().includes('looking to rent'));
@@ -1662,15 +1662,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   };
 
   const showHumanTakeover = !!botConfig.botId && !isHumanTakeover && embedPlan !== 'standard';
-  const isRealEstate = (botIndustry === 'Real Estate' || botConfig.botName?.toLowerCase().includes('real estate') || botConfig.botName?.toLowerCase().includes('realty') || botConfig.botName?.toLowerCase().includes('property'));
+  const isRealEstate = botIndustry !== 'E-Commerce';
 
   // Show RE intent options for first message, or RealtyPropFlow quick replies, or nothing
   // isREBot is true if industry is Real Estate OR still loading (optimistic for client bots)
-  const isREBot = (botIndustry === 'Real Estate' || botIndustry === 'Loading' ||
-    (botConfig?.botName || '').toLowerCase().includes('real estate') ||
-    (botConfig?.botName || '').toLowerCase().includes('realty') ||
-    (botConfig?.botName || '').toLowerCase().includes('property')
-  ) && !!botConfig.botId;
+  const isREBot = !!botConfig.botId && botIndustry !== 'E-Commerce';
   const lastMsg = messages[messages.length - 1];
   let activeQuickReplies = [];
 

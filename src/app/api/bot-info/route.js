@@ -20,9 +20,9 @@ export async function GET(req) {
       .eq('id', bot_id)
       .single();
 
-    if (error || !data) return Response.json({ industry: 'Other', plan: 'standard' });
-    return Response.json({ industry: data.industry || 'Other', name: data.name, plan: data.plan || 'standard' });
+    if (error || !data) return Response.json({ industry: 'Real Estate', plan: 'standard' });
+    return Response.json({ industry: data.industry || 'Real Estate', name: data.name, plan: data.plan || 'standard' });
   } catch (e) {
-    return Response.json({ industry: 'Other' });
+    return Response.json({ industry: 'Real Estate' });
   }
 }
