@@ -39,6 +39,21 @@ export default function AdminPage() {
     return { daysLeft: 0, expired: true };
   };
 
+  const resetTrialTo15Days = async (userId) => {
+    const newEnd = new Date();
+    newEnd.setDate(newEnd.getDate() + 15);
+    const { error } = await supabase
+      .from('users_subscription')
+      .update({ trial_ends_at: newEnd.toISOString() })
+      .eq('user_id', userId);
+    if (!error) {
+      alert('Trial reset to 15 days from today ✅');
+      fetchUsers();
+    } else {
+      alert('Error: ' + error.message);
+    }
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -359,7 +374,7 @@ export default function AdminPage() {
                     <div style={{ fontWeight: '700', color: '#111827', fontSize: '15px' }}>{user.email || 'Email not captured'}</div>
                     <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       Joined: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'} &nbsp;·&nbsp;
-                      {(() => { const t = getTrialInfo(user); if (!t) return null; return t.expired ? <span style={{ color: '#EF4444', fontWeight: '700' }}>⏰ Trial Expired</span> : <span style={{ color: t.daysLeft <= 3 ? '#F59E0B' : '#10B981', fontWeight: '700' }}>🕐 {t.daysLeft} days trial left</span>; })()}
+                      {(() => { const t = getTrialInfo(user); if (!t) return null; return (<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>{t.expired ? <span style={{ color: '#EF4444', fontWeight: '700' }}>⏰ Trial Expired</span> : <span style={{ color: t.daysLeft <= 3 ? '#F59E0B' : '#10B981', fontWeight: '700' }}>🕐 {t.daysLeft} days trial left</span>}<button onClick={(e) => { e.stopPropagation(); if(window.confirm('Reset trial to 15 days from today?')) resetTrialTo15Days(user.user_id); }} style={{ padding: '2px 7px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: '5px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>Fix 15d</button></span>); })()}
                       &nbsp;·&nbsp;
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleUserExpand(user.user_id); }}
