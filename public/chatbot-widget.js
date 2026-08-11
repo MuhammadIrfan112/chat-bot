@@ -38,7 +38,7 @@
   
   // Closed state: only button size visible, no scrollbar gap
   var closedStyle = "position: fixed; bottom: 20px; right: 20px; width: 200px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
-  var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 375px; height: 640px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
+  var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 375px; height: 590px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
   
   if (isMobile) {
     closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 180px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
