@@ -24,6 +24,39 @@ function parseBudget(str) {
   return 0;
 }
 
+// ─── City → State/Province Auto-Resolver ────────────────────────────────────
+// Maps well-known Canadian cities to their province abbreviation.
+// Falls back to the detected state, then to an empty string (no wrong default).
+const CANADIAN_CITY_MAP = {
+  // Ontario
+  toronto: 'ON', mississauga: 'ON', brampton: 'ON', hamilton: 'ON', london: 'ON',
+  ottawa: 'ON', kingston: 'ON', windsor: 'ON', markham: 'ON', vaughan: 'ON',
+  richmond: 'ON', oakville: 'ON', burlington: 'ON', oshawa: 'ON', barrie: 'ON',
+  milton: 'ON', ajax: 'ON', whitby: 'ON', pickering: 'ON', aurora: 'ON', newmarket: 'ON',
+  // British Columbia
+  vancouver: 'BC', surrey: 'BC', burnaby: 'BC', kelowna: 'BC', abbotsford: 'BC',
+  coquitlam: 'BC', langley: 'BC', victoria: 'BC', delta: 'BC', nanaimo: 'BC',
+  // Alberta
+  calgary: 'AB', edmonton: 'AB', lethbridge: 'AB', 'red deer': 'AB', airdrie: 'AB',
+  // Manitoba
+  winnipeg: 'MB', brandon: 'MB',
+  // Saskatchewan
+  saskatoon: 'SK', regina: 'SK',
+  // Quebec
+  montreal: 'QC', laval: 'QC', 'quebec city': 'QC', gatineau: 'QC', sherbrooke: 'QC',
+  // Nova Scotia
+  halifax: 'NS',
+  // New Brunswick
+  moncton: 'NB', 'saint john': 'NB',
+};
+
+function resolveStateOrProvince(city, detectedState) {
+  if (detectedState && detectedState.trim()) return detectedState.trim().toUpperCase();
+  const key = (city || '').toLowerCase().trim();
+  if (CANADIAN_CITY_MAP[key]) return CANADIAN_CITY_MAP[key];
+  return ''; // unknown — let Zillow do its best without a state suffix
+}
+
 function getRelevantFaqs(userQuery) {
   if (!faqsData || !Array.isArray(faqsData) || faqsData.length === 0) return '';
   if (!fuseInstance) {
@@ -120,7 +153,10 @@ async function startApifyRun(city, state, intent) {
     if (!APIFY_TOKEN) return null;
 
     const listingType = intent === 'rent' ? 'rentals' : 'homes';
-    const citySlug = `${city.toLowerCase().replace(/\s+/g, '-')}-${state.toLowerCase()}`;
+    // Build slug: "toronto-on" for Canada, "chicago-il" for US, "cityname" if state unknown
+    const cityPart = city.toLowerCase().replace(/\s+/g, '-');
+    const statePart = state ? state.toLowerCase() : '';
+    const citySlug = statePart ? `${cityPart}-${statePart}` : cityPart;
     
     // Build proper Zillow URL with searchQueryState (required by the actor)
     const isRent = intent === 'rent';
@@ -823,9 +859,10 @@ If the user clicks/asks to "Show more properties", show the NEXT 4 properties us
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity && !isMortonGrove) {
-          // Different city — skip DB entirely, go straight to Apify
-          console.log(`[Route] City is ${detectedCity} (not Morton Grove) — starting Apify run...`);
-          apifyRunId = await startApifyRun(detectedCity, detectedState || 'IL', propIntent);
+          // Any city other than Morton Grove → Apify live search
+          const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
+          console.log(`[Route] City=${detectedCity} State=${resolvedState} — starting Apify run...`);
+          apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent);
 
           if (apifyRunId) {
             // Tell AI to show city engagement while Apify processes in background
@@ -870,7 +907,8 @@ If the user clicks/asks to "Show more properties", show the NEXT 4 properties us
         } else if (detectedCity && isMortonGrove) {
           // Morton Grove city but no DB match — try Apify
           console.log(`[Route] No DB results for Morton Grove — starting Apify run...`);
-          apifyRunId = await startApifyRun(detectedCity, detectedState || 'IL', propIntent);
+          const resolvedState = resolveStateOrProvince(detectedCity, detectedState) || 'IL';
+          apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent);
           if (apifyRunId) {
             cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Searching for live listings in ${detectedCity}. While results load, show city buttons:\n[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >]`;
           }
