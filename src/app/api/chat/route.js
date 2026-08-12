@@ -515,7 +515,8 @@ function parseBudget(text) {
 
 export async function POST(req) {
   try {
-    const { messages, session_id, bot_id, plan = 'premium' } = await req.json();
+    const reqBody = await req.json();
+    const { messages, session_id, bot_id, plan = 'premium', is_demo } = reqBody;
 
     let botName = 'AI Assistant';
     let websiteUrl = 'this website';
