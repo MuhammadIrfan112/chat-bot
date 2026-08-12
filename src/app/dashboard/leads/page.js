@@ -229,21 +229,22 @@ export default function LeadsCRM() {
               </thead>
               <tbody>
                 {leads.map((lead, i, arr) => {
-                  const { leadType, temperature } = parseInterest(lead.property_interest);
+                  const { leadType } = parseInterest(lead.property_interest);
+                  const computedTemp = leadType.includes('Buying') ? 'Hot' : 'Warm';
                   const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
                   return (
                     <tr key={lead.id} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
-                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{timeAgo(lead.created_at)}</td>
+                      <td style={{ padding: '16px 20px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                        {new Date(lead.created_at).toLocaleDateString('en-GB')} -
+                      </td>
                       <td style={{ padding: '16px 20px' }}>
                         <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{lead.name || '—'}</div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lead.phone_number || lead.email}</div>
                       </td>
                       <td style={{ padding: '16px 20px' }}>
-                        {temperature ? (
-                          <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: temperature.toLowerCase() === 'hot' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: temperature.toLowerCase() === 'hot' ? '#EF4444' : '#F59E0B' }}>
-                            🔥 {temperature}
-                          </span>
-                        ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                        <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: computedTemp === 'Hot' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: computedTemp === 'Hot' ? '#EF4444' : '#F59E0B' }}>
+                          🔥 {computedTemp}
+                        </span>
                       </td>
                       <td style={{ padding: '16px 20px', fontWeight: '600', color: leadType.includes('Selling') ? '#F59E0B' : leadType.includes('Rent') ? '#EC4899' : '#A78BFA' }}>
                         {leadType}
@@ -307,7 +308,8 @@ export default function LeadsCRM() {
               const { leadType } = parseInterest(lead.property_interest);
               return leadType === activeTab;
             }).map((lead) => {
-              const { leadType, details, temperature, inquiry } = parseInterest(lead.property_interest);
+              const { leadType, details, inquiry } = parseInterest(lead.property_interest);
+              const computedTemp = leadType.includes('Buying') ? 'Hot' : 'Warm';
               const sc = STATUS_COLORS[lead.status] || STATUS_COLORS['New Lead'];
 
               return (
@@ -330,14 +332,12 @@ export default function LeadsCRM() {
                   {/* Header Row */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Dated: {new Date(lead.created_at).toLocaleDateString()}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Dated: {new Date(lead.created_at).toLocaleDateString('en-GB')}</div>
                       <div style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lead.name || 'Unknown Name'}</div>
                     </div>
-                    {temperature && (
-                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
-                        🔥 {temperature}
-                      </span>
-                    )}
+                    <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '700', backgroundColor: computedTemp === 'Hot' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: computedTemp === 'Hot' ? '#EF4444' : '#F59E0B' }}>
+                      🔥 {computedTemp}
+                    </span>
                   </div>
 
                   {/* Contact Info */}
