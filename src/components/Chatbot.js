@@ -1597,13 +1597,21 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     messageCount.current += 1;
 
     try {
-      const payload = {
-        messages: apiMessages,
-        session_id: sessionId,
-        bot_id: botConfig.botId,
-        plan: embedPlan || 'premium',
-        is_demo: (typeof window !== 'undefined' && window.location.href.toLowerCase().includes('demo')) || (botConfig.botId && botConfig.botId.startsWith('demo-'))
-      };
+        let isDemoEnv = false;
+        if (typeof window !== 'undefined') {
+          const href = window.location.href.toLowerCase();
+          const ref = document.referrer.toLowerCase();
+          isDemoEnv = href.includes('demo') || href.includes('localhost') || href.includes('vercel.app') || href.includes('test') ||
+                      ref.includes('demo') || ref.includes('localhost') || ref.includes('vercel.app') || ref.includes('test');
+        }
+
+        const payload = {
+          messages: apiMessages,
+          session_id: sessionId,
+          bot_id: botConfig.botId,
+          plan: embedPlan || 'premium',
+          is_demo: isDemoEnv || (botConfig.botId && botConfig.botId.startsWith('demo-'))
+        };
       
       const response = await fetch('/api/chat', {
         method: 'POST',
