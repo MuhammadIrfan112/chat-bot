@@ -767,7 +767,9 @@ ${areasNotServed.length ? `
           matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
         }
 
-        if (bot_id === 'demo-real-estate') {
+        const isDemoBotRequest = bot_id === 'demo-real-estate' || reqBody.is_demo === true;
+
+        if (isDemoBotRequest) {
           // Demo bot ALWAYS shows fake properties — regardless of plan setting
           matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
 

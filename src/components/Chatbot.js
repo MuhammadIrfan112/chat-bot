@@ -735,7 +735,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         if (!isPremium) {
           setMessages(prev => [...prev, {
             role: 'model',
-            parts: [{ text: `Thanks! I've noted your requirements. Please provide your contact details below, and an agent will be in touch to help you with your home search.` }]
+            parts: [{ text: `Perfect! I'll find suitable properties that match these criteria. Please provide your contact details below, and an agent will be in touch very soon.` }]
           }]);
           setLeadStep('name');
           return;
@@ -1601,7 +1601,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         messages: apiMessages,
         session_id: sessionId,
         bot_id: botConfig.botId,
-        plan: embedPlan || 'premium' // Use embedPlan from URL or default to premium
+        plan: embedPlan || 'premium',
+        is_demo: (typeof window !== 'undefined' && window.location.href.toLowerCase().includes('demo')) || (botConfig.botId && botConfig.botId.startsWith('demo-'))
       };
       
       const response = await fetch('/api/chat', {
