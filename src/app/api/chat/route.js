@@ -624,6 +624,7 @@ ${areasNotServed.length ? `
     let propertyContext = '';
     let cityEngagementContext = '';
     let apifyRunId = null;
+    let isBudgetAmbiguous = false;
 
     if (isRealEstate) {
       const fullText = fullChatText.toLowerCase();
@@ -675,7 +676,7 @@ ${areasNotServed.length ? `
       }
 
       // Ambiguity check: if buy intent and budget looks suspiciously small (< 1000), treat as ambiguous
-      const isBudgetAmbiguous = propBudget > 0 && propBudget < 1000 && propIntent === 'buy';
+      isBudgetAmbiguous = propBudget > 0 && propBudget < 1000 && propIntent === 'buy';
       if (isBudgetAmbiguous) propBudget = 0; // reset so we ask clarification
 
       if (propIntent === 'rent' && (propBudget > 50000 || (propBudget >= 2024 && propBudget <= 2030))) {
