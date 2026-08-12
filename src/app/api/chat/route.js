@@ -1529,7 +1529,7 @@ CRITICAL RULES:
       return Response.json({ error: "⚠️ Invalid AI credentials configured. Please contact the administrator." }, { status: 401 });
     }
 
-    return Response.json({ error: "An unexpected error occurred. Please try again later." }, { status: 500 });
+    return Response.json({ error: `An unexpected error occurred: ${error.message}` }, { status: 500 });
   }
 }
 
