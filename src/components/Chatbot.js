@@ -1291,8 +1291,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (leadStep === 'phone') {
-      const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
-      if (!phoneRegex.test(msg.trim())) {
+      const digitsOnly = msg.replace(/\D/g, '');
+      if (digitsOnly.length < 10 || digitsOnly.length > 15) {
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: "Please enter a valid phone number:" }],
@@ -1311,8 +1311,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (leadStep === 'email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(msg)) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(msg.trim())) {
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: "That doesn't look like a valid email. Please try again:" }],
@@ -1370,8 +1370,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (closingStep === 'callback_phone') {
-      const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
-      if (!phoneRegex.test(msg.trim())) {
+      const digitsOnly = msg.replace(/\D/g, '');
+      if (digitsOnly.length < 10 || digitsOnly.length > 15) {
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: `Please enter a valid phone number (e.g. 0300-1234567):` }]
@@ -1432,8 +1432,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (closingStep === 'listings_phone') {
-      const phoneRegex = /^[+\d][\d\s\-().]{6,20}$/;
-      if (!phoneRegex.test(msg.trim())) {
+      const digitsOnly = msg.replace(/\D/g, '');
+      if (digitsOnly.length < 10 || digitsOnly.length > 15) {
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: `Please enter a valid phone number (e.g. 0300-1234567):` }]
@@ -1450,8 +1450,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (closingStep === 'listings_email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(msg)) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(msg.trim())) {
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: `That doesn't look like a valid email. Please try again:` }]
