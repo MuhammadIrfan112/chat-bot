@@ -707,9 +707,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
       let replyParts = [];
       if (hasAgent) {
-        replyParts.push(`Thanks for letting me know! How are things going with your current agent—are you happy with them, or are you considering a change? If you have an agreement with them, do you know when it ends?\n\nSince you’re already working with a real estate agent, we’ll respect that relationship. If you need help with anything else related to your home search or mortgage, I’m happy to help.`);
+        replyParts.push(`Thanks for letting me know! How are things going with your current agent—are you happy with them, or are you considering a change? If you have an agreement with them, do you know when it ends?\n\nSince you're already working with a real estate agent, we'll respect that relationship. If you need help with anything else related to your home search or mortgage, I'm happy to help.`);
       } else {
-        replyParts.push(`Got it! Since you’re not currently working with another agent, I can help you take the next step.`);
+        replyParts.push(`Got it! Since you're not currently working with another agent, I can help you take the next step.`);
       }
 
       const summaryText = `Here's what I have for your home search:\nLocation: ${newBuyData.city}\nProperty: Family Home\nBedrooms: ${newBuyData.bedrooms}\nBathrooms: ${newBuyData.bathrooms}\nImportant features: ${newBuyData.features}\nSchool preference: ${newBuyData.schools}\nMaximum budget: ${newBuyData.budget}\nFirst-time buyer: ${newBuyData.firstTime}\nMortgage: ${newBuyData.mortgage}\nPurchase timeline: ${newBuyData.timeline}\nCurrently working with an agent: ${newBuyData.agent}\n\nDoes everything look correct?`;
@@ -729,16 +729,20 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setBuyHomeStep(null);
       const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
       if (isYes) {
-        if (embedPlan === 'standard' || !embedPlan) {
+        // demo-real-estate ALWAYS shows fake properties (regardless of plan)
+        const isDemoBot = botConfig.botId === 'demo-real-estate';
+        const isPremium = isDemoBot || (embedPlan && embedPlan !== 'standard');
+        if (!isPremium) {
           setMessages(prev => [...prev, {
             role: 'model',
-            parts: [{ text: `Thanks! I’ve noted your requirements. Please provide your contact details below, and an agent will be in touch to help you with your home search.` }]
+            parts: [{ text: `Thanks! I've noted your requirements. Please provide your contact details below, and an agent will be in touch to help you with your home search.` }]
           }]);
           setLeadStep('name');
           return;
         } else {
-          // Premium: override the msg to trigger property search via AI
-          const searchPrompt = `My requirements: ${buyHomeData.bedrooms} beds in ${buyHomeData.city}, budget ${buyHomeData.budget}. Please show me properties.`;
+          // Premium / demo: override the msg to trigger property search via AI
+          const d = buyHomeData;
+          const searchPrompt = `User confirmed requirements. Location: ${d.city}. Property: ${d.type || 'Family Home'}. Bedrooms: ${d.bedrooms}. Bathrooms: ${d.bathrooms}. Maximum budget: ${d.budget}. Features: ${d.features}. Please show me matching properties.`;
           apiMessages.pop(); // remove "yes"
           apiMessages.push({ role: 'user', parts: [{ text: searchPrompt }] });
         }
