@@ -417,6 +417,27 @@ async function fetchCityPropertyData(botId, fullChatText) {
   }
 }
 
+// ─── Universal Budget Parser ───────────────────────────────────────────────
+// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, etc.
+function parseBudget(text) {
+  if (!text) return 0;
+  const t = text.replace(/,/g, '').toLowerCase().trim();
+
+  // Match: 1.2m, 7m, 4 million, 1.5 million
+  const mMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/);
+  if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
+
+  // Match: 990k, 650k, 1.5k
+  const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
+  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
+
+  // Match: plain number like 1200000 or $990000
+  const plainMatch = t.match(/\$?\s*([\d]{4,})/);
+  if (plainMatch) return parseInt(plainMatch[1]);
+
+  return 0;
+}
+
 
 export async function POST(req) {
   try {
@@ -623,12 +644,9 @@ ${areasNotServed.length ? `
         const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
         if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
         
-        const budMatch = sumText.match(/Maximum budget:\s*\$?([\d,.]+\s*[km]?)/i) || sumText.match(/budget(?:\s+of|:)?\s*\$?([\d,.]+\s*[km]?)/i);
+        const budMatch = sumText.match(/Maximum budget:\s*\$?([^\n]+)/i) || sumText.match(/budget(?:\s+of|:)?\s*\$?([^\n]{1,30})/i);
         if (budMatch) {
-          const raw = budMatch[1].trim().replace(/,/g, '');
-          if (/m$/i.test(raw)) sumBudget = parseFloat(raw) * 1_000_000;
-          else if (/k$/i.test(raw)) sumBudget = parseFloat(raw) * 1_000;
-          else sumBudget = parseInt(raw) || 0;
+          sumBudget = parseBudget(budMatch[1]);
         }
         
         const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
@@ -649,14 +667,11 @@ ${areasNotServed.length ? `
 
       let propBudget = sumBudget > 0 ? sumBudget : 0;
       if (propBudget === 0) {
-        const fullTextOrig = fullChatText;
-        // Match patterns like 990k, 1.2m, $1,200,000, 990000
-        const mMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*m(?:illion)?\b/i);
-        const kMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*k\b/i);
-        const plainMatch = fullTextOrig.match(/\$?([\d]{4,}|\d{1,3},\d{3})\s*(?:\/mo|per\s*month|month|budget|max|under)?/i);
-        if (mMatch) propBudget = Math.round(parseFloat(mMatch[1]) * 1_000_000);
-        else if (kMatch) propBudget = Math.round(parseFloat(kMatch[1]) * 1_000);
-        else if (plainMatch) propBudget = parseInt(plainMatch[1].replace(/,/g, ''));
+        // Try to extract budget from the raw full chat text
+        const budgetLineMatch = fullChatText.match(/(?:budget|maximum|max)[^\n]{0,20}:\s*\$?([^\n]{1,30})/i)
+          || fullChatText.match(/\$?([\d.]+\s*(?:k|m|million|thousand)\b)/i)
+          || fullChatText.match(/\$?([\d]{4,}|\d{1,3},\d{3})/i);
+        if (budgetLineMatch) propBudget = parseBudget(budgetLineMatch[1]);
       }
 
       // Ambiguity check: if buy intent and budget looks suspiciously small (< 1000), treat as ambiguous
