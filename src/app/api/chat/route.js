@@ -708,7 +708,11 @@ ${areasNotServed.length ? `
       else if (fullText.includes('buy') || fullText.includes('purchase') || fullText.includes('for sale') || fullText.includes('buying')) propIntent = 'buy';
 
       // --- NEW LOGIC: Use AI structured summary as primary source of truth ---
-      const recentSummary = [...messages].reverse().find(m => m.role === 'model' && (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize')));
+      // Check BOTH 'model' AND 'user' roles — frontend sends confirmed summary as 'user' message
+      const recentSummary = [...messages].reverse().find(m =>
+        (m.role === 'model' || m.role === 'user') &&
+        (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize') || m.parts?.[0]?.text?.includes('User confirmed requirements'))
+      );
       let sumCity = null, sumState = null, sumBeds = 0, sumBudget = 0, sumType = null, sumFeatures = null;
       if (recentSummary) {
         const sumText = recentSummary.parts[0].text;
@@ -804,10 +808,12 @@ ${areasNotServed.length ? `
       const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg);
       // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
       const isDemoBot = bot_id === 'demo-real-estate';
-      // For premium bots: city + confirmed summary is enough. Budget is used as a filter but NOT required to trigger search.
+      // For premium bots: city + confirmed summary is enough. Budget/beds are used as filters but NOT required to trigger.
+      // Also allow trigger if the message itself contains 'User confirmed requirements' (from frontend searchPrompt)
+      const isConfirmedSearchPrompt = messages[messages.length - 1]?.parts?.[0]?.text?.includes('User confirmed requirements');
       const hasEnoughInfo = isDemoBot
         ? (detectedCity || recentSummary) && hasConfirmedSummary
-        : propIntent && detectedCity && propBeds > 0 && hasConfirmedSummary;
+        : (propIntent && detectedCity && hasConfirmedSummary) || isConfirmedSearchPrompt;
 
       // DEBUG: log extracted values to Vercel logs
       console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
