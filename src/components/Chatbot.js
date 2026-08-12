@@ -181,7 +181,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     welcomeMessage: '👋 Are you interested in growing your business with an AI Chatbot?'
   });
 
-  const isDemoBot = botConfig.botId === 'demo-real-estate' || botConfig.botId === 'demo-ecommerce';
+  const isDemoBot = botConfig.botId === 'demo-real-estate' || botConfig.botId === 'demo-real-estate-live';
 
   useEffect(() => {
     if (botConfig?.autoOpen) {

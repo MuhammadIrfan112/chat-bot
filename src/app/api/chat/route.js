@@ -6,23 +6,7 @@ import Fuse from 'fuse.js';
 
 let fuseInstance = null;
 
-// ─── Robust Budget Parser ───────────────────────────────────────────────────
-// Handles: $800K, $1.2M, 800,000, 800k, 1.2 million, $500 thousand, etc.
-function parseBudget(str) {
-  if (!str) return 0;
-  const s = String(str).replace(/,/g, '').trim().toLowerCase();
-  // Matches like 1.2m, 800k, 500 thousand, 1 million
-  const mMatch = s.match(/([\d.]+)\s*m(?:illion)?/);
-  if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
-  const kMatch = s.match(/([\d.]+)\s*k/);
-  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
-  const tMatch = s.match(/([\d.]+)\s*thousand/);
-  if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
-  // Plain number (e.g. 800000)
-  const plain = s.match(/([\d.]+)/);
-  if (plain) return Math.round(parseFloat(plain[1]));
-  return 0;
-}
+
 
 // ─── City → State/Province Auto-Resolver ────────────────────────────────────
 // Maps well-known Canadian cities to their province abbreviation.
@@ -504,7 +488,7 @@ async function fetchCityPropertyData(botId, fullChatText) {
 }
 
 // ─── Universal Budget Parser ───────────────────────────────────────────────
-// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, etc.
+// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, 500 thousand, etc.
 function parseBudget(text) {
   if (!text) return 0;
   const t = text.replace(/,/g, '').toLowerCase().trim();
@@ -516,6 +500,10 @@ function parseBudget(text) {
   // Match: 990k, 650k, 1.5k
   const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
   if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
+
+  // Match: 500 thousand
+  const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
+  if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
 
   // Match: plain number like 1200000 or $990000
   const plainMatch = t.match(/\$?\s*([\d]{4,})/);
@@ -618,10 +606,10 @@ export async function POST(req) {
         botName = 'Real Estate Bot';
         websiteUrl = 'https://real-state-23j6.vercel.app';
         isRealEstateEarly = true;
-      } else if (bot_id === 'demo-ecommerce') {
-        botName = 'NOVA Fashion';
-        websiteUrl = 'https://nova-fashion-demo.vercel.app';
-        isEcommerceEarly = true;
+      } else if (bot_id === 'demo-real-estate-live') {
+        botName = 'Real Estate Live Bot';
+        websiteUrl = 'https://real-state-23j6.vercel.app';
+        isRealEstateEarly = true;
       }
     }
 
@@ -687,8 +675,8 @@ ${areasNotServed.length ? `
     let botData = null;
     if (bot_id === 'demo-real-estate') {
       botData = { name: 'Real Estate Bot', industry: 'Real Estate' };
-    } else if (bot_id === 'demo-ecommerce') {
-      botData = { name: 'E-Commerce Bot', industry: 'E-Commerce' };
+    } else if (bot_id === 'demo-real-estate-live') {
+      botData = { name: 'Real Estate Live Bot', industry: 'Real Estate' };
     } else if (bot_id) {
       // bot was already fetched at the top — reuse isRealEstateEarly/isEcommerceEarly
       botData = { name: botName, industry: isRealEstateEarly ? 'Real Estate' : isEcommerceEarly ? 'E-Commerce' : 'Custom' };

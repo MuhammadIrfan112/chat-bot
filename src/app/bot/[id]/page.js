@@ -21,16 +21,16 @@ export default async function BotEmbedPage({ params, searchParams }) {
 
   if (!bot) {
     if (botId === 'demo-real-estate') {
-      bot = { id: botId, name: 'Real Estate Bot', bot_avatar: '🏡', primary_color: '#10B981', plan: 'premium', welcome_message: 'Hi there! 👋 Welcome to RealtyPropFlow. How can I assist you with your real estate journey today?' };
-    } else if (botId === 'demo-ecommerce') {
-      bot = { id: botId, name: 'NOVA Fashion', bot_avatar: '🛍️', primary_color: '#000000', plan: 'premium', welcome_message: 'Welcome to NOVA! How can I help you style today?' };
+      bot = { id: botId, name: 'Real Estate Fake Demo', bot_avatar: '🏡', primary_color: '#10B981', plan: 'premium', welcome_message: 'Hi there! 👋 Welcome to RealtyPropFlow. How can I assist you with your real estate journey today?' };
+    } else if (botId === 'demo-real-estate-live') {
+      bot = { id: botId, name: 'Real Estate Live Demo', bot_avatar: '🏢', primary_color: '#10B981', plan: 'premium', welcome_message: 'Hi there! 👋 Welcome to RealtyPropFlow Live. How can I assist you with your real estate journey today?' };
     } else {
       return <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>Bot not found</div>;
     }
   }
 
   // Determine plan from URL param, then bot's DB plan, then default to 'standard'
-  // NOTE: demo-real-estate and demo-ecommerce always default to 'premium'
+  // NOTE: demo-real-estate and demo-real-estate-live always default to 'premium'
   const planFromUrl = resolvedSearchParams.plan || '';
   const botPlan = planFromUrl || bot.plan || (botId.startsWith('demo-') ? 'premium' : 'standard');
 

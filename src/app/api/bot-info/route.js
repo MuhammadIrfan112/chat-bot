@@ -10,8 +10,8 @@ export async function GET(req) {
     if (bot_id === 'demo-real-estate') {
       return Response.json({ industry: 'Real Estate', name: 'Real Estate Bot' });
     }
-    if (bot_id === 'demo-ecommerce') {
-      return Response.json({ industry: 'E-Commerce', name: 'E-Commerce Bot' });
+    if (bot_id === 'demo-real-estate-live') {
+      return Response.json({ industry: 'Real Estate', name: 'Real Estate Live Bot' });
     }
 
     const { data, error } = await supabase
