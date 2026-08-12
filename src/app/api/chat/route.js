@@ -767,11 +767,8 @@ ${areasNotServed.length ? `
           matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
         }
 
-        if (plan === 'standard') {
-          // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
-          // No property context needed here.
-        } else if (bot_id === 'demo-real-estate') {
-          // Demo Premium: Generate fake properties that perfectly match the user's requirements
+        if (bot_id === 'demo-real-estate') {
+          // Demo bot ALWAYS shows fake properties — regardless of plan setting
           matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
 
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
@@ -786,6 +783,10 @@ After showing the 4 properties, you MUST include these two buttons:
 [BUTTON: I like one of these properties!]
 
 If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+        } else if (plan === 'standard') {
+          // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
+          // No property context needed here.
+
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
