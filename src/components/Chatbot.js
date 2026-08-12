@@ -121,9 +121,22 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   // ── Home Value Flow ───────────────────────────────────────────
   const [homeValueStep, setHomeValueStep] = useState(null);
   const [homeValueData, setHomeValueData] = useState({
-    address: '', bedsBaths: '', renovations: '', condition: '',
+    address: '', bedrooms: '', bathrooms: '', renovations: '', condition: '',
     reason: '', timeline: '', expected_rent: '', has_agent: ''
   });
+
+  const resetFlows = () => {
+    setBuyHomeStep(null);
+    setBuyHomeData({ goal: '', city: '', type: '', bedrooms: '', bathrooms: '', firstTime: '', features: '', schools: '', budget: '', timeline: '', mortgage: '', agent: '', inv_type: '', inv_prop_type: '', inv_downpayment: '', inv_location: '', inv_experience: '', inv_financing: '', inv_return: '' });
+    setRentStep(null);
+    setRentData({ prop_type: '', city: '', bedrooms: '', bathrooms: '', budget: '', move_in: '', pets: '', has_agent: '' });
+    setSellStep(null);
+    setSellData({ address: '', prop_type: '', bedrooms: '', bathrooms: '', condition: '', timeline: '', reason: '', has_agent: '' });
+    setRentOutStep(null);
+    setRentOutData({ ownership: '', prop_type: '', address: '', bedrooms: '', bathrooms: '', parking: '', features: '', timeline: '', furnished: '', expected_rent: '', has_agent: '', priority: '' });
+    setHomeValueStep(null);
+    setHomeValueData({ address: '', bedrooms: '', bathrooms: '', renovations: '', condition: '', reason: '', timeline: '', expected_rent: '', has_agent: '' });
+  };
 
   // Device detection — skip if inside a desktop iframe embed
   useEffect(() => {
@@ -479,9 +492,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.\n\nFeel free to ask me anything else! 😊`;
     
     if (isHomeValue) {
-      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️/🛁 ${homeValueData.bedsBaths}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time with a personalized valuation based on your property and the local market.\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️ Bedrooms: ${homeValueData.bedrooms} | 🛁 Bathrooms: ${homeValueData.bathrooms}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time with a personalized valuation based on your property and the local market.\n\nIs there anything else I can help you with?`;
     } else if (isRentOut) {
-      confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time to discuss the next steps, help you find the right tenant, and maximize your rental income.\n\n**We’re excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Parking:** ${rentOutData.parking}\n**Features:** ${rentOutData.features}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time to discuss the next steps, help you find the right tenant, and maximize your rental income.\n\n**We’re excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
     } else if (resolvedGoal === 'Investment Property') {
       confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\nA real estate professional will connect with you at your preferred **${time_preference}** time to discuss your investment goals and available opportunities.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
     } else if (isStandard) {
@@ -538,6 +551,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     // ── Buy a Home Flow ─────────────────────────────────────────
     if (msg.includes("I'm looking to buy a home") && !buyHomeStep) {
+      resetFlows();
       setBuyHomeStep('goal');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -854,6 +868,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     // ── Looking to Rent Flow ──────────────────────────────────────────
     if ((msg.includes("looking to rent") || msg.includes("🔑 I'm looking to rent")) && !rentStep) {
+      resetFlows();
       setRentStep('prop_type');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -886,6 +901,39 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     if (rentStep === 'bedrooms') {
       setRentData(prev => ({ ...prev, bedrooms: msg }));
+      setRentStep('bathrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `And how many **bathrooms**?` }],
+        quickReplies: ['1', '1.5', '2', '2.5', '3+']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'bathrooms') {
+      setRentData(prev => ({ ...prev, bathrooms: msg }));
+      setRentStep('parking');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Do you need **parking**?` }],
+        quickReplies: ['🚗 Yes, 1 space', '🚗 Yes, 2+ spaces', '❌ No parking needed']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'parking') {
+      setRentData(prev => ({ ...prev, parking: msg }));
+      setRentStep('features');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Any specific **must-have features**? (e.g., Basement, Balcony, In-unit Laundry)` }],
+        quickReplies: ['🏠 Basement', '🧺 In-unit Laundry', '🌅 Balcony', '🐾 Pet-friendly', 'None']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'features') {
+      setRentData(prev => ({ ...prev, features: msg }));
       setRentStep('budget');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -907,10 +955,21 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (rentStep === 'move_in') {
-      const rd = { ...rentData, move_in: msg };
+      setRentData(prev => ({ ...prev, move_in: msg }));
+      setRentStep('has_agent');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you currently working with another real estate agent?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'has_agent') {
+      const rd = { ...rentData, has_agent: msg.toLowerCase().includes('yes') ? 'Yes' : 'No' };
       setRentData(rd);
       setRentStep(null);
-      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${msg}\n\nPlease share your contact details so our agent can send you matching listings right away!`;
+      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms} | 🛁 Bathrooms: ${rd.bathrooms}\n🚗 Parking: ${rd.parking}\n✨ Features: ${rd.features}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${rd.move_in}\n\nPlease share your contact details so our agent can send you matching listings right away!`;
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: summaryText }]
@@ -921,6 +980,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     // ── Thinking About Selling Flow ─────────────────────────────────────
     if ((msg.includes("thinking about selling") || msg.includes("🏠 I'm thinking about selling my home")) && !sellStep) {
+      resetFlows();
       setSellStep('address');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -946,14 +1006,25 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setSellStep('bedrooms');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `How many bedrooms and bathrooms does the property have?` }],
-        inputCard: { icon: '🛏️', label: 'Bedrooms & Bathrooms', placeholder: 'e.g. 3 beds, 2 baths...' }
+        parts: [{ text: `How many **bedrooms** does the property have?` }],
+        quickReplies: ['Studio', '1', '2', '3', '4', '5+']
       }]);
       return;
     }
 
     if (sellStep === 'bedrooms') {
       setSellData(prev => ({ ...prev, bedrooms: msg }));
+      setSellStep('bathrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `And how many **bathrooms**?` }],
+        quickReplies: ['1', '1.5', '2', '2.5', '3+']
+      }]);
+      return;
+    }
+
+    if (sellStep === 'bathrooms') {
+      setSellData(prev => ({ ...prev, bathrooms: msg }));
       setSellStep('condition');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -978,7 +1049,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const sd = { ...sellData, timeline: msg };
       setSellData(sd);
       setSellStep(null);
-      const summaryText = `Great! Here's a summary of your property:\n📍 Address: ${sd.address}\n🏠 Type: ${sd.prop_type}\n🛏️ ${sd.bedrooms}\n🛠️ Condition: ${sd.condition}\n📅 Timeline: ${msg}\n\nOne of our agents will prepare a detailed market valuation for your home and reach out to you shortly. Please share your contact details below!`;
+      const summaryText = `Great! Here's a summary of your property:\n📍 Address: ${sd.address}\n🏠 Type: ${sd.prop_type}\n🛏️ Bedrooms: ${sd.bedrooms} | 🛁 Bathrooms: ${sd.bathrooms}\n🛠️ Condition: ${sd.condition}\n📅 Timeline: ${msg}\n\nOne of our agents will prepare a detailed market valuation for your home and reach out to you shortly. Please share your contact details below!`;
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: summaryText }]
@@ -989,6 +1060,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     // ── Rent Out My House Flow ──────────────────────────────────────
     if ((msg.includes("rent out my house") || msg.includes("🏨 I'm looking to rent out my house")) && !rentOutStep) {
+      resetFlows();
       setRentOutStep('ownership');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -1044,6 +1116,28 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     if (rentOutStep === 'bathrooms') {
       setRentOutData(prev => ({ ...prev, bathrooms: msg }));
+      setRentOutStep('parking');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Does the property have **parking** available for tenants?` }],
+        quickReplies: ['🚗 Yes, 1 space', '🚗 Yes, 2+ spaces', '❌ No parking']
+      }]);
+      return;
+    }
+
+    if (rentOutStep === 'parking') {
+      setRentOutData(prev => ({ ...prev, parking: msg }));
+      setRentOutStep('features');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Does the property have any notable **features**? (e.g., Finished Basement, Balcony, In-unit Laundry)` }],
+        quickReplies: ['🏠 Finished Basement', '🧺 In-unit Laundry', '🌅 Balcony', '🐾 Pet-friendly', 'None']
+      }]);
+      return;
+    }
+
+    if (rentOutStep === 'features') {
+      setRentOutData(prev => ({ ...prev, features: msg }));
       setRentOutStep('timeline');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -1142,6 +1236,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     // ── Home Value Flow ────────────────────────────────────────────
     if ((msg.includes("home's value") || msg.includes("💰 I want to know my home's value")) && !homeValueStep) {
+      resetFlows();
       setHomeValueStep('address');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -1153,17 +1248,28 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     if (homeValueStep === 'address') {
       setHomeValueData(prev => ({ ...prev, address: msg }));
-      setHomeValueStep('beds_baths');
+      setHomeValueStep('bedrooms');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `About how many bedrooms and bathrooms does the property have?` }],
-        inputCard: { icon: '🛏️', label: 'Beds and Baths', placeholder: 'e.g. 3 beds, 2 baths...' }
+        parts: [{ text: `How many **bedrooms** does the property have?` }],
+        quickReplies: ['Studio', '1', '2', '3', '4', '5+']
       }]);
       return;
     }
 
-    if (homeValueStep === 'beds_baths') {
-      setHomeValueData(prev => ({ ...prev, bedsBaths: msg }));
+    if (homeValueStep === 'bedrooms') {
+      setHomeValueData(prev => ({ ...prev, bedrooms: msg }));
+      setHomeValueStep('bathrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `And how many **bathrooms**?` }],
+        quickReplies: ['1', '1.5', '2', '2.5', '3+']
+      }]);
+      return;
+    }
+
+    if (homeValueStep === 'bathrooms') {
+      setHomeValueData(prev => ({ ...prev, bathrooms: msg }));
       setHomeValueStep('renovations');
       setMessages(prev => [...prev, {
         role: 'model',
