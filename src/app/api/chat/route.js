@@ -6,6 +6,24 @@ import Fuse from 'fuse.js';
 
 let fuseInstance = null;
 
+// ─── Robust Budget Parser ───────────────────────────────────────────────────
+// Handles: $800K, $1.2M, 800,000, 800k, 1.2 million, $500 thousand, etc.
+function parseBudget(str) {
+  if (!str) return 0;
+  const s = String(str).replace(/,/g, '').trim().toLowerCase();
+  // Matches like 1.2m, 800k, 500 thousand, 1 million
+  const mMatch = s.match(/([\d.]+)\s*m(?:illion)?/);
+  if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
+  const kMatch = s.match(/([\d.]+)\s*k/);
+  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
+  const tMatch = s.match(/([\d.]+)\s*thousand/);
+  if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
+  // Plain number (e.g. 800000)
+  const plain = s.match(/([\d.]+)/);
+  if (plain) return Math.round(parseFloat(plain[1]));
+  return 0;
+}
+
 function getRelevantFaqs(userQuery) {
   if (!faqsData || !Array.isArray(faqsData) || faqsData.length === 0) return '';
   if (!fuseInstance) {
@@ -677,10 +695,9 @@ ${areasNotServed.length ? `
         const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
         if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
         
-        const budMatch = sumText.match(/Maximum budget:\s*\$?([^\n]+)/i) || sumText.match(/budget(?:\s+of|:)?\s*\$?([^\n]{1,30})/i);
-        if (budMatch) {
-          sumBudget = parseBudget(budMatch[1]);
-        }
+        const budMatch = sumText.match(/Maximum budget:\s*\$?([^\n]+)/i)
+          || sumText.match(/budget(?:\s+of|:)?\s*\$?([^\n]{1,30})/i);
+        if (budMatch) sumBudget = parseBudget(budMatch[1]);
         
         const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
         if (typeMatch) sumType = typeMatch[1].trim().toLowerCase();
@@ -694,23 +711,35 @@ ${areasNotServed.length ? `
       const propType = sumType || (typeMatch ? typeMatch[1].toLowerCase() : null);
       const propFeatures = sumFeatures || 'Beautiful property with modern finishes';
 
-      // Extract bedrooms (fallback)
+      // Extract bedrooms (fallback from raw chat)
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
 
+      // ── Budget Extraction (robust) ──────────────────────────────────────────
       let propBudget = sumBudget > 0 ? sumBudget : 0;
       if (propBudget === 0) {
-        // Try to extract budget from the raw full chat text
-        const budgetLineMatch = fullChatText.match(/(?:budget|maximum|max)[^\n]{0,20}:\s*\$?([^\n]{1,30})/i)
-          || fullChatText.match(/\$?([\d.]+\s*(?:k|m|million|thousand)\b)/i)
-          || fullChatText.match(/\$?([\d]{4,}|\d{1,3},\d{3})/i);
-        if (budgetLineMatch) propBudget = parseBudget(budgetLineMatch[1]);
+        // Try multiple patterns from the full raw chat text
+        const budPatterns = [
+          fullChatText.match(/Maximum budget:\s*\$?([^\n]{1,40})/i),
+          fullChatText.match(/(?:budget|max|maximum)[^\n]{0,25}:\s*\$?([^\n]{1,40})/i),
+          fullChatText.match(/\$([\d.]+\s*(?:k|m|million|thousand)\b)/i),
+          fullChatText.match(/\$([\d]{3,}(?:[.,]\d+)?)/),
+          fullChatText.match(/([\d.]+\s*(?:k|m|million|thousand)\b)/i),
+          fullChatText.match(/([\d]{4,}(?:[.,]\d+)?)/),
+        ];
+        for (const m of budPatterns) {
+          if (m && m[1]) {
+            const parsed = parseBudget(m[1]);
+            if (parsed > 0) { propBudget = parsed; break; }
+          }
+        }
       }
 
       // Ambiguity check: if buy intent and budget looks suspiciously small (< 1000), treat as ambiguous
       isBudgetAmbiguous = propBudget > 0 && propBudget < 1000 && propIntent === 'buy';
       if (isBudgetAmbiguous) propBudget = 0; // reset so we ask clarification
 
+      // Reject year-like numbers for rent budget (e.g. 2024, 2025, 2026)
       if (propIntent === 'rent' && (propBudget > 50000 || (propBudget >= 2024 && propBudget <= 2030))) {
         propBudget = 0;
       }
@@ -750,9 +779,10 @@ ${areasNotServed.length ? `
       const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg);
       // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
       const isDemoBot = bot_id === 'demo-real-estate';
+      // For premium bots: city + confirmed summary is enough. Budget is used as a filter but NOT required to trigger search.
       const hasEnoughInfo = isDemoBot
         ? (detectedCity || recentSummary) && hasConfirmedSummary
-        : propIntent && detectedCity && propBeds > 0 && propBudget > 0;
+        : propIntent && detectedCity && propBeds > 0 && hasConfirmedSummary;
 
       // DEBUG: log extracted values to Vercel logs
       console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
