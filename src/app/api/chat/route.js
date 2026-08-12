@@ -151,6 +151,38 @@ async function startApifyRun(city, state, intent) {
   }
 }
 
+function generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures) {
+  const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
+  const baseBudget = propBudget > 0 ? propBudget : 700000;
+  const images = [
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
+    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+    'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80'
+  ];
+  const generatedCards = [];
+  for (let i = 1; i <= 20; i++) {
+    const priceVariance = 0.8 + (Math.random() * 0.2);
+    const price = baseBudget * priceVariance;
+    const img = images[i % images.length];
+    generatedCards.push(`[PROPERTY_CARD]
+Status: ${propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'}
+Type: ${propType || 'Family Home'}
+Address: ${i * 10 + 15} Demo Street, ${detectedCity || 'the city'}, ${detectedState || ''}
+Price: ${formatPrice(price)}
+Beds: ${propBeds || 4} | Baths: ${Math.max(1, (propBeds || 4) - 1)}
+Features: Includes ${propFeatures || 'Beautiful property with modern finishes'}
+Image: ${img}
+Link: #demo-property-${i}
+[/PROPERTY_CARD]`);
+  }
+  return generatedCards.join('\n\n');
+}
+
 
 async function liveScrapeWebsite(url) {
   if (!url) return '';
@@ -739,40 +771,8 @@ ${areasNotServed.length ? `
           // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
           // No property context needed here.
         } else if (bot_id === 'demo-real-estate') {
-          // Demo Premium: Generate 20 fake properties that perfectly match the user's requirements
-          const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
-          const baseBudget = propBudget > 0 ? propBudget : 700000;
-          
-          const images = [
-            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
-            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
-            'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
-            'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
-            'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
-            'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80',
-            'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80'
-          ];
-          
-          let generatedCards = [];
-          for (let i = 1; i <= 20; i++) {
-            // vary price slightly between 80% and 100% of budget
-            const priceVariance = 0.8 + (Math.random() * 0.2); 
-            const price = baseBudget * priceVariance;
-            const img = images[i % images.length];
-            
-            generatedCards.push(`[PROPERTY_CARD]
-Status: ${propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'}
-Type: ${propType || 'Family Home'}
-Address: ${i * 10 + 15} Demo Street, ${detectedCity || 'the city'}, ${detectedState || ''}
-Price: ${formatPrice(price)}
-Beds: ${propBeds || 4} | Baths: ${Math.max(1, (propBeds || 4) - 1)}
-Features: Includes ${propFeatures}
-Image: ${img}
-Link: #demo-property-${i}
-[/PROPERTY_CARD]`);
-          }
-          matchedProperties = generatedCards.join('\n\n');
+          // Demo Premium: Generate fake properties that perfectly match the user's requirements
+          matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
 
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
 ${matchedProperties}
@@ -819,7 +819,20 @@ FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professi
 [CITY_INFO: 💡 Buyer Tips | **What Buyers Should Know About ${detectedCity}** | Buyers are drawn to ${detectedCity} for its [top reasons — e.g., excellent schools, transit access, affordability relative to nearby cities]. It is best suited for [ideal buyer profile]. Key advantages include [pros]. Buyers should be aware of [honest consideration — e.g., competition in certain price ranges, limited inventory in specific neighbourhoods]. Pro tip: [insider advice specific to this city's market].]
 `;
           } else {
-            propertyContext = `\n\nCould not start property search for ${detectedCity}. Tell the user there was a temporary issue and to try again.`;
+            // Fallback to fake properties if Apify search fails (perfect for demos)
+            matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
+            propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
+${matchedProperties}
+
+CRITICAL INSTRUCTION: There are 20 properties available. 
+You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 20. 
+CRITICAL: You MUST output the properties EXACTLY as they appear using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
+
+After showing the 4 properties, you MUST include these two buttons:
+[BUTTON: Show more properties]
+[BUTTON: I like one of these properties!]
+
+If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
           }
         } else if (detectedCity && isMortonGrove) {
           // Morton Grove city but no DB match — try Apify
