@@ -1526,7 +1526,8 @@ CRITICAL RULES:
     return Response.json({ 
       reply: replyText,
       properties: propertiesList,
-      apifyRunId: typeof apifyRunId !== 'undefined' ? apifyRunId : null
+      apifyRunId: typeof apifyRunId !== 'undefined' ? apifyRunId : null,
+      intent: typeof propIntent !== 'undefined' ? propIntent : null
     });
   } catch (error) {
     console.error("Chat API Error:", error);

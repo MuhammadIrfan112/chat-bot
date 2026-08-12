@@ -5,6 +5,7 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const runId = searchParams.get('runId');
+    const intent = searchParams.get('intent') || 'buy'; // 'buy' or 'rent'
     if (!runId) return Response.json({ error: 'Missing runId' }, { status: 400 });
 
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
@@ -18,7 +19,7 @@ export async function GET(req) {
     const statusData = await statusRes.json();
     const runStatus = statusData?.data?.status;
 
-    console.log(`[apify-result] runId=${runId} status=${runStatus}`);
+    console.log(`[apify-result] runId=${runId} status=${runStatus} intent=${intent}`);
 
     if (runStatus === 'RUNNING' || runStatus === 'READY' || runStatus === 'CREATED') {
       return Response.json({ status: 'running' });
@@ -34,7 +35,7 @@ export async function GET(req) {
     if (!datasetId) return Response.json({ status: 'failed' });
 
     const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=6`
+      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=8`
     );
     if (!itemsRes.ok) return Response.json({ status: 'failed' });
 
@@ -42,49 +43,95 @@ export async function GET(req) {
     console.log('[apify-result] Raw items count:', items?.length);
     if (items?.[0]) {
       console.log('[apify-result] First item keys:', Object.keys(items[0]));
-      console.log('[apify-result] Sample:', JSON.stringify(items[0]).substring(0, 500));
+      console.log('[apify-result] Sample:', JSON.stringify(items[0]).substring(0, 600));
     }
-    
+
     if (!items || items.length === 0) return Response.json({ status: 'empty' });
 
-    // Map ALL items — no filter, try every possible field name
+    // ── Helper: format price nicely ─────────────────────────────────────────
+    function formatPrice(raw) {
+      if (!raw) return 'Contact for price';
+      const str = String(raw);
+      // Already formatted (has $ or text like "Contact")
+      if (str.startsWith('$') || /[a-zA-Z]/.test(str)) return str;
+      // Plain number — add $ and comma separators
+      const num = parseInt(str.replace(/[^0-9]/g, ''));
+      if (!num || isNaN(num)) return 'Contact for price';
+      return '$' + num.toLocaleString('en-US');
+    }
+
+    // ── Map items to our standard property card format ──────────────────────
+    const listingLabel = intent === 'rent' ? '🔵 For Rent' : '🟢 For Sale';
+
     const properties = items
       .slice(0, 4)
       .map(p => {
-        const image = 
-          p.mainImage || p.imgSrc || p.image || p.img ||
+        // Image — try all known Zillow field names in order of reliability
+        const image =
+          p.mainImage ||
+          p.imgSrc ||
+          p.image ||
+          p.img ||
+          p.thumbnail ||
           p.hdpData?.homeInfo?.miniCardPhotos?.[0]?.url ||
-          p.carouselPhotos?.[0]?.url ||
-          (Array.isArray(p.photos) ? p.photos[0] : null) ||
-          p.thumbnail || '';
+          (Array.isArray(p.carouselPhotos) && p.carouselPhotos[0]?.url) ||
+          (Array.isArray(p.photos) && typeof p.photos[0] === 'string' ? p.photos[0] : null) ||
+          (Array.isArray(p.photos) && p.photos[0]?.url) ||
+          '';
 
+        // URL — build from zpid if direct URL not available
         const url =
-          p.propertyUrl || p.detailUrl || p.url || p.link ||
+          p.propertyUrl ||
+          p.detailUrl ||
+          p.url ||
+          p.link ||
           p.hdpData?.homeInfo?.detailUrl ||
-          (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.zillow.com/homes/for_rent/');
+          (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.zillow.com');
 
+        // Address — try combining parts if full address missing
         const address =
-          p.address || p.streetAddress || p.location ||
+          p.address ||
+          p.streetAddress ||
+          p.location ||
           p.listingAddress?.full ||
           p.hdpData?.homeInfo?.streetAddress ||
           [p.streetAddress, p.city, p.state].filter(Boolean).join(', ') ||
-          'Unknown Address';
+          'Address not available';
 
-        const price =
-          p.price || p.rentPrice || p.listingPrice?.formatted ||
-          p.hdpData?.homeInfo?.price?.toString() ||
-          p.unformattedPrice?.toString() ||
-          p.zestimate?.toString() ||
-          'Contact for price';
+        // Price — handle all Zillow formats
+        const rawPrice =
+          p.price ||
+          p.rentPrice ||
+          p.listingPrice?.formatted ||
+          p.hdpData?.homeInfo?.price ||
+          p.unformattedPrice ||
+          p.zestimate ||
+          null;
+        const price = formatPrice(rawPrice);
 
-        const beds = p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || '?';
-        const baths = p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || '?';
+        // Beds / Baths / Type
+        const beds = p.bedrooms ?? p.beds ?? p.hdpData?.homeInfo?.bedrooms ?? '?';
+        const baths = p.bathrooms ?? p.baths ?? p.hdpData?.homeInfo?.bathrooms ?? '?';
         const type = p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property';
 
-        return { image_url: image, url, address, price, bedrooms: beds, bathrooms: baths, property_type: type, listing_status: '🔵 For Rent' };
-      });
+        return {
+          image_url: image,
+          url,
+          address,
+          price,
+          bedrooms: beds,
+          bathrooms: baths,
+          property_type: type,
+          listing_status: listingLabel  // ✅ Correctly 🟢 For Sale or 🔵 For Rent
+        };
+      })
+      // Filter out completely empty results
+      .filter(p => p.address !== 'Address not available' || p.price !== 'Contact for price');
 
     console.log('[apify-result] Mapped properties:', properties.length);
+
+    if (properties.length === 0) return Response.json({ status: 'empty' });
+
     return Response.json({ status: 'done', properties });
 
   } catch (e) {
@@ -92,4 +139,3 @@ export async function GET(req) {
     return Response.json({ status: 'error' });
   }
 }
-
