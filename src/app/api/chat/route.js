@@ -623,10 +623,12 @@ ${areasNotServed.length ? `
         const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
         if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
         
-        const budMatch = sumText.match(/Maximum budget:\s*\$?([\d,]+)/i) || sumText.match(/budget(?:\s+of|:)?\s*\$?([\d,]+(?:k)?)/i);
+        const budMatch = sumText.match(/Maximum budget:\s*\$?([\d,.]+\s*[km]?)/i) || sumText.match(/budget(?:\s+of|:)?\s*\$?([\d,.]+\s*[km]?)/i);
         if (budMatch) {
-          const raw = budMatch[1].replace(/,/g, '');
-          sumBudget = raw.toLowerCase().endsWith('k') ? parseFloat(raw) * 1000 : parseInt(raw);
+          const raw = budMatch[1].trim().replace(/,/g, '');
+          if (/m$/i.test(raw)) sumBudget = parseFloat(raw) * 1_000_000;
+          else if (/k$/i.test(raw)) sumBudget = parseFloat(raw) * 1_000;
+          else sumBudget = parseInt(raw) || 0;
         }
         
         const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
@@ -645,15 +647,21 @@ ${areasNotServed.length ? `
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
 
-      // Smart budget extractor (fallback)
       let propBudget = sumBudget > 0 ? sumBudget : 0;
       if (propBudget === 0) {
-        const fullTextOrig = fullChatText; 
+        const fullTextOrig = fullChatText;
+        // Match patterns like 990k, 1.2m, $1,200,000, 990000
+        const mMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*m(?:illion)?\b/i);
         const kMatch = fullTextOrig.match(/\$?([\d]+(?:\.[\d]+)?)\s*k\b/i);
         const plainMatch = fullTextOrig.match(/\$?([\d]{4,}|\d{1,3},\d{3})\s*(?:\/mo|per\s*month|month|budget|max|under)?/i);
-        if (kMatch) propBudget = Math.round(parseFloat(kMatch[1]) * 1000);
+        if (mMatch) propBudget = Math.round(parseFloat(mMatch[1]) * 1_000_000);
+        else if (kMatch) propBudget = Math.round(parseFloat(kMatch[1]) * 1_000);
         else if (plainMatch) propBudget = parseInt(plainMatch[1].replace(/,/g, ''));
       }
+
+      // Ambiguity check: if buy intent and budget looks suspiciously small (< 1000), treat as ambiguous
+      const isBudgetAmbiguous = propBudget > 0 && propBudget < 1000 && propIntent === 'buy';
+      if (isBudgetAmbiguous) propBudget = 0; // reset so we ask clarification
 
       if (propIntent === 'rent' && (propBudget > 50000 || (propBudget >= 2024 && propBudget <= 2030))) {
         propBudget = 0;
@@ -813,6 +821,10 @@ FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professi
 
     const knowledgeSection = (knowledge || faqContext || propertyContext)
       ? `\n\nRELEVANT BUSINESS KNOWLEDGE:\n${knowledge || ''}\n${faqContext}${propertyContext}`
+      : '';
+
+    const budgetClarificationNote = isBudgetAmbiguous
+      ? `\n\nIMPORTANT: The user mentioned a budget amount that is unclear. Before proceeding, you MUST politely ask: "Just to clarify — did you mean $[amount] thousand or $[amount] million?" Do NOT search for properties until the budget is confirmed.`
       : '';
 
     const qualifyingQuestions = isRealEstate
@@ -1197,7 +1209,7 @@ ${qualifyingQuestions}
 6. RESPONSE STYLE: Keep responses short, engaging, and scannable. Use occasional emojis. Use line breaks so it looks clean on mobile. ⛔ NEVER say "Great choice!" anywhere in any response. If you want to acknowledge a good selection, use ONLY "Great!" or "Awesome!" instead.
 ${isRealEstate || isEcommerce ? `7. IMAGES & LINKS: When showing an item from the inventory, you MUST copy and use the EXACT markdown for Image and Link provided in the inventory data.\n8. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `7. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
 ${agentProfileSection}${knowledgeSection}${liveInventory}
-${cityEngagementContext}`;
+${cityEngagementContext}${budgetClarificationNote}`;
     if (!bot_id) {
       systemInstruction = `You are an AI Sales Consultant for RealtyPropFlow AI. Your goal is to politely assist the user. Keep responses highly enthusiastic and concise.
       
