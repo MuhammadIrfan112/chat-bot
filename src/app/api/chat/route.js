@@ -716,10 +716,12 @@ ${areasNotServed.length ? `
       let sumCity = null, sumState = null, sumBeds = 0, sumBudget = 0, sumType = null, sumFeatures = null;
       if (recentSummary) {
         const sumText = recentSummary.parts[0].text;
-        const locMatch = sumText.match(/Location:\s*([^,\n]+)(?:,\s*([^\n]+))?/i) || sumText.match(/in\s+([a-zA-Z\s]+),\s*([a-zA-Z\s]+)\b/i);
+        // Stop at period OR newline so searchPrompt fields don't bleed into state
+        const locMatch = sumText.match(/Location:\s*([^,\n.]+)(?:[,]\s*([^\n.]+))?/i) || sumText.match(/in\s+([a-zA-Z\s]+),\s*([a-zA-Z\s]+)\b/i);
         if (locMatch && locMatch[1]) {
           sumCity = locMatch[1].trim().replace(/\[|\]/g, '');
-          if (locMatch[2]) sumState = locMatch[2].trim().replace(/\[|\]/g, '');
+          // Only take the state abbreviation (2-letter), strip anything after space/period
+          if (locMatch[2]) sumState = locMatch[2].trim().split(/[\s.]/)[0].replace(/\[|\]/g, '').toUpperCase();
         }
         const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
         if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
@@ -901,12 +903,17 @@ After showing the 4 properties, you MUST include these two buttons:
 If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
           }
         } else if (detectedCity && isMortonGrove) {
-          // Morton Grove city but no DB match — try Apify
+          // Morton Grove: no DB match — try Apify
           console.log(`[Route] No DB results for Morton Grove — starting Apify run...`);
           const resolvedState = resolveStateOrProvince(detectedCity, detectedState) || 'IL';
           apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent);
           if (apifyRunId) {
-            cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Searching for live listings in ${detectedCity}. While results load, show city buttons:\n[BUTTON: 🏫 Schools >] [BUTTON: 🌳 Parks >] [BUTTON: 🚇 Transportation >]`;
+            cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Searching for live listings in ${detectedCity}. While results load, show city buttons:\n[CITY_BTN: 🏠 Neighborhood] [CITY_BTN: 🏫 Schools] [CITY_BTN: 🚇 Transportation]`;
+          } else {
+            // Apify failed — show fake properties so user sees something
+            console.log('[Route] Apify failed for Morton Grove — falling back to fake properties');
+            matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
+            propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n${matchedProperties}\n\nCRITICAL INSTRUCTION: There are 20 properties available. You MUST show EXACTLY 4 properties in your immediate response using raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. After showing the 4 properties, you MUST include these two buttons:\n[BUTTON: Show more properties]\n[BUTTON: I like one of these properties!]`;
           }
         } else if (matchedProperties) {
           // Fallback message (no city detected)
