@@ -32,7 +32,7 @@ const CITY_STATE_MAP = {
   'san bernardino': 'CA', modesto: 'CA', fontana: 'CA', 'moreno valley': 'CA',
   glendale: 'CA', 'huntington beach': 'CA', oxnard: 'CA', ontario: 'CA',
   'santa clarita': 'CA', 'garden grove': 'CA', oceanside: 'CA', 'rancho cucamonga': 'CA',
-  'santa rosa': 'CA', elk grove: 'CA', corona: 'CA', 'san buenaventura': 'CA',
+  'santa rosa': 'CA', 'elk grove': 'CA', corona: 'CA', 'san buenaventura': 'CA',
   pasadena: 'CA', hayward: 'CA', salinas: 'CA', 'pomona': 'CA',
   torrance: 'CA', escondido: 'CA', sunnyvale: 'CA', 'thousand oaks': 'CA',
   palmdale: 'CA', 'santa barbara': 'CA', 'san mateo': 'CA', 'san leandro': 'CA',
@@ -40,7 +40,7 @@ const CITY_STATE_MAP = {
   'santa clara': 'CA', 'simi valley': 'CA', berkeley: 'CA', 'west covina': 'CA',
   compton: 'CA', 'richmond ca': 'CA', murrieta: 'CA', temecula: 'CA', inglewood: 'CA',
   // ── COLORADO ──
-  denver: 'CO', 'colorado springs': 'CO', aurora: 'CO', fort collins: 'CO',
+  denver: 'CO', 'colorado springs': 'CO', aurora: 'CO', 'fort collins': 'CO',
   lakewood: 'CO', thornton: 'CO', arvada: 'CO', westminster: 'CO',
   pueblo: 'CO', 'centennial co': 'CO', boulder: 'CO', 'highlands ranch': 'CO',
   'greeley co': 'CO', longmont: 'CO',
