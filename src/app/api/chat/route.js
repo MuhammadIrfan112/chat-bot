@@ -728,8 +728,8 @@ ${areasNotServed.length ? `
           || sumText.match(/budget(?:\s+of|:)?\s*\$?([^\n]{1,30})/i);
         if (budMatch) sumBudget = parseBudget(budMatch[1]);
         
-        const typeMatch = sumText.match(/Property:\s*([^\n]+)/i);
-        if (typeMatch) sumType = typeMatch[1].trim().toLowerCase();
+        const typeMatch = sumText.match(/Property:\s*([^\n\.]+)/i);
+        if (typeMatch) sumType = typeMatch[1].replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim().toLowerCase();
         
         const featMatch = sumText.match(/Important features:\s*([^\n]+)/i);
         if (featMatch) sumFeatures = featMatch[1].trim();
@@ -828,7 +828,8 @@ ${areasNotServed.length ? `
           matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
         }
 
-        const isDemoBotRequest = bot_id === 'demo-real-estate' || reqBody.is_demo === true;
+        // demo-real-estate-live uses Apify ALWAYS — never fake properties
+        const isDemoBotRequest = bot_id === 'demo-real-estate' || (reqBody.is_demo === true && bot_id !== 'demo-real-estate-live');
 
         if (isDemoBotRequest) {
           // Demo bot ALWAYS shows fake properties — regardless of plan setting
