@@ -755,6 +755,57 @@ function parseBudget(text) {
   return 0;
 }
 
+// 🏡 Fetch listings from private CRM properties table
+async function fetchCRMProperties(botId, fullChatText) {
+  try {
+    if (!botId) return '';
+    const q = fullChatText.toLowerCase();
+
+    const { data: properties, error } = await supabase
+      .from('properties')
+      .select('*, agents(first_name, last_name, phone)')
+      .eq('bot_id', botId)
+      .eq('status', 'Active');
+
+    if (error || !properties || properties.length === 0) return '';
+
+    // Basic filtering based on budget
+    let filteredData = properties;
+    const maxBudget = parseBudget(q);
+    if (maxBudget > 0) {
+      filteredData = properties.filter(p => !p.price || p.price <= maxBudget);
+    }
+    
+    // Basic filtering based on beds
+    const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
+    const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
+    if (minBedrooms > 0) {
+      filteredData = filteredData.filter(p => !p.bedrooms || p.bedrooms >= minBedrooms);
+    }
+
+    if (filteredData.length === 0) return '';
+
+    let section = `\n\n--- PRIVATE CRM INVENTORY (Highly Recommended) ---\nCRITICAL: These are the client's direct listings. Prioritize showing these if they match the user's needs. Use markdown images \`![title](url)\` if photos are available:\n`;
+
+    filteredData.slice(0, 5).forEach((p, i) => {
+      const price = p.price ? `$${p.price.toLocaleString()}` : 'Contact for Price';
+      const img = p.photos && p.photos.length > 0 ? p.photos[0] : '';
+      const agentInfo = p.agents ? `Listed by: ${p.agents.first_name} ${p.agents.last_name} (${p.agents.phone || 'No phone'})` : '';
+
+      section += `\n${i + 1}. **${p.address} ${p.city ? ', ' + p.city : ''}**\n`;
+      section += `   - Price: ${price}\n`;
+      section += `   - Details: ${p.bedrooms || '?'} Beds | ${p.bathrooms || '?'} Baths | ${p.property_type || 'Property'}\n`;
+      if (agentInfo) section += `   - ${agentInfo}\n`;
+      if (p.description) section += `   - Description: ${p.description.substring(0, 100)}...\n`;
+      if (img) section += `   - Image: ![${p.address}](${img})\n`;
+    });
+
+    return section;
+  } catch (err) {
+    console.error('CRM property fetch error:', err);
+    return '';
+  }
+}
 
 export async function POST(req) {
   try {
@@ -824,11 +875,15 @@ export async function POST(req) {
           ]) : Promise.resolve('');
           
           const fetchCity = fetchCityPropertyData(bot_id, fullChatText);
+          const fetchCRM = fetchCRMProperties(bot_id, fullChatText);
 
-          const [websiteData, cityListings] = await Promise.all([fetchWebsite, fetchCity]);
+          const [websiteData, cityListings, crmListings] = await Promise.all([fetchWebsite, fetchCity, fetchCRM]);
 
           if (websiteData) {
             liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
+          }
+          if (crmListings) {
+            liveInventory = (liveInventory || '') + crmListings;
           }
           if (cityListings) {
             liveInventory = (liveInventory || '') + cityListings;
