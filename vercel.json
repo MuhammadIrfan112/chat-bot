@@ -4,5 +4,8 @@
       "maxDuration": 60
     }
   },
-  "crons": [{"path":"/api/cron/scrape-cities","schedule":"0 2 * * *"}]
+  "crons": [
+    {"path":"/api/cron/scrape-cities","schedule":"0 2 * * *"},
+    {"path":"/api/cron/scrape-websites","schedule":"0 4 * * *"}
+  ]
 }

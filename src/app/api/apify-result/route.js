@@ -89,14 +89,20 @@ export async function GET(req) {
           (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.zillow.com');
 
         // Address — try combining parts if full address missing
-        const address =
-          p.address ||
-          p.streetAddress ||
-          p.location ||
-          p.listingAddress?.full ||
-          p.hdpData?.homeInfo?.streetAddress ||
-          [p.streetAddress, p.city, p.state].filter(Boolean).join(', ') ||
-          'Address not available';
+        let address = 'Address not available';
+        if (typeof p.address === 'string') {
+          address = p.address;
+        } else if (p.address && p.address.full) {
+          address = p.address.full;
+        } else if (p.streetAddress) {
+          address = p.streetAddress;
+        } else if (p.location) {
+          address = p.location;
+        } else if (p.listingAddress?.full) {
+          address = p.listingAddress.full;
+        } else if (p.hdpData?.homeInfo?.streetAddress) {
+          address = p.hdpData.homeInfo.streetAddress;
+        }
 
         // Price — handle all Zillow formats
         const rawPrice =

@@ -255,12 +255,19 @@ export default function AgentProfilePage() {
       }).select().single();
       if (inserted) setKbRecordId(inserted.id);
     }
+    // 3. Trigger background website scraping if URL is provided
+    if (botId && profile.website_url) {
+      fetch('/api/bot/scrape-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: profile.website_url, bot_id: botId })
+      }).catch(err => console.error('Background scrape failed:', err));
+    }
 
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
-
   if (loading) return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
       Loading your profile...

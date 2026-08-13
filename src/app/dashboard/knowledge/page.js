@@ -157,7 +157,11 @@ export default function KnowledgeBase() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {knowledge.map((k) => (
             <div key={k.id} style={{ backgroundColor: '#F9FAFB', padding: '16px', borderRadius: '8px', border: '1px solid #E5E7EB', fontSize: '14px', color: '#374151', lineHeight: '1.5' }}>
-              {k.content}
+              {k.source === 'Website Scrape' ? (
+                <div style={{ color: '#10B981', fontWeight: 'bold' }}>✅ Complete website data has been synced.</div>
+              ) : (
+                k.content
+              )}
             </div>
           ))}
         </div>

@@ -8,38 +8,223 @@ let fuseInstance = null;
 
 
 
-// ─── City → State/Province Auto-Resolver ────────────────────────────────────
-// Maps well-known Canadian cities to their province abbreviation.
-// Falls back to the detected state, then to an empty string (no wrong default).
-const CANADIAN_CITY_MAP = {
-  // Ontario
+// ─── Comprehensive City → State/Province Auto-Resolver ───────────────────────
+// Covers 500+ major cities across all 50 US states + all Canadian provinces.
+// Used to auto-resolve state when user types just a city name without a state.
+const CITY_STATE_MAP = {
+  // ── ALABAMA ──
+  birmingham: 'AL', montgomery: 'AL', huntsville: 'AL', mobile: 'AL', tuscaloosa: 'AL',
+  hoover: 'AL', dothan: 'AL', auburn: 'AL', decatur: 'AL', madison: 'AL',
+  // ── ALASKA ──
+  anchorage: 'AK', fairbanks: 'AK', juneau: 'AK', sitka: 'AK', ketchikan: 'AK',
+  // ── ARIZONA ──
+  phoenix: 'AZ', tucson: 'AZ', mesa: 'AZ', chandler: 'AZ', scottsdale: 'AZ',
+  tempe: 'AZ', glendale: 'AZ', gilbert: 'AZ', peoria: 'AZ', surprise: 'AZ',
+  yuma: 'AZ', avondale: 'AZ', flagstaff: 'AZ', goodyear: 'AZ', lake havasu city: 'AZ',
+  // ── ARKANSAS ──
+  'little rock': 'AR', 'fort smith': 'AR', fayetteville: 'AR', springdale: 'AR',
+  jonesboro: 'AR', conway: 'AR', rogers: 'AR', bentonville: 'AR',
+  // ── CALIFORNIA ──
+  'los angeles': 'CA', 'san diego': 'CA', 'san jose': 'CA', 'san francisco': 'CA',
+  fresno: 'CA', sacramento: 'CA', 'long beach': 'CA', oakland: 'CA',
+  bakersfield: 'CA', anaheim: 'CA', 'santa ana': 'CA', riverside: 'CA',
+  stockton: 'CA', irvine: 'CA', chula vista: 'CA', fremont: 'CA',
+  'san bernardino': 'CA', modesto: 'CA', fontana: 'CA', moreno valley: 'CA',
+  glendale: 'CA', huntington beach: 'CA', oxnard: 'CA', ontario: 'CA',
+  'santa clarita': 'CA', garden grove: 'CA', oceanside: 'CA', rancho cucamonga: 'CA',
+  'santa rosa': 'CA', elk grove: 'CA', corona: 'CA', 'san buenaventura': 'CA',
+  pasadena: 'CA', hayward: 'CA', salinas: 'CA', 'pomona': 'CA',
+  torrance: 'CA', escondido: 'CA', sunnyvale: 'CA', 'thousand oaks': 'CA',
+  palmdale: 'CA', 'santa barbara': 'CA', 'san mateo': 'CA', 'san leandro': 'CA',
+  concord: 'CA', 'east los angeles': 'CA', visalia: 'CA', 'el monte': 'CA',
+  'santa clara': 'CA', 'simi valley': 'CA', berkeley: 'CA', 'west covina': 'CA',
+  compton: 'CA', 'richmond ca': 'CA', murrieta: 'CA', temecula: 'CA', inglewood: 'CA',
+  // ── COLORADO ──
+  denver: 'CO', 'colorado springs': 'CO', aurora: 'CO', fort collins: 'CO',
+  lakewood: 'CO', thornton: 'CO', arvada: 'CO', westminster: 'CO',
+  pueblo: 'CO', 'centennial co': 'CO', boulder: 'CO', highlands ranch: 'CO',
+  'greeley co': 'CO', longmont: 'CO',
+  // ── CONNECTICUT ──
+  bridgeport: 'CT', 'new haven': 'CT', hartford: 'CT', stamford: 'CT',
+  waterbury: 'CT', norwalk: 'CT', danbury: 'CT', 'new britain': 'CT',
+  // ── DELAWARE ──
+  wilmington: 'DE', dover: 'DE', newark: 'DE',
+  // ── FLORIDA ──
+  jacksonville: 'FL', miami: 'FL', tampa: 'FL', orlando: 'FL',
+  'st. petersburg': 'FL', 'saint petersburg': 'FL', hialeah: 'FL', 'fort lauderdale': 'FL',
+  tallahassee: 'FL', pembroke: 'FL', hollywood: 'FL', miramar: 'FL',
+  'cape coral': 'FL', gainesville: 'FL', coral springs: 'FL', miami gardens: 'FL',
+  clearwater: 'FL', 'west palm beach': 'FL', 'pompano beach': 'FL', lakeland: 'FL',
+  davie: 'FL', miami beach: 'FL', 'boca raton': 'FL', deltona: 'FL',
+  palm bay: 'FL', 'fort myers': 'FL', lauderhill: 'FL', daytona: 'FL',
+  'port st. lucie': 'FL', 'port saint lucie': 'FL', sunrise: 'FL', pensacola: 'FL',
+  // ── GEORGIA ──
+  atlanta: 'GA', savannah: 'GA', columbus: 'GA', 'sandy springs': 'GA',
+  macon: 'GA', roswell: 'GA', albany: 'GA', johns creek: 'GA',
+  warner robins: 'GA', alpharetta: 'GA', marietta: 'GA',
+  // ── HAWAII ──
+  honolulu: 'HI', 'east honolulu': 'HI', pearl city: 'HI', hilo: 'HI', kailua: 'HI',
+  // ── IDAHO ──
+  boise: 'ID', nampa: 'ID', meridian: 'ID', idaho falls: 'ID', pocatello: 'ID',
+  // ── ILLINOIS ──
+  chicago: 'IL', aurora: 'IL', joliet: 'IL', naperville: 'IL', rockford: 'IL',
+  springfield: 'IL', elgin: 'IL', peoria: 'IL', champaign: 'IL', waukegan: 'IL',
+  'morton grove': 'IL', 'schaumburg': 'IL', evanston: 'IL', decatur: 'IL',
+  // ── INDIANA ──
+  indianapolis: 'IN', 'fort wayne': 'IN', evansville: 'IN', 'south bend': 'IN',
+  carmel: 'IN', hammond: 'IN', bloomington: 'IN', gary: 'IN', fishers: 'IN',
+  // ── IOWA ──
+  'des moines': 'IA', 'cedar rapids': 'IA', davenport: 'IA', 'sioux city': 'IA',
+  'iowa city': 'IA', waterloo: 'IA', ames: 'IA',
+  // ── KANSAS ──
+  wichita: 'KS', 'overland park': 'KS', 'kansas city ks': 'KS', olathe: 'KS', topeka: 'KS',
+  // ── KENTUCKY ──
+  louisville: 'KY', lexington: 'KY', 'bowling green': 'KY', owensboro: 'KY',
+  // ── LOUISIANA ──
+  'new orleans': 'LA', 'baton rouge': 'LA', shreveport: 'LA', metairie: 'LA',
+  lafayette: 'LA', lake charles: 'LA',
+  // ── MAINE ──
+  portland: 'ME', lewiston: 'ME', bangor: 'ME',
+  // ── MARYLAND ──
+  baltimore: 'MD', 'columbia md': 'MD', germantown: 'MD', 'silver spring': 'MD',
+  waldorf: 'MD', 'frederick md': 'MD', glen burnie: 'MD', gaithersburg: 'MD',
+  // ── MASSACHUSETTS ──
+  boston: 'MA', worcester: 'MA', springfield: 'MA', cambridge: 'MA',
+  lowell: 'MA', brockton: 'MA', 'new bedford': 'MA', quincy: 'MA',
+  // ── MICHIGAN ──
+  detroit: 'MI', 'grand rapids': 'MI', warren: 'MI', sterling heights: 'MI',
+  ann arbor: 'MI', lansing: 'MI', flint: 'MI', dearborn: 'MI',
+  'troy mi': 'MI', livonia: 'MI', westland: 'MI', kalamazoo: 'MI',
+  // ── MINNESOTA ──
+  minneapolis: 'MN', 'saint paul': 'MN', 'st paul': 'MN', rochester: 'MN',
+  duluth: 'MN', bloomington: 'MN', 'brooklyn park': 'MN', plymouth: 'MN',
+  // ── MISSISSIPPI ──
+  jackson: 'MS', gulfport: 'MS', southaven: 'MS', hattiesburg: 'MS',
+  // ── MISSOURI ──
+  'kansas city': 'MO', 'st. louis': 'MO', 'saint louis': 'MO', springfield: 'MO',
+  independence: 'MO', columbia: 'MO',
+  // ── MONTANA ──
+  billings: 'MT', missoula: 'MT', 'great falls': 'MT', bozeman: 'MT',
+  // ── NEBRASKA ──
+  omaha: 'NE', lincoln: 'NE', 'bellevue ne': 'NE',
+  // ── NEVADA ──
+  'las vegas': 'NV', henderson: 'NV', reno: 'NV', 'north las vegas': 'NV', sparks: 'NV',
+  // ── NEW HAMPSHIRE ──
+  manchester: 'NH', nashua: 'NH', concord: 'NH',
+  // ── NEW JERSEY ──
+  newark: 'NJ', 'jersey city': 'NJ', paterson: 'NJ', elizabeth: 'NJ',
+  trenton: 'NJ', clifton: 'NJ', camden: 'NJ', toms river: 'NJ',
+  // ── NEW MEXICO ──
+  albuquerque: 'NM', 'santa fe': 'NM', 'las cruces': 'NM', rio rancho: 'NM',
+  // ── NEW YORK ──
+  'new york': 'NY', 'new york city': 'NY', nyc: 'NY', brooklyn: 'NY',
+  queens: 'NY', bronx: 'NY', buffalo: 'NY', rochester: 'NY',
+  yonkers: 'NY', syracuse: 'NY', albany: 'NY', 'new rochelle': 'NY',
+  manhattan: 'NY', staten island: 'NY', long island: 'NY',
+  // ── NORTH CAROLINA ──
+  charlotte: 'NC', raleigh: 'NC', greensboro: 'NC', durham: 'NC',
+  'winston-salem': 'NC', winston salem: 'NC', fayetteville: 'NC', cary: 'NC',
+  wilmington: 'NC', 'high point': 'NC', concord: 'NC',
+  // ── NORTH DAKOTA ──
+  fargo: 'ND', bismarck: 'ND', 'grand forks': 'ND', minot: 'ND',
+  // ── OHIO ──
+  columbus: 'OH', cleveland: 'OH', cincinnati: 'OH', toledo: 'OH',
+  akron: 'OH', dayton: 'OH', parma: 'OH', youngstown: 'OH',
+  // ── OKLAHOMA ──
+  'oklahoma city': 'OK', tulsa: 'OK', norman: 'OK', broken arrow: 'OK',
+  // ── OREGON ──
+  portland: 'OR', eugene: 'OR', 'salem or': 'OR', gresham: 'OR',
+  hillsboro: 'OR', beaverton: 'OR', medford: 'OR',
+  // ── PENNSYLVANIA ──
+  philadelphia: 'PA', pittsburgh: 'PA', allentown: 'PA', erie: 'PA',
+  reading: 'PA', scranton: 'PA', 'bethlehem pa': 'PA', lancaster: 'PA',
+  // ── RHODE ISLAND ──
+  providence: 'RI', cranston: 'RI', warwick: 'RI',
+  // ── SOUTH CAROLINA ──
+  'columbia sc': 'SC', charleston: 'SC', 'north charleston': 'SC', 'mount pleasant': 'SC',
+  // ── SOUTH DAKOTA ──
+  'sioux falls': 'SD', rapid city: 'SD',
+  // ── TENNESSEE ──
+  nashville: 'TN', memphis: 'TN', knoxville: 'TN', chattanooga: 'TN',
+  clarksville: 'TN', murfreesboro: 'TN', franklin: 'TN',
+  // ── TEXAS ──
+  houston: 'TX', 'san antonio': 'TX', dallas: 'TX', austin: 'TX',
+  'fort worth': 'TX', 'el paso': 'TX', arlington: 'TX', 'corpus christi': 'TX',
+  plano: 'TX', laredo: 'TX', lubbock: 'TX', garland: 'TX', irving: 'TX',
+  amarillo: 'TX', 'grand prairie': 'TX', brownsville: 'TX', mckinney: 'TX',
+  frisco: 'TX', pasadena: 'TX', mesquite: 'TX', killeen: 'TX',
+  mcallen: 'TX', denton: 'TX', waco: 'TX', carrollton: 'TX',
+  midland: 'TX', lewisville: 'TX', abilene: 'TX', beaumont: 'TX',
+  // ── UTAH ──
+  'salt lake city': 'UT', 'west valley city': 'UT', provo: 'UT', west jordan: 'UT',
+  orem: 'UT', sandy: 'UT', ogden: 'UT', 'st. george': 'UT', saint george: 'UT',
+  // ── VERMONT ──
+  burlington: 'VT',
+  // ── VIRGINIA ──
+  'virginia beach': 'VA', norfolk: 'VA', chesapeake: 'VA', richmond: 'VA',
+  'newport news': 'VA', alexandria: 'VA', hampton: 'VA', roanoke: 'VA',
+  // ── WASHINGTON ──
+  seattle: 'WA', spokane: 'WA', tacoma: 'WA', vancouver: 'WA',
+  bellevue: 'WA', kent: 'WA', renton: 'WA', kirkland: 'WA', redmond: 'WA',
+  // ── WEST VIRGINIA ──
+  'charleston wv': 'WV', huntington: 'WV',
+  // ── WISCONSIN ──
+  milwaukee: 'WI', madison: 'WI', 'green bay': 'WI', kenosha: 'WI', racine: 'WI',
+  // ── WYOMING ──
+  cheyenne: 'WY', casper: 'WY',
+
+  // ════════════════════════════════════════════════════════════════════════
+  // CANADA
+  // ════════════════════════════════════════════════════════════════════════
+  // ── ONTARIO ──
   toronto: 'ON', mississauga: 'ON', brampton: 'ON', hamilton: 'ON', london: 'ON',
   ottawa: 'ON', kingston: 'ON', windsor: 'ON', markham: 'ON', vaughan: 'ON',
-  richmond: 'ON', oakville: 'ON', burlington: 'ON', oshawa: 'ON', barrie: 'ON',
-  milton: 'ON', ajax: 'ON', whitby: 'ON', pickering: 'ON', aurora: 'ON', newmarket: 'ON',
-  // British Columbia
+  oakville: 'ON', burlington: 'ON', oshawa: 'ON', barrie: 'ON', milton: 'ON',
+  ajax: 'ON', whitby: 'ON', pickering: 'ON', aurora: 'ON', newmarket: 'ON',
+  'richmond hill': 'ON', 'thunder bay': 'ON', waterloo: 'ON', 'kitchener': 'ON',
+  cambridge: 'ON', brantford: 'ON', sudbury: 'ON', guelph: 'ON',
+  'st. catharines': 'ON', 'saint catharines': 'ON', belleville: 'ON', sarnia: 'ON',
+  sault: 'ON', cornwall: 'ON', peterborough: 'ON',
+  // ── BRITISH COLUMBIA ──
   vancouver: 'BC', surrey: 'BC', burnaby: 'BC', kelowna: 'BC', abbotsford: 'BC',
   coquitlam: 'BC', langley: 'BC', victoria: 'BC', delta: 'BC', nanaimo: 'BC',
-  // Alberta
+  kamloops: 'BC', chilliwack: 'BC', 'prince george': 'BC', 'maple ridge': 'BC',
+  'new westminster': 'BC', 'north vancouver': 'BC', 'west vancouver': 'BC',
+  // ── ALBERTA ──
   calgary: 'AB', edmonton: 'AB', lethbridge: 'AB', 'red deer': 'AB', airdrie: 'AB',
-  // Manitoba
-  winnipeg: 'MB', brandon: 'MB',
-  // Saskatchewan
-  saskatoon: 'SK', regina: 'SK',
-  // Quebec
+  'st. albert': 'AB', 'saint albert': 'AB', sherwood: 'AB', 'grande prairie': 'AB',
+  'medicine hat': 'AB', 'fort mcmurray': 'AB', okotoks: 'AB', 'spruce grove': 'AB',
+  // ── MANITOBA ──
+  winnipeg: 'MB', brandon: 'MB', steinbach: 'MB', thompson: 'MB',
+  // ── SASKATCHEWAN ──
+  saskatoon: 'SK', regina: 'SK', 'prince albert': 'SK', moose jaw: 'SK',
+  // ── QUEBEC ──
   montreal: 'QC', laval: 'QC', 'quebec city': 'QC', gatineau: 'QC', sherbrooke: 'QC',
-  // Nova Scotia
-  halifax: 'NS',
-  // New Brunswick
-  moncton: 'NB', 'saint john': 'NB',
+  longueuil: 'QC', saguenay: 'QC', levis: 'QC', 'trois-rivieres': 'QC', 'trois rivieres': 'QC',
+  // ── NOVA SCOTIA ──
+  halifax: 'NS', dartmouth: 'NS', truro: 'NS',
+  // ── NEW BRUNSWICK ──
+  moncton: 'NB', 'saint john': 'NB', 'st. john': 'NB', fredericton: 'NB',
+  // ── NEWFOUNDLAND ──
+  "st. john's": 'NL', 'saint johns': 'NL', "corner brook": 'NL',
+  // ── PRINCE EDWARD ISLAND ──
+  charlottetown: 'PE', summerside: 'PE',
+  // ── NORTHWEST TERRITORIES ──
+  yellowknife: 'NT',
+  // ── YUKON ──
+  whitehorse: 'YT',
+  // ── NUNAVUT ──
+  iqaluit: 'NU',
 };
 
 function resolveStateOrProvince(city, detectedState) {
+  // If state was already detected from user input, use it directly
   if (detectedState && detectedState.trim()) return detectedState.trim().toUpperCase();
+  // Auto-resolve from comprehensive city map
   const key = (city || '').toLowerCase().trim();
-  if (CANADIAN_CITY_MAP[key]) return CANADIAN_CITY_MAP[key];
-  return ''; // unknown — let Zillow do its best without a state suffix
+  return CITY_STATE_MAP[key] || '';
 }
+
 
 function getRelevantFaqs(userQuery) {
   if (!faqsData || !Array.isArray(faqsData) || faqsData.length === 0) return '';
@@ -136,38 +321,73 @@ async function startApifyRun(city, state, intent) {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
     if (!APIFY_TOKEN) return null;
 
-    const listingType = intent === 'rent' ? 'rentals' : 'homes';
-    // Build slug: "toronto-on" for Canada, "chicago-il" for US, "cityname" if state unknown
-    const cityPart = city.toLowerCase().replace(/\s+/g, '-');
-    const statePart = state ? state.toLowerCase() : '';
-    const citySlug = statePart ? `${cityPart}-${statePart}` : cityPart;
-    
-    // Build proper Zillow URL with searchQueryState (required by the actor)
+    // ── Step 1: Resolve city + state/province → ZIP/Postal codes ─────────────
+    let zipCodes = [];
+
+    const cityEncoded = encodeURIComponent(city.trim().toLowerCase());
+    const stateEncoded = encodeURIComponent(state.trim().toLowerCase());
+
+    // Province/State name → abbreviation map for Canada
+    const canadaProvinces = {
+      'ontario': 'on', 'british columbia': 'bc', 'alberta': 'ab',
+      'quebec': 'qc', 'manitoba': 'mb', 'saskatchewan': 'sk',
+      'nova scotia': 'ns', 'new brunswick': 'nb',
+      'newfoundland and labrador': 'nl', 'prince edward island': 'pe',
+      'northwest territories': 'nt', 'yukon': 'yt', 'nunavut': 'nu'
+    };
+
+    // Check if state is a Canadian province (full name or 2-letter code)
+    const stateLower = state.trim().toLowerCase();
+    const isCanada =
+      Object.keys(canadaProvinces).includes(stateLower) ||
+      Object.values(canadaProvinces).includes(stateLower);
+
+    const provinceCode = isCanada
+      ? (canadaProvinces[stateLower] || stateLower)
+      : null;
+
+    const countryCode = isCanada ? 'ca' : 'us';
+    const regionCode = isCanada ? provinceCode : stateEncoded;
+
+    console.log(`[Apify] Looking up ZIPs for: ${city}, ${state} (${countryCode})`);
+
+    try {
+      const zipRes = await fetch(
+        `http://api.zippopotam.us/${countryCode}/${regionCode}/${cityEncoded}`,
+        { headers: { 'User-Agent': 'RealEstateChatbot/1.0' }, signal: AbortSignal.timeout(5000) }
+      );
+      if (zipRes.ok) {
+        const zipData = await zipRes.json();
+        if (zipData?.places?.length > 0) {
+          // Take only the primary ZIP code to avoid overwhelming the scraper and getting proxy blocked
+          zipCodes = zipData.places.slice(0, 1).map(p => p['post code']);
+          console.log(`[Apify] Found ZIPs: ${zipCodes.join(', ')}`);
+        }
+      }
+    } catch (e) {
+      console.error('[Apify] Zippopotamus lookup failed:', e.message);
+    }
+
+    // ── Step 2: Fallback if no ZIPs found ────────────────────────────────────
+    if (zipCodes.length === 0) {
+      console.warn(`[Apify] No ZIPs found for "${city}, ${state}". Using "10001" as fallback.`);
+      zipCodes = ['10001']; // Default to NYC
+    }
+
     const isRent = intent === 'rent';
-    const filterState = isRent
-      ? { isForRent: { value: true }, isForSaleByOwner: { value: false }, isForSaleByAgent: { value: false } }
-      : { isForSaleByOwner: { value: false }, isForSaleByAgent: { value: true } };
+    const statusType = isRent ? 'forRent' : 'forSale';
 
-    const searchQueryState = JSON.stringify({
-      pagination: {},
-      isMapVisible: false,
-      filterState,
-      isListVisible: true,
-      mapZoom: 11
-    });
+    console.log(`[Apify] Starting run with ZIPs: [${zipCodes.join(', ')}] | actor: maxcopell~zillow-zip-search`);
 
-    const searchUrl = `https://www.zillow.com/${citySlug}/${listingType}/?searchQueryState=${encodeURIComponent(searchQueryState)}`;
-
-    console.log(`[Apify] Starting async run with proper URL`);
-
-    // 1. Try with Residential proxies first (bypasses Zillow captchas)
+    // ── Step 3: Trigger Apify actor ───────────────────────────────────────────
     let runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-zip-search/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          searchUrls: [{ url: searchUrl }],
+          zipCodes,
+          status: statusType,
           maxItems: 4,
           proxy: { 
             useApifyProxy: true,
@@ -179,16 +399,17 @@ async function startApifyRun(city, state, intent) {
 
     let runData = await runRes.json();
 
-    // 2. If user doesn't have Residential Proxy access on Apify, fallback to standard datacenter proxies
+    // Fallback to Datacenter proxies if no Residential access
     if (runData.error && (runData.error.type === 'proxy-access-denied' || runData.error.message?.includes('proxy'))) {
-      console.log('[Apify] No Residential Proxy access. Falling back to Datacenter proxies...');
+      console.log('[Apify] No Residential Proxy. Falling back to Datacenter proxies...');
       runRes = await fetch(
-        `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
+        `https://api.apify.com/v2/acts/maxcopell~zillow-zip-search/runs?token=${APIFY_TOKEN}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            searchUrls: [{ url: searchUrl }],
+            zipCodes,
+            status: statusType,
             maxItems: 4,
             proxy: { useApifyProxy: true }
           })

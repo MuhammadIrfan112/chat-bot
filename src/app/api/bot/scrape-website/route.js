@@ -93,10 +93,18 @@ export async function POST(req) {
       combinedText = combinedText.substring(0, 1000000) + '\n...[Content truncated due to size limits]';
     }
 
-    // 5. Insert into Supabase Knowledge Base
+    // 5. Delete old website scrape data for this bot to prevent duplicates
+    await supabase
+      .from('knowledge_base')
+      .delete()
+      .eq('bot_id', bot_id)
+      .eq('source', 'Website Scrape');
+
+    // 6. Insert into Supabase Knowledge Base
     const { error: insertError } = await supabase.from('knowledge_base').insert({
       bot_id: bot_id,
       content: combinedText,
+      source: 'Website Scrape'
     });
 
     if (insertError) throw insertError;
