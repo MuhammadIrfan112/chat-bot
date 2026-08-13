@@ -296,7 +296,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           // Reverted mock data as requested — show error instead
           setMessages(prev => [...prev, { 
             role: 'model', 
-            parts: [{ text: "I'm sorry, I couldn't find any live properties matching that description right now. The property server might be temporarily blocking our search. Let me know if you want to try a different city!" }] 
+            parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
           }]);
         }
       } catch (e) {

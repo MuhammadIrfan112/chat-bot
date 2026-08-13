@@ -1,9 +1,9 @@
-const fetch = require('node-fetch');
+require('dotenv').config({path: '.env.local'});
 async function test() {
   const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
   if (!APIFY_TOKEN) { console.log('NO TOKEN'); return; }
   
-  const citySlug = 'miltion,ontraio';
+  const citySlug = 'new-york-ny';
   const searchQueryState = JSON.stringify({ pagination: {}, isMapVisible: false, filterState: { isForSaleByOwner: { value: false }, isForSaleByAgent: { value: true } }, isListVisible: true, mapZoom: 11 });
   const searchUrl = `https://www.zillow.com/${citySlug}/homes/?searchQueryState=${encodeURIComponent(searchQueryState)}`;
   
