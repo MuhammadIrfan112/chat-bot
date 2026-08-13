@@ -20,7 +20,7 @@ const CITY_STATE_MAP = {
   // ── ARIZONA ──
   phoenix: 'AZ', tucson: 'AZ', mesa: 'AZ', chandler: 'AZ', scottsdale: 'AZ',
   tempe: 'AZ', glendale: 'AZ', gilbert: 'AZ', peoria: 'AZ', surprise: 'AZ',
-  yuma: 'AZ', avondale: 'AZ', flagstaff: 'AZ', goodyear: 'AZ', lake havasu city: 'AZ',
+  yuma: 'AZ', avondale: 'AZ', flagstaff: 'AZ', goodyear: 'AZ', 'lake havasu city': 'AZ',
   // ── ARKANSAS ──
   'little rock': 'AR', 'fort smith': 'AR', fayetteville: 'AR', springdale: 'AR',
   jonesboro: 'AR', conway: 'AR', rogers: 'AR', bentonville: 'AR',
@@ -28,10 +28,10 @@ const CITY_STATE_MAP = {
   'los angeles': 'CA', 'san diego': 'CA', 'san jose': 'CA', 'san francisco': 'CA',
   fresno: 'CA', sacramento: 'CA', 'long beach': 'CA', oakland: 'CA',
   bakersfield: 'CA', anaheim: 'CA', 'santa ana': 'CA', riverside: 'CA',
-  stockton: 'CA', irvine: 'CA', chula vista: 'CA', fremont: 'CA',
-  'san bernardino': 'CA', modesto: 'CA', fontana: 'CA', moreno valley: 'CA',
-  glendale: 'CA', huntington beach: 'CA', oxnard: 'CA', ontario: 'CA',
-  'santa clarita': 'CA', garden grove: 'CA', oceanside: 'CA', rancho cucamonga: 'CA',
+  stockton: 'CA', irvine: 'CA', 'chula vista': 'CA', fremont: 'CA',
+  'san bernardino': 'CA', modesto: 'CA', fontana: 'CA', 'moreno valley': 'CA',
+  glendale: 'CA', 'huntington beach': 'CA', oxnard: 'CA', ontario: 'CA',
+  'santa clarita': 'CA', 'garden grove': 'CA', oceanside: 'CA', 'rancho cucamonga': 'CA',
   'santa rosa': 'CA', elk grove: 'CA', corona: 'CA', 'san buenaventura': 'CA',
   pasadena: 'CA', hayward: 'CA', salinas: 'CA', 'pomona': 'CA',
   torrance: 'CA', escondido: 'CA', sunnyvale: 'CA', 'thousand oaks': 'CA',
@@ -42,7 +42,7 @@ const CITY_STATE_MAP = {
   // ── COLORADO ──
   denver: 'CO', 'colorado springs': 'CO', aurora: 'CO', fort collins: 'CO',
   lakewood: 'CO', thornton: 'CO', arvada: 'CO', westminster: 'CO',
-  pueblo: 'CO', 'centennial co': 'CO', boulder: 'CO', highlands ranch: 'CO',
+  pueblo: 'CO', 'centennial co': 'CO', boulder: 'CO', 'highlands ranch': 'CO',
   'greeley co': 'CO', longmont: 'CO',
   // ── CONNECTICUT ──
   bridgeport: 'CT', 'new haven': 'CT', hartford: 'CT', stamford: 'CT',
@@ -53,19 +53,19 @@ const CITY_STATE_MAP = {
   jacksonville: 'FL', miami: 'FL', tampa: 'FL', orlando: 'FL',
   'st. petersburg': 'FL', 'saint petersburg': 'FL', hialeah: 'FL', 'fort lauderdale': 'FL',
   tallahassee: 'FL', pembroke: 'FL', hollywood: 'FL', miramar: 'FL',
-  'cape coral': 'FL', gainesville: 'FL', coral springs: 'FL', miami gardens: 'FL',
+  'cape coral': 'FL', gainesville: 'FL', 'coral springs': 'FL', 'miami gardens': 'FL',
   clearwater: 'FL', 'west palm beach': 'FL', 'pompano beach': 'FL', lakeland: 'FL',
-  davie: 'FL', miami beach: 'FL', 'boca raton': 'FL', deltona: 'FL',
-  palm bay: 'FL', 'fort myers': 'FL', lauderhill: 'FL', daytona: 'FL',
+  davie: 'FL', 'miami beach': 'FL', 'boca raton': 'FL', deltona: 'FL',
+  'palm bay': 'FL', 'fort myers': 'FL', lauderhill: 'FL', daytona: 'FL',
   'port st. lucie': 'FL', 'port saint lucie': 'FL', sunrise: 'FL', pensacola: 'FL',
   // ── GEORGIA ──
   atlanta: 'GA', savannah: 'GA', columbus: 'GA', 'sandy springs': 'GA',
-  macon: 'GA', roswell: 'GA', albany: 'GA', johns creek: 'GA',
-  warner robins: 'GA', alpharetta: 'GA', marietta: 'GA',
+  macon: 'GA', roswell: 'GA', albany: 'GA', 'johns creek': 'GA',
+  'warner robins': 'GA', alpharetta: 'GA', marietta: 'GA',
   // ── HAWAII ──
-  honolulu: 'HI', 'east honolulu': 'HI', pearl city: 'HI', hilo: 'HI', kailua: 'HI',
+  honolulu: 'HI', 'east honolulu': 'HI', 'pearl city': 'HI', hilo: 'HI', kailua: 'HI',
   // ── IDAHO ──
-  boise: 'ID', nampa: 'ID', meridian: 'ID', idaho falls: 'ID', pocatello: 'ID',
+  boise: 'ID', nampa: 'ID', meridian: 'ID', 'idaho falls': 'ID', pocatello: 'ID',
   // ── ILLINOIS ──
   chicago: 'IL', aurora: 'IL', joliet: 'IL', naperville: 'IL', rockford: 'IL',
   springfield: 'IL', elgin: 'IL', peoria: 'IL', champaign: 'IL', waukegan: 'IL',
@@ -82,18 +82,18 @@ const CITY_STATE_MAP = {
   louisville: 'KY', lexington: 'KY', 'bowling green': 'KY', owensboro: 'KY',
   // ── LOUISIANA ──
   'new orleans': 'LA', 'baton rouge': 'LA', shreveport: 'LA', metairie: 'LA',
-  lafayette: 'LA', lake charles: 'LA',
+  lafayette: 'LA', 'lake charles': 'LA',
   // ── MAINE ──
   portland: 'ME', lewiston: 'ME', bangor: 'ME',
   // ── MARYLAND ──
   baltimore: 'MD', 'columbia md': 'MD', germantown: 'MD', 'silver spring': 'MD',
-  waldorf: 'MD', 'frederick md': 'MD', glen burnie: 'MD', gaithersburg: 'MD',
+  waldorf: 'MD', 'frederick md': 'MD', 'glen burnie': 'MD', gaithersburg: 'MD',
   // ── MASSACHUSETTS ──
   boston: 'MA', worcester: 'MA', springfield: 'MA', cambridge: 'MA',
   lowell: 'MA', brockton: 'MA', 'new bedford': 'MA', quincy: 'MA',
   // ── MICHIGAN ──
-  detroit: 'MI', 'grand rapids': 'MI', warren: 'MI', sterling heights: 'MI',
-  ann arbor: 'MI', lansing: 'MI', flint: 'MI', dearborn: 'MI',
+  detroit: 'MI', 'grand rapids': 'MI', warren: 'MI', 'sterling heights': 'MI',
+  'ann arbor': 'MI', lansing: 'MI', flint: 'MI', dearborn: 'MI',
   'troy mi': 'MI', livonia: 'MI', westland: 'MI', kalamazoo: 'MI',
   // ── MINNESOTA ──
   minneapolis: 'MN', 'saint paul': 'MN', 'st paul': 'MN', rochester: 'MN',
@@ -113,17 +113,17 @@ const CITY_STATE_MAP = {
   manchester: 'NH', nashua: 'NH', concord: 'NH',
   // ── NEW JERSEY ──
   newark: 'NJ', 'jersey city': 'NJ', paterson: 'NJ', elizabeth: 'NJ',
-  trenton: 'NJ', clifton: 'NJ', camden: 'NJ', toms river: 'NJ',
+  trenton: 'NJ', clifton: 'NJ', camden: 'NJ', 'toms river': 'NJ',
   // ── NEW MEXICO ──
-  albuquerque: 'NM', 'santa fe': 'NM', 'las cruces': 'NM', rio rancho: 'NM',
+  albuquerque: 'NM', 'santa fe': 'NM', 'las cruces': 'NM', 'rio rancho': 'NM',
   // ── NEW YORK ──
   'new york': 'NY', 'new york city': 'NY', nyc: 'NY', brooklyn: 'NY',
   queens: 'NY', bronx: 'NY', buffalo: 'NY', rochester: 'NY',
   yonkers: 'NY', syracuse: 'NY', albany: 'NY', 'new rochelle': 'NY',
-  manhattan: 'NY', staten island: 'NY', long island: 'NY',
+  manhattan: 'NY', 'staten island': 'NY', 'long island': 'NY',
   // ── NORTH CAROLINA ──
   charlotte: 'NC', raleigh: 'NC', greensboro: 'NC', durham: 'NC',
-  'winston-salem': 'NC', winston salem: 'NC', fayetteville: 'NC', cary: 'NC',
+  'winston-salem': 'NC', 'winston salem': 'NC', fayetteville: 'NC', cary: 'NC',
   wilmington: 'NC', 'high point': 'NC', concord: 'NC',
   // ── NORTH DAKOTA ──
   fargo: 'ND', bismarck: 'ND', 'grand forks': 'ND', minot: 'ND',
@@ -131,7 +131,7 @@ const CITY_STATE_MAP = {
   columbus: 'OH', cleveland: 'OH', cincinnati: 'OH', toledo: 'OH',
   akron: 'OH', dayton: 'OH', parma: 'OH', youngstown: 'OH',
   // ── OKLAHOMA ──
-  'oklahoma city': 'OK', tulsa: 'OK', norman: 'OK', broken arrow: 'OK',
+  'oklahoma city': 'OK', tulsa: 'OK', norman: 'OK', 'broken arrow': 'OK',
   // ── OREGON ──
   portland: 'OR', eugene: 'OR', 'salem or': 'OR', gresham: 'OR',
   hillsboro: 'OR', beaverton: 'OR', medford: 'OR',
@@ -143,7 +143,7 @@ const CITY_STATE_MAP = {
   // ── SOUTH CAROLINA ──
   'columbia sc': 'SC', charleston: 'SC', 'north charleston': 'SC', 'mount pleasant': 'SC',
   // ── SOUTH DAKOTA ──
-  'sioux falls': 'SD', rapid city: 'SD',
+  'sioux falls': 'SD', 'rapid city': 'SD',
   // ── TENNESSEE ──
   nashville: 'TN', memphis: 'TN', knoxville: 'TN', chattanooga: 'TN',
   clarksville: 'TN', murfreesboro: 'TN', franklin: 'TN',
@@ -156,8 +156,8 @@ const CITY_STATE_MAP = {
   mcallen: 'TX', denton: 'TX', waco: 'TX', carrollton: 'TX',
   midland: 'TX', lewisville: 'TX', abilene: 'TX', beaumont: 'TX',
   // ── UTAH ──
-  'salt lake city': 'UT', 'west valley city': 'UT', provo: 'UT', west jordan: 'UT',
-  orem: 'UT', sandy: 'UT', ogden: 'UT', 'st. george': 'UT', saint george: 'UT',
+  'salt lake city': 'UT', 'west valley city': 'UT', provo: 'UT', 'west jordan': 'UT',
+  orem: 'UT', sandy: 'UT', ogden: 'UT', 'st. george': 'UT', 'saint george': 'UT',
   // ── VERMONT ──
   burlington: 'VT',
   // ── VIRGINIA ──
@@ -197,7 +197,7 @@ const CITY_STATE_MAP = {
   // ── MANITOBA ──
   winnipeg: 'MB', brandon: 'MB', steinbach: 'MB', thompson: 'MB',
   // ── SASKATCHEWAN ──
-  saskatoon: 'SK', regina: 'SK', 'prince albert': 'SK', moose jaw: 'SK',
+  saskatoon: 'SK', regina: 'SK', 'prince albert': 'SK', 'moose jaw': 'SK',
   // ── QUEBEC ──
   montreal: 'QC', laval: 'QC', 'quebec city': 'QC', gatineau: 'QC', sherbrooke: 'QC',
   longueuil: 'QC', saguenay: 'QC', levis: 'QC', 'trois-rivieres': 'QC', 'trois rivieres': 'QC',
