@@ -160,8 +160,8 @@ async function startApifyRun(city, state, intent) {
 
     console.log(`[Apify] Starting async run with proper URL`);
 
-    // Start run WITHOUT waitForFinish — returns immediately with runId
-    const runRes = await fetch(
+    // 1. Try with Residential proxies first (bypasses Zillow captchas)
+    let runRes = await fetch(
       `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
@@ -169,20 +169,42 @@ async function startApifyRun(city, state, intent) {
         body: JSON.stringify({
           searchUrls: [{ url: searchUrl }],
           maxItems: 4,
-          proxy: { useApifyProxy: true }
+          proxy: { 
+            useApifyProxy: true,
+            apifyProxyGroups: ["RESIDENTIAL"]
+          }
         })
       }
     );
 
-    if (!runRes.ok) {
-      console.error('[Apify] Failed to start run:', runRes.status);
+    let runData = await runRes.json();
+
+    // 2. If user doesn't have Residential Proxy access on Apify, fallback to standard datacenter proxies
+    if (runData.error && (runData.error.type === 'proxy-access-denied' || runData.error.message?.includes('proxy'))) {
+      console.log('[Apify] No Residential Proxy access. Falling back to Datacenter proxies...');
+      runRes = await fetch(
+        `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            searchUrls: [{ url: searchUrl }],
+            maxItems: 4,
+            proxy: { useApifyProxy: true }
+          })
+        }
+      );
+      runData = await runRes.json();
+    }
+
+    if (!runData.data?.id) {
+      console.error('[Apify] Failed to start run:', runData.error);
       return null;
     }
 
-    const runData = await runRes.json();
-    const runId = runData?.data?.id;
+    const runId = runData.data.id;
     console.log(`[Apify] Run started: ${runId}`);
-    return runId || null;
+    return runId;
   } catch (e) {
     console.error('[Apify] Start error:', e.message);
     return null;
