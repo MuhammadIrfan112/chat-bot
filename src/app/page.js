@@ -493,39 +493,16 @@ export default function Home() {
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '14px', color: '#F5F0E1' }}>Simple, transparent pricing</h2>
             <p style={{ color: '#64748B', fontSize: '17px' }}>Cancel anytime. No hidden fees.</p>
           </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', textAlign: 'left' }}>
-            {/* Standard */}
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-              style={{ background: 'rgba(15,23,42,0.9)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', transition: 'all 0.3s' }}
-              whileHover={{ y: -6, borderColor: 'rgba(255,255,255,0.16)' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Standard</h3>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Lead capture only — no live property listings shown. Perfect for agents focused on qualifying leads.</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$49</span>
-                <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', 'Lead Capture Only (No Property Listings)', 'Standard Website Scraping', 'Basic Analytics & Lead Capture', 'Standard Support'].map((f, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={10} color="#B8C4BC" strokeWidth={3} />
-                    </div>
-                    <span style={{ fontSize: '14px', color: '#B8C4BC' }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/login" className={styles.pricingBtn}>Get Standard <ArrowRight size={15} /></Link>
-            </motion.div>
-
+          <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'left' }}>
             {/* Premium */}
-            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
-              style={{ background: 'linear-gradient(160deg, rgba(30,27,60,1) 0%, rgba(15,23,42,1) 100%)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(129,140,248,0.3)', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 0 40px rgba(201,162,39,0.12)', transition: 'all 0.3s' }}
+            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+              style={{ background: 'linear-gradient(160deg, rgba(30,27,60,1) 0%, rgba(15,23,42,1) 100%)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(129,140,248,0.3)', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 0 40px rgba(201,162,39,0.12)', transition: 'all 0.3s', maxWidth: '400px', width: '100%' }}
               whileHover={{ y: -6, boxShadow: '0 0 60px rgba(201,162,39,0.22)' }}>
-              <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #D4AF37, #E5C158)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>MOST POPULAR</div>
+              <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #D4AF37, #E5C158)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>ALL-INCLUSIVE</div>
               <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Premium</h3>
               <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Shows live property listings to buyers, captures hot leads, and syncs real estate data.</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$79</span>
+                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$99</span>
                 <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>

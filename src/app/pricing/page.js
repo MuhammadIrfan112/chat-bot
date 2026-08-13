@@ -7,27 +7,8 @@ import styles from '../page.module.css';
 export default function Pricing() {
   const plans = [
     {
-      name: "Standard",
-      price: "$49",
-      period: "/month",
-      description: "Lead capture only — no live property listings shown. Perfect for agents focused on qualifying leads.",
-      features: [
-        { name: "1 AI Chatbot", included: true },
-        { name: "Lead Capture Only (No Property Listings)", included: true },
-        { name: "Standard Website Scraping", included: true },
-        { name: "Basic Analytics & Lead Capture", included: true },
-        { name: "Standard Support", included: true },
-        { name: "Live Human Takeover", included: false },
-        { name: "Data Sync from Realtor.ca", included: false },
-        { name: "Advanced CRM Lead Mapping", included: false },
-      ],
-      ctaText: "Start Standard",
-      popular: false,
-      glow: "rgba(255,255,255,0.05)"
-    },
-    {
       name: "Premium",
-      price: "$79",
+      price: "$99",
       period: "/month",
       description: "Shows live property listings to buyers, captures hot leads, and syncs real estate data.",
       features: [
