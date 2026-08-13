@@ -269,7 +269,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}`);
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${buyHomeData?.intent || 'buy'}`);
         const data = await res.json();
 
         if (data.status === 'done' && data.properties) {

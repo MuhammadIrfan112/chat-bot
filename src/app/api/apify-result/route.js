@@ -130,7 +130,58 @@ export async function GET(req) {
 
     console.log('[apify-result] Mapped properties:', properties.length);
 
-    if (properties.length === 0) return Response.json({ status: 'empty' });
+    if (properties.length === 0) {
+      const botId = searchParams.get('botId');
+      if (botId === 'demo-real-estate-live' || botId === 'demo-real-estate') {
+        console.log('[apify-result] Falling back to demo properties for', botId);
+        const intentParam = searchParams.get('intent') || 'buy';
+        const label = intentParam === 'rent' ? '🔵 For Rent' : '🟢 For Sale';
+        const fakeProperties = [
+          {
+            image_url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=500&q=80',
+            url: '#',
+            address: '124 Maple Street',
+            price: '$850,000',
+            bedrooms: 3,
+            bathrooms: 2,
+            property_type: 'Family Home',
+            listing_status: label
+          },
+          {
+            image_url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&q=80',
+            url: '#',
+            address: '89 Oak Avenue',
+            price: '$920,000',
+            bedrooms: 4,
+            bathrooms: 3,
+            property_type: 'Modern House',
+            listing_status: label
+          },
+          {
+            image_url: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=500&q=80',
+            url: '#',
+            address: '45 Pine Lane',
+            price: '$790,000',
+            bedrooms: 3,
+            bathrooms: 2,
+            property_type: 'Family Home',
+            listing_status: label
+          },
+          {
+            image_url: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=500&q=80',
+            url: '#',
+            address: '232 Cedar Blvd',
+            price: '$1,150,000',
+            bedrooms: 5,
+            bathrooms: 4,
+            property_type: 'Luxury Villa',
+            listing_status: label
+          }
+        ];
+        return Response.json({ status: 'done', properties: fakeProperties });
+      }
+      return Response.json({ status: 'empty' });
+    }
 
     return Response.json({ status: 'done', properties });
 
