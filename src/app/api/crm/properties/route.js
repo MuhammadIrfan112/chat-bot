@@ -31,6 +31,18 @@ export async function POST(request) {
       return Response.json({ error: 'bot_id and address are required' }, { status: 400 });
     }
 
+    // Prevent duplicates: Check if property with same address already exists for this bot
+    const { data: existingProp, error: checkError } = await supabase
+      .from('properties')
+      .select('property_id')
+      .ilike('address', address.trim())
+      .eq('bot_id', bot_id)
+      .single();
+
+    if (existingProp) {
+      return Response.json({ error: 'A property with this exact address already exists. Duplicate not allowed.' }, { status: 409 });
+    }
+
     const { data, error } = await supabase
       .from('properties')
       .insert([{

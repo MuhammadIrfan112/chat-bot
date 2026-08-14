@@ -24,6 +24,11 @@ export default function PropertiesPage() {
     status: 'Active',
     description: ''
   });
+  
+  const [showScrapeModal, setShowScrapeModal] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeMessage, setScrapeMessage] = useState('');
 
   useEffect(() => {
     fetchProperties();
@@ -87,6 +92,36 @@ export default function PropertiesPage() {
     }
   };
 
+  const handleScrape = async (e) => {
+    e.preventDefault();
+    setScraping(true);
+    setScrapeMessage('Scraping in progress... this may take 10-20 seconds.');
+    try {
+      const res = await fetch('/api/crm/properties/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: scrapeUrl, bot_id: botId })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setScrapeMessage(`✅ ${data.message} (Added: ${data.added}, Duplicates Ignored: ${data.duplicates})`);
+        fetchProperties();
+        setTimeout(() => {
+          setShowScrapeModal(false);
+          setScrapeUrl('');
+          setScrapeMessage('');
+        }, 3000);
+      } else {
+        setScrapeMessage(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      setScrapeMessage(`❌ Failed to connect to scraper.`);
+    } finally {
+      setScraping(false);
+    }
+  };
+
   return (
     <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
@@ -94,12 +129,20 @@ export default function PropertiesPage() {
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>Properties</h1>
           <p style={{ color: 'var(--text-secondary)' }}>Manage your active listings and private inventory.</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}
-        >
-          <Plus size={20} /> Add Property
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            onClick={() => setShowScrapeModal(true)}
+            style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}
+          >
+            <Search size={20} /> Auto-Scrape URL
+          </button>
+          <button 
+            onClick={() => setShowModal(true)}
+            style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}
+          >
+            <Plus size={20} /> Add Property
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -205,6 +248,39 @@ export default function PropertiesPage() {
               <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
                 <button type="submit" style={{ flex: 1, background: 'var(--primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Save Property</button>
                 <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, background: 'transparent', color: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-Scrape URL Modal */}
+      {showScrapeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--bg-card)', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '500px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Auto-Scrape Properties</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '14px', lineHeight: '1.6' }}>
+              Paste a URL from your website (e.g., a listings page). Our AI will extract the properties and add them to your inventory automatically.
+            </p>
+            <form onSubmit={handleScrape} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Website URL</label>
+                <input required type="url" placeholder="https://www.yourbrokerage.com/listings" value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'white' }} disabled={scraping} />
+              </div>
+              
+              {scrapeMessage && (
+                <div style={{ padding: '12px', borderRadius: '8px', background: scrapeMessage.includes('❌') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: scrapeMessage.includes('❌') ? '#ef4444' : '#10b981', fontSize: '14px', border: `1px solid ${scrapeMessage.includes('❌') ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}` }}>
+                  {scrapeMessage}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+                <button type="submit" disabled={scraping || !scrapeUrl} style={{ flex: 1, background: 'var(--primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: scraping || !scrapeUrl ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: scraping || !scrapeUrl ? 0.7 : 1 }}>
+                  {scraping ? 'Processing AI...' : 'Start Scrape'}
+                </button>
+                <button type="button" onClick={() => setShowScrapeModal(false)} disabled={scraping} style={{ flex: 1, background: 'transparent', color: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', cursor: scraping ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: scraping ? 0.5 : 1 }}>
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
