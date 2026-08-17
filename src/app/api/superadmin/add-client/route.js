@@ -122,6 +122,19 @@ export async function POST(req) {
     }
 
     debugLog.push(`Bot created: ${botData.id}`);
+
+    // 5. CRITICAL: Save bot_id back to users_subscription so dashboard can find it
+    const { error: linkError } = await supabaseAdmin
+      .from('users_subscription')
+      .update({ bot_id: botData.id })
+      .eq('user_id', userId);
+
+    if (linkError) {
+      debugLog.push(`Warning: Bot created but failed to link bot_id to subscription: ${linkError.message}`);
+    } else {
+      debugLog.push(`Bot linked to subscription: bot_id=${botData.id}`);
+    }
+
     return Response.json({ success: true, bot: botData, debug: debugLog });
   } catch (error) {
     console.error("Add Client Error:", error);
