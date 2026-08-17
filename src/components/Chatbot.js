@@ -536,8 +536,25 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
 
   const handleSend = async (text) => {
-    const msg = text || input;
-    if (!msg.trim()) return;
+    let msg = text;
+    
+    // If user clicks Send button or presses Enter (text is not passed as string)
+    if (typeof text !== 'string') {
+      if (multiSelectOptions.length > 0) {
+        const selection = multiSelected.length > 0 ? multiSelected.join(', ') : 'None';
+        if (input.trim()) {
+          msg = multiSelected.length > 0 ? `${selection}, ${input.trim()}` : input.trim();
+        } else {
+          msg = selection;
+        }
+        setMultiSelectOptions([]);
+        setMultiSelected([]);
+      } else {
+        msg = input;
+      }
+    }
+
+    if (!msg || !msg.trim()) return;
     setInput('');
 
     const userMsg = { role: 'user', parts: [{ text: msg }] };
@@ -633,7 +650,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         : `Since you’re an experienced homebuyer, let’s focus on what’s most important for your next purchase—whether that’s more space, a new neighborhood, a better commute, or a specific budget.\n\nAre there any important features you’re looking for? You can select multiple options!`;
       
       setMessages(prev => [...prev, { role: 'model', parts: [{ text: replyText }] }]);
-      setMultiSelectOptions(['🌊 Swimming Pool', '🏠 Basement', '🚗 Garage']);
+      setMultiSelectOptions(['🌊 Swimming Pool', '🏠 Basement', '🚗 Garage', 'None']);
       return;
     }
 
@@ -644,7 +661,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         role: 'model',
         parts: [{ text: `Do you have any specific school requirements? You can select multiple options!` }]
       }]);
-      setMultiSelectOptions(['🏦 Primary School', '🏢 Middle School', '🏧 Elementary School']);
+      setMultiSelectOptions(['🏦 Primary School', '🏢 Middle School', '🏧 Elementary School', 'None']);
       return;
     }
 
