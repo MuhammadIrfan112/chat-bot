@@ -1176,20 +1176,9 @@ FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professi
 [CITY_INFO: 💡 Buyer Tips | **What Buyers Should Know About ${detectedCity}** | Buyers are drawn to ${detectedCity} for its [top reasons — e.g., excellent schools, transit access, affordability relative to nearby cities]. It is best suited for [ideal buyer profile]. Key advantages include [pros]. Buyers should be aware of [honest consideration — e.g., competition in certain price ranges, limited inventory in specific neighbourhoods]. Pro tip: [insider advice specific to this city's market].]
 `;
               } else {
-                // Apify failed — show fake properties so user sees something
-                matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
-                propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
-${matchedProperties}
-
-CRITICAL INSTRUCTION: There are 20 properties available. 
-You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 20. 
-CRITICAL: You MUST output the properties EXACTLY as they appear using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
-
-After showing the 4 properties, you MUST include these two buttons:
-[BUTTON: Show more properties]
-[BUTTON: I like one of these properties!]
-
-If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+                // Apify failed — for real client bots, show honest message. Never show fake properties.
+                console.log('[Route] Apify start failed for non-demo bot — showing no-results message');
+                propertyContext = `\n\nNO PROPERTIES FOUND: Our live property search is currently unavailable for ${detectedCity}. CRITICAL INSTRUCTION: Tell the user politely that we are unable to load live listings at this moment, but that you can still help them with their search. Suggest they: 1) Ask to be connected with an agent who can provide up-to-date listings, 2) Try a nearby city or adjust their requirements, or 3) Schedule a consultation. Do NOT show any fake or demo properties. Do NOT make up addresses.`;
               }
             }
           }
@@ -1203,10 +1192,9 @@ If the user clicks/asks to "Show more properties", show the NEXT 4 properties us
           if (apifyRunId) {
             cityEngagementContext = `\n\nCITY ENGAGEMENT RULE: Searching for live listings in ${detectedCity}. While results load, show city buttons:\n[CITY_BTN: 🏠 Neighborhood] [CITY_BTN: 🏫 Schools] [CITY_BTN: 🚇 Transportation]`;
           } else {
-            // Apify failed — show fake properties so user sees something
-            console.log('[Route] Apify failed for Morton Grove — falling back to fake properties');
-            matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
-            propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n${matchedProperties}\n\nCRITICAL INSTRUCTION: There are 20 properties available. You MUST show EXACTLY 4 properties in your immediate response using raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. After showing the 4 properties, you MUST include these two buttons:\n[BUTTON: Show more properties]\n[BUTTON: I like one of these properties!]`;
+            // Apify failed for Morton Grove — show honest message, no fake properties
+            console.log('[Route] Apify failed for Morton Grove — showing no-results message');
+            propertyContext = `\n\nNO PROPERTIES FOUND: Our live property search is currently unavailable for ${detectedCity}. CRITICAL INSTRUCTION: Tell the user politely that we are unable to load live listings at this moment for Morton Grove, but that you can still help them. Suggest they: 1) Ask to be connected with an agent who can provide up-to-date listings, 2) Try nearby areas like Chicago or Skokie, or 3) Schedule a consultation. Do NOT show any fake or demo properties.`;
           }
         } else if (matchedProperties) {
           // Fallback message (no city detected)
