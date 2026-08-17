@@ -14,18 +14,28 @@ export async function POST(request) {
       return Response.json({ error: 'bot_id is required' }, { status: 400 });
     }
 
-    // 1. Fetch website_url from bot profile
+    // 1. Fetch website_url from bot profile (check bots table first, then users_subscription as fallback)
     const { data: botProfile, error: botErr } = await supabase
       .from('bots')
-      .select('website_url')
+      .select('website_url, user_id')
       .eq('id', bot_id)
       .single();
 
-    if (botErr || !botProfile?.website_url) {
-      return Response.json({ error: 'Website URL not found for this chatbot. Please update your profile settings.' }, { status: 400 });
+    let websiteUrl = botProfile?.website_url?.trim();
+
+    // Fallback: check users_subscription table
+    if (!websiteUrl && botProfile?.user_id) {
+      const { data: subProfile } = await supabase
+        .from('users_subscription')
+        .select('website_url')
+        .eq('user_id', botProfile.user_id)
+        .single();
+      websiteUrl = subProfile?.website_url?.trim();
     }
 
-    const websiteUrl = botProfile.website_url.trim();
+    if (!websiteUrl) {
+      return Response.json({ error: 'Website URL not found for this chatbot. Please go to My Profile in the dashboard and save your website URL first.' }, { status: 400 });
+    }
     const baseUrl = new URL(websiteUrl).origin;
 
     console.log(`Starting crawl for ${websiteUrl}...`);

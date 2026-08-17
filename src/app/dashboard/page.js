@@ -232,13 +232,14 @@ export default function AgentProfilePage() {
     const { data: { session } } = await supabase.auth.getSession();
     const uid = userId || session?.user?.id;
 
-    // 1. Sync name, avatar, color, and welcome message to bots table
+    // 1. Sync name, avatar, color, welcome message, and website_url to bots table
     if (botId) {
       await supabase.from('bots').update({ 
         name: profile.full_name,
         primary_color: primaryColor,
         bot_avatar: botAvatar,
-        welcome_message: welcomeMessage
+        welcome_message: welcomeMessage,
+        website_url: profile.website_url || null
       }).eq('id', botId);
     }
 

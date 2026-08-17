@@ -92,11 +92,10 @@ export default function PropertiesPage() {
     }
   };
 
-  const handleScrape = async (e) => {
-    e.preventDefault();
+  const handleScrape = async () => {
     
     if (!botId) {
-      setScrapeMessage('❌ Error: Chatbot ID not found. Please complete your chatbot setup first.');
+      setScrapeMessage('❌ Error: Chatbot ID not found. Please complete your chatbot setup first. Go to My Profile and make sure your website URL is saved.');
       return;
     }
 
@@ -137,7 +136,7 @@ export default function PropertiesPage() {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
-            onClick={handleScrape}
+            onClick={() => handleScrape()}
             disabled={scraping}
             style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: scraping ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', opacity: scraping ? 0.7 : 1 }}
           >
@@ -146,6 +145,22 @@ export default function PropertiesPage() {
         </div>
       </div>
 
+      {/* Status Message Toast */}
+      {scrapeMessage && (
+        <div style={{ 
+          padding: '16px 20px', 
+          borderRadius: '12px', 
+          marginBottom: '24px', 
+          background: scrapeMessage.startsWith('✅') ? 'rgba(46,213,115,0.1)' : scrapeMessage.startsWith('❌') ? 'rgba(255,77,79,0.1)' : 'rgba(79,70,229,0.1)',
+          border: `1px solid ${scrapeMessage.startsWith('✅') ? '#2ed573' : scrapeMessage.startsWith('❌') ? '#ff4d4f' : 'var(--primary)'}`,
+          color: scrapeMessage.startsWith('✅') ? '#2ed573' : scrapeMessage.startsWith('❌') ? '#ff4d4f' : 'var(--text-primary)',
+          fontWeight: '500',
+          fontSize: '14px'
+        }}>
+          {scrapeMessage}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>Loading properties...</div>
       ) : properties.length === 0 ? (
@@ -153,7 +168,7 @@ export default function PropertiesPage() {
           <Building size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No properties found</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Click "Sync / Update Properties" to automatically fetch listings from your website.</p>
-          <button onClick={handleScrape} disabled={scraping} style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '10px 20px', borderRadius: '8px', cursor: scraping ? 'not-allowed' : 'pointer', fontWeight: '600' }}>
+          <button onClick={() => handleScrape()} disabled={scraping} style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '10px 20px', borderRadius: '8px', cursor: scraping ? 'not-allowed' : 'pointer', fontWeight: '600' }}>
             {scraping ? 'Syncing...' : 'Sync Properties'}
           </button>
         </div>
