@@ -321,73 +321,26 @@ async function startApifyRun(city, state, intent) {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
     if (!APIFY_TOKEN) return null;
 
-    // ── Step 1: Resolve city + state/province → ZIP/Postal codes ─────────────
-    let zipCodes = [];
-
-    const cityEncoded = encodeURIComponent(city.trim().toLowerCase());
-    const stateEncoded = encodeURIComponent(state.trim().toLowerCase());
-
-    // Province/State name → abbreviation map for Canada
-    const canadaProvinces = {
-      'ontario': 'on', 'british columbia': 'bc', 'alberta': 'ab',
-      'quebec': 'qc', 'manitoba': 'mb', 'saskatchewan': 'sk',
-      'nova scotia': 'ns', 'new brunswick': 'nb',
-      'newfoundland and labrador': 'nl', 'prince edward island': 'pe',
-      'northwest territories': 'nt', 'yukon': 'yt', 'nunavut': 'nu'
-    };
-
-    // Check if state is a Canadian province (full name or 2-letter code)
-    const stateLower = state.trim().toLowerCase();
-    const isCanada =
-      Object.keys(canadaProvinces).includes(stateLower) ||
-      Object.values(canadaProvinces).includes(stateLower);
-
-    const provinceCode = isCanada
-      ? (canadaProvinces[stateLower] || stateLower)
-      : null;
-
-    const countryCode = isCanada ? 'ca' : 'us';
-    const regionCode = isCanada ? provinceCode : stateEncoded;
-
-    console.log(`[Apify] Looking up ZIPs for: ${city}, ${state} (${countryCode})`);
-
-    try {
-      const zipRes = await fetch(
-        `http://api.zippopotam.us/${countryCode}/${regionCode}/${cityEncoded}`,
-        { headers: { 'User-Agent': 'RealEstateChatbot/1.0' }, signal: AbortSignal.timeout(5000) }
-      );
-      if (zipRes.ok) {
-        const zipData = await zipRes.json();
-        if (zipData?.places?.length > 0) {
-          // Take only the primary ZIP code to avoid overwhelming the scraper and getting proxy blocked
-          zipCodes = zipData.places.slice(0, 1).map(p => p['post code']);
-          console.log(`[Apify] Found ZIPs: ${zipCodes.join(', ')}`);
-        }
-      }
-    } catch (e) {
-      console.error('[Apify] Zippopotamus lookup failed:', e.message);
-    }
-
-    // ── Step 2: Fallback if no ZIPs found ────────────────────────────────────
-    if (zipCodes.length === 0) {
-      console.warn(`[Apify] No ZIPs found for "${city}, ${state}". Using "10001" as fallback.`);
-      zipCodes = ['10001']; // Default to NYC
-    }
-
+    const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
+    const stateSlug = state.trim().toLowerCase().replace(/\s+/g, '-');
     const isRent = intent === 'rent';
-    const statusType = isRent ? 'forRent' : 'forSale';
+    const typePath = isRent ? 'rentals/' : '';
+    
+    // Construct Zillow Search URL
+    const searchUrl = stateSlug 
+      ? `https://www.zillow.com/${citySlug}-${stateSlug}/${typePath}`
+      : `https://www.zillow.com/${citySlug}/${typePath}`;
 
-    console.log(`[Apify] Starting run with ZIPs: [${zipCodes.join(', ')}] | actor: maxcopell~zillow-zip-search`);
+    console.log(`[Apify] Starting run with URL: ${searchUrl} | actor: maxcopell~zillow-scraper`);
 
-    // ── Step 3: Trigger Apify actor ───────────────────────────────────────────
+    // ── Step 1: Trigger Apify actor ───────────────────────────────────────────
     let runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-zip-search/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          zipCodes,
-          status: statusType,
+          searchUrls: [{ url: searchUrl }],
           maxItems: 4,
           proxy: { 
             useApifyProxy: true,
@@ -403,13 +356,12 @@ async function startApifyRun(city, state, intent) {
     if (runData.error && (runData.error.type === 'proxy-access-denied' || runData.error.message?.includes('proxy'))) {
       console.log('[Apify] No Residential Proxy. Falling back to Datacenter proxies...');
       runRes = await fetch(
-        `https://api.apify.com/v2/acts/maxcopell~zillow-zip-search/runs?token=${APIFY_TOKEN}`,
+        `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            zipCodes,
-            status: statusType,
+            searchUrls: [{ url: searchUrl }],
             maxItems: 4,
             proxy: { useApifyProxy: true }
           })
