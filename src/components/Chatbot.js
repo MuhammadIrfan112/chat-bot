@@ -2161,17 +2161,6 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                   {multiSelected.includes(opt) ? '✓ ' : ''}{opt}
                 </button>
               ))}
-              <button
-                className={styles.multiSubmitBtn}
-                onClick={() => {
-                  const selection = multiSelected.length > 0 ? multiSelected.join(', ') : 'None';
-                  setMultiSelectOptions([]);
-                  setMultiSelected([]);
-                  handleSend(selection);
-                }}
-              >
-                ✓ Confirm Selection
-              </button>
             </div>
           )}
 
