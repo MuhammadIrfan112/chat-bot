@@ -326,6 +326,18 @@ export default function AdminPage() {
           <button onClick={fetchUsers} style={{ padding: '10px 16px', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
             🔄 Refresh
           </button>
+          <button 
+            onClick={async () => {
+              if (!confirm('This will fix bot_id links for all existing clients. Proceed?')) return;
+              const res = await fetch('/api/superadmin/fix-bot-links', { method: 'POST' });
+              const data = await res.json();
+              alert(`✅ Fixed: ${data.fixed} clients\n❌ Failed: ${data.failed || 0}\n\n${(data.log || []).join('\n')}`);
+              fetchUsers();
+            }} 
+            style={{ padding: '10px 16px', backgroundColor: '#DC2626', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}
+          >
+            🔧 Fix Bot Links
+          </button>
         </div>
       </div>
 
