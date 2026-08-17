@@ -58,6 +58,10 @@ export default function AgentsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!botId) {
+      alert('❌ Error: Chatbot ID not found. Please complete your chatbot setup first.');
+      return;
+    }
     try {
       const zips = formData.assigned_zip_codes.split(',').map(z => z.trim()).filter(z => z);
       
