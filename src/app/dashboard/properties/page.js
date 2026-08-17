@@ -94,6 +94,12 @@ export default function PropertiesPage() {
 
   const handleScrape = async (e) => {
     e.preventDefault();
+    
+    if (!botId) {
+      setScrapeMessage('❌ Error: Chatbot ID not found. Please complete your chatbot setup first.');
+      return;
+    }
+
     setScraping(true);
     setScrapeMessage('Scraping in progress... this may take 10-20 seconds.');
     try {
