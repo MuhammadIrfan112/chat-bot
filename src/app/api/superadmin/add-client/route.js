@@ -4,11 +4,11 @@ export async function POST(req) {
   const debugLog = [];
   
   try {
-    const { name, email, password, phone, industry } = await req.json();
-    debugLog.push(`Input: name=${name}, email=${email}`);
+    const { name, email, password, phone, industry, website_url } = await req.json();
+    debugLog.push(`Input: name=${name}, email=${email}, website=${website_url}`);
 
-    if (!email || !password || !name) {
-      return Response.json({ error: "Name, email, and password are required" }, { status: 400 });
+    if (!email || !password || !name || !website_url) {
+      return Response.json({ error: "Name, email, password, and website_url are required" }, { status: 400 });
     }
 
     // 1. Try to create the user in Auth
@@ -68,6 +68,7 @@ export async function POST(req) {
       const res = await supabaseAdmin.from('users_subscription').update({
         status: 'Active',
         plan: 'premium',
+        website_url: website_url,
         trial_ends_at: trialEndDate.toISOString()
       }).eq('user_id', userId);
       subError = res.error;
@@ -79,6 +80,7 @@ export async function POST(req) {
         status: 'Active',
         email: email,
         plan: 'premium',
+        website_url: website_url,
         trial_ends_at: trialEndDate.toISOString()
       });
       subError = res.error;
@@ -102,14 +104,14 @@ export async function POST(req) {
     }
 
     // 4. Create a default chatbot
-    const firstName = name.trim().split(' ')[0]; // Extract first name only
-    const defaultWelcomeMessage = `Hi there! 👋\nI'm ${firstName}'s virtual assistant, here to help you explore homes, answer questions, and make your buying or selling journey easier.\n\nWhat brings you in today?`;
-
     const { data: botData, error: botError } = await supabaseAdmin.from('bots').insert({
       user_id: userId,
-      name: name,
+      name: `${name}'s Assistant`,
+      company_name: `${name} Real Estate`,
       industry: industry || 'Real Estate',
-      welcome_message: defaultWelcomeMessage,
+      website_url: website_url,
+      welcome_message: `Hi there! 👋 I'm ${name}'s AI assistant. How can I help you today?`,
+      system_prompt: `You are an AI assistant for ${name}. Be helpful and professional.`,
       primary_color: '#4F46E5',
       bot_avatar: '🤖',
       status: 'Active'

@@ -379,6 +379,10 @@ export default function AdminPage() {
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Phone Number (Optional)</label>
                   <input type="text" value={addForm.phone} onChange={e => setAddForm({...addForm, phone: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="+1 234 567 8900" />
                 </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Website URL (For Property Auto-Scraping)</label>
+                  <input required type="url" value={addForm.website_url || ''} onChange={e => setAddForm({...addForm, website_url: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="https://www.remax.com" />
+                </div>
                 <button type="submit" disabled={isAdding} style={{ padding: '12px', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '8px', cursor: isAdding ? 'not-allowed' : 'pointer', fontWeight: '700', marginTop: '8px', opacity: isAdding ? 0.7 : 1 }}>
                   {isAdding ? 'Creating Client...' : 'Create Client & Chatbot'}
                 </button>

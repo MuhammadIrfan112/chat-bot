@@ -1155,14 +1155,35 @@ If the user clicks/asks to "Show more properties", show the NEXT 4 properties us
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity && !isMortonGrove) {
-          // Any city other than Morton Grove → Apify live search
-          const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
-          console.log(`[Route] City=${detectedCity} State=${resolvedState} — starting Apify run...`);
-          apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent);
+          // ============================================================
+          // PRIORITY 1: Client's own scraped properties (CRM table)
+          // ============================================================
+          const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText);
 
-          if (apifyRunId) {
-            // Tell AI to show city engagement while Apify processes in background
-            cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 11 AND STEP 12 (ACTIVE BACKGROUND SEARCH):
+          if (crmPropertyContext && crmPropertyContext.length > 50) {
+            // Client has their own properties — show those first
+            console.log(`[Route] PRIORITY 1: Found client CRM properties for bot=${bot_id}`);
+            propertyContext = crmPropertyContext;
+          } else {
+            // ============================================================
+            // PRIORITY 2: Apify city cache (pre-scraped data)
+            // ============================================================
+            const cachedCityContext = await fetchCityPropertyData(bot_id, fullChatText);
+
+            if (cachedCityContext && cachedCityContext.length > 50) {
+              console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity}`);
+              propertyContext = cachedCityContext;
+            } else {
+              // ============================================================
+              // PRIORITY 3: Live Apify search (Zillow)
+              // ============================================================
+              const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
+              console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState}...`);
+              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent);
+
+              if (apifyRunId) {
+                // Tell AI to show city engagement while Apify processes in background
+                cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 11 AND STEP 12 (ACTIVE BACKGROUND SEARCH):
 You are currently searching for properties in ${detectedCity}, ${detectedState || ''}. 
 Because the search is running in the background, you MUST override Step 11 (Buy flow) AND Step 12 (Rent flow). DO NOT show any property cards yet.
 Instead, reply EXACTLY with this:
@@ -1184,10 +1205,10 @@ FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professi
 [CITY_INFO: 👥 Community | **Community Feel in ${detectedCity}** | ${detectedCity} has a vibrant and engaged community. Annual events such as [festival/market names] bring residents together. The city has an active network of neighbourhood associations, libraries, and cultural institutions including [examples]. Places of worship represent a diverse range of faiths, and volunteer and civic participation rates are high, reflecting a strong sense of community pride.]
 [CITY_INFO: 💡 Buyer Tips | **What Buyers Should Know About ${detectedCity}** | Buyers are drawn to ${detectedCity} for its [top reasons — e.g., excellent schools, transit access, affordability relative to nearby cities]. It is best suited for [ideal buyer profile]. Key advantages include [pros]. Buyers should be aware of [honest consideration — e.g., competition in certain price ranges, limited inventory in specific neighbourhoods]. Pro tip: [insider advice specific to this city's market].]
 `;
-          } else {
-            // Fallback to fake properties if Apify search fails (perfect for demos)
-            matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
-            propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
+              } else {
+                // Apify failed — show fake properties so user sees something
+                matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
+                propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
 ${matchedProperties}
 
 CRITICAL INSTRUCTION: There are 20 properties available. 
@@ -1199,7 +1220,11 @@ After showing the 4 properties, you MUST include these two buttons:
 [BUTTON: I like one of these properties!]
 
 If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+              }
+            }
           }
+
+
         } else if (detectedCity && isMortonGrove) {
           // Morton Grove: no DB match — try Apify
           console.log(`[Route] No DB results for Morton Grove — starting Apify run...`);

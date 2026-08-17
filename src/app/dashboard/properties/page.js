@@ -101,17 +101,17 @@ export default function PropertiesPage() {
     }
 
     setScraping(true);
-    setScrapeMessage('Scraping in progress... this may take 10-20 seconds.');
+    setScrapeMessage('Syncing properties from your website... this may take 1-3 minutes depending on website size.');
     try {
       const res = await fetch('/api/crm/properties/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: scrapeUrl, bot_id: botId })
+        body: JSON.stringify({ bot_id: botId }) // URL will be fetched on backend from profile
       });
       const data = await res.json();
       
       if (res.ok) {
-        setScrapeMessage(`✅ ${data.message} (Added: ${data.added}, Duplicates Ignored: ${data.duplicates})`);
+        setScrapeMessage(`✅ ${data.message} (Added: ${data.added}, Removed: ${data.removed || 0})`);
         fetchProperties();
         setTimeout(() => {
           setShowScrapeModal(false);
@@ -137,16 +137,11 @@ export default function PropertiesPage() {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button 
-            onClick={() => setShowScrapeModal(true)}
-            style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}
+            onClick={handleScrape}
+            disabled={scraping}
+            style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: scraping ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', opacity: scraping ? 0.7 : 1 }}
           >
-            <Search size={20} /> Auto-Scrape URL
-          </button>
-          <button 
-            onClick={() => setShowModal(true)}
-            style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}
-          >
-            <Plus size={20} /> Add Property
+            <Search size={20} /> {scraping ? 'Syncing...' : 'Sync / Update Properties'}
           </button>
         </div>
       </div>
@@ -157,9 +152,9 @@ export default function PropertiesPage() {
         <div style={{ textAlign: 'center', padding: '60px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
           <Building size={48} style={{ margin: '0 auto 16px', color: 'var(--text-muted)' }} />
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>No properties found</h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Add your first property to start showcasing it via your chatbot.</p>
-          <button onClick={() => setShowModal(true)} style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-            Add Property
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Click "Sync / Update Properties" to automatically fetch listings from your website.</p>
+          <button onClick={handleScrape} disabled={scraping} style={{ background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', padding: '10px 20px', borderRadius: '8px', cursor: scraping ? 'not-allowed' : 'pointer', fontWeight: '600' }}>
+            {scraping ? 'Syncing...' : 'Sync Properties'}
           </button>
         </div>
       ) : (

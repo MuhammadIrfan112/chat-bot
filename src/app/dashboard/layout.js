@@ -146,7 +146,6 @@ export default function DashboardLayout({ children }) {
   const navItems = [
     { name: 'My Profile', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
-    { name: 'Team / Agents', path: '/dashboard/agents', icon: <UserPlus size={20} /> },
     { name: 'Deals', path: '/dashboard/deals', icon: <Handshake size={20} /> },
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'CRM Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
