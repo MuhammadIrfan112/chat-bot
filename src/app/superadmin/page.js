@@ -91,13 +91,42 @@ export default function AdminPage() {
       ...prev,
       [bot.user_id]: prev[bot.user_id].map(b => b.id === bot.id ? { ...b, status: newStatus } : b)
     }));
-    await supabase.from('bots').update({ status: newStatus }).eq('id', bot.id);
+    
+    try {
+      const res = await fetch('/api/superadmin/toggle-bot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botId: bot.id, status: newStatus })
+      });
+      if (!res.ok) throw new Error('Update failed');
+    } catch (err) {
+      console.error(err);
+      // Revert optimistic update
+      setUserBots(prev => ({
+        ...prev,
+        [bot.user_id]: prev[bot.user_id].map(b => b.id === bot.id ? { ...b, status: bot.status } : b)
+      }));
+      alert('Failed to update bot status. Check logs.');
+    }
   };
 
   const toggleUserStatus = async (userId, currentStatus) => {
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
     setUsers(users.map(u => u.user_id === userId ? { ...u, status: newStatus } : u));
-    await supabase.from('users_subscription').update({ status: newStatus }).eq('user_id', userId);
+    
+    try {
+      const res = await fetch('/api/superadmin/toggle-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, status: newStatus })
+      });
+      if (!res.ok) throw new Error('Update failed');
+    } catch (err) {
+      console.error(err);
+      // Revert optimistic update
+      setUsers(users.map(u => u.user_id === userId ? { ...u, status: currentStatus } : u));
+      alert('Failed to update user status. Check logs.');
+    }
   };
 
   const deleteUser = async (userId, email) => {
