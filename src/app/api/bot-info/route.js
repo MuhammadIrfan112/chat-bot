@@ -26,8 +26,11 @@ export async function GET(req) {
 
     let finalPlan = data.plan;
 
-    // Fallback: Check users_subscription table if bot.plan is missing
-    if (!finalPlan && data.user_id) {
+    // Force 'premium' for all non-demo bots as requested by user
+    if (!bot_id.startsWith('demo-')) {
+      finalPlan = 'premium';
+    } else if (!finalPlan && data.user_id) {
+      // Fallback: Check users_subscription table if bot.plan is missing for demo bots
       const { data: sub } = await supabase
         .from('users_subscription')
         .select('plan_name')
