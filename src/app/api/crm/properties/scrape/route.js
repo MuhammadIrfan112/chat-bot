@@ -48,7 +48,7 @@ export async function POST(request) {
     const visited = new Set();
     const toVisit = [websiteUrl];
     const pagesToScrape = [];
-    const MAX_PAGES = 25; // Increased to 25 pages to capture more properties
+    const MAX_PAGES = 99999; // No limit (will scrape all properties until Vercel 5-minute timeout)
 
     while (toVisit.length > 0 && pagesToScrape.length < MAX_PAGES) {
       const currentUrl = toVisit.shift();
