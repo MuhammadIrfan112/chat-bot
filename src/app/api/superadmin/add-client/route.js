@@ -114,7 +114,8 @@ export async function POST(req) {
       system_prompt: `You are an AI assistant for ${name}. Be helpful and professional.`,
       primary_color: '#4F46E5',
       bot_avatar: '🤖',
-      status: 'Active'
+      status: 'Active',
+      plan: 'premium'
     }).select().single();
 
     if (botError) {

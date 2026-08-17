@@ -16,12 +16,28 @@ export async function GET(req) {
 
     const { data, error } = await supabase
       .from('bots')
-      .select('name, industry, plan')
+      .select('name, industry, plan, user_id')
       .eq('id', bot_id)
       .single();
 
     if (error || !data) return Response.json({ industry: 'Real Estate', plan: 'standard' });
-    return Response.json({ industry: data.industry || 'Real Estate', name: data.name, plan: data.plan || 'standard' });
+
+    let finalPlan = data.plan;
+
+    // Fallback: Check users_subscription table if bot.plan is missing
+    if (!finalPlan && data.user_id) {
+      const { data: sub } = await supabase
+        .from('users_subscription')
+        .select('plan_name')
+        .eq('user_id', data.user_id)
+        .single();
+      
+      if (sub && sub.plan_name) {
+        finalPlan = sub.plan_name;
+      }
+    }
+
+    return Response.json({ industry: data.industry || 'Real Estate', name: data.name, plan: finalPlan || 'standard' });
   } catch (e) {
     return Response.json({ industry: 'Real Estate' });
   }
