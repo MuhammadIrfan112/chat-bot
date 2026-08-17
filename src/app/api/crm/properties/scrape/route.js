@@ -2,6 +2,10 @@ import { supabaseAdmin as supabase } from '@/lib/supabaseAdmin';
 import OpenAI from 'openai';
 import * as cheerio from 'cheerio';
 
+// Allow this API route to run for up to 5 minutes (300 seconds) on Vercel
+export const maxDuration = 300;
+export const dynamic = 'force-dynamic';
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -44,7 +48,7 @@ export async function POST(request) {
     const visited = new Set();
     const toVisit = [websiteUrl];
     const pagesToScrape = [];
-    const MAX_PAGES = 5; // Limit to 5 pages to avoid Vercel timeouts
+    const MAX_PAGES = 25; // Increased to 25 pages to capture more properties
 
     while (toVisit.length > 0 && pagesToScrape.length < MAX_PAGES) {
       const currentUrl = toVisit.shift();
