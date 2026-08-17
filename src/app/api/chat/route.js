@@ -658,7 +658,8 @@ async function fetchCityPropertyData(botId, fullChatText) {
 
     console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real Apify properties to AI.`);
 
-    let section = `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nCRITICAL: ONLY show properties from this exact list. DO NOT invent properties. Show real address, price, image using markdown \`![title](url)\`:\n`;
+    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
+    let cards = [];
 
     filteredData.slice(0, 8).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
@@ -668,12 +669,21 @@ async function fetchCityPropertyData(botId, fullChatText) {
       const type = l.property_type || l.propertyType || 'Property';
       const imgArr = l.images && l.images.length > 0 ? l.images : (l.image_url ? [l.image_url] : (l.imgSrc ? [l.imgSrc] : []));
       const mainImg = imgArr[0] || '';
+      const url = l.url || l.propertyUrl || '#';
 
-      section += `\n${i + 1}. **${addr}**\n`;
-      section += `   - Price: ${price}\n`;
-      section += `   - Beds: ${beds} | Baths: ${baths} | Type: ${type}\n`;
-      if (mainImg) section += `   - Image: ![${addr}](${mainImg})\n`;
+      cards.push(`[PROPERTY_CARD]
+Status: 🟢 For Sale
+Type: ${type}
+Address: ${addr}
+Price: ${price}
+Beds: ${beds} | Baths: ${baths}
+Image: ${mainImg}
+Link: ${url}
+[/PROPERTY_CARD]`);
     });
+
+    section += cards.join('\n\n');
+    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the database. You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.`;
 
     return section;
   } catch (err) {
@@ -737,20 +747,28 @@ async function fetchCRMProperties(botId, fullChatText) {
 
     if (filteredData.length === 0) return '';
 
-    let section = `\n\n--- PRIVATE CRM INVENTORY (Highly Recommended) ---\nCRITICAL: These are the client's direct listings. Prioritize showing these if they match the user's needs. Use markdown images \`![title](url)\` if photos are available:\n`;
+    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
+    let cards = [];
 
     filteredData.slice(0, 5).forEach((p, i) => {
       const price = p.price ? `$${p.price.toLocaleString()}` : 'Contact for Price';
       const img = p.photos && p.photos.length > 0 ? p.photos[0] : '';
-      const agentInfo = p.agents ? `Listed by: ${p.agents.first_name} ${p.agents.last_name} (${p.agents.phone || 'No phone'})` : '';
+      const address = `${p.address} ${p.city ? ', ' + p.city : ''}`;
+      const status = p.status === 'Active' ? '🟢 For Sale' : '⚪ Property';
 
-      section += `\n${i + 1}. **${p.address} ${p.city ? ', ' + p.city : ''}**\n`;
-      section += `   - Price: ${price}\n`;
-      section += `   - Details: ${p.bedrooms || '?'} Beds | ${p.bathrooms || '?'} Baths | ${p.property_type || 'Property'}\n`;
-      if (agentInfo) section += `   - ${agentInfo}\n`;
-      if (p.description) section += `   - Description: ${p.description.substring(0, 100)}...\n`;
-      if (img) section += `   - Image: ![${p.address}](${img})\n`;
+      cards.push(`[PROPERTY_CARD]
+Status: ${status}
+Type: ${p.property_type || 'Property'}
+Address: ${address}
+Price: ${price}
+Beds: ${p.bedrooms || '?'} | Baths: ${p.bathrooms || '?'}
+Image: ${img}
+Link: ${p.url || '#'}
+[/PROPERTY_CARD]`);
     });
+
+    section += cards.join('\n\n');
+    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the private CRM. You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.`;
 
     return section;
   } catch (err) {
