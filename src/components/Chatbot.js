@@ -226,8 +226,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         .then(r => r.json())
         .then(d => {
           setBotIndustry(d.industry || 'Real Estate');
-          // Set plan from DB (overrides URL param if DB has a value, except for demo bots which rely on URL)
-          if (d.plan && !botConfig.botId.startsWith('demo-')) setEmbedPlan(d.plan);
+          // Force premium plan for all non-demo bots to avoid API caching issues
+          if (!botConfig.botId.startsWith('demo-')) {
+            setEmbedPlan('premium');
+          } else if (d.plan) {
+            setEmbedPlan(d.plan);
+          }
         })
         .catch(() => { setBotIndustry('Real Estate'); });
     } else {
