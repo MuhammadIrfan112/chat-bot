@@ -1702,39 +1702,50 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
            text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
         }
 
+        // Helper to extract clean URL from markdown [url](url) or raw url
+        const cleanCardUrl = (str) => {
+          if (!str) return '';
+          const md = str.match(/\((https?:\/\/[^\s\)]+)\)/);
+          if (md) return md[1];
+          const raw = str.match(/https?:\/\/[^\s\]\)]+/);
+          return raw ? raw[0] : str.replace(/[\[\]\(\)]/g, '').trim();
+        };
+
         // Parse [PROPERTY_CARD] blocks
         const parsedProperties = [];
-        const cardRegex = /\[PROPERTY_CARD\]([\s\S]*?)\[\/PROPERTY_CARD\]/g;
+        const cardRegex = /\[PROPERTY_CARD\]([\s\S]*?)\[\/PROPERTY_CARD\]/gi;
         text = text.replace(cardRegex, (match, cardContent) => {
           const prop = {};
           
-          const typeMatch = cardContent.match(/Type:\s*(.*)/);
+          const typeMatch = cardContent.match(/Type:\s*(.*?)(?=\s*(?:Address:|Price:|Beds:|Image:|Link:|\n|$))/i);
           if (typeMatch) prop.property_type = typeMatch[1].trim();
           
-          const addressMatch = cardContent.match(/Address:\s*(.*)/);
+          const addressMatch = cardContent.match(/Address:\s*(.*?)(?=\s*(?:Price:|Beds:|Baths:|Image:|Link:|\n|$))/i);
           if (addressMatch) {
-             prop.address = addressMatch[1].trim();
+             prop.address = addressMatch[1].trim().replace(/,\s*$/, '');
              const parts = prop.address.split(',');
              if (parts.length > 1) prop.city = parts[1].trim();
           }
           
-          const priceMatch = cardContent.match(/Price:\s*(.*)/);
+          const priceMatch = cardContent.match(/Price:\s*(.*?)(?=\s*(?:Beds:|Baths:|Image:|Link:|\n|$))/i);
           if (priceMatch) prop.price = priceMatch[1].trim();
           
-          const bedsMatch = cardContent.match(/Beds:\s*(.*?)\s*\|/);
+          const bedsMatch = cardContent.match(/Beds:\s*(.*?)(?:\s*\|\s*|\s+Baths:|\s+Image:|\s+Link:|\n|$)/i);
           if (bedsMatch) prop.bedrooms = bedsMatch[1].trim();
           
-          const bathsMatch = cardContent.match(/Baths:\s*(.*)/);
+          const bathsMatch = cardContent.match(/Baths:\s*(.*?)(?=\s*(?:Image:|Link:|\n|$))/i);
           if (bathsMatch) prop.bathrooms = bathsMatch[1].trim();
           
-          const imageMatch = cardContent.match(/Image:\s*(.*)/);
-          if (imageMatch) prop.image_url = imageMatch[1].trim();
+          const imageMatch = cardContent.match(/Image:\s*(.*?)(?=\s*(?:Link:|\n|$))/i);
+          if (imageMatch) prop.image_url = cleanCardUrl(imageMatch[1]);
           
-          const linkMatch = cardContent.match(/Link:\s*(.*)/);
-          if (linkMatch) prop.url = linkMatch[1].trim();
+          const linkMatch = cardContent.match(/Link:\s*(.*?)(?=\s*(?:\[\/PROPERTY_CARD\]|\n|$))/i);
+          if (linkMatch) prop.url = cleanCardUrl(linkMatch[1]);
           
-          parsedProperties.push(prop);
-          return ''; // Remove the text block from the message
+          if (prop.address || prop.price) {
+            parsedProperties.push(prop);
+          }
+          return ''; // Remove the raw text block from the message so visual cards render
         });
 
         // The backend now parses the carousel tag and sends properties synchronously!
