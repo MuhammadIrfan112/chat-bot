@@ -1146,8 +1146,8 @@ ${areasNotServed.length ? `
           matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
         }
 
-        // demo-real-estate-live uses Apify ALWAYS — never fake properties
-        const isDemoBotRequest = bot_id === 'demo-real-estate' || (reqBody.is_demo === true && bot_id !== 'demo-real-estate-live');
+        // demo-real-estate uses Fake Properties ONLY. Everything else gets REAL properties.
+        const isDemoBotRequest = bot_id === 'demo-real-estate';
 
         if (isDemoBotRequest) {
           // Demo bot ALWAYS shows fake properties — regardless of plan setting
