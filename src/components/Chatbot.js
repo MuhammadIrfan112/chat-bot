@@ -1949,7 +1949,39 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                           {msg.cityBtns.map((btn, bi) => {
                             const panelKey = `${idx}-${btn}`;
                             const isOpen = expandedCityPanel === panelKey;
-                            const info = msg.cityInfoMap?.[btn];
+
+                            const getContent = () => {
+                              const norm = (btn || '').replace(/[^\w\s]/gi, '').trim().toLowerCase();
+                              if (msg.cityInfoMap) {
+                                for (const [k, v] of Object.entries(msg.cityInfoMap)) {
+                                  const normK = k.replace(/[^\w\s]/gi, '').trim().toLowerCase();
+                                  if (normK === norm || normK.includes(norm) || norm.includes(normK)) {
+                                    return v;
+                                  }
+                                }
+                              }
+
+                              const cityName = buyHomeData?.city || rentData?.city || 'this city';
+                              const fallbacks = {
+                                school: `**Schools & Education in ${cityName}**\n\n${cityName} is served by reputable school districts with high-performing public elementary, middle, and high schools alongside private and charter options. The area offers strong academic support, AP programs, extracurriculars, and active parent-teacher communities.`,
+                                park: `**Parks & Outdoor Recreation in ${cityName}**\n\n${cityName} features expansive green spaces, nature trails, paved cycling paths, modern playgrounds, and sports facilities. It's a wonderful environment for outdoor activities, weekend family picnics, and pet-friendly recreation.`,
+                                transport: `**Transportation & Commute in ${cityName}**\n\n${cityName} offers seamless connectivity via major expressways, regional commuter transit, and local bus networks. Commuters enjoy convenient access to downtown business hubs and nearby international airports.`,
+                                shop: `**Shopping & Dining in ${cityName}**\n\nFrom modern retail malls and grocery hubs (Costco, Whole Foods, Target) to eclectic local dining and vibrant weekend markets, ${cityName} offers a rich variety of culinary and retail experiences.`,
+                                health: `**Healthcare & Medical Centers in ${cityName}**\n\nResidents have quick access to leading regional hospitals, specialized medical clinics, urgent care centers, and 24/7 pharmacies, ensuring comprehensive healthcare for the whole family.`,
+                                neighbor: `**Neighborhood Character of ${cityName}**\n\n${cityName} is celebrated for its safe, welcoming neighborhoods, tree-lined residential streets, and diverse community feel. It attracts professionals, growing families, and retirees alike.`,
+                                hous: `**Housing Market & Real Estate in ${cityName}**\n\n${cityName} features a dynamic real estate market with strong long-term appreciation. Available homes range from modern condominiums and townhouses to spacious detached single-family residences.`,
+                                commun: `**Community & Lifestyle in ${cityName}**\n\n${cityName} hosts seasonal festivals, cultural centers, community sports leagues, and public libraries that bring neighbors together throughout the year.`,
+                                tip: `**Buyer Tips & Advice for ${cityName}**\n\nGet pre-approved early to stay competitive, explore neighborhoods during different times of the day to gauge traffic and community vibe, and partner with a local expert agent to uncover off-market listings!`
+                              };
+
+                              for (const [cat, text] of Object.entries(fallbacks)) {
+                                if (norm.includes(cat)) return text;
+                              }
+                              return `**Information about ${btn} in ${cityName}**\n\n${cityName} provides exceptional amenities, community resources, and living standards for its residents.`;
+                            };
+
+                            const info = getContent();
+
                             return (
                               <div key={bi}>
                                 <button
@@ -1988,10 +2020,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                                     lineHeight: '1.7',
                                     animation: 'fadeIn 0.2s ease'
                                   }}>
-                                    {info
-                                      ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{info}</ReactMarkdown>
-                                      : <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Loading info for {btn}...</span>
-                                    }
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{info}</ReactMarkdown>
                                   </div>
                                 )}
                               </div>

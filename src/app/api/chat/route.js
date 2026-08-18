@@ -1175,29 +1175,23 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
               apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText);
 
               if (apifyRunId) {
-                // Tell AI to show city engagement while Apify processes in background
-                cityEngagementContext = `\n\nCRITICAL OVERRIDE FOR STEP 11 AND STEP 12 (ACTIVE BACKGROUND SEARCH):
-You are currently searching for properties in ${detectedCity}, ${detectedState || ''}. 
-Because the search is running in the background, you MUST override Step 11 (Buy flow) AND Step 12 (Rent flow). DO NOT show any property cards yet.
-Instead, reply EXACTLY with this:
-"🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️"
+                const cityBtns = [
+                  '[CITY_BTN: 🏫 Schools]',
+                  '[CITY_BTN: 🌳 Parks]',
+                  '[CITY_BTN: 🚇 Transportation]',
+                  '[CITY_BTN: 🛒 Shopping & Dining]',
+                  '[CITY_BTN: 🏥 Healthcare]',
+                  '[CITY_BTN: 🏡 Neighborhood]',
+                  '[CITY_BTN: 🏘️ Housing Market]',
+                  '[CITY_BTN: 👥 Community]',
+                  '[CITY_BTN: 💡 Buyer Tips]'
+                ].join(' ');
 
-Then show these city info buttons on a new line (use CITY_BTN tag, NOT BUTTON tag):
-[CITY_BTN: 🏫 Schools] [CITY_BTN: 🌳 Parks] [CITY_BTN: 🚇 Transportation] [CITY_BTN: 🛒 Shopping & Dining] [CITY_BTN: 🏥 Healthcare] [CITY_BTN: 🏡 Neighborhood] [CITY_BTN: 🏘️ Housing Market] [CITY_BTN: 👥 Community] [CITY_BTN: 💡 Buyer Tips]
-
-CRITICALLY IMPORTANT: Immediately below the buttons, you MUST output nine [CITY_INFO] tags with DETAILED, COMPREHENSIVE, REAL information about ${detectedCity}. Each section must be rich, professional, and formatted with real paragraphs — NOT bullet lists with literal \\n characters. Use proper spacing and full sentences.
-
-FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professional sentences and paragraphs):
-[CITY_INFO: 🏫 Schools | **Schools in ${detectedCity}** | ${detectedCity} offers a strong educational environment. The area is served by [School District Name], which includes well-regarded schools such as [Elementary 1] and [Elementary 2] at the primary level, [Middle School Name] for intermediate grades, and [High School Name] known for its [notable programs]. Private and charter options also exist for families seeking alternatives.]
-[CITY_INFO: 🌳 Parks | **Parks & Outdoor Recreation in ${detectedCity}** | Residents of ${detectedCity} enjoy abundant green space. [Park Name 1] is a local favourite, offering [features]. [Park Name 2] provides trails, sports courts, and picnic areas. Cyclists and walkers can explore [trail name], and families frequent [playground/splash pad area] for year-round recreation.]
-[CITY_INFO: 🚇 Transportation | **Getting Around ${detectedCity}** | ${detectedCity} is well connected for commuters. Public transit includes [bus routes/subway lines/GO Train if applicable]. Major highways such as [Highway names] provide quick access to [nearby city]. The nearest major airport is [Airport Name], approximately [X] minutes away. The area also has good walkability in the [neighbourhood/downtown area] and growing cycling infrastructure.]
-[CITY_INFO: 🛒 Shopping & Dining | **Shopping & Dining in ${detectedCity}** | ${detectedCity} offers a diverse shopping and dining experience. Residents shop at [mall/plaza names] and major retailers like Walmart, Costco, and Whole Foods are nearby. The restaurant scene features [cuisine types] with popular spots in [area]. Local cafés, weekend farmers markets, and a vibrant nightlife scene add to the community's charm.]
-[CITY_INFO: 🏥 Healthcare | **Healthcare in ${detectedCity}** | Healthcare access in ${detectedCity} is excellent. The area is served by [Hospital Name], a full-service medical centre, alongside several walk-in clinics and specialist offices. Major pharmacy chains including Shoppers Drug Mart and Rexall are conveniently located throughout the city. Residents also benefit from numerous gyms, wellness studios, and mental health services.]
-[CITY_INFO: 🏡 Neighborhood | **Neighbourhood Character of ${detectedCity}** | ${detectedCity} is known for its [character — e.g., quiet, family-friendly, diverse, vibrant] atmosphere. The area attracts [typical resident profile — e.g., young families, professionals, retirees]. Streets are lined with [architectural styles — e.g., mature trees and detached homes / modern condos], and the community is generally regarded as safe and welcoming, with a strong sense of local identity.]
-[CITY_INFO: 🏘️ Housing Market | **Housing Market in ${detectedCity}** | The housing market in ${detectedCity} is currently [buyer's/seller's] market. Detached homes average around [price range], while condos and townhouses range from [price range]. The market has been [trending up/stable] with growing demand from [buyer profile]. Rental demand remains strong, with average rents for [unit type] sitting around [rent range]. New developments in [area/neighbourhood] signal continued investment in the city.]
-[CITY_INFO: 👥 Community | **Community Feel in ${detectedCity}** | ${detectedCity} has a vibrant and engaged community. Annual events such as [festival/market names] bring residents together. The city has an active network of neighbourhood associations, libraries, and cultural institutions including [examples]. Places of worship represent a diverse range of faiths, and volunteer and civic participation rates are high, reflecting a strong sense of community pride.]
-[CITY_INFO: 💡 Buyer Tips | **What Buyers Should Know About ${detectedCity}** | Buyers are drawn to ${detectedCity} for its [top reasons — e.g., excellent schools, transit access, affordability relative to nearby cities]. It is best suited for [ideal buyer profile]. Key advantages include [pros]. Buyers should be aware of [honest consideration — e.g., competition in certain price ranges, limited inventory in specific neighbourhoods]. Pro tip: [insider advice specific to this city's market].]
-`;
+                return Response.json({
+                  reply: `🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️\n\n${cityBtns}`,
+                  apifyRunId,
+                  city: detectedCity
+                });
               } else {
                 // Apify failed — for real client bots, show honest message. Never show fake properties.
                 console.log('[Route] Apify start failed for non-demo bot — showing no-results message');
