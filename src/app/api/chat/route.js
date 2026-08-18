@@ -799,10 +799,12 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
   }
 }
 
-export async function POST(req) {
-  try {
     const reqBody = await req.json();
-    const { messages, session_id, bot_id, plan = 'premium', is_demo } = reqBody;
+    const { messages, session_id, bot_id, plan: rawPlan = 'premium', is_demo } = reqBody;
+
+    // All real bots (non-demo) are premium and search real properties
+    const isDemoBot = bot_id === 'demo-real-estate';
+    const plan = isDemoBot ? rawPlan : 'premium';
 
     let botName = 'AI Assistant';
     let websiteUrl = 'this website';
@@ -866,19 +868,15 @@ export async function POST(req) {
             new Promise(resolve => setTimeout(() => resolve(''), 3500))
           ]) : Promise.resolve('');
           
-          const fetchCity = fetchCityPropertyData(bot_id, fullChatText);
           const fetchCRM = fetchCRMProperties(bot_id, fullChatText);
 
-          const [websiteData, cityListings, crmListings] = await Promise.all([fetchWebsite, fetchCity, fetchCRM]);
+          const [websiteData, crmListings] = await Promise.all([fetchWebsite, fetchCRM]);
 
           if (websiteData) {
             liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
           }
           if (crmListings) {
             liveInventory = (liveInventory || '') + crmListings;
-          }
-          if (cityListings) {
-            liveInventory = (liveInventory || '') + cityListings;
           }
         }
         // 🛒 E-commerce: Use live scraping only (with timeout)
@@ -993,9 +991,16 @@ ${areasNotServed.length ? `
 
     if (isRealEstate) {
       const fullText = fullChatText.toLowerCase();
-      let propIntent = null;
-      if (fullText.includes('rent') || fullText.includes('rental') || fullText.includes('apartment') || fullText.includes('lease')) propIntent = 'rent';
-      else if (fullText.includes('buy') || fullText.includes('purchase') || fullText.includes('for sale') || fullText.includes('buying')) propIntent = 'buy';
+      const userTextOnly = messages.filter(m => m.role === 'user').map(m => m.parts?.[0]?.text || '').join(' ').toLowerCase();
+
+      let propIntent = 'buy';
+      if (userTextOnly.includes('looking to rent') || userTextOnly.includes('want to rent') || userTextOnly.includes('for rent') || userTextOnly.includes('renting') || userTextOnly.includes('to rent')) {
+        propIntent = 'rent';
+      } else if (userTextOnly.includes('buy') || userTextOnly.includes('buying') || userTextOnly.includes('purchase') || userTextOnly.includes('family home') || userTextOnly.includes('home search')) {
+        propIntent = 'buy';
+      } else if (fullText.includes('looking to rent') || fullText.includes('want to rent')) {
+        propIntent = 'rent';
+      }
 
       // --- NEW LOGIC: Use AI structured summary as primary source of truth ---
       // Check BOTH 'model' AND 'user' roles — frontend sends confirmed summary as 'user' message
