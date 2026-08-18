@@ -28,6 +28,153 @@ const RE_INTENT_OPTIONS = [
   "❓ I have a general real estate question"
 ];
 
+function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties }) {
+  const [imgError, setImgError] = useState(false);
+
+  const isGoogleMapsImg = (url) => url && typeof url === 'string' && (url.includes('maps.googleapis.com') || url.includes('staticmap'));
+
+  const makeImages = (p) => {
+    if (!p) return [];
+    if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+      return p.images.filter(u => typeof u === 'string' && !isGoogleMapsImg(u)).slice(0, 6);
+    }
+    const url = p.image_url || p.imgSrc || '';
+    if (!url || isGoogleMapsImg(url)) return [];
+    if (/_\d+\.jpg$/.test(url)) {
+      return [1, 2, 3, 4, 5].map(n => url.replace(/_\d+\.jpg$/, `_${n}.jpg`));
+    }
+    return [url];
+  };
+
+  const cardImages = makeImages(prop);
+  const thumbSrc = !imgError && cardImages.length > 0 ? cardImages[0] : null;
+
+  const displayAddress = prop?.address
+    ? String(prop.address).split('|')[0]
+    : (prop?.city ? `Property in ${prop.city}` : 'Available Property');
+  const displayPrice = prop?.price ? String(prop.price) : 'Contact for price';
+  const displayBeds = prop?.bedrooms !== undefined && prop?.bedrooms !== null ? String(prop.bedrooms) : '?';
+  const displayBaths = prop?.bathrooms !== undefined && prop?.bathrooms !== null ? String(prop.bathrooms) : '?';
+  const displayType = prop?.property_type ? String(prop.property_type).replace(/_/g, ' ') : 'Property';
+  const propId = String(prop?.mls_number || prop?.address || prop?.url || index);
+
+  const isLiked = Array.isArray(likedProperties) && likedProperties.includes(propId);
+  const isDisliked = Array.isArray(dislikedProperties) && dislikedProperties.includes(propId);
+
+  return (
+    <div
+      onClick={() => cardImages.length > 0 && onOpenGallery({ property: prop, images: cardImages, activeIdx: 0 })}
+      style={{
+        cursor: cardImages.length > 0 ? 'pointer' : 'default',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        backgroundColor: 'white',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        border: '1px solid #f0f0f0',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)'; }}
+    >
+      <div style={{ position: 'relative', width: '100%', height: '120px', backgroundColor: '#e5e7eb' }}>
+        <div style={{
+          position: 'absolute', top: '6px', left: '6px',
+          background: '#10b981', color: 'white', fontSize: '12px',
+          fontWeight: 'bold', width: '22px', height: '22px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 2
+        }}>
+          {index + 1}
+        </div>
+
+        {thumbSrc ? (
+          <img
+            src={thumbSrc}
+            alt={displayAddress}
+            style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }}
+            referrerPolicy="no-referrer"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div style={{
+            width: '100%', height: '120px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(135deg,#e8f4f8,#d1e8f0)',
+            flexDirection: 'column', gap: '4px'
+          }}>
+            <span style={{ fontSize: '28px' }}>🏠</span>
+            <span style={{ fontSize: '10px', color: '#6b7280' }}>No Photo Available</span>
+          </div>
+        )}
+
+        {cardImages.length > 0 && !imgError && (
+          <div style={{
+            position: 'absolute', top: '6px', right: '6px',
+            background: 'rgba(0,0,0,0.55)', color: 'white',
+            fontSize: '10px', padding: '2px 6px', borderRadius: '20px',
+            backdropFilter: 'blur(4px)'
+          }}>
+            📸 {cardImages.length} Photos
+          </div>
+        )}
+      </div>
+
+      <div style={{ padding: '8px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontWeight: '800', fontSize: '14px', color: '#059669', marginBottom: '3px' }}>
+          {displayPrice}
+        </div>
+        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {displayAddress}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#374151', borderTop: '1px solid #f3f4f6', paddingTop: '6px', marginTop: 'auto' }}>
+          <span>🛏️ {displayBeds}</span>
+          <span>🛁 {displayBaths}</span>
+          <span style={{ marginLeft: 'auto', background: '#EEF2FF', color: '#4338CA', padding: '2px 7px', borderRadius: '5px', fontSize: '10px', fontWeight: '700', textTransform: 'capitalize', border: '1px solid #E0E7FF' }}>
+            🏷️ {displayType}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', padding: '0 10px 10px', marginTop: '2px' }}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setLikedProperties(prev => prev.includes(propId) ? prev.filter(x => x !== propId) : [...prev, propId]);
+            setDislikedProperties(prev => prev.filter(x => x !== propId));
+          }}
+          style={{
+            flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px',
+            fontWeight: 'bold', border: 'none', cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: isLiked ? '#10b981' : '#f3f4f6',
+            color: isLiked ? 'white' : '#4b5563'
+          }}
+        >
+          👍 Like
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setDislikedProperties(prev => prev.includes(propId) ? prev.filter(x => x !== propId) : [...prev, propId]);
+            setLikedProperties(prev => prev.filter(x => x !== propId));
+          }}
+          style={{
+            flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px',
+            fontWeight: 'bold', border: 'none', cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: isDisliked ? '#ef4444' : '#f3f4f6',
+            color: isDisliked ? 'white' : '#4b5563'
+          }}
+        >
+          👎 Pass
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, initialConfig = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -2040,113 +2187,43 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                       </div>
                     )}
 
-                    {msg.properties && msg.properties.length > 0 && (() => {
-                      // Helper: is this a Google Maps satellite placeholder (not a real property photo)?
-                      const isGoogleMapsImg = (url) => url && url.includes('maps.googleapis.com');
-
-                      // Build gallery images — only use real photo arrays or single real image
-                      const makeImages = (prop) => {
-                        if (prop.images && Array.isArray(prop.images) && prop.images.length > 0) {
-                          return prop.images.filter(u => !isGoogleMapsImg(u)).slice(0, 6);
-                        }
-                        const url = prop.image_url || prop.imgSrc || '';
-                        if (!url || isGoogleMapsImg(url)) return [];
-                        // For realtor.ca CDN pattern generate variants, else just return single
-                        if (/_\d+\.jpg$/.test(url)) {
-                          return [1,2,3,4,5].map(n => url.replace(/_\d+\.jpg$/, `_${n}.jpg`));
-                        }
-                        return [url];
-                      };
-
-                      return (
-                        <>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
-                            {msg.properties.map((prop, i) => {
-                              const cardImages = makeImages(prop);
-                              const thumbSrc = cardImages[0] || null;
-
-                              return (
-                                <div
-                                  key={i}
-                                  onClick={() => cardImages.length > 0 && setGalleryModal({ property: prop, images: cardImages, activeIdx: 0 })}
-                                  style={{ cursor: cardImages.length > 0 ? 'pointer' : 'default', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', transition: 'transform 0.2s, box-shadow 0.2s', border: '1px solid #f0f0f0' }}
-                                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)'; }}
-                                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)'; }}
-                                >
-                                  <div style={{ position: 'relative' }}>
-                                    <div style={{ position: 'absolute', top: '6px', left: '6px', background: '#10b981', color: 'white', fontSize: '12px', fontWeight: 'bold', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 2 }}>{i + 1}</div>
-                                    {thumbSrc ? (
-                                      <img src={thumbSrc} alt={prop.address} style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }} referrerPolicy="no-referrer" onError={e => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex'); }} />
-                                    ) : null}
-                                    <div style={{ display: thumbSrc ? 'none' : 'flex', width: '100%', height: '120px', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#e8f4f8,#d1e8f0)', flexDirection: 'column', gap: '4px' }}>
-                                      <span style={{ fontSize: '28px' }}>🏠</span>
-                                      <span style={{ fontSize: '10px', color: '#6b7280' }}>No Photo Available</span>
-                                    </div>
-                                    {cardImages.length > 0 && (
-                                      <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.55)', color: 'white', fontSize: '10px', padding: '2px 6px', borderRadius: '20px', backdropFilter: 'blur(4px)' }}>📸 {cardImages.length} Photos</div>
-                                    )}
-                                  </div>
-                                  <div style={{ padding: '8px 10px 10px' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '14px', color: '#059669', marginBottom: '3px' }}>{prop.price}</div>
-                                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prop.address.split('|')[0]}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#374151', borderTop: '1px solid #f3f4f6', paddingTop: '6px' }}>
-                                      <span>🛏️ {prop.bedrooms}</span>
-                                      <span>🛁 {prop.bathrooms}</span>
-                                      <span style={{ marginLeft: 'auto', background: '#EEF2FF', color: '#4338CA', padding: '2px 7px', borderRadius: '5px', fontSize: '10px', fontWeight: '700', textTransform: 'capitalize', border: '1px solid #E0E7FF' }}>
-                                        🏷️ {prop.property_type ? prop.property_type.replace(/_/g, ' ').toLowerCase() : 'Home'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '8px', padding: '0 10px 10px', marginTop: '2px' }}>
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const id = prop.mls_number || prop.address;
-                                        setLikedProperties(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-                                        setDislikedProperties(prev => prev.filter(x => x !== id));
-                                      }}
-                                      style={{ flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: likedProperties.includes(prop.mls_number || prop.address) ? '#10b981' : '#f3f4f6', color: likedProperties.includes(prop.mls_number || prop.address) ? 'white' : '#4b5563' }}
-                                    >
-                                      👍 Like
-                                    </button>
-                                    <button 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const id = prop.mls_number || prop.address;
-                                        setDislikedProperties(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-                                        setLikedProperties(prev => prev.filter(x => x !== id));
-                                      }}
-                                      style={{ flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer', transition: 'all 0.2s', background: dislikedProperties.includes(prop.mls_number || prop.address) ? '#ef4444' : '#f3f4f6', color: dislikedProperties.includes(prop.mls_number || prop.address) ? 'white' : '#4b5563' }}
-                                    >
-                                      👎 Pass
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          {/* Action buttons after property cards */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                            <button
-                              onClick={() => handleSend('I like one of these properties, I want to learn more')}
-                              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
-                              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-                              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                            >
-                              ❤️ I Like One of These — Tell Me More
-                            </button>
-                            <button
-                              onClick={() => handleSend('Show me more properties please')}
-                              style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '2px solid #6366f1', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'white', color: '#6366f1', transition: 'all 0.2s' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#6366f1'; }}
-                            >
-                              🔍 Show More Properties
-                            </button>
-                          </div>
-                        </>
-                      );
-                    })()}
+                    {msg.properties && Array.isArray(msg.properties) && msg.properties.length > 0 && (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                          {msg.properties.map((prop, i) => (
+                            <PropertyCardItem
+                              key={i}
+                              prop={prop}
+                              index={i}
+                              onOpenGallery={setGalleryModal}
+                              likedProperties={likedProperties}
+                              dislikedProperties={dislikedProperties}
+                              setLikedProperties={setLikedProperties}
+                              setDislikedProperties={setDislikedProperties}
+                            />
+                          ))}
+                        </div>
+                        {/* Action buttons after property cards */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                          <button
+                            onClick={() => handleSend('I like one of these properties, I want to learn more')}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                          >
+                            ❤️ I Like One of These — Tell Me More
+                          </button>
+                          <button
+                            onClick={() => handleSend('Show me more properties please')}
+                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '2px solid #6366f1', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'white', color: '#6366f1', transition: 'all 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#6366f1'; }}
+                          >
+                            🔍 Show More Properties
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </>
                 ) : (
                   msg.parts[0].text
