@@ -654,10 +654,10 @@ async function fetchCityPropertyData(botId, targetCity) {
       });
     }
 
-    // 5. If city_property_data is empty, instruct AI to handle it gracefully
+    // 5. No cached data for this city — return '' so caller triggers live Apify search
     if (allProperties.length === 0) {
-      console.log(`fetchCityPropertyData: No Apify data found.`);
-      return `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nNo real properties found matching this query in the database. CRITICAL: Inform the user politely that no exact matches were found for their specific criteria in this city. Do NOT show any mock data or invent properties. Suggest they ask about a different city or change their requirements.\n`;
+      console.log(`fetchCityPropertyData: No cached data found for city="${targetCity}" — caller will trigger live Apify.`);
+      return '';
     }
 
     // 6. Provide soft-filtering context to AI instead of strictly removing properties
