@@ -315,21 +315,78 @@ Link: ${p.property_url}
   }
 }
 
+// City bounding boxes for Zillow search (approximate lat/lng)
+// These match what a real Zillow browser search generates
+const CITY_BOUNDS = {
+  'morton grove':   { west: -87.854653, east: -87.756463, south: 42.02345, north: 42.07345 },
+  'chicago':        { west: -87.940267, east: -87.523661, south: 41.643919, north: 42.023022 },
+  'evanston':       { west: -87.726862, east: -87.643185, south: 42.019287, north: 42.080536 },
+  'skokie':         { west: -87.774338, east: -87.715652, south: 42.014854, north: 42.065929 },
+  'los angeles':    { west: -118.668176, east: -118.155289, south: 33.703652, north: 34.337306 },
+  'new york':       { west: -74.259090, east: -73.700272, south: 40.495992, north: 40.915568 },
+  'houston':        { west: -95.789963, east: -95.014864, south: 29.523624, north: 30.110626 },
+  'phoenix':        { west: -112.324219, east: -111.926270, south: 33.290094, north: 33.796253 },
+  'philadelphia':   { west: -75.280304, east: -74.955763, south: 39.867005, north: 40.137992 },
+  'san antonio':    { west: -98.809814, east: -98.230286, south: 29.203048, north: 29.700453 },
+  'san diego':      { west: -117.282951, east: -116.908386, south: 32.534156, north: 33.114249 },
+  'dallas':         { west: -97.000046, east: -96.463013, south: 32.617537, north: 33.016763 },
+  'san jose':       { west: -122.057739, east: -121.588623, south: 37.124844, north: 37.469738 },
+  'austin':         { west: -97.998901, east: -97.528992, south: 30.098659, north: 30.516863 },
+  'jacksonville':   { west: -81.889984, east: -81.390380, south: 30.102139, north: 30.583424 },
+  'fort worth':     { west: -97.568710, east: -97.037811, south: 32.618507, north: 32.987764 },
+  'columbus':       { west: -83.200195, east: -82.770996, south: 39.835838, north: 40.157244 },
+  'san francisco':  { west: -122.514725, east: -122.355194, south: 37.707749, north: 37.832371 },
+  'charlotte':      { west: -80.985107, east: -80.653191, south: 35.035869, north: 35.343024 },
+  'indianapolis':   { west: -86.326447, east: -85.940552, south: 39.631054, north: 39.927740 },
+  'seattle':        { west: -122.459696, east: -122.224433, south: 47.491912, north: 47.734145 },
+  'denver':         { west: -105.109939, east: -104.600067, south: 39.614431, north: 39.914255 },
+  'nashville':      { west: -87.046509, east: -86.515808, south: 36.000000, north: 36.421089 },
+  'oklahoma city':  { west: -97.670593, east: -97.335754, south: 35.330280, north: 35.617489 },
+  'el paso':        { west: -106.647949, east: -106.131287, south: 31.620000, north: 31.985000 },
+  'miami':          { west: -80.319748, east: -80.142212, south: 25.700000, north: 25.855000 },
+  'atlanta':        { west: -84.576416, east: -84.289856, south: 33.648000, north: 33.888000 },
+  'boston':         { west: -71.191254, east: -70.985718, south: 42.227928, north: 42.397135 },
+  'las vegas':      { west: -115.381775, east: -115.006867, south: 36.034600, north: 36.323700 },
+  'minneapolis':    { west: -93.329468, east: -93.193970, south: 44.889748, north: 45.051120 },
+};
+
+// Build a proper Zillow search URL with ?searchQueryState= that the zillow-scraper actor requires
+// MUST include mapBounds — without it, Zillow blocks the scraper (returns 0 results)
+function buildZillowSearchUrl(city, state, intent) {
+  const isRent = intent === 'rent';
+  const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
+  const stateSlug = state ? state.trim().toLowerCase().replace(/\s+/g, '-') : '';
+  const cityKey = city.trim().toLowerCase();
+
+  // Get bounding box for this city, or use generic US bounds
+  const bounds = CITY_BOUNDS[cityKey] || { west: -124.0, east: -66.0, south: 25.0, north: 49.0 };
+
+  const filterState = isRent
+    ? { sort: { value: 'days' }, ah: { value: true }, isForRent: { value: true }, isForSale: { value: false }, isRecentlySold: { value: false } }
+    : { sort: { value: 'days' }, ah: { value: true }, isForSale: { value: true }, isForRent: { value: false }, isRecentlySold: { value: false } };
+
+  const searchQueryState = {
+    pagination: {},
+    mapBounds: bounds,
+    isMapVisible: true,
+    isListVisible: true,
+    filterState,
+  };
+
+  const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
+  const slug = stateSlug ? `${citySlug}-${stateSlug}` : citySlug;
+  return `https://www.zillow.com/${slug}/?searchQueryState=${encoded}`;
+}
+
+
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
 async function startApifyRun(city, state, intent) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
     if (!APIFY_TOKEN) return null;
 
-    const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
-    const stateSlug = state.trim().toLowerCase().replace(/\s+/g, '-');
-    const isRent = intent === 'rent';
-    const typePath = isRent ? 'rentals/' : '';
-    
-    // Construct Zillow Search URL
-    const searchUrl = stateSlug 
-      ? `https://www.zillow.com/${citySlug}-${stateSlug}/${typePath}`
-      : `https://www.zillow.com/${citySlug}/${typePath}`;
+    // Build the correct Zillow URL with ?searchQueryState= (required by zillow-scraper actor)
+    const searchUrl = buildZillowSearchUrl(city, state, intent);
 
     console.log(`[Apify] Starting run with URL: ${searchUrl} | actor: maxcopell~zillow-scraper`);
 
@@ -341,10 +398,10 @@ async function startApifyRun(city, state, intent) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           searchUrls: [{ url: searchUrl }],
-          maxItems: 4,
+          maxItems: 20,
           proxy: { 
             useApifyProxy: true,
-            apifyProxyGroups: ["RESIDENTIAL"]
+            apifyProxyGroups: ['BUYPROXIES94952']  // Residential proxy group on this account — bypasses Zillow blocks
           }
         })
       }
@@ -352,31 +409,13 @@ async function startApifyRun(city, state, intent) {
 
     let runData = await runRes.json();
 
-    // Fallback to Datacenter proxies if no Residential access
-    if (runData.error && (runData.error.type === 'proxy-access-denied' || runData.error.message?.includes('proxy'))) {
-      console.log('[Apify] No Residential Proxy. Falling back to Datacenter proxies...');
-      runRes = await fetch(
-        `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            searchUrls: [{ url: searchUrl }],
-            maxItems: 4,
-            proxy: { useApifyProxy: true }
-          })
-        }
-      );
-      runData = await runRes.json();
-    }
-
     if (!runData.data?.id) {
-      console.error('[Apify] Failed to start run:', runData.error);
+      console.error('[Apify] Failed to start run:', JSON.stringify(runData.error || runData));
       return null;
     }
 
     const runId = runData.data.id;
-    console.log(`[Apify] Run started: ${runId}`);
+    console.log(`[Apify] Run started successfully: ${runId}`);
     return runId;
   } catch (e) {
     console.error('[Apify] Start error:', e.message);
