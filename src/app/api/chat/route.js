@@ -1141,10 +1141,8 @@ ${areasNotServed.length ? `
         const isMortonGrove = cityLower === 'morton grove' || cityLower === '';
 
         let matchedProperties = null;
-        if (isMortonGrove) {
-          // Only query local DB if city is Morton Grove (or not set)
-          matchedProperties = await getMatchingProperties(propIntent, propType, propBeds, propBudget);
-        }
+        // For non-demo bots, all cities go through the full priority chain below
+        // For demo bot, fake properties are generated separately
 
         // demo-real-estate uses Fake Properties ONLY. Everything else gets REAL properties.
         const isDemoBotRequest = bot_id === 'demo-real-estate';
@@ -1173,7 +1171,7 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
         } else if (matchedProperties && matchedProperties.includes('[PROPERTY_CARD]')) {
           // Found in database — show immediately
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
-        } else if (detectedCity && !isMortonGrove) {
+        } else if (detectedCity) {
           // ============================================================
           // PRIORITY 1: Client's own scraped properties (CRM table)
           // ============================================================
