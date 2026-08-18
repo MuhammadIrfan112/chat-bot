@@ -429,7 +429,7 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
           maxItems: 20,
           proxy: { 
             useApifyProxy: true,
-            apifyProxyGroups: ['BUYPROXIES94952']  // Residential proxy group on this account — bypasses Zillow blocks
+            apifyProxyGroups: ['SHADER']  // Standard datacenter proxy — available on all Apify accounts
           }
         })
       }
