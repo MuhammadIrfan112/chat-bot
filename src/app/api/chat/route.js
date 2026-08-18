@@ -1191,9 +1191,6 @@ FORMAT EXACTLY LIKE THIS (use real city-specific data, write in flowing professi
                 propertyContext = `\n\nNO PROPERTIES FOUND: Our live property search is currently unavailable for ${detectedCity}. CRITICAL INSTRUCTION: Tell the user politely that we are unable to load live listings at this moment, but that you can still help them with their search. Suggest they: 1) Ask to be connected with an agent who can provide up-to-date listings, 2) Try a nearby city or adjust their requirements, or 3) Schedule a consultation. Do NOT show any fake or demo properties. Do NOT make up addresses.`;
               }
             }
-          }
-
-
         } else if (detectedCity && isMortonGrove) {
           // Morton Grove: no DB match — try Apify
           console.log(`[Route] No DB results for Morton Grove — starting Apify run...`);
