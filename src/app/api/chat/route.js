@@ -364,13 +364,36 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
   const bounds = await getCityBounds(city, state);
 
   const filterState = isRent
-    ? { sort: { value: 'days' }, ah: { value: true }, isForRent: { value: true }, isForSale: { value: false }, isRecentlySold: { value: false } }
-    : { sort: { value: 'days' }, ah: { value: true }, isForSale: { value: true }, isForRent: { value: false }, isRecentlySold: { value: false } };
+    ? {
+        sort: { value: 'priorityscore' },
+        ah: { value: true },
+        isForRent: { value: true },
+        isForSaleByAgent: { value: false },
+        isForSaleByOwner: { value: false },
+        isNewConstruction: { value: false },
+        isForSaleForeclosure: { value: false },
+        isComingSoon: { value: false },
+        isAuction: { value: false },
+        isForSale: { value: false },
+        isRecentlySold: { value: false }
+      }
+    : {
+        sort: { value: 'days' },
+        ah: { value: true },
+        isForSale: { value: true },
+        isForRent: { value: false },
+        isRecentlySold: { value: false }
+      };
 
   if (fullChatText) {
     const maxBudget = parseBudget(fullChatText);
-    if (maxBudget > 0 && !isRent) {
-      filterState.price = { max: Math.round(maxBudget * 1.35) }; // generous 35% buffer for Zillow search
+    if (maxBudget > 0) {
+      if (isRent) {
+        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.5) };
+        filterState.price = { max: Math.round(maxBudget * 1.5) };
+      } else {
+        filterState.price = { max: Math.round(maxBudget * 1.35) };
+      }
     }
 
     // Property Type Filters
@@ -397,7 +420,8 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
 
   const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
   const slug = stateSlug ? `${citySlug}-${stateSlug}` : citySlug;
-  return `https://www.zillow.com/${slug}/?searchQueryState=${encoded}`;
+  const path = isRent ? `${slug}/rentals` : slug;
+  return `https://www.zillow.com/${path}/?searchQueryState=${encoded}`;
 }
 
 
@@ -682,8 +706,10 @@ async function fetchCityPropertyData(botId, targetCity) {
       const mainImg = imgArr[0] || '';
       const url = l.url || l.propertyUrl || '#';
 
+      const status = l.listing_status || (l.rentPrice || String(price).includes('/mo') ? '🔵 For Rent' : '🟢 For Sale');
+
       cards.push(`[PROPERTY_CARD]
-Status: 🟢 For Sale
+Status: ${status}
 Type: ${type}
 Address: ${addr}
 Price: ${price}

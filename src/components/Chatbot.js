@@ -51,8 +51,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
   const [likedProperties, setLikedProperties] = useState([]);
-  const [dislikedProperties, setDislikedProperties] = useState([]);
   const [activeApifyRunId, setActiveApifyRunId] = useState(null);
+  const [activeApifyIntent, setActiveApifyIntent] = useState('buy');
   const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
 
   // ── Closing flow state ─────────────────────────────────────────
@@ -372,7 +372,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${buyHomeData?.intent || 'buy'}`);
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}`);
         const data = await res.json();
 
         if (data.status === 'done') {
@@ -383,7 +383,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           const hiddenMsg = {
             role: 'user',
             isHidden: true,
-            parts: [{ text: `(SYSTEM: The live search for properties in ${data.city || 'your area'}, is complete. The properties are now saved in the database. Please output EXACTLY 4 [PROPERTY_CARD]s and the Show more properties button. Explain tradeoffs if budget/beds do not perfectly match.)` }]
+            parts: [{ text: `(SYSTEM: The live search for properties in ${data.city || 'your area'}, is complete. The properties are now saved in the database. Please output EXACTLY 4 [PROPERTY_CARD]s and the Show more properties button. Intent: ${activeApifyIntent || 'buy'}. Explain tradeoffs if budget/beds do not perfectly match.)` }]
           };
 
           setIsLoading(true);
@@ -1807,6 +1807,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
         if (data.apifyRunId) {
           setActiveApifyRunId(data.apifyRunId);
+          setActiveApifyIntent(data.intent || (rentData?.city ? 'rent' : 'buy'));
         }
         // Activate multi-select if needed
         if (multiButtons.length > 0) {
