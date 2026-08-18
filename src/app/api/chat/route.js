@@ -358,7 +358,7 @@ async function getCityBounds(city, state) {
 
 // Build a proper Zillow search URL with ?searchQueryState= (required by zillow-scraper actor)
 // TIGHT mapBounds = only ~20-40 properties scraped = low cost per run
-async function buildZillowSearchUrl(city, state, intent) {
+async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
   const isRent = intent === 'rent';
   const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
   const stateSlug = state ? state.trim().toLowerCase().replace(/\s+/g, '-') : '';
@@ -369,6 +369,28 @@ async function buildZillowSearchUrl(city, state, intent) {
   const filterState = isRent
     ? { sort: { value: 'days' }, ah: { value: true }, isForRent: { value: true }, isForSale: { value: false }, isRecentlySold: { value: false } }
     : { sort: { value: 'days' }, ah: { value: true }, isForSale: { value: true }, isForRent: { value: false }, isRecentlySold: { value: false } };
+
+  // Parse user's desired budget/beds to pass to Zillow with a buffer
+  // (Buffer allows the AI to later do soft-filtering and explain tradeoffs)
+  if (fullChatText) {
+    const maxBudget = parseBudget(fullChatText);
+    const bedsMatch = fullChatText.match(/(\d+)\s*(?:bed|bedroom|br)/i);
+    const minBeds = bedsMatch ? parseInt(bedsMatch[1]) : 0;
+    const bathsMatch = fullChatText.match(/(\d+)\s*(?:bath|bathroom|ba)/i);
+    const minBaths = bathsMatch ? parseInt(bathsMatch[1]) : 0;
+
+    if (maxBudget > 0) {
+      filterState.price = { max: Math.round(maxBudget * 1.2) }; // 20% buffer
+    }
+    if (minBeds > 1) {
+      filterState.beds = { min: minBeds - 1 };
+    } else if (minBeds === 1) {
+      filterState.beds = { min: 1 };
+    }
+    if (minBaths > 1) {
+      filterState.baths = { min: minBaths - 1 };
+    }
+  }
 
   const searchQueryState = {
     pagination: {},
@@ -385,14 +407,14 @@ async function buildZillowSearchUrl(city, state, intent) {
 
 
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
-async function startApifyRun(city, state, intent) {
+async function startApifyRun(city, state, intent, fullChatText = '') {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
     if (!APIFY_TOKEN) return null;
 
     // Build the correct Zillow URL with ?searchQueryState= (required by zillow-scraper actor)
     // await needed because buildZillowSearchUrl calls Nominatim geocoding API
-    const searchUrl = await buildZillowSearchUrl(city, state, intent);
+    const searchUrl = await buildZillowSearchUrl(city, state, intent, fullChatText);
 
     console.log(`[Apify] Starting run with URL: ${searchUrl.substring(0, 120)}... | actor: maxcopell~zillow-scraper`);
 
@@ -1176,7 +1198,7 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
               // ============================================================
               const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
               console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState}...`);
-              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent);
+              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText);
 
               if (apifyRunId) {
                 // Tell AI to show city engagement while Apify processes in background
