@@ -1135,27 +1135,28 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity) {
           // ============================================================
-          // PRIORITY 1: Client's own scraped properties (CRM table)
+          // PRIORITY 1 & 2: Client's CRM properties + City cached data
           // ============================================================
           const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText);
+          const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity);
 
-          if (crmPropertyContext && crmPropertyContext.length > 50) {
-            // Client has their own properties — show those first
+          const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;
+          const hasCache = cachedCityContext && cachedCityContext.length > 50;
+
+          if (hasCRM && hasCache) {
+            // Both available: show client's own listings first, then supplement with city listings
+            console.log(`[Route] Merging CRM properties with cached city data for bot=${bot_id}`);
+            propertyContext = crmPropertyContext + "\n\nADDITIONAL AREA LISTINGS:\n" + cachedCityContext;
+          } else if (hasCRM) {
             console.log(`[Route] PRIORITY 1: Found client CRM properties for bot=${bot_id}`);
             propertyContext = crmPropertyContext;
+          } else if (hasCache) {
+            console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity}`);
+            propertyContext = cachedCityContext;
           } else {
             // ============================================================
-            // PRIORITY 2: Apify city cache (pre-scraped data)
+            // PRIORITY 3: Live Apify search (Zillow)
             // ============================================================
-            const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity);
-
-            if (cachedCityContext && cachedCityContext.length > 50) {
-              console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity}`);
-              propertyContext = cachedCityContext;
-            } else {
-              // ============================================================
-              // PRIORITY 3: Live Apify search (Zillow)
-              // ============================================================
               const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
               console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState}...`);
               apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText);
