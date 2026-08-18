@@ -1122,14 +1122,43 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     if (rentStep === 'has_agent') {
       const rd = { ...rentData, has_agent: msg.toLowerCase().includes('yes') ? 'Yes' : 'No' };
       setRentData(rd);
-      setRentStep(null);
-      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms} | 🛁 Bathrooms: ${rd.bathrooms}\n🚗 Parking: ${rd.parking}\n✨ Features: ${rd.features}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${rd.move_in}\n\nPlease share your contact details so our agent can send you matching listings right away!`;
+      setRentStep('summary');
+      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms} | 🛁 Bathrooms: ${rd.bathrooms}\n🚗 Parking: ${rd.parking}\n✨ Features: ${rd.features}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${rd.move_in}\n\nDoes everything look correct?`;
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: summaryText }]
+        parts: [{ text: summaryText }],
+        quickReplies: ['✅ Yes', '❌ No']
       }]);
-      setLeadStep('name');
       return;
+    }
+
+    if (rentStep === 'summary') {
+      setRentStep(null);
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        const isDemoBot = botConfig.botId === 'demo-real-estate';
+        const isPremium = isDemoBot || (embedPlan && embedPlan !== 'standard');
+        if (!isPremium) {
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{ text: `Perfect! I'll find suitable rental listings that match these criteria. Please provide your contact details below, and an agent will be in touch very soon.` }]
+          }]);
+          setLeadStep('name');
+          return;
+        } else {
+          // Trigger live rental property search via AI / Apify
+          const rd = rentData;
+          const searchPrompt = `User confirmed requirements. Intent: rent. Location: ${rd.city}. Property: ${rd.prop_type || 'Apartment/Condo'}. Bedrooms: ${rd.bedrooms}. Bathrooms: ${rd.bathrooms}. Maximum budget: ${rd.budget}. Features: ${rd.features}. Please search and show me matching live rental properties for rent in ${rd.city}.`;
+          apiMessages.pop(); // remove "yes"
+          apiMessages.push({ role: 'user', parts: [{ text: searchPrompt }] });
+        }
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `No problem. Let me know what you'd like to change.` }]
+        }]);
+        return;
+      }
     }
 
     // ── Thinking About Selling Flow ─────────────────────────────────────
