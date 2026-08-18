@@ -2028,10 +2028,22 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                               <div style={{ padding: '8px 10px 10px' }}>
                                 <div style={{ fontWeight: '800', fontSize: '14px', color: '#059669', marginBottom: '3px' }}>{prop.price}</div>
                                 <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prop.address.split('|')[0]}</div>
-                                <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#374151', borderTop: '1px solid #f3f4f6', paddingTop: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#374151', borderTop: '1px solid #f3f4f6', paddingTop: '6px' }}>
                                   <span>🛏️ {prop.bedrooms}</span>
                                   <span>🛁 {prop.bathrooms}</span>
-                                  <span style={{ marginLeft: 'auto', color: '#9ca3af', fontSize: '10px' }}>{prop.property_type}</span>
+                                  <span style={{ 
+                                    marginLeft: 'auto', 
+                                    background: '#EEF2FF', 
+                                    color: '#4338CA', 
+                                    padding: '2px 7px', 
+                                    borderRadius: '5px', 
+                                    fontSize: '10px', 
+                                    fontWeight: '700', 
+                                    textTransform: 'capitalize',
+                                    border: '1px solid #E0E7FF'
+                                  }}>
+                                    🏷️ {prop.property_type ? prop.property_type.replace(/_/g, ' ').toLowerCase() : 'Home'}
+                                  </span>
                                 </div>
                               </div>
                               <div style={{ display: 'flex', gap: '8px', padding: '0 10px 10px', marginTop: '2px' }}>
