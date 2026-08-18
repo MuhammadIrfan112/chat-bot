@@ -652,34 +652,10 @@ async function fetchCityPropertyData(botId, fullChatText) {
       return `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nNo real properties found matching this query in the database. CRITICAL: Inform the user politely that no exact matches were found for their specific criteria in this city. Do NOT show any mock data or invent properties. Suggest they ask about a different city or change their requirements.\n`;
     }
 
-    // 6. Filter by beds if user mentioned it
-    const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
-    const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
-    let filteredData = minBedrooms > 0
-      ? allProperties.filter(item => parseInt(item.bedrooms) >= minBedrooms)
-      : allProperties;
-    if (filteredData.length === 0) filteredData = allProperties;
-
-    // 7. Filter by budget if user mentioned it (e.g. $650,000 or 650k)
-    const budgetMatch = q.match(/\$([\d,]+)(?:k)?/) || q.match(/(\d+)k(?:\s|$)/);
-    let maxBudget = 0;
-    if (budgetMatch) {
-      const raw = budgetMatch[1].replace(/,/g, '');
-      maxBudget = raw.endsWith('k') ? parseInt(raw) * 1000 : parseInt(raw);
-      if (maxBudget < 10000) maxBudget = maxBudget * 1000; // handle "650k" style
-    }
-    if (maxBudget > 0) {
-      const withinBudget = filteredData.filter(item => {
-        const priceStr = String(item.price || '').replace(/[^0-9]/g, '');
-        const priceNum = parseInt(priceStr);
-        return priceNum > 0 && priceNum <= maxBudget;
-      });
-      if (withinBudget.length > 0) filteredData = withinBudget;
-      else {
-        // No properties within budget — tell AI to be honest
-        return `\n\n--- REAL ESTATE DATABASE INVENTORY ---\nNo real properties found within the budget of $${maxBudget.toLocaleString()} in ${targetCity || 'this city'}. CRITICAL: Tell the user honestly that no properties matching their budget were found. DO NOT show over-budget properties. Suggest they increase their budget or ask about different areas. DO NOT invent any properties.\n`;
-      }
-    }
+    // 6. Provide soft-filtering context to AI instead of strictly removing properties
+    // We will just pass the properties and let the AI find the closest matches.
+    // Ensure we filter to the target city if detected.
+    let filteredData = allProperties;
 
     // 8. Strict city filter - only show properties from the asked city
     if (targetCity) {
@@ -716,7 +692,16 @@ Link: ${url}
     });
 
     section += cards.join('\n\n');
-    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the database. You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.`;
+    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the database.
+You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
+If you don't have exact matches for their budget/bedrooms, show the CLOSEST matches (e.g. slightly over budget but correct beds, or within budget but 1 less bed) and explicitly explain the tradeoff to the user.
+CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
+
+After showing the properties, you MUST include these two buttons:
+[BUTTON: Show more properties]
+[BUTTON: I like one of these properties!]
+
+If the user clicks/asks to "Show more properties", show the NEXT 2 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
 
     return section;
   } catch (err) {
@@ -764,26 +749,13 @@ async function fetchCRMProperties(botId, fullChatText) {
 
     if (error || !properties || properties.length === 0) return '';
 
-    // Basic filtering based on budget
+    // 6. Provide soft-filtering context to AI instead of strictly removing properties
     let filteredData = properties;
-    const maxBudget = parseBudget(q);
-    if (maxBudget > 0) {
-      filteredData = properties.filter(p => !p.price || p.price <= maxBudget);
-    }
-    
-    // Basic filtering based on beds
-    const bedsMatch = q.match(/(\d+)\s*(?:bed|bedroom|br)/);
-    const minBedrooms = bedsMatch ? parseInt(bedsMatch[1]) : 0;
-    if (minBedrooms > 0) {
-      filteredData = filteredData.filter(p => !p.bedrooms || p.bedrooms >= minBedrooms);
-    }
-
-    if (filteredData.length === 0) return '';
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
     let cards = [];
 
-    filteredData.slice(0, 5).forEach((p, i) => {
+    filteredData.slice(0, 8).forEach((p, i) => {
       const price = p.price ? `$${p.price.toLocaleString()}` : 'Contact for Price';
       const img = p.photos && p.photos.length > 0 ? p.photos[0] : '';
       const address = `${p.address} ${p.city ? ', ' + p.city : ''}`;
@@ -801,7 +773,16 @@ Link: ${p.url || '#'}
     });
 
     section += cards.join('\n\n');
-    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the private CRM. You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.`;
+    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the private CRM.
+You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
+If you don't have exact matches for their budget/bedrooms, show the CLOSEST matches (e.g. slightly over budget but correct beds, or within budget but 1 less bed) and explicitly explain the tradeoff to the user.
+CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
+
+After showing the properties, you MUST include these two buttons:
+[BUTTON: Show more properties]
+[BUTTON: I like one of these properties!]
+
+If the user clicks/asks to "Show more properties", show the NEXT 2 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
 
     return section;
   } catch (err) {
@@ -1141,15 +1122,16 @@ ${areasNotServed.length ? `
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
 ${matchedProperties}
 
-CRITICAL INSTRUCTION: There are 20 properties available. 
-You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all 20. 
+CRITICAL INSTRUCTION: There are properties available from the database.
+You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them.
+If you don't have exact matches for their budget/bedrooms, show the CLOSEST matches (e.g. slightly over budget but correct beds, or within budget but 1 less bed) and explicitly explain the tradeoff to the user.
 CRITICAL: You MUST output the properties EXACTLY as they appear using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
 
-After showing the 4 properties, you MUST include these two buttons:
+After showing the properties, you MUST include these two buttons:
 [BUTTON: Show more properties]
 [BUTTON: I like one of these properties!]
 
-If the user clicks/asks to "Show more properties", show the NEXT 4 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+If the user clicks/asks to "Show more properties", show the NEXT 2 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
         } else if (plan === 'standard') {
           // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
           // No property context needed here.
