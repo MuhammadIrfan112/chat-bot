@@ -409,7 +409,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
 async function startApifyRun(city, state, intent, fullChatText = '') {
   try {
-    const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+    const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
     if (!APIFY_TOKEN) {
       console.error('[Apify] CRITICAL ERROR: APIFY_API_TOKEN is not set in environment variables!');
       return null;

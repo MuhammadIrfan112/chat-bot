@@ -15,7 +15,7 @@ export async function GET(req) {
     const intent = searchParams.get('intent') || 'buy'; // 'buy' or 'rent'
     if (!runId) return Response.json({ error: 'Missing runId' }, { status: 400 });
 
-    const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+    const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
 
     // Check run status
     const statusRes = await fetch(
