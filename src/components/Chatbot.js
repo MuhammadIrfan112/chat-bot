@@ -414,6 +414,60 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     return () => clearInterval(pollRef.current);
   }, [sessionId, messages.length]);
 
+  // Poll Apify results if a run is active
+  useEffect(() => {
+    if (!activeApifyRunId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}`);
+        const data = await res.json();
+
+        if (data.status === 'done') {
+          clearInterval(interval);
+          setActiveApifyRunId(null);
+          setIsLoading(false);
+
+          const props = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
+            ? data.properties
+            : [];
+
+          if (props.length > 0) {
+            const cityName = data.city ? data.city.charAt(0).toUpperCase() + data.city.slice(1) : 'the area';
+            const intro = activeApifyIntent === 'rent'
+              ? `Here are live rental properties in **${cityName}** that match your criteria:`
+              : `Here are live properties in **${cityName}** that match your criteria:`;
+
+            const newModelMsg = {
+              role: 'model',
+              parts: [{ text: intro }],
+              properties: props
+            };
+            setMessages(prev => [...prev, newModelMsg]);
+          } else {
+            setMessages(prev => [...prev, { 
+              role: 'model', 
+              parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
+            }]);
+          }
+        } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
+          clearInterval(interval);
+          setActiveApifyRunId(null);
+          setIsLoading(false);
+          
+          setMessages(prev => [...prev, { 
+            role: 'model', 
+            parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
+          }]);
+        }
+      } catch (e) {
+        console.error('Apify polling error:', e);
+      }
+    }, 6000); // Poll every 6 seconds
+
+    return () => clearInterval(interval);
+  }, [activeApifyRunId, activeApifyIntent]);
+
   // Reusable parser for AI replies (both live chat and Apify background responses)
   const parseModelReply = (rawText, existingProps = []) => {
     let text = rawText || '';
@@ -2292,17 +2346,17 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                     onClick={() => setGalleryModal(prev => ({ ...prev, activeIdx: ti }))}
                     style={{ width: '60px', height: '45px', objectFit: 'cover', borderRadius: '6px', cursor: 'pointer', flexShrink: 0, border: ti === galleryModal.activeIdx ? '2px solid #10b981' : '2px solid transparent', opacity: ti === galleryModal.activeIdx ? 1 : 0.6, transition: 'opacity 0.2s, border 0.2s' }}
                     referrerPolicy="no-referrer"
-                    onError={(e) => { e.target.parentElement.removeChild(e.target); }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
                   />
                 ))}
               </div>
 
               {/* Property Details Footer */}
               <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.7)', display: 'flex', gap: '16px', alignItems: 'center', flexShrink: 0 }}>
-                <span style={{ color: '#d1fae5', fontSize: '12px' }}>🛏️ {galleryModal.property.bedrooms} Beds</span>
-                <span style={{ color: '#d1fae5', fontSize: '12px' }}>🛁 {galleryModal.property.bathrooms} Baths</span>
-                <span style={{ color: '#9ca3af', fontSize: '12px' }}>{galleryModal.property.property_type}</span>
-                <span style={{ color: '#6b7280', fontSize: '11px', marginLeft: 'auto' }}>{galleryModal.property.city}, {galleryModal.property.province}</span>
+                <span style={{ color: '#d1fae5', fontSize: '12px' }}>🛏️ {galleryModal?.property?.bedrooms || '?'} Beds</span>
+                <span style={{ color: '#d1fae5', fontSize: '12px' }}>🛁 {galleryModal?.property?.bathrooms || '?'} Baths</span>
+                <span style={{ color: '#9ca3af', fontSize: '12px' }}>{galleryModal?.property?.property_type || 'Property'}</span>
+                <span style={{ color: '#6b7280', fontSize: '11px', marginLeft: 'auto' }}>{galleryModal?.property?.city || ''}{galleryModal?.property?.province ? `, ${galleryModal.property.province}` : ''}</span>
               </div>
             </div>
           )}
