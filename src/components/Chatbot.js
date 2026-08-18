@@ -59,7 +59,68 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
+// Paginated wrapper: shows 4 cards first, then +2 per local click
+function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties, onLikeMore, onShowMoreAI }) {
+  const INITIAL = 4;
+  const STEP = 2;
+  const [visibleCount, setVisibleCount] = useState(INITIAL);
+
+  const visible = properties.slice(0, visibleCount);
+  const hasMoreLocal = visibleCount < properties.length;
+
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+        {visible.map((prop, i) => (
+          <PropertyCardItem
+            key={i}
+            prop={prop}
+            index={i}
+            onOpenGallery={onOpenGallery}
+            likedProperties={likedProperties}
+            dislikedProperties={dislikedProperties}
+            setLikedProperties={setLikedProperties}
+            setDislikedProperties={setDislikedProperties}
+          />
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+        <button
+          onClick={onLikeMore}
+          style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          ❤️ I Like One of These — Tell Me More
+        </button>
+
+        {hasMoreLocal ? (
+          <button
+            onClick={() => setVisibleCount(c => Math.min(c + STEP, properties.length))}
+            style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '2px solid #6366f1', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'white', color: '#6366f1', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#6366f1'; }}
+          >
+            🔍 Show More ({properties.length - visibleCount} remaining)
+          </button>
+        ) : (
+          <button
+            onClick={onShowMoreAI}
+            style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '2px solid #6366f1', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'white', color: '#6366f1', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#6366f1'; }}
+          >
+            🔍 Search More Properties
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
 function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties }) {
+
   const [imgError, setImgError] = useState(false);
 
   const isGoogleMapsImg = (url) => url && typeof url === 'string' && (url.includes('maps.googleapis.com') || url.includes('staticmap'));
@@ -168,7 +229,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', padding: '0 10px 10px', marginTop: '2px' }}>
+      <div style={{ display: 'flex', gap: '8px', padding: '8px 10px 12px', marginTop: '0' }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -176,11 +237,12 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
             setDislikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px',
-            fontWeight: 'bold', border: 'none', cursor: 'pointer',
+            flex: 1, padding: '10px 6px', borderRadius: '10px', fontSize: '14px',
+            fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
-            background: isLiked ? '#10b981' : '#f3f4f6',
-            color: isLiked ? 'white' : '#4b5563'
+            background: isLiked ? '#10b981' : '#ecfdf5',
+            color: isLiked ? 'white' : '#059669',
+            boxShadow: isLiked ? '0 2px 8px rgba(16,185,129,0.35)' : '0 1px 3px rgba(0,0,0,0.08)'
           }}
         >
           👍 Like
@@ -192,11 +254,12 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
             setLikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '6px', borderRadius: '8px', fontSize: '12px',
-            fontWeight: 'bold', border: 'none', cursor: 'pointer',
+            flex: 1, padding: '10px 6px', borderRadius: '10px', fontSize: '14px',
+            fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
-            background: isDisliked ? '#ef4444' : '#f3f4f6',
-            color: isDisliked ? 'white' : '#4b5563'
+            background: isDisliked ? '#ef4444' : '#fef2f2',
+            color: isDisliked ? 'white' : '#dc2626',
+            boxShadow: isDisliked ? '0 2px 8px rgba(239,68,68,0.35)' : '0 1px 3px rgba(0,0,0,0.08)'
           }}
         >
           👎 Pass
@@ -2276,41 +2339,16 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                     )}
 
                     {msg.properties && Array.isArray(msg.properties) && msg.properties.length > 0 && (
-                      <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
-                          {msg.properties.map((prop, i) => (
-                            <PropertyCardItem
-                              key={i}
-                              prop={prop}
-                              index={i}
-                              onOpenGallery={setGalleryModal}
-                              likedProperties={likedProperties}
-                              dislikedProperties={dislikedProperties}
-                              setLikedProperties={setLikedProperties}
-                              setDislikedProperties={setDislikedProperties}
-                            />
-                          ))}
-                        </div>
-                        {/* Action buttons after property cards */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-                          <button
-                            onClick={() => handleSend('I like one of these properties, I want to learn more')}
-                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-                            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                          >
-                            ❤️ I Like One of These — Tell Me More
-                          </button>
-                          <button
-                            onClick={() => handleSend('Show me more properties please')}
-                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '2px solid #6366f1', cursor: 'pointer', fontWeight: '700', fontSize: '13px', background: 'white', color: '#6366f1', transition: 'all 0.2s' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#6366f1'; }}
-                          >
-                            🔍 Show More Properties
-                          </button>
-                        </div>
-                      </>
+                      <PropertyCardsPaginated
+                        properties={msg.properties}
+                        onOpenGallery={setGalleryModal}
+                        likedProperties={likedProperties}
+                        dislikedProperties={dislikedProperties}
+                        setLikedProperties={setLikedProperties}
+                        setDislikedProperties={setDislikedProperties}
+                        onLikeMore={() => handleSend('I like one of these properties, I want to learn more')}
+                        onShowMoreAI={() => handleSend('Show me more properties please')}
+                      />
                     )}
                   </>
                 ) : (
