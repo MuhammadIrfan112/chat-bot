@@ -799,6 +799,8 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
   }
 }
 
+export async function POST(req) {
+  try {
     const reqBody = await req.json();
     const { messages, session_id, bot_id, plan: rawPlan = 'premium', is_demo } = reqBody;
 
