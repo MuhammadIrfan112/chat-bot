@@ -410,15 +410,14 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
 async function startApifyRun(city, state, intent, fullChatText = '') {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
-    if (!APIFY_TOKEN) return null;
+    if (!APIFY_TOKEN) {
+      console.error('[Apify] CRITICAL ERROR: APIFY_API_TOKEN is not set in environment variables!');
+      return null;
+    }
 
-    // Build the correct Zillow URL with ?searchQueryState= (required by zillow-scraper actor)
-    // await needed because buildZillowSearchUrl calls Nominatim geocoding API
     const searchUrl = await buildZillowSearchUrl(city, state, intent, fullChatText);
+    console.log(`[Apify] Starting run with URL: ${searchUrl.substring(0, 120)}...`);
 
-    console.log(`[Apify] Starting run with URL: ${searchUrl.substring(0, 120)}... | actor: maxcopell~zillow-scraper`);
-
-    // ── Step 1: Trigger Apify actor ───────────────────────────────────────────
     let runRes = await fetch(
       `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
       {
@@ -429,7 +428,7 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
           maxItems: 20,
           proxy: { 
             useApifyProxy: true,
-            apifyProxyGroups: ['SHADER']  // Standard datacenter proxy — available on all Apify accounts
+            apifyProxyGroups: ['SHADER']
           }
         })
       }
@@ -438,7 +437,8 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
     let runData = await runRes.json();
 
     if (!runData.data?.id) {
-      console.error('[Apify] Failed to start run:', JSON.stringify(runData.error || runData));
+      console.error('[Apify] API call returned success status but missing run ID. HTTP Status:', runRes.status);
+      console.error('[Apify] Full Response Payload:', JSON.stringify(runData, null, 2));
       return null;
     }
 
@@ -446,7 +446,7 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
     console.log(`[Apify] Run started successfully: ${runId}`);
     return runId;
   } catch (e) {
-    console.error('[Apify] Start error:', e.message);
+    console.error('[Apify] Start error Exception thrown:', e.message, e.stack);
     return null;
   }
 }
