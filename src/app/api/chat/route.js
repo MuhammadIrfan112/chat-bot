@@ -677,8 +677,8 @@ async function fetchCityPropertyData(botId, targetCity) {
       const price = l.price || l.priceDisplay || 'Contact for Price';
       const beds = l.bedrooms || l.beds || 'N/A';
       const baths = l.bathrooms || l.baths || 'N/A';
-      const type = l.property_type || l.propertyType || 'Property';
-      const imgArr = l.images && l.images.length > 0 ? l.images : (l.image_url ? [l.image_url] : (l.imgSrc ? [l.imgSrc] : []));
+      const isRealImg = (u) => u && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+      const imgArr = (l.images && l.images.length > 0 ? l.images : (l.image_url ? [l.image_url] : (l.imgSrc ? [l.imgSrc] : []))).filter(isRealImg);
       const mainImg = imgArr[0] || '';
       const url = l.url || l.propertyUrl || '#';
 

@@ -73,17 +73,29 @@ export async function GET(req) {
 
     const properties = items
       .map(p => {
-        // Image — try all known Zillow field names in order of reliability
+        // All photos array — collect from carousel or photos fields
+        const allPhotos = (() => {
+          if (Array.isArray(p.carouselPhotos) && p.carouselPhotos.length > 0) {
+            return p.carouselPhotos.map(ph => ph.url || ph).filter(Boolean);
+          }
+          if (Array.isArray(p.photos) && p.photos.length > 0) {
+            return p.photos.map(ph => (typeof ph === 'string' ? ph : ph.url)).filter(Boolean);
+          }
+          return [];
+        })();
+
+        // Helper: reject Google Maps satellite placeholder images
+        const isRealPhoto = (url) => url && !url.includes('maps.googleapis.com') && !url.includes('staticmap');
+
+        const realPhotos = allPhotos.filter(isRealPhoto).slice(0, 8);
+
+        // Primary thumbnail — first real photo, fallback to single fields
         const image =
-          p.mainImage ||
-          p.imgSrc ||
-          p.image ||
-          p.img ||
-          p.thumbnail ||
-          p.hdpData?.homeInfo?.miniCardPhotos?.[0]?.url ||
-          (Array.isArray(p.carouselPhotos) && p.carouselPhotos[0]?.url) ||
-          (Array.isArray(p.photos) && typeof p.photos[0] === 'string' ? p.photos[0] : null) ||
-          (Array.isArray(p.photos) && p.photos[0]?.url) ||
+          realPhotos[0] ||
+          (isRealPhoto(p.mainImage) ? p.mainImage : null) ||
+          (isRealPhoto(p.imgSrc) ? p.imgSrc : null) ||
+          (isRealPhoto(p.image) ? p.image : null) ||
+          (isRealPhoto(p.thumbnail) ? p.thumbnail : null) ||
           '';
 
         // URL — build from zpid if direct URL not available
@@ -130,6 +142,7 @@ export async function GET(req) {
 
         return {
           image_url: image,
+          images: realPhotos,        // Full gallery array (real photos only)
           url,
           address,
           price,
