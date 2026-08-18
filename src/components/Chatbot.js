@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from './Chatbot.module.css';
@@ -27,6 +27,37 @@ const RE_INTENT_OPTIONS = [
   "🏘️ I'm looking to rent out my house",
   "❓ I have a general real estate question"
 ];
+
+// ── Error Boundary: Prevents any rendering crash from crashing the iframe ──
+class ChatErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    console.error('[ChatBot ErrorBoundary]', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '16px', color: '#6b7280', fontSize: '13px', textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚠️</div>
+          <div>Something went wrong displaying this message.</div>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            style={{ marginTop: '10px', padding: '6px 14px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties }) {
   const [imgError, setImgError] = useState(false);
@@ -198,6 +229,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
   const [likedProperties, setLikedProperties] = useState([]);
+  const [dislikedProperties, setDislikedProperties] = useState([]);
   const [activeApifyRunId, setActiveApifyRunId] = useState(null);
   const [activeApifyIntent, setActiveApifyIntent] = useState('buy');
   const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
@@ -2127,31 +2159,33 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           </div>
 
           <div className={styles.messagesArea}>
-            {messages.filter(msg => !msg.isHidden).map((msg, idx) => (
-              <div key={idx} className={`${styles.message} ${msg.role === 'user' ? styles.userMsg : styles.modelMsg}`}>
-                {msg.role === 'model' ? (
-                  <>
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        p: ({node, ...props}) => <p style={{ margin: '0 0 8px 0' }} {...props} />,
-                        ul: ({node, ...props}) => <ul style={{ paddingLeft: '20px', margin: '0 0 8px 0' }} {...props} />,
-                        ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '0 0 8px 0' }} {...props} />,
-                        li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
-                        a: ({node, ...props}) => <a style={{ color: 'var(--primary)', textDecoration: 'underline' }} target="_blank" {...props} />,
-                        strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />,
-                        img: ({node, src, alt, ...props}) => (
-                          <img
-                            src={src} alt={alt || 'Property'}
-                            style={{ maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '8px', display: 'block' }}
-                            referrerPolicy="no-referrer"
-                            {...props}
-                          />
-                        )
-                      }}
-                    >
-                      {msg.parts[0].text}
-                    </ReactMarkdown>
+            {messages.filter(msg => msg && msg.parts && msg.parts.length > 0).map((msg, idx) => (
+              <ChatErrorBoundary key={idx}>
+                <div className={`${styles.message} ${msg.role === 'user' ? styles.userMsg : styles.modelMsg}`}>
+                  {msg.role === 'model' ? (
+                    <>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({node, ...props}) => <p style={{ margin: '0 0 8px 0' }} {...props} />,
+                          ul: ({node, ...props}) => <ul style={{ paddingLeft: '20px', margin: '0 0 8px 0' }} {...props} />,
+                          ol: ({node, ...props}) => <ol style={{ paddingLeft: '20px', margin: '0 0 8px 0' }} {...props} />,
+                          li: ({node, ...props}) => <li style={{ marginBottom: '4px' }} {...props} />,
+                          a: ({node, ...props}) => <a style={{ color: 'var(--primary)', textDecoration: 'underline' }} target="_blank" {...props} />,
+                          strong: ({node, ...props}) => <strong style={{ fontWeight: '700' }} {...props} />,
+                          img: ({node, src, alt, ...props}) => (
+                            <img
+                              src={src} alt={alt || 'Property'}
+                              style={{ maxWidth: '100%', height: '180px', objectFit: 'cover', borderRadius: '10px', marginTop: '8px', display: 'block' }}
+                              referrerPolicy="no-referrer"
+                              onError={e => { e.target.style.display = 'none'; }}
+                              {...props}
+                            />
+                          )
+                        }}
+                      >
+                        {msg?.parts?.[0]?.text || ''}
+                      </ReactMarkdown>
 
                     {/* City Engagement Accordion Buttons */}
                     {msg.cityBtns && msg.cityBtns.length > 0 && (
@@ -2280,9 +2314,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                     )}
                   </>
                 ) : (
-                  msg.parts[0].text
-                )}
-              </div>
+                    msg?.parts?.[0]?.text || ''
+                  )}
+                </div>
+              </ChatErrorBoundary>
             ))}
             {isLoading && (
               <div className={`${styles.message} ${styles.modelMsg} ${styles.typing}`}>
