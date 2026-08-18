@@ -372,6 +372,19 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
     if (maxBudget > 0 && !isRent) {
       filterState.price = { max: Math.round(maxBudget * 1.35) }; // generous 35% buffer for Zillow search
     }
+
+    // Property Type Filters
+    const lower = fullChatText.toLowerCase();
+    if (lower.includes('townhouse') || lower.includes('townhome')) {
+      filterState.isTownhouse = { value: true };
+    } else if (lower.includes('condo') || lower.includes('apartment')) {
+      filterState.isCondo = { value: true };
+      filterState.isApartment = { value: true };
+    } else if (lower.includes('detached') || lower.includes('single family') || lower.includes('villa')) {
+      filterState.isSingleFamily = { value: true };
+    } else if (lower.includes('duplex') || lower.includes('multi-family') || lower.includes('multi family')) {
+      filterState.isMultiFamily = { value: true };
+    }
   }
 
   const searchQueryState = {

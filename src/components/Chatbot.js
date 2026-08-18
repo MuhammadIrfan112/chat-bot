@@ -267,6 +267,100 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     return () => clearInterval(pollRef.current);
   }, [sessionId, messages.length]);
 
+  // Reusable parser for AI replies (both live chat and Apify background responses)
+  const parseModelReply = (rawText, existingProps = []) => {
+    let text = rawText || '';
+    let startLead = false;
+
+    const cleanCardUrl = (str) => {
+      if (!str) return '';
+      const md = str.match(/\((https?:\/\/[^\s\)]+)\)/);
+      if (md) return md[1];
+      const raw = str.match(/https?:\/\/[^\s\]\)]+/);
+      return raw ? raw[0] : str.replace(/[\[\]\(\)]/g, '').trim();
+    };
+
+    const buttons = [];
+    text = text.replace(/\[BUTTON:\s*(.*?)\]/g, (match, btnText) => {
+      buttons.push(btnText.trim());
+      return '';
+    });
+
+    const cityBtns = [];
+    text = text.replace(/\[CITY_BTN:\s*(.*?)\]/g, (match, label) => {
+      cityBtns.push(label.trim());
+      return '';
+    });
+
+    const cityInfoMap = {};
+    text = text.replace(/\[CITY_INFO:\s*(.*?)\|([\s\S]*?)\]/g, (match, label, content) => {
+      cityInfoMap[label.trim()] = content.trim();
+      return '';
+    });
+
+    const multiButtons = [];
+    const multiPattern = /\[MULTI_BUTTON:\s*(.*?)\]/g;
+    let multiMatch;
+    while ((multiMatch = multiPattern.exec(text)) !== null) {
+      multiButtons.push(multiMatch[1].trim());
+    }
+    text = text.replace(/\[MULTI_BUTTON:\s*.*?\]/g, '');
+
+    if (text.includes('[START_LEAD_CAPTURE]')) {
+      startLead = true;
+      text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
+    }
+
+    const parsedProperties = [];
+    const cardRegex = /\[PROPERTY_CARD\]([\s\S]*?)\[\/PROPERTY_CARD\]/gi;
+    text = text.replace(cardRegex, (match, cardContent) => {
+      const prop = {};
+
+      const typeMatch = cardContent.match(/Type:\s*(.*?)(?=\s*(?:Address:|Price:|Beds:|Image:|Link:|\n|$))/i);
+      if (typeMatch) prop.property_type = typeMatch[1].trim();
+
+      const addressMatch = cardContent.match(/Address:\s*(.*?)(?=\s*(?:Price:|Beds:|Baths:|Image:|Link:|\n|$))/i);
+      if (addressMatch) {
+        prop.address = addressMatch[1].trim().replace(/,\s*$/, '');
+        const parts = prop.address.split(',');
+        if (parts.length > 1) prop.city = parts[1].trim();
+      }
+
+      const priceMatch = cardContent.match(/Price:\s*(.*?)(?=\s*(?:Beds:|Baths:|Image:|Link:|\n|$))/i);
+      if (priceMatch) prop.price = priceMatch[1].trim();
+
+      const bedsMatch = cardContent.match(/Beds:\s*(.*?)(?:\s*\|\s*|\s+Baths:|\s+Image:|\s+Link:|\n|$)/i);
+      if (bedsMatch) prop.bedrooms = bedsMatch[1].trim();
+
+      const bathsMatch = cardContent.match(/Baths:\s*(.*?)(?=\s*(?:Image:|Link:|\n|$))/i);
+      if (bathsMatch) prop.bathrooms = bathsMatch[1].trim();
+
+      const imageMatch = cardContent.match(/Image:\s*(.*?)(?=\s*(?:Link:|\n|$))/i);
+      if (imageMatch) prop.image_url = cleanCardUrl(imageMatch[1]);
+
+      const linkMatch = cardContent.match(/Link:\s*(.*?)(?=\s*(?:\[\/PROPERTY_CARD\]|\n|$))/i);
+      if (linkMatch) prop.url = cleanCardUrl(linkMatch[1]);
+
+      if (prop.address || prop.price) {
+        parsedProperties.push(prop);
+      }
+      return '';
+    });
+
+    const newModelMsg = { role: 'model', parts: [{ text: text.trim() }] };
+    if (buttons.length > 0) newModelMsg.quickReplies = buttons;
+    if (cityBtns.length > 0) {
+      newModelMsg.cityBtns = cityBtns;
+      newModelMsg.cityInfoMap = cityInfoMap;
+    }
+    if (multiButtons.length > 0) newModelMsg.multiSelectOptions = multiButtons;
+
+    const allProperties = [...(existingProps || []), ...parsedProperties];
+    if (allProperties.length > 0) newModelMsg.properties = allProperties;
+
+    return { msg: newModelMsg, startLead, multiButtons, properties: allProperties };
+  };
+
   // Poll Apify results if a run is active
   useEffect(() => {
     if (!activeApifyRunId) return;
@@ -305,7 +399,18 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           .then(chatData => {
             setIsLoading(false);
             if (chatData.reply) {
-              setMessages(prev => [...prev, hiddenMsg, { role: 'model', parts: [{ text: chatData.reply }] }]);
+              const { msg: parsedModelMsg, startLead } = parseModelReply(chatData.reply, chatData.properties || []);
+              setMessages(prev => [...prev, hiddenMsg, parsedModelMsg]);
+              if (startLead && !leadCaptured && leadStep === null && closingStep === null) {
+                setTimeout(() => {
+                  setMessages(prev => [...prev, {
+                    role: 'model',
+                    parts: [{ text: `What name should our agent use when contacting you?` }],
+                    inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
+                  }]);
+                  setLeadStep('name');
+                }, 1500);
+              }
             }
           })
           .catch(e => {
@@ -1663,110 +1768,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         setIsHumanTakeover(true);
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "🔄 You've been connected to a live agent. Please wait for their response..." }] }]);
       } else if (data.reply) {
-        let text = data.reply;
-        let startLead = false;
-        
-        // Parse [BUTTON: text]
-        const buttons = [];
-        text = text.replace(/\[BUTTON:\s*(.*?)\]/g, (match, btnText) => {
-           buttons.push(btnText.trim());
-           return '';
-        });
-        
-        // Parse [CITY_BTN: label] tags — city accordion buttons
-        const cityBtns = [];
-        text = text.replace(/\[CITY_BTN:\s*(.*?)\]/g, (match, label) => {
-          cityBtns.push(label.trim());
-          return '';
-        });
-
-        // Parse [CITY_INFO: label | content] tags — accordion content
-        const cityInfoMap = {};
-        text = text.replace(/\[CITY_INFO:\s*(.*?)\|([\s\S]*?)\]/g, (match, label, content) => {
-          cityInfoMap[label.trim()] = content.trim();
-          return '';
-        });
-
-        // Parse [MULTI_BUTTON: text] tags
-        const multiButtons = [];
-        const multiPattern = /\[MULTI_BUTTON:\s*(.*?)\]/g;
-        let multiMatch;
-        while ((multiMatch = multiPattern.exec(text)) !== null) {
-          multiButtons.push(multiMatch[1].trim());
-        }
-        text = text.replace(/\[MULTI_BUTTON:\s*.*?\]/g, '');
-
-        // Parse [START_LEAD_CAPTURE]
-        if (text.includes('[START_LEAD_CAPTURE]')) {
-           startLead = true;
-           text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
-        }
-
-        // Helper to extract clean URL from markdown [url](url) or raw url
-        const cleanCardUrl = (str) => {
-          if (!str) return '';
-          const md = str.match(/\((https?:\/\/[^\s\)]+)\)/);
-          if (md) return md[1];
-          const raw = str.match(/https?:\/\/[^\s\]\)]+/);
-          return raw ? raw[0] : str.replace(/[\[\]\(\)]/g, '').trim();
-        };
-
-        // Parse [PROPERTY_CARD] blocks
-        const parsedProperties = [];
-        const cardRegex = /\[PROPERTY_CARD\]([\s\S]*?)\[\/PROPERTY_CARD\]/gi;
-        text = text.replace(cardRegex, (match, cardContent) => {
-          const prop = {};
-          
-          const typeMatch = cardContent.match(/Type:\s*(.*?)(?=\s*(?:Address:|Price:|Beds:|Image:|Link:|\n|$))/i);
-          if (typeMatch) prop.property_type = typeMatch[1].trim();
-          
-          const addressMatch = cardContent.match(/Address:\s*(.*?)(?=\s*(?:Price:|Beds:|Baths:|Image:|Link:|\n|$))/i);
-          if (addressMatch) {
-             prop.address = addressMatch[1].trim().replace(/,\s*$/, '');
-             const parts = prop.address.split(',');
-             if (parts.length > 1) prop.city = parts[1].trim();
-          }
-          
-          const priceMatch = cardContent.match(/Price:\s*(.*?)(?=\s*(?:Beds:|Baths:|Image:|Link:|\n|$))/i);
-          if (priceMatch) prop.price = priceMatch[1].trim();
-          
-          const bedsMatch = cardContent.match(/Beds:\s*(.*?)(?:\s*\|\s*|\s+Baths:|\s+Image:|\s+Link:|\n|$)/i);
-          if (bedsMatch) prop.bedrooms = bedsMatch[1].trim();
-          
-          const bathsMatch = cardContent.match(/Baths:\s*(.*?)(?=\s*(?:Image:|Link:|\n|$))/i);
-          if (bathsMatch) prop.bathrooms = bathsMatch[1].trim();
-          
-          const imageMatch = cardContent.match(/Image:\s*(.*?)(?=\s*(?:Link:|\n|$))/i);
-          if (imageMatch) prop.image_url = cleanCardUrl(imageMatch[1]);
-          
-          const linkMatch = cardContent.match(/Link:\s*(.*?)(?=\s*(?:\[\/PROPERTY_CARD\]|\n|$))/i);
-          if (linkMatch) prop.url = cleanCardUrl(linkMatch[1]);
-          
-          if (prop.address || prop.price) {
-            parsedProperties.push(prop);
-          }
-          return ''; // Remove the raw text block from the message so visual cards render
-        });
-
-        // The backend now parses the carousel tag and sends properties synchronously!
-        const newModelMsg = { role: 'model', parts: [{ text: text.trim() }] };
-        if (buttons.length > 0) {
-           newModelMsg.quickReplies = buttons;
-        }
-        if (cityBtns.length > 0) {
-          newModelMsg.cityBtns = cityBtns;
-          newModelMsg.cityInfoMap = cityInfoMap;
-        }
-        if (multiButtons.length > 0) {
-          newModelMsg.multiSelectOptions = multiButtons;
-        }
-        
-        // Combine properties from backend data or parsed cards
-        const allProperties = [...(data.properties || []), ...parsedProperties];
-        if (allProperties.length > 0) {
-           newModelMsg.properties = allProperties;
-        }
-
+        const { msg: newModelMsg, startLead, multiButtons } = parseModelReply(data.reply, data.properties || []);
         setMessages(prev => [...prev, newModelMsg]);
 
         if (data.apifyRunId) {
