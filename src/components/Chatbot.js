@@ -378,55 +378,35 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         if (data.status === 'done') {
           clearInterval(interval);
           setActiveApifyRunId(null);
-          
-          // Dispatch a hidden message to the AI so it fetches the newly saved DB properties
-          const hiddenMsg = {
-            role: 'user',
-            isHidden: true,
-            parts: [{ text: `(SYSTEM: The live search for properties in ${data.city || 'your area'}, is complete. The properties are now saved in the database. Please output EXACTLY 4 [PROPERTY_CARD]s and the Show more properties button. Intent: ${activeApifyIntent || 'buy'}. Explain tradeoffs if budget/beds do not perfectly match.)` }]
-          };
+          setIsLoading(false);
 
-          setIsLoading(true);
-          
-          // Send request silently
-          fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: [...messages, hiddenMsg],
-              session_id: sessionId,
-              bot_id: botConfig.botId,
-              plan: embedPlan || 'premium',
-              is_demo: false
-            })
-          })
-          .then(r => r.json())
-          .then(chatData => {
-            setIsLoading(false);
-            if (chatData.reply) {
-              const { msg: parsedModelMsg, startLead } = parseModelReply(chatData.reply, chatData.properties || []);
-              setMessages(prev => [...prev, hiddenMsg, parsedModelMsg]);
-              if (startLead && !leadCaptured && leadStep === null && closingStep === null) {
-                setTimeout(() => {
-                  setMessages(prev => [...prev, {
-                    role: 'model',
-                    parts: [{ text: `What name should our agent use when contacting you?` }],
-                    inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
-                  }]);
-                  setLeadStep('name');
-                }, 1500);
-              }
-            }
-          })
-          .catch(e => {
-            setIsLoading(false);
-            console.error('Apify AI fallback error:', e);
-          });
+          const props = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
+            ? data.properties
+            : [];
+
+          if (props.length > 0) {
+            const cityName = data.city ? data.city.charAt(0).toUpperCase() + data.city.slice(1) : 'the area';
+            const intro = activeApifyIntent === 'rent'
+              ? `Here are live rental properties in **${cityName}** that match your criteria:`
+              : `Here are live properties in **${cityName}** that match your criteria:`;
+
+            const newModelMsg = {
+              role: 'model',
+              parts: [{ text: intro }],
+              properties: props
+            };
+            setMessages(prev => [...prev, newModelMsg]);
+          } else {
+            setMessages(prev => [...prev, { 
+              role: 'model', 
+              parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
+            }]);
+          }
         } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
           clearInterval(interval);
           setActiveApifyRunId(null);
+          setIsLoading(false);
           
-          // Reverted mock data as requested — show error instead
           setMessages(prev => [...prev, { 
             role: 'model', 
             parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 

@@ -188,7 +188,11 @@ export async function GET(req) {
       }
     }
 
-    return Response.json({ status: 'done', city: savedCity });
+    return Response.json({ 
+      status: 'done', 
+      city: savedCity, 
+      properties: properties.slice(0, 8) 
+    });
 
   } catch (e) {
     console.error('[apify-result] Error:', e.message);
