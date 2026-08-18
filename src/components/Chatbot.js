@@ -1637,20 +1637,16 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     messageCount.current += 1;
 
     try {
-        let isDemoEnv = false;
-        if (typeof window !== 'undefined') {
-          const href = window.location.href.toLowerCase();
-          const ref = document.referrer.toLowerCase();
-          isDemoEnv = href.includes('demo') || href.includes('localhost') || href.includes('vercel.app') || href.includes('test') ||
-                      ref.includes('demo') || ref.includes('localhost') || ref.includes('vercel.app') || ref.includes('test');
-        }
+        // is_demo should ONLY be true for the specific Luxe Realty demo bot.
+        // Real client bots (including those tested on vercel.app/localhost) must get real Apify properties.
+        const isDemoBot = botConfig.botId === 'demo-real-estate';
 
         const payload = {
           messages: apiMessages,
           session_id: sessionId,
           bot_id: botConfig.botId,
           plan: embedPlan || 'premium',
-          is_demo: isDemoEnv || (botConfig.botId && botConfig.botId.startsWith('demo-'))
+          is_demo: isDemoBot
         };
       
       const response = await fetch('/api/chat', {
