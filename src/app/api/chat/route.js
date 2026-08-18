@@ -315,43 +315,55 @@ Link: ${p.property_url}
   }
 }
 
-// In-memory cache for geocoded city bounds (avoids repeated API calls for same city)
+// In-memory cache for geocoded city center (avoids repeated API calls for same city)
 const GEOCODE_CACHE = {};
 
-// Fetch bounding box for any city using OpenStreetMap Nominatim (free, no API key needed)
+// TIGHT_BOX_DEG: ~0.04 degrees ≈ 4.5 km radius
+// This limits the area scrapped to ~20-40 properties per run, preventing $20+ bills
+const TIGHT_BOX_DEG = 0.04;
+
+// Fetch city center lat/lng using OpenStreetMap Nominatim (free, no API key needed)
+// Returns a TIGHT bounding box (~4-5km radius) around the city center
 async function getCityBounds(city, state) {
   const cacheKey = `${city.toLowerCase()}_${(state || '').toLowerCase()}`;
   if (GEOCODE_CACHE[cacheKey]) return GEOCODE_CACHE[cacheKey];
 
   try {
     const q = state ? `${city}, ${state}` : city;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&featuretype=city`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
     const res = await fetch(url, { headers: { 'User-Agent': 'RealtyPropFlow-AI/1.0' } });
     const data = await res.json();
 
-    if (data?.[0]?.boundingbox) {
-      const [south, north, west, east] = data[0].boundingbox.map(Number);
-      const bounds = { west, east, south, north };
+    if (data?.[0]?.lat && data?.[0]?.lon) {
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+      // Build a TIGHT box around city center to limit results to ~20-40 properties
+      const bounds = {
+        west:  lon - TIGHT_BOX_DEG,
+        east:  lon + TIGHT_BOX_DEG,
+        south: lat - TIGHT_BOX_DEG,
+        north: lat + TIGHT_BOX_DEG,
+      };
       GEOCODE_CACHE[cacheKey] = bounds;
-      console.log(`[Geocode] ${city}, ${state} → bounds:`, bounds);
+      console.log(`[Geocode] ${city}, ${state} → tight bounds (${TIGHT_BOX_DEG}° radius):`, bounds);
       return bounds;
     }
   } catch (e) {
     console.warn(`[Geocode] Failed for ${city}:`, e.message);
   }
 
-  // Fallback: continental US bounds
-  return { west: -124.0, east: -66.0, south: 25.0, north: 49.0 };
+  // Fallback: a small default box (Chicago center) to avoid huge costs
+  return { west: -87.69, east: -87.61, south: 41.83, north: 41.91 };
 }
 
 // Build a proper Zillow search URL with ?searchQueryState= (required by zillow-scraper actor)
-// mapBounds is CRITICAL — without it Zillow blocks the scraper and returns 0 results
+// TIGHT mapBounds = only ~20-40 properties scraped = low cost per run
 async function buildZillowSearchUrl(city, state, intent) {
   const isRent = intent === 'rent';
   const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
   const stateSlug = state ? state.trim().toLowerCase().replace(/\s+/g, '-') : '';
 
-  // Dynamically get bounding box for this city (works for ANY city in USA or Canada)
+  // Tight bounding box around city center to keep scrape small & cost low
   const bounds = await getCityBounds(city, state);
 
   const filterState = isRent
