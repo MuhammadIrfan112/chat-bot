@@ -636,34 +636,8 @@ async function getRelevantKnowledge(userQuery, botId) {
 }
 
 // 🏡 Fetch listings from city_property_data (Apify real data)
-async function fetchCityPropertyData(botId, fullChatText) {
+async function fetchCityPropertyData(botId, targetCity) {
   try {
-    const q = fullChatText.toLowerCase();
-
-    // 1. Get bot's service cities from knowledge_base
-    const { data: kbEntries } = await supabase
-      .from('knowledge_base')
-      .select('content')
-      .eq('bot_id', botId)
-      .eq('source', 'Agent Onboarding Profile')
-      .limit(1);
-
-    let agentCities = [];
-    if (kbEntries && kbEntries.length > 0) {
-      const match = kbEntries[0].content.match(/Service Cities:\s*(.+)/);
-      if (match) {
-        agentCities = match[1].split(',').map(c => c.trim().toLowerCase());
-      }
-    }
-
-    // 2. Detect which city user is asking about
-    let targetCity = agentCities.find(city => q.includes(city.split(',')[0].toLowerCase()));
-    if (!targetCity) {
-      const commonCities = ['milton', 'toronto', 'brampton', 'mississauga', 'oakville', 'hamilton', 'burlington'];
-      targetCity = commonCities.find(city => q.includes(city));
-    }
-
-    // 3. Query city_property_data table (real Apify scraped data)
     let cityQuery = supabase.from('city_property_data').select('city, properties');
     if (targetCity) cityQuery = cityQuery.ilike('city', `%${targetCity}%`);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
@@ -1185,7 +1159,7 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
             // ============================================================
             // PRIORITY 2: Apify city cache (pre-scraped data)
             // ============================================================
-            const cachedCityContext = await fetchCityPropertyData(bot_id, fullChatText);
+            const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity);
 
             if (cachedCityContext && cachedCityContext.length > 50) {
               console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity}`);
