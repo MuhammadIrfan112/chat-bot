@@ -276,22 +276,41 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${buyHomeData?.intent || 'buy'}`);
         const data = await res.json();
 
-        if (data.status === 'done' && data.properties) {
+        if (data.status === 'done') {
           clearInterval(interval);
           setActiveApifyRunId(null);
-          // Append the properties to the LAST model message in the chat
-          setMessages(prev => {
-            const newMessages = [...prev];
-            for (let i = newMessages.length - 1; i >= 0; i--) {
-              if (newMessages[i].role === 'model') {
-                newMessages[i] = {
-                  ...newMessages[i],
-                  properties: data.properties
-                };
-                break;
-              }
+          
+          // Dispatch a hidden message to the AI so it fetches the newly saved DB properties
+          const hiddenMsg = {
+            role: 'user',
+            isHidden: true,
+            parts: [{ text: `(SYSTEM: The live search for properties in ${data.city || 'your area'}, is complete. The properties are now saved in the database. Please output EXACTLY 4 [PROPERTY_CARD]s and the Show more properties button. Explain tradeoffs if budget/beds do not perfectly match.)` }]
+          };
+
+          setIsLoading(true);
+          
+          // Send request silently
+          fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [...messages, hiddenMsg],
+              session_id: sessionId,
+              bot_id: botConfig.botId,
+              plan: embedPlan || 'premium',
+              is_demo: false
+            })
+          })
+          .then(r => r.json())
+          .then(chatData => {
+            setIsLoading(false);
+            if (chatData.reply) {
+              setMessages(prev => [...prev, hiddenMsg, { role: 'model', parts: [{ text: chatData.reply }] }]);
             }
-            return newMessages;
+          })
+          .catch(e => {
+            setIsLoading(false);
+            console.error('Apify AI fallback error:', e);
           });
         } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
           clearInterval(interval);
@@ -1883,7 +1902,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           </div>
 
           <div className={styles.messagesArea}>
-            {messages.map((msg, idx) => (
+            {messages.filter(msg => !msg.isHidden).map((msg, idx) => (
               <div key={idx} className={`${styles.message} ${msg.role === 'user' ? styles.userMsg : styles.modelMsg}`}>
                 {msg.role === 'model' ? (
                   <>

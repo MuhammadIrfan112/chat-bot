@@ -1,5 +1,12 @@
+import { createClient } from '@supabase/supabase-js';
+
 export const runtime = 'nodejs';
 export const maxDuration = 10;
+
+// Initialize Supabase admin client to save scraped properties
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(req) {
   try {
@@ -34,8 +41,9 @@ export async function GET(req) {
     const datasetId = statusData?.data?.defaultDatasetId;
     if (!datasetId) return Response.json({ status: 'failed' });
 
+    // Fetch more items so we have enough to save to DB (and show 4, then 2, etc.)
     const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=8`
+      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=25`
     );
     if (!itemsRes.ok) return Response.json({ status: 'failed' });
 
@@ -64,7 +72,6 @@ export async function GET(req) {
     const listingLabel = intent === 'rent' ? '🔵 For Rent' : '🟢 For Sale';
 
     const properties = items
-      .slice(0, 4)
       .map(p => {
         // Image — try all known Zillow field names in order of reliability
         const image =
@@ -119,6 +126,7 @@ export async function GET(req) {
         const beds = p.bedrooms ?? p.beds ?? p.hdpData?.homeInfo?.bedrooms ?? '?';
         const baths = p.bathrooms ?? p.baths ?? p.hdpData?.homeInfo?.bathrooms ?? '?';
         const type = p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property';
+        const city = p.city || p.address?.city || p.hdpData?.homeInfo?.city || '';
 
         return {
           image_url: image,
@@ -128,7 +136,8 @@ export async function GET(req) {
           bedrooms: beds,
           bathrooms: baths,
           property_type: type,
-          listing_status: listingLabel  // ✅ Correctly 🟢 For Sale or 🔵 For Rent
+          listing_status: listingLabel,
+          city: city
         };
       })
       // Filter out completely empty results
@@ -140,7 +149,33 @@ export async function GET(req) {
       return Response.json({ status: 'empty' });
     }
 
-    return Response.json({ status: 'done', properties });
+    // Attempt to extract the city name to save into city_property_data
+    let savedCity = 'unknown';
+    const firstValid = properties.find(p => p.city);
+    if (firstValid) {
+      savedCity = firstValid.city;
+    } else {
+      // Try to parse city from address: "123 Main St, Morton Grove, IL 60053"
+      const match = properties[0].address.match(/,\s*([^,]+?),\s*[A-Z]{2}\b/i);
+      if (match) savedCity = match[1].trim();
+    }
+
+    savedCity = savedCity.toLowerCase().trim();
+
+    if (savedCity && savedCity !== 'unknown') {
+      try {
+        await supabase.from('city_property_data').upsert({
+          city: savedCity,
+          properties: properties,
+          last_scraped_at: new Date().toISOString()
+        }, { onConflict: 'city' });
+        console.log(`[apify-result] Successfully saved ${properties.length} properties to DB for city: ${savedCity}`);
+      } catch (dbErr) {
+        console.error('[apify-result] DB Save Error:', dbErr.message);
+      }
+    }
+
+    return Response.json({ status: 'done', city: savedCity });
 
   } catch (e) {
     console.error('[apify-result] Error:', e.message);
