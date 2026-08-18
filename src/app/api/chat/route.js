@@ -315,51 +315,44 @@ Link: ${p.property_url}
   }
 }
 
-// City bounding boxes for Zillow search (approximate lat/lng)
-// These match what a real Zillow browser search generates
-const CITY_BOUNDS = {
-  'morton grove':   { west: -87.854653, east: -87.756463, south: 42.02345, north: 42.07345 },
-  'chicago':        { west: -87.940267, east: -87.523661, south: 41.643919, north: 42.023022 },
-  'evanston':       { west: -87.726862, east: -87.643185, south: 42.019287, north: 42.080536 },
-  'skokie':         { west: -87.774338, east: -87.715652, south: 42.014854, north: 42.065929 },
-  'los angeles':    { west: -118.668176, east: -118.155289, south: 33.703652, north: 34.337306 },
-  'new york':       { west: -74.259090, east: -73.700272, south: 40.495992, north: 40.915568 },
-  'houston':        { west: -95.789963, east: -95.014864, south: 29.523624, north: 30.110626 },
-  'phoenix':        { west: -112.324219, east: -111.926270, south: 33.290094, north: 33.796253 },
-  'philadelphia':   { west: -75.280304, east: -74.955763, south: 39.867005, north: 40.137992 },
-  'san antonio':    { west: -98.809814, east: -98.230286, south: 29.203048, north: 29.700453 },
-  'san diego':      { west: -117.282951, east: -116.908386, south: 32.534156, north: 33.114249 },
-  'dallas':         { west: -97.000046, east: -96.463013, south: 32.617537, north: 33.016763 },
-  'san jose':       { west: -122.057739, east: -121.588623, south: 37.124844, north: 37.469738 },
-  'austin':         { west: -97.998901, east: -97.528992, south: 30.098659, north: 30.516863 },
-  'jacksonville':   { west: -81.889984, east: -81.390380, south: 30.102139, north: 30.583424 },
-  'fort worth':     { west: -97.568710, east: -97.037811, south: 32.618507, north: 32.987764 },
-  'columbus':       { west: -83.200195, east: -82.770996, south: 39.835838, north: 40.157244 },
-  'san francisco':  { west: -122.514725, east: -122.355194, south: 37.707749, north: 37.832371 },
-  'charlotte':      { west: -80.985107, east: -80.653191, south: 35.035869, north: 35.343024 },
-  'indianapolis':   { west: -86.326447, east: -85.940552, south: 39.631054, north: 39.927740 },
-  'seattle':        { west: -122.459696, east: -122.224433, south: 47.491912, north: 47.734145 },
-  'denver':         { west: -105.109939, east: -104.600067, south: 39.614431, north: 39.914255 },
-  'nashville':      { west: -87.046509, east: -86.515808, south: 36.000000, north: 36.421089 },
-  'oklahoma city':  { west: -97.670593, east: -97.335754, south: 35.330280, north: 35.617489 },
-  'el paso':        { west: -106.647949, east: -106.131287, south: 31.620000, north: 31.985000 },
-  'miami':          { west: -80.319748, east: -80.142212, south: 25.700000, north: 25.855000 },
-  'atlanta':        { west: -84.576416, east: -84.289856, south: 33.648000, north: 33.888000 },
-  'boston':         { west: -71.191254, east: -70.985718, south: 42.227928, north: 42.397135 },
-  'las vegas':      { west: -115.381775, east: -115.006867, south: 36.034600, north: 36.323700 },
-  'minneapolis':    { west: -93.329468, east: -93.193970, south: 44.889748, north: 45.051120 },
-};
+// In-memory cache for geocoded city bounds (avoids repeated API calls for same city)
+const GEOCODE_CACHE = {};
 
-// Build a proper Zillow search URL with ?searchQueryState= that the zillow-scraper actor requires
-// MUST include mapBounds — without it, Zillow blocks the scraper (returns 0 results)
-function buildZillowSearchUrl(city, state, intent) {
+// Fetch bounding box for any city using OpenStreetMap Nominatim (free, no API key needed)
+async function getCityBounds(city, state) {
+  const cacheKey = `${city.toLowerCase()}_${(state || '').toLowerCase()}`;
+  if (GEOCODE_CACHE[cacheKey]) return GEOCODE_CACHE[cacheKey];
+
+  try {
+    const q = state ? `${city}, ${state}` : city;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&featuretype=city`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'RealtyPropFlow-AI/1.0' } });
+    const data = await res.json();
+
+    if (data?.[0]?.boundingbox) {
+      const [south, north, west, east] = data[0].boundingbox.map(Number);
+      const bounds = { west, east, south, north };
+      GEOCODE_CACHE[cacheKey] = bounds;
+      console.log(`[Geocode] ${city}, ${state} → bounds:`, bounds);
+      return bounds;
+    }
+  } catch (e) {
+    console.warn(`[Geocode] Failed for ${city}:`, e.message);
+  }
+
+  // Fallback: continental US bounds
+  return { west: -124.0, east: -66.0, south: 25.0, north: 49.0 };
+}
+
+// Build a proper Zillow search URL with ?searchQueryState= (required by zillow-scraper actor)
+// mapBounds is CRITICAL — without it Zillow blocks the scraper and returns 0 results
+async function buildZillowSearchUrl(city, state, intent) {
   const isRent = intent === 'rent';
   const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
   const stateSlug = state ? state.trim().toLowerCase().replace(/\s+/g, '-') : '';
-  const cityKey = city.trim().toLowerCase();
 
-  // Get bounding box for this city, or use generic US bounds
-  const bounds = CITY_BOUNDS[cityKey] || { west: -124.0, east: -66.0, south: 25.0, north: 49.0 };
+  // Dynamically get bounding box for this city (works for ANY city in USA or Canada)
+  const bounds = await getCityBounds(city, state);
 
   const filterState = isRent
     ? { sort: { value: 'days' }, ah: { value: true }, isForRent: { value: true }, isForSale: { value: false }, isRecentlySold: { value: false } }
@@ -386,9 +379,10 @@ async function startApifyRun(city, state, intent) {
     if (!APIFY_TOKEN) return null;
 
     // Build the correct Zillow URL with ?searchQueryState= (required by zillow-scraper actor)
-    const searchUrl = buildZillowSearchUrl(city, state, intent);
+    // await needed because buildZillowSearchUrl calls Nominatim geocoding API
+    const searchUrl = await buildZillowSearchUrl(city, state, intent);
 
-    console.log(`[Apify] Starting run with URL: ${searchUrl} | actor: maxcopell~zillow-scraper`);
+    console.log(`[Apify] Starting run with URL: ${searchUrl.substring(0, 120)}... | actor: maxcopell~zillow-scraper`);
 
     // ── Step 1: Trigger Apify actor ───────────────────────────────────────────
     let runRes = await fetch(
