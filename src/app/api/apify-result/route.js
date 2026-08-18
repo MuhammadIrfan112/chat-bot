@@ -57,15 +57,18 @@ export async function GET(req) {
     if (!items || items.length === 0) return Response.json({ status: 'empty' });
 
     // ── Helper: format price nicely ─────────────────────────────────────────
-    function formatPrice(raw) {
+    function formatPrice(raw, isRent = false) {
       if (!raw) return 'Contact for price';
-      const str = String(raw);
-      // Already formatted (has $ or text like "Contact")
-      if (str.startsWith('$') || /[a-zA-Z]/.test(str)) return str;
-      // Plain number — add $ and comma separators
+      let str = String(raw).trim();
+      if (str.startsWith('$') || /[a-zA-Z]/.test(str)) {
+        if (isRent && !str.toLowerCase().includes('mo') && !str.toLowerCase().includes('month') && !str.toLowerCase().includes('contact')) {
+          return `${str}/mo`;
+        }
+        return str;
+      }
       const num = parseInt(str.replace(/[^0-9]/g, ''));
       if (!num || isNaN(num)) return 'Contact for price';
-      return '$' + num.toLocaleString('en-US');
+      return '$' + num.toLocaleString('en-US') + (isRent ? '/mo' : '');
     }
 
     // ── Map items to our standard property card format ──────────────────────
@@ -132,7 +135,7 @@ export async function GET(req) {
           p.unformattedPrice ||
           p.zestimate ||
           null;
-        const price = formatPrice(rawPrice);
+        const price = formatPrice(rawPrice, intent === 'rent');
 
         // Beds / Baths / Type
         const beds = p.bedrooms ?? p.beds ?? p.hdpData?.homeInfo?.bedrooms ?? '?';
