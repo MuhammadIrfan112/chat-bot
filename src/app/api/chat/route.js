@@ -419,13 +419,12 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
     console.log(`[Apify] Starting run with URL: ${searchUrl.substring(0, 120)}...`);
 
     let runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=20&token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           searchUrls: [{ url: searchUrl }],
-          maxItems: 20,
           proxy: { 
             useApifyProxy: true,
             apifyProxyGroups: ['SHADER']
