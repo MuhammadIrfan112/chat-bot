@@ -396,17 +396,40 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
       }
     }
 
-    // Property Type Filters
-    const lower = fullChatText.toLowerCase();
-    if (lower.includes('townhouse') || lower.includes('townhome')) {
+    // Property Type Filters — strictly parse from confirmed summary or user messages
+    const summaryTypeMatch = fullChatText.match(/Property:\s*([^\n.]+)/i) || fullChatText.match(/type of home[^:]*:\s*([^\n.]+)/i);
+    const userSelectedText = summaryTypeMatch ? summaryTypeMatch[1].toLowerCase() : fullChatText.toLowerCase();
+
+    const isDetached = userSelectedText.includes('detached') || userSelectedText.includes('single family') || userSelectedText.includes('single_family') || userSelectedText.includes('family home') || userSelectedText.includes('villa');
+    const isTownhouse = !isDetached && (userSelectedText.includes('townhouse') || userSelectedText.includes('townhome'));
+    const isCondo = !isDetached && (userSelectedText.includes('condo') || userSelectedText.includes('apartment'));
+    const isMultiFamily = !isDetached && (userSelectedText.includes('duplex') || userSelectedText.includes('multi-family') || userSelectedText.includes('multi family') || userSelectedText.includes('multi_family'));
+
+    if (isDetached) {
+      filterState.isSingleFamily = { value: true };
+      filterState.isTownhouse = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isManufactured = { value: false };
+      filterState.isLotLand = { value: false };
+    } else if (isTownhouse) {
       filterState.isTownhouse = { value: true };
-    } else if (lower.includes('condo') || lower.includes('apartment')) {
+      filterState.isSingleFamily = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+    } else if (isCondo) {
       filterState.isCondo = { value: true };
       filterState.isApartment = { value: true };
-    } else if (lower.includes('detached') || lower.includes('single family') || lower.includes('villa')) {
-      filterState.isSingleFamily = { value: true };
-    } else if (lower.includes('duplex') || lower.includes('multi-family') || lower.includes('multi family')) {
+      filterState.isSingleFamily = { value: false };
+      filterState.isTownhouse = { value: false };
+      filterState.isMultiFamily = { value: false };
+    } else if (isMultiFamily) {
       filterState.isMultiFamily = { value: true };
+      filterState.isSingleFamily = { value: false };
+      filterState.isTownhouse = { value: false };
+      filterState.isCondo = { value: false };
     }
   }
 

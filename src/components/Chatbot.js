@@ -91,23 +91,23 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
           onClick={onLikeMore}
           style={{
             flex: '1 1 auto',
-            padding: '9px 14px',
-            borderRadius: '20px',
-            border: 'none',
+            padding: '6px 14px',
+            borderRadius: '16px',
+            border: '1.5px solid #10b981',
             cursor: 'pointer',
-            fontWeight: '700',
+            fontWeight: '600',
             fontSize: '12px',
-            background: 'linear-gradient(135deg,#10b981,#059669)',
-            color: 'white',
-            boxShadow: '0 2px 6px rgba(16,185,129,0.3)',
+            background: 'white',
+            color: '#059669',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
             transition: 'all 0.2s',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px'
           }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          onMouseEnter={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = 'white'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#059669'; }}
         >
           ❤️ I Like One of These — Tell Me More
         </button>
@@ -117,22 +117,23 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
             onClick={() => setVisibleCount(c => Math.min(c + STEP, properties.length))}
             style={{
               flex: '1 1 auto',
-              padding: '9px 14px',
-              borderRadius: '20px',
-              border: '1.5px solid #6366f1',
+              padding: '6px 14px',
+              borderRadius: '16px',
+              border: '1.5px solid var(--primary, #1E6FD9)',
               cursor: 'pointer',
-              fontWeight: '700',
+              fontWeight: '600',
               fontSize: '12px',
-              background: '#f5f3ff',
-              color: '#6366f1',
+              background: 'white',
+              color: 'var(--primary, #1E6FD9)',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
               transition: 'all 0.2s',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px'
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#6366f1'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary, #1E6FD9)'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--primary, #1E6FD9)'; }}
           >
             🔍 Show More (+2)
           </button>
@@ -141,22 +142,23 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
             onClick={onShowMoreAI}
             style={{
               flex: '1 1 auto',
-              padding: '9px 14px',
-              borderRadius: '20px',
-              border: '1.5px solid #6366f1',
+              padding: '6px 14px',
+              borderRadius: '16px',
+              border: '1.5px solid var(--primary, #1E6FD9)',
               cursor: 'pointer',
-              fontWeight: '700',
+              fontWeight: '600',
               fontSize: '12px',
-              background: '#f5f3ff',
-              color: '#6366f1',
+              background: 'white',
+              color: 'var(--primary, #1E6FD9)',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
               transition: 'all 0.2s',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px'
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#6366f1'; e.currentTarget.style.color = 'white'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#6366f1'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary, #1E6FD9)'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = 'var(--primary, #1E6FD9)'; }}
           >
             🔍 Search More in Area
           </button>
@@ -2217,6 +2219,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
   if (intentSelected && closingStep && closingStep !== 'open_ended' && showHumanTakeover) {
     activeQuickReplies = ["🙋‍♀️ Talk to Human"];
+  } else if (lastMsg && lastMsg.role === 'model' && lastMsg.properties && Array.isArray(lastMsg.properties) && lastMsg.properties.length > 0) {
+    activeQuickReplies = ["❤️ I'm interested in a property", "🔍 Show More Properties"];
   } else if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {
     activeQuickReplies = lastMsg.quickReplies;
   } else if (!intentSelected && isREBot) {
