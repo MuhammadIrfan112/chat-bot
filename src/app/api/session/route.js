@@ -3,27 +3,29 @@ import { supabase } from '@/lib/supabaseClient';
 // Create or get a chat session
 export async function POST(req) {
   try {
-    const { visitor_id, bot_id } = await req.json();
+    const { visitor_id, bot_id, force_new = false } = await req.json();
 
     // Do not save sessions for the main RealtyPropFlow website bot, only for client bots
     if (!bot_id) {
       return Response.json({ session: null });
     }
 
-    // Check if session exists for this specific bot
-    const query = supabase
-      .from('chat_sessions')
-      .select('*')
-      .eq('visitor_id', visitor_id)
-      .eq('bot_id', bot_id);
+    // Check if session exists for this specific bot (unless force_new is true)
+    if (!force_new) {
+      const query = supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('visitor_id', visitor_id)
+        .eq('bot_id', bot_id);
 
-    const { data: existing } = await query
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      const { data: existing } = await query
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
 
-    if (existing) {
-      return Response.json({ session: existing });
+      if (existing) {
+        return Response.json({ session: existing });
+      }
     }
 
     // Create new session

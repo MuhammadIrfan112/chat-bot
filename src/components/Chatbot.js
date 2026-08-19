@@ -765,7 +765,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     return () => clearInterval(interval);
   }, [activeApifyRunId]);
 
-  async function initSession() {
+  async function initSession(force_new = false) {
     const visitor_id = getVisitorId();
     if (!visitor_id) return;
     try {
@@ -776,27 +776,30 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           chatbot_source: botConfig.botName || 'Website Chatbot',
           website_url: window.location.href,
           visitor_id,
-          bot_id: botConfig.botId
+          bot_id: botConfig.botId,
+          force_new
         })
       });
       const data = await response.json();
       if (data.session && data.session.id) {
         setSessionId(data.session.id);
-        
-        // Fetch previous messages for this session so the user can continue where they left off
-        try {
-          const histRes = await fetch(`/api/poll-messages?session_id=${data.session.id}&fetch_history=true`);
-          const histData = await histRes.json();
-          if (histData.history && histData.history.length > 0) {
-            const formattedHistory = histData.history.map(msg => ({
-              role: msg.role === 'user' ? 'user' : 'model',
-              parts: [{ text: msg.role === 'admin' ? `👨 (Agent): ${msg.content}` : msg.content }]
-            }));
-            // Only set if we don't already have messages (to avoid overriding active session)
-            setMessages(prev => prev.length === 0 ? formattedHistory : prev);
+        savedMsgCount.current = 0;
+
+        // Only load history if this is NOT a forced new session
+        if (!force_new) {
+          try {
+            const histRes = await fetch(`/api/poll-messages?session_id=${data.session.id}&fetch_history=true`);
+            const histData = await histRes.json();
+            if (histData.history && histData.history.length > 0) {
+              const formattedHistory = histData.history.map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.role === 'admin' ? `👨 (Agent): ${msg.content}` : msg.content }]
+              }));
+              setMessages(prev => prev.length === 0 ? formattedHistory : prev);
+            }
+          } catch (err) {
+            console.error("Error fetching chat history:", err);
           }
-        } catch (err) {
-          console.error("Error fetching chat history:", err);
         }
       }
     } catch (e) {
@@ -2197,15 +2200,41 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   };
 
   const resetChat = () => {
+    // Reset all messages to fresh welcome
     setMessages([{ role: 'model', parts: [{ text: botConfig.welcomeMessage }] }]);
     setInput('');
+
+    // Reset all intent/flow state — new chat is completely independent
     setIntentSelected(false);
     setSessionId(null);
     setIsHumanTakeover(false);
     setIsLoading(false);
     setClosingStep(null);
     setClosingData({ name: '', phone: '', email: '', time: '' });
+
+    // Reset lead capture state
+    setLeadCaptured(false);
+    setLeadStep(null);
+    setLeadData({ name: '', phone: '', email: '', time_preference: '', property_interest: '' });
+
+    // Reset all conversation flows
+    resetFlows();
+
+    // Reset property states
+    setLikedProperties([]);
+    setDislikedProperties([]);
+    setMultiSelectOptions([]);
+    setMultiSelected([]);
+    setActiveApifyRunId(null);
+    setExpandedCityPanel(null);
+
+    // Reset counters
     messageCount.current = 0;
+    savedMsgCount.current = 0;
+
+    // Create a brand new DB session — independent of previous chat
+    // Small delay so state settles before session API call
+    setTimeout(() => initSession(true), 100);
   };
 
   const showHumanTakeover = !!botConfig.botId && !isHumanTakeover && embedPlan !== 'standard';
