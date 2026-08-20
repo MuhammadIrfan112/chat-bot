@@ -12,7 +12,8 @@ export default function AdminPage() {
 
   // Add Client Modal State
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addForm, setAddForm] = useState({ name: '', email: '', password: '', phone: '', industry: 'Real Estate' });
+  const [addForm, setAddForm] = useState({ name: '', email: '', password: '', phone: '', website_url: '' });
+  // Note: industry is always 'Real Estate' — hardcoded in the API, never shown in form
   const [isAdding, setIsAdding] = useState(false);
   const [addResult, setAddResult] = useState(null);
 
@@ -224,7 +225,7 @@ export default function AdminPage() {
       if (data.success) {
         setAddResult({ type: 'success', bot: data.bot });
         fetchUsers(); // Refresh list
-        setAddForm({ name: '', email: '', password: '', phone: '', industry: 'Real Estate' });
+        setAddForm({ name: '', email: '', password: '', phone: '', website_url: '' });
       } else {
         const debugInfo = data.debug ? `\n\nDebug: ${data.debug.join(' → ')}` : '';
         setAddResult({ type: 'error', message: (data.error || 'Failed to add client') + debugInfo });
