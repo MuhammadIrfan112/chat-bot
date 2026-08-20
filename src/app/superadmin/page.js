@@ -367,7 +367,24 @@ export default function AdminPage() {
           >
             🔧 Fix Bot Links
           </button>
+          <button 
+            onClick={async () => {
+              if (!confirm('⚠️ This will set ALL existing bots:\n• industry = "Real Estate"\n• plan = "premium"\n\nThis allows all bots to show Live Properties (like Shawna\'s).\n\nProceed?')) return;
+              const res = await fetch('/api/superadmin/fix-all-bots', { method: 'POST' });
+              const data = await res.json();
+              if (data.success) {
+                alert(`✅ Done!\n\nTotal bots: ${data.total || 0}\nFixed: ${data.fixed} bots\nAlready OK: ${data.alreadyOk || 0}\n\n${(data.log || []).join('\n')}`);
+                fetchUsers();
+              } else {
+                alert('❌ Error: ' + (data.error || 'Unknown error'));
+              }
+            }} 
+            style={{ padding: '10px 16px', backgroundColor: '#059669', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}
+          >
+            🏡 Fix All Bots (Live Properties)
+          </button>
         </div>
+
       </div>
 
       {showAddModal && (
@@ -531,7 +548,15 @@ export default function AdminPage() {
                             <div style={{ fontWeight: '700', color: '#111827', fontSize: '14px' }}>
                               {bot.bot_avatar || '🤖'} {bot.name}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '3px' }}>🌐 {bot.website_url}</div>
+                            <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '3px' }}>🌐 {bot.website_url || 'No URL'}</div>
+                            <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.industry === 'Real Estate' ? '#D1FAE5' : '#FEF3C7', color: bot.industry === 'Real Estate' ? '#065F46' : '#92400E', fontWeight: '700' }}>
+                                {bot.industry === 'Real Estate' ? '🏡 Real Estate' : `⚠️ ${bot.industry || 'No Industry'}`}
+                              </span>
+                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.plan === 'premium' ? '#EEF2FF' : '#FEF3C7', color: bot.plan === 'premium' ? '#4338CA' : '#92400E', fontWeight: '700' }}>
+                                {bot.plan === 'premium' ? '⭐ Premium' : `⚠️ ${bot.plan || 'No Plan'}`}
+                              </span>
+                            </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                             <span style={{ padding: '3px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: '700', backgroundColor: bot.status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: bot.status === 'Active' ? '#065F46' : '#991B1B' }}>
