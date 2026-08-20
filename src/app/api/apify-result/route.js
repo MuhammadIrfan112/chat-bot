@@ -56,19 +56,52 @@ export async function GET(req) {
 
     if (!items || items.length === 0) return Response.json({ status: 'empty' });
 
-    // ── Helper: format price nicely ─────────────────────────────────────────
-    function formatPrice(raw, isRent = false) {
-      if (!raw) return 'Contact for price';
-      let str = String(raw).trim();
-      if (str.startsWith('$') || /[a-zA-Z]/.test(str)) {
-        if (isRent && !str.toLowerCase().includes('mo') && !str.toLowerCase().includes('month') && !str.toLowerCase().includes('contact')) {
-          return `${str}/mo`;
-        }
-        return str;
+    // ── Helper: parse valid positive number (ignores $0, 0, null, NaN) ──────
+    function parseValidPriceNum(val) {
+      if (val === null || val === undefined) return null;
+      if (typeof val === 'number') return val > 0 ? val : null;
+      const cleaned = String(val).replace(/[^0-9]/g, '');
+      if (!cleaned) return null;
+      const n = parseInt(cleaned, 10);
+      return (!isNaN(n) && n > 0) ? n : null;
+    }
+
+    // ── Helper: format price nicely and NEVER return $0 ──────────────────────
+    function resolveAndFormatPrice(p, isRent = false) {
+      // 1. Primary price fields
+      const primaryNum = parseValidPriceNum(
+        p.price || 
+        p.rentPrice || 
+        p.listingPrice?.value || 
+        p.listingPrice?.formatted || 
+        p.unformattedPrice || 
+        p.hdpData?.homeInfo?.price
+      );
+      if (primaryNum) {
+        return '$' + primaryNum.toLocaleString('en-US') + (isRent ? '/mo' : '');
       }
-      const num = parseInt(str.replace(/[^0-9]/g, ''));
-      if (!num || isNaN(num)) return 'Contact for price';
-      return '$' + num.toLocaleString('en-US') + (isRent ? '/mo' : '');
+
+      // 2. Estimate / Zestimate / Tax Assessed Value (e.g. for Auctions/Off-market)
+      const estNum = parseValidPriceNum(
+        p.zestimate || 
+        p.hdpData?.homeInfo?.zestimate || 
+        p.rentZestimate || 
+        p.hdpData?.homeInfo?.rentZestimate || 
+        p.taxAssessedValue || 
+        p.hdpData?.homeInfo?.taxAssessedValue
+      );
+      if (estNum) {
+        return 'Est. $' + estNum.toLocaleString('en-US') + (isRent ? '/mo' : '');
+      }
+
+      // 3. Meaningful text price (e.g. Auction, Contact for price)
+      const textPrice = String(p.price || p.listingPrice?.formatted || p.statusText || '').trim();
+      if (textPrice && textPrice !== '$0' && textPrice !== '0' && /[a-zA-Z]/.test(textPrice)) {
+        return textPrice;
+      }
+
+      // 4. Default fallback (never $0)
+      return 'Contact for price';
     }
 
     // ── Map items to our standard property card format ──────────────────────
@@ -138,16 +171,8 @@ export async function GET(req) {
           address = p.hdpData.homeInfo.streetAddress;
         }
 
-        // Price — handle all Zillow formats
-        const rawPrice =
-          p.price ||
-          p.rentPrice ||
-          p.listingPrice?.formatted ||
-          p.hdpData?.homeInfo?.price ||
-          p.unformattedPrice ||
-          p.zestimate ||
-          null;
-        const price = formatPrice(rawPrice, intent === 'rent');
+        // Price — resolve accurately and never return $0
+        const price = resolveAndFormatPrice(p, intent === 'rent');
 
         // Beds / Baths / Type
         const beds = p.bedrooms ?? p.beds ?? p.hdpData?.homeInfo?.bedrooms ?? '?';

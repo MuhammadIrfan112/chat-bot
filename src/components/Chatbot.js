@@ -139,7 +139,11 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
   const displayAddress = prop?.address
     ? String(prop.address).split('|')[0]
     : (prop?.city ? `Property in ${prop.city}` : 'Available Property');
-  const displayPrice = prop?.price ? String(prop.price) : 'Contact for price';
+  const rawPriceStr = prop?.price ? String(prop.price).trim() : '';
+  const numVal = parseInt(rawPriceStr.replace(/[^0-9]/g, ''), 10);
+  const displayPrice = (rawPriceStr && rawPriceStr !== '$0' && rawPriceStr !== '0' && (isNaN(numVal) || numVal > 0))
+    ? rawPriceStr
+    : 'Contact for price';
   const displayBeds = prop?.bedrooms !== undefined && prop?.bedrooms !== null ? String(prop.bedrooms) : '?';
   const displayBaths = prop?.bathrooms !== undefined && prop?.bathrooms !== null ? String(prop.bathrooms) : '?';
   const displayType = prop?.property_type ? String(prop.property_type).replace(/_/g, ' ') : 'Property';
