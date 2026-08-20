@@ -29,7 +29,8 @@
   // Create iframe
   var iframe = document.createElement('iframe');
   var timestamp = new Date().getTime();
-  var iframeUrl = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile&v=' + timestamp : '?desktop=true&v=' + timestamp);
+  var autoOpenParam = config.autoOpen ? '&autoOpen=true' : '';
+  var iframeUrl = baseUrl + '/bot/' + config.botId + (isMobile ? '?device=mobile' : '?desktop=true') + autoOpenParam + '&v=' + timestamp;
   iframe.src = iframeUrl;
   iframe.id = 'RealtyPropFlow-chatbot-iframe';
   iframe.scrolling = 'no'; // ✅ Prevents internal scrollbar gap

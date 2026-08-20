@@ -29,9 +29,8 @@ export default async function BotEmbedPage({ params, searchParams }) {
     }
   }
 
-  // Determine plan from URL param, then bot's DB plan, then default to 'standard'
-  // NOTE: demo-real-estate and demo-real-estate-live always default to 'premium'
   const planFromUrl = resolvedSearchParams.plan || '';
+  const autoOpenFromUrl = resolvedSearchParams.autoOpen === 'true';
   const botPlan = planFromUrl || bot.plan || (botId.startsWith('demo-') ? 'premium' : 'standard');
 
   const initialConfig = {
@@ -41,7 +40,7 @@ export default async function BotEmbedPage({ params, searchParams }) {
     primaryColor: bot.primary_color || '#4F46E5',
     welcomeMessage: bot.welcome_message || 'Hi there! 👋 How can I help you today?',
     plan: botPlan,
-    autoOpen: bot.auto_open || false
+    autoOpen: autoOpenFromUrl || bot.auto_open || false
   };
 
   // Inject config into window so Chatbot.js can use it

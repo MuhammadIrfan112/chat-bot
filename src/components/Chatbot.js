@@ -450,6 +450,17 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     return () => window.removeEventListener('resize', checkDevice);
   }, [isDesktopEmbed]);
 
+  useEffect(() => {
+    const handleParentMessage = (event) => {
+      if (event.data && event.data.type === 'DEMO_SCENARIO' && event.data.message) {
+        setIsOpen(true);
+        handleSend(event.data.message);
+      }
+    };
+    window.addEventListener('message', handleParentMessage);
+    return () => window.removeEventListener('message', handleParentMessage);
+  }, []);
+
   const botConfig = initialConfig || (typeof window !== 'undefined' && window.CHATBOT_CONFIG ? window.CHATBOT_CONFIG : {
     botId: null,
     botName: 'RealtyPropFlow AI',
