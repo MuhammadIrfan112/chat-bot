@@ -4,11 +4,10 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   try {
-    // Fetch all real bots (non-demo) — only select columns that exist
+    // Fetch all bots — demo bots are NOT stored in DB (they're code-only), so no filter needed
     const { data: allBots, error: fetchError } = await supabaseAdmin
       .from('bots')
-      .select('id, name, industry, website_url')
-      .not('id', 'like', 'demo-%');
+      .select('id, name, industry, website_url');
 
     if (fetchError) {
       return Response.json({ success: false, error: fetchError.message }, { status: 500 });
@@ -44,7 +43,7 @@ export async function POST(req) {
       return Response.json({ success: false, error: updateError.message }, { status: 500 });
     }
 
-    const log = needsFix.map(b => `✅ Fixed: ${b.name} (${b.id}) — was industry="${b.industry || 'NULL'}"`);
+    const log = needsFix.map(b => `✅ Fixed: ${b.name} — was industry="${b.industry || 'NULL'}"`);
 
     return Response.json({
       success: true,
