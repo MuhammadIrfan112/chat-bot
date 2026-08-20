@@ -749,7 +749,7 @@ async function fetchCityPropertyData(botId, targetCity) {
       });
     }
 
-    // Also check properties table (Ontario / general database listings) if needed
+    // Also check properties table (same city) if we don't have enough
     if (allProperties.length < 4) {
       const { data: tableProps } = await supabase
         .from('properties')
@@ -761,20 +761,9 @@ async function fetchCityPropertyData(botId, targetCity) {
       }
     }
 
-    // If still empty, fetch general live inventory from city_property_data so the bot NEVER fails
+    // City not in DB → return '' so caller triggers live Apify search
     if (allProperties.length === 0) {
-      const { data: anyRows } = await supabase.from('city_property_data').select('city, properties').limit(3);
-      if (anyRows && anyRows.length > 0) {
-        anyRows.forEach(row => {
-          if (row.properties && Array.isArray(row.properties)) {
-            allProperties = allProperties.concat(row.properties);
-          }
-        });
-      }
-    }
-
-    if (allProperties.length === 0) {
-      console.log(`fetchCityPropertyData: No data found for city="${cleanCity}"`);
+      console.log(`fetchCityPropertyData: No data found for city="${cleanCity}" — caller will trigger live Apify.`);
       return '';
     }
 

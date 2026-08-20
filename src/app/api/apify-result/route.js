@@ -76,14 +76,24 @@ export async function GET(req) {
 
     const properties = items
       .map(p => {
-        // All photos array — collect from carousel or photos fields
+        // All photos — collect from all known Zillow/Apify photo fields
         const allPhotos = (() => {
+          // listingPhotos is the primary field from maxcopell~zillow-scraper
+          if (Array.isArray(p.listingPhotos) && p.listingPhotos.length > 0) {
+            return p.listingPhotos.map(ph => (typeof ph === 'string' ? ph : ph.url)).filter(Boolean);
+          }
           if (Array.isArray(p.carouselPhotos) && p.carouselPhotos.length > 0) {
             return p.carouselPhotos.map(ph => ph.url || ph).filter(Boolean);
           }
           if (Array.isArray(p.photos) && p.photos.length > 0) {
             return p.photos.map(ph => (typeof ph === 'string' ? ph : ph.url)).filter(Boolean);
           }
+          if (Array.isArray(p.carouselPhotosComposable) && p.carouselPhotosComposable.length > 0) {
+            return p.carouselPhotosComposable.map(ph => ph.url || ph).filter(Boolean);
+          }
+          // Fallback to single image fields
+          if (p.mainImage) return [p.mainImage];
+          if (p.imgSrc) return [p.imgSrc];
           return [];
         })();
 
@@ -110,14 +120,16 @@ export async function GET(req) {
           p.hdpData?.homeInfo?.detailUrl ||
           (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.zillow.com');
 
-        // Address — try combining parts if full address missing
+        // Address — try all known Zillow field combinations
         let address = 'Address not available';
-        if (typeof p.address === 'string') {
+        if (typeof p.address === 'string' && p.address.trim()) {
           address = p.address;
-        } else if (p.address && p.address.full) {
+        } else if (p.addressStreet && p.addressCity) {
+          address = `${p.addressStreet}, ${p.addressCity}, ${p.addressState || ''} ${p.addressZipcode || ''}`.trim();
+        } else if (p.address?.full) {
           address = p.address.full;
         } else if (p.streetAddress) {
-          address = p.streetAddress;
+          address = `${p.streetAddress}${p.city ? ', ' + p.city : ''}`;
         } else if (p.location) {
           address = p.location;
         } else if (p.listingAddress?.full) {
@@ -141,7 +153,7 @@ export async function GET(req) {
         const beds = p.bedrooms ?? p.beds ?? p.hdpData?.homeInfo?.bedrooms ?? '?';
         const baths = p.bathrooms ?? p.baths ?? p.hdpData?.homeInfo?.bathrooms ?? '?';
         const type = p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property';
-        const city = p.city || p.address?.city || p.hdpData?.homeInfo?.city || '';
+        const city = p.addressCity || p.city || (typeof p.address === 'object' ? p.address?.city : null) || p.hdpData?.homeInfo?.city || '';
 
         return {
           image_url: image,
