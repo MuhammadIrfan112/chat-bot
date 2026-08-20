@@ -89,26 +89,27 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
 }
 
 function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties }) {
-
   const [imgError, setImgError] = useState(false);
+  const [cardImgIdx, setCardImgIdx] = useState(0);
 
   const isGoogleMapsImg = (url) => url && typeof url === 'string' && (url.includes('maps.googleapis.com') || url.includes('staticmap'));
 
   const makeImages = (p) => {
     if (!p) return [];
     if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-      return p.images.filter(u => typeof u === 'string' && !isGoogleMapsImg(u)).slice(0, 6);
+      return p.images.filter(u => typeof u === 'string' && !isGoogleMapsImg(u)).slice(0, 12);
     }
     const url = p.image_url || p.imgSrc || '';
     if (!url || isGoogleMapsImg(url)) return [];
     if (/_\d+\.jpg$/.test(url)) {
-      return [1, 2, 3, 4, 5].map(n => url.replace(/_\d+\.jpg$/, `_${n}.jpg`));
+      return [1, 2, 3, 4, 5, 6, 7, 8].map(n => url.replace(/_\d+\.jpg$/, `_${n}.jpg`));
     }
     return [url];
   };
 
   const cardImages = makeImages(prop);
-  const thumbSrc = !imgError && cardImages.length > 0 ? cardImages[0] : null;
+  const safeIdx = Math.min(cardImgIdx, Math.max(0, cardImages.length - 1));
+  const currentThumb = !imgError && cardImages.length > 0 ? cardImages[safeIdx] : null;
 
   const displayAddress = prop?.address
     ? String(prop.address).split('|')[0]
@@ -124,7 +125,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
 
   return (
     <div
-      onClick={() => cardImages.length > 0 && onOpenGallery({ property: prop, images: cardImages, activeIdx: 0 })}
+      onClick={() => cardImages.length > 0 && onOpenGallery({ property: prop, images: cardImages, activeIdx: safeIdx })}
       style={{
         cursor: cardImages.length > 0 ? 'pointer' : 'default',
         borderRadius: '12px',
@@ -145,14 +146,15 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
           background: '#10b981', color: 'white', fontSize: '12px',
           fontWeight: 'bold', width: '22px', height: '22px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 2
+          borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 3
         }}>
           {index + 1}
         </div>
 
-        {thumbSrc ? (
+        {currentThumb ? (
           <img
-            src={thumbSrc}
+            key={currentThumb}
+            src={currentThumb}
             alt={displayAddress}
             style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }}
             referrerPolicy="no-referrer"
@@ -170,14 +172,52 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
           </div>
         )}
 
+        {/* Previous Image Arrow on Card */}
+        {cardImages.length > 1 && safeIdx > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCardImgIdx(prev => Math.max(0, prev - 1));
+            }}
+            style={{
+              position: 'absolute', left: '4px', top: '50%', transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white',
+              width: '24px', height: '24px', borderRadius: '50%', cursor: 'pointer',
+              fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 3, backdropFilter: 'blur(4px)'
+            }}
+          >
+            ‹
+          </button>
+        )}
+
+        {/* Next Image Arrow on Card */}
+        {cardImages.length > 1 && safeIdx < cardImages.length - 1 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCardImgIdx(prev => Math.min(cardImages.length - 1, prev + 1));
+            }}
+            style={{
+              position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)',
+              background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white',
+              width: '24px', height: '24px', borderRadius: '50%', cursor: 'pointer',
+              fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 3, backdropFilter: 'blur(4px)'
+            }}
+          >
+            ›
+          </button>
+        )}
+
         {cardImages.length > 0 && !imgError && (
           <div style={{
             position: 'absolute', top: '6px', right: '6px',
-            background: 'rgba(0,0,0,0.55)', color: 'white',
-            fontSize: '10px', padding: '2px 6px', borderRadius: '20px',
-            backdropFilter: 'blur(4px)'
+            background: 'rgba(0,0,0,0.65)', color: 'white',
+            fontSize: '10px', padding: '2px 7px', borderRadius: '20px',
+            backdropFilter: 'blur(4px)', zIndex: 2, fontWeight: '600'
           }}>
-            📸 {cardImages.length} Photos
+            📸 {cardImages.length > 1 ? `${safeIdx + 1}/${cardImages.length} Photos` : `${cardImages.length} Photo`}
           </div>
         )}
       </div>
@@ -603,8 +643,14 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const bathsMatch = cardContent.match(/Baths:\s*(.*?)(?=\s*(?:Image:|Link:|\n|$))/i);
       if (bathsMatch) prop.bathrooms = bathsMatch[1].trim();
 
-      const imageMatch = cardContent.match(/Image:\s*(.*?)(?=\s*(?:Link:|\n|$))/i);
+      const imageMatch = cardContent.match(/Image:\s*(.*?)(?=\s*(?:Images:|Link:|\n|$))/i);
       if (imageMatch) prop.image_url = cleanCardUrl(imageMatch[1]);
+
+      const imagesMatch = cardContent.match(/Images:\s*(.*?)(?=\s*(?:Link:|\n|$))/i);
+      if (imagesMatch && imagesMatch[1].trim()) {
+        const rawImgs = imagesMatch[1].split('|').map(u => cleanCardUrl(u.trim())).filter(Boolean);
+        if (rawImgs.length > 0) prop.images = rawImgs;
+      }
 
       const linkMatch = cardContent.match(/Link:\s*(.*?)(?=\s*(?:\[\/PROPERTY_CARD\]|\[PROPERTY_CARD\]|\n|$))/i);
       if (linkMatch) prop.url = cleanCardUrl(linkMatch[1]);
@@ -2444,8 +2490,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
               {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', flexShrink: 0 }}>
                 <div>
-                  <div style={{ color: 'white', fontWeight: '800', fontSize: '13px' }}>{galleryModal.property.price}</div>
-                  <div style={{ color: '#9ca3af', fontSize: '11px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{galleryModal.property.address.split('|')[0]}</div>
+                  <div style={{ color: 'white', fontWeight: '800', fontSize: '13px' }}>{galleryModal?.property?.price || 'Property'}</div>
+                  <div style={{ color: '#9ca3af', fontSize: '11px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(galleryModal?.property?.address || '').split('|')[0]}</div>
                 </div>
                 <button onClick={() => setGalleryModal(null)} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', color: 'white', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
               </div>

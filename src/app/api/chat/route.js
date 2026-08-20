@@ -297,13 +297,16 @@ async function getMatchingProperties(intent, propType, beds, maxBudget) {
 
     const cards = data.map(p => {
       const status = p.listing_status === 'forRent' ? '🔵 For Rent' : '🟢 For Sale';
+      const photos = Array.isArray(p.photos) ? p.photos : (p.images ? p.images : (p.main_image ? [p.main_image] : []));
+      const allImgs = photos.join('|');
       return `[PROPERTY_CARD]
 Status: ${status}
 Type: ${p.home_type || 'Property'}
 Address: ${p.address_full || 'Morton Grove, IL'}
 Price: ${p.price_formatted || 'Contact for price'}
 Beds: ${p.bedrooms || '?'} | Baths: ${p.bathrooms || '?'}
-Image: ${p.main_image}
+Image: ${p.main_image || (photos[0] || '')}
+Images: ${allImgs}
 Link: ${p.property_url}
 [/PROPERTY_CARD]`;
     });
@@ -510,21 +513,33 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
 function generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures) {
   const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
   const baseBudget = propBudget > 0 ? propBudget : 700000;
-  const images = [
-    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
-    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
-    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
-    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
-    'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80',
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80'
+  const imageSets = [
+    [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&q=80',
+      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80',
+      'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
+      'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80'
+    ]
   ];
   const generatedCards = [];
   for (let i = 1; i <= 20; i++) {
     const priceVariance = 0.8 + (Math.random() * 0.2);
     const price = baseBudget * priceVariance;
-    const img = images[i % images.length];
+    const currentSet = imageSets[(i - 1) % imageSets.length];
+    const img = currentSet[0];
+    const allImgs = currentSet.join('|');
     generatedCards.push(`[PROPERTY_CARD]
 Status: ${propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'}
 Type: ${propType || 'Family Home'}
@@ -533,6 +548,7 @@ Price: ${formatPrice(price)}
 Beds: ${propBeds || 4} | Baths: ${Math.max(1, (propBeds || 4) - 1)}
 Features: Includes ${propFeatures || 'Beautiful property with modern finishes'}
 Image: ${img}
+Images: ${allImgs}
 Link: #demo-property-${i}
 [/PROPERTY_CARD]`);
   }
@@ -739,9 +755,10 @@ async function fetchCityPropertyData(botId, targetCity) {
       const price = l.price || l.priceDisplay || 'Contact for Price';
       const beds = l.bedrooms || l.beds || 'N/A';
       const baths = l.bathrooms || l.baths || 'N/A';
-      const isRealImg = (u) => u && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+      const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
       const imgArr = (l.images && l.images.length > 0 ? l.images : (l.image_url ? [l.image_url] : (l.imgSrc ? [l.imgSrc] : []))).filter(isRealImg);
       const mainImg = imgArr[0] || '';
+      const allImgs = imgArr.join('|');
       const url = l.url || l.propertyUrl || '#';
 
       const status = l.listing_status || (l.rentPrice || String(price).includes('/mo') ? '🔵 For Rent' : '🟢 For Sale');
@@ -753,6 +770,7 @@ Address: ${addr}
 Price: ${price}
 Beds: ${beds} | Baths: ${baths}
 Image: ${mainImg}
+Images: ${allImgs}
 Link: ${url}
 [/PROPERTY_CARD]`);
     });
@@ -823,7 +841,10 @@ async function fetchCRMProperties(botId, fullChatText) {
 
     filteredData.slice(0, 8).forEach((p, i) => {
       const price = p.price ? `$${p.price.toLocaleString()}` : 'Contact for Price';
-      const img = p.photos && p.photos.length > 0 ? p.photos[0] : '';
+      const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+      const photosArr = (Array.isArray(p.photos) ? p.photos : (p.photos ? [p.photos] : (p.image_url ? [p.image_url] : []))).filter(isRealImg);
+      const img = photosArr[0] || '';
+      const allImgs = photosArr.join('|');
       const address = `${p.address} ${p.city ? ', ' + p.city : ''}`;
       const status = p.status === 'Active' ? '🟢 For Sale' : '⚪ Property';
 
@@ -834,6 +855,7 @@ Address: ${address}
 Price: ${price}
 Beds: ${p.bedrooms || '?'} | Baths: ${p.bathrooms || '?'}
 Image: ${img}
+Images: ${allImgs}
 Link: ${p.url || '#'}
 [/PROPERTY_CARD]`);
     });
