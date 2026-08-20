@@ -255,6 +255,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [sessionId, setSessionId] = useState('');
   const [mounted, setMounted] = useState(false);
   const [isHumanTakeover, setIsHumanTakeover] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [showCalendly, setShowCalendly] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
   const [galleryModal, setGalleryModal] = useState(null); // { property, images, activeIdx }
@@ -832,6 +833,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Renter Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Occupants: ${sumOccupants || 'Not specified'}\n• Pets: ${sumPets || 'Not specified'}\n• Moving Timeline: ${sumRentTimeline || 'Not specified'}`;
       } else {
         finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Buyer Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Pre-Approved: ${sumMortgage || preApproved || 'Not specified'}\n• Timeline: ${sumTimeline || timeline || 'Not specified'}\n• First-Time Buyer: ${firstTimeBuyer || 'Not specified'}`;
+        if (buyHomeData?.pre_approval_letter_url) {
+          finalPropertyInterest += `\n• Pre-Approval Letter: ${buyHomeData.pre_approval_letter_url}`;
+        }
       }
     } else {
       // Create a fallback summary of what they asked for
@@ -915,6 +919,41 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }]);
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setMessages(prev => [...prev, { role: 'user', parts: [{ text: `📎 Attached: ${file.name}` }] }]);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload-letter', { method: 'POST', body: formData });
+      const data = await res.json();
+      
+      if (data.success && data.url) {
+        setBuyHomeData(prev => ({ ...prev, pre_approval_letter_url: data.url }));
+        setBuyHomeStep('agent');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Thank you for uploading your letter!\n\nAre you currently working with any other real estate agent?` }],
+          quickReplies: ['✅ Yes', '❌ No']
+        }]);
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Oops, something went wrong while uploading your letter. You can try again or just type a message to continue without it.` }]
+      }]);
+    } finally {
+      setIsUploading(false);
+      e.target.value = ''; // reset file input
+    }
+  };
 
   const handleSend = async (text) => {
     let msg = text;
@@ -1081,18 +1120,30 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     if (buyHomeStep === 'mortgage') {
       const isPreApproved = msg.toLowerCase().includes('yes') || msg.includes('✅');
       setBuyHomeData(prev => ({ ...prev, mortgage: isPreApproved ? 'Pre-approved' : 'Not pre-approved' }));
-      setBuyHomeStep('agent');
       
-      const replyParts = [];
-      if (!isPreApproved) {
-        replyParts.push(`That’s okay— Getting preapproved can help you understand your potential budget and what loan options may be available to you.`);
+      if (isPreApproved) {
+        setBuyHomeStep('mortgage_upload');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Great! Please upload your mortgage pre-approval letter below.` }]
+        }]);
+      } else {
+        setBuyHomeStep('agent');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `That’s okay— Getting preapproved can help you understand your potential budget and what loan options may be available to you.\n\nAre you currently working with any other real estate agent?` }],
+          quickReplies: ['✅ Yes', '❌ No']
+        }]);
       }
-      replyParts.push(`Are you currently working with any other real estate agent?`);
-      
+      return;
+    }
+
+    if (buyHomeStep === 'mortgage_upload') {
+      // This step is advanced by the file upload handler directly.
+      // If the user types something instead of uploading, remind them.
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: replyParts.join('\n\n') }],
-        quickReplies: ['✅ Yes', '❌ No']
+        parts: [{ text: `Please use the upload button to attach your pre-approval letter.` }]
       }]);
       return;
     }
@@ -2515,20 +2566,56 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           )}
 
           <div className={styles.inputArea}>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-              placeholder={getPlaceholder()}
-              className={styles.input}
-            />
-            <button 
-              onClick={() => handleSend()} 
-              className={styles.sendBtn}
-            >
-              Send
-            </button>
+            {buyHomeStep === 'mortgage_upload' ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="file"
+                  id="letter-upload"
+                  accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+                <label 
+                  htmlFor="letter-upload" 
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    padding: '10px 16px',
+                    backgroundColor: '#1E6FD9',
+                    color: 'white',
+                    borderRadius: '24px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    transition: 'all 0.2s',
+                    opacity: isUploading ? 0.7 : 1,
+                    pointerEvents: isUploading ? 'none' : 'auto'
+                  }}
+                >
+                  {isUploading ? 'Uploading...' : '📎 Choose File'}
+                </label>
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+                placeholder={getPlaceholder()}
+                className={styles.input}
+                disabled={isUploading}
+              />
+            )}
+            
+            {buyHomeStep !== 'mortgage_upload' && (
+              <button 
+                onClick={() => handleSend()} 
+                className={styles.sendBtn}
+                disabled={isUploading}
+              >
+                Send
+              </button>
+            )}
           </div>
         </div>
       ) : (
