@@ -884,7 +884,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         }
       }
 
-      // Collect all properties that were liked by the user
+      // Collect all properties that were liked by the user or viewed when expressing interest
       const allRenderedProps = messages.flatMap(m => m.properties || []);
       const likedPropObjs = allRenderedProps.filter((p, idx) => {
         const pId = String(p?.mls_number || p?.address || p?.url || idx);
@@ -898,6 +898,14 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           return url ? `[${addr}](${url})` : addr;
         }).join(', ');
         finalPropertyInterest += `\n• ❤️ Liked Property: ${likedFormatted}`;
+      } else if (allRenderedProps.length > 0 && messages.some(m => m.role === 'user' && (m.parts?.[0]?.text?.toLowerCase().includes('like') || m.parts?.[0]?.text?.toLowerCase().includes('interested')))) {
+        // User clicked "Yes, I liked one" or "I like one of these properties!"
+        const shownFormatted = allRenderedProps.slice(0, 4).map(p => {
+          const addr = p.address ? p.address.split('|')[0] : 'Property';
+          const url = p.url && p.url !== '#' ? p.url : (p.image_url || '');
+          return url ? `[${addr}](${url})` : addr;
+        }).join(', ');
+        finalPropertyInterest += `\n• ❤️ Liked / Selected Listings: ${shownFormatted}`;
       } else if (likedProperty && likedProperty !== 'None' && likedProperty !== 'Unknown') {
         finalPropertyInterest += `\n• ❤️ Liked Property: ${likedProperty}`;
       }
