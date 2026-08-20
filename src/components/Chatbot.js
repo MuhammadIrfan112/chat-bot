@@ -884,28 +884,29 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         }
       }
 
-      // Collect all properties that were liked by the user or viewed when expressing interest
+      // Collect all properties that were liked by the user (strictly deduplicated)
       const allRenderedProps = messages.flatMap(m => m.properties || []);
-      const likedPropObjs = allRenderedProps.filter((p, idx) => {
+      const seenAddresses = new Set();
+      const uniqueLikedProps = [];
+
+      allRenderedProps.forEach((p, idx) => {
         const pId = String(p?.mls_number || p?.address || p?.url || idx);
-        return Array.isArray(likedProperties) && likedProperties.includes(pId);
+        const addrKey = (p.address || '').split('|')[0].trim().toLowerCase();
+        if (Array.isArray(likedProperties) && likedProperties.includes(pId)) {
+          if (addrKey && !seenAddresses.has(addrKey)) {
+            seenAddresses.add(addrKey);
+            uniqueLikedProps.push(p);
+          }
+        }
       });
 
-      if (likedPropObjs.length > 0) {
-        const likedFormatted = likedPropObjs.map(p => {
-          const addr = p.address ? p.address.split('|')[0] : 'Property';
+      if (uniqueLikedProps.length > 0) {
+        const likedFormatted = uniqueLikedProps.map(p => {
+          const addr = p.address ? p.address.split('|')[0].trim() : 'Property';
           const url = p.url && p.url !== '#' ? p.url : (p.image_url || '');
           return url ? `[${addr}](${url})` : addr;
         }).join(', ');
         finalPropertyInterest += `\n• ❤️ Liked Property: ${likedFormatted}`;
-      } else if (allRenderedProps.length > 0 && messages.some(m => m.role === 'user' && (m.parts?.[0]?.text?.toLowerCase().includes('like') || m.parts?.[0]?.text?.toLowerCase().includes('interested')))) {
-        // User clicked "Yes, I liked one" or "I like one of these properties!"
-        const shownFormatted = allRenderedProps.slice(0, 4).map(p => {
-          const addr = p.address ? p.address.split('|')[0] : 'Property';
-          const url = p.url && p.url !== '#' ? p.url : (p.image_url || '');
-          return url ? `[${addr}](${url})` : addr;
-        }).join(', ');
-        finalPropertyInterest += `\n• ❤️ Liked / Selected Listings: ${shownFormatted}`;
       } else if (likedProperty && likedProperty !== 'None' && likedProperty !== 'Unknown') {
         finalPropertyInterest += `\n• ❤️ Liked Property: ${likedProperty}`;
       }
@@ -1939,6 +1940,51 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     // ── Lead info collection ────────────────────────────────────
+    if (leadStep === 'select_property') {
+      const allRenderedProps = messages.flatMap(m => m.properties || []);
+      const lower = msg.toLowerCase();
+      const newLikedIds = [];
+
+      if (lower.includes('all')) {
+        // User selected all of them
+        allRenderedProps.forEach((p, idx) => {
+          const pId = String(p?.mls_number || p?.address || p?.url || idx);
+          newLikedIds.push(pId);
+        });
+      } else {
+        // Try matching property by number, address or index
+        allRenderedProps.forEach((p, idx) => {
+          const pId = String(p?.mls_number || p?.address || p?.url || idx);
+          const addr = (p.address || '').toLowerCase();
+          if (
+            lower.includes(`#${idx + 1}`) ||
+            lower.includes(`property ${idx + 1}`) ||
+            lower.includes(`property #${idx + 1}`) ||
+            (addr && lower.includes(addr.slice(0, 8)))
+          ) {
+            newLikedIds.push(pId);
+          }
+        });
+
+        // Fallback: If user typed something custom but couldn't match, add first shown property
+        if (newLikedIds.length === 0 && allRenderedProps.length > 0) {
+          const firstPId = String(allRenderedProps[0]?.mls_number || allRenderedProps[0]?.address || allRenderedProps[0]?.url || 0);
+          newLikedIds.push(firstPId);
+        }
+      }
+
+      // Deduplicate into likedProperties state
+      setLikedProperties(prev => Array.from(new Set([...(prev || []), ...newLikedIds])));
+
+      setLeadStep('name');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Great choice! 🎉 Our team can arrange a private tour, provide complete property disclosures, and answer all your questions.\n\nMay I have your **full name** please?` }],
+        inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
+      }]);
+      return;
+    }
+
     if (leadStep === 'name') {
       setLeadData(prev => ({ ...prev, name: msg }));
       setLeadStep('phone');
@@ -2137,13 +2183,30 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       lowerMsg.includes('interested in a property') ||
       lowerMsg.includes('tell me more') ||
       lowerMsg.includes('i like one') ||
+      lowerMsg.includes('yes, i liked one') ||
       (lowerMsg.includes('like') && lowerMsg.includes('property'))
     ) {
-      const likedCount = Array.isArray(likedProperties) ? likedProperties.length : 0;
-      const likedNote = likedCount > 0 ? ` (${likedCount} property saved to your favorites)` : '';
+      const allRenderedProps = messages.flatMap(m => m.properties || []);
+      if (allRenderedProps.length > 0) {
+        // Build option buttons for each shown property
+        const propButtons = allRenderedProps.slice(0, 6).map((p, idx) => {
+          const addr = (p.address || `Property #${idx + 1}`).split('|')[0].trim();
+          return `#${idx + 1}: ${addr}`;
+        });
+        propButtons.push('🌟 All of them');
+
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Wonderful! 🏡 **Which property (or properties) did you like best?**\n\nPlease select from the options below or let me know:` }],
+          quickReplies: propButtons
+        }]);
+        setLeadStep('select_property');
+        return;
+      }
+
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Wonderful! 🎉 Shawna Roongsang and our team can arrange a private tour, provide detailed property disclosures, and answer all your questions${likedNote}.\n\nMay I have your **full name** please?` }],
+        parts: [{ text: `Wonderful! 🎉 Our team can arrange a private tour, provide detailed property disclosures, and answer all your questions.\n\nMay I have your **full name** please?` }],
         inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
       }]);
       setLeadStep('name');
