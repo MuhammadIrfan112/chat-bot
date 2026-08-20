@@ -635,6 +635,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
     text = text.replace(/\[MULTI_BUTTON:\s*.*?\]/g, '');
 
+    let requestPreapproval = false;
+    if (text.includes('[REQUEST_PREAPPROVAL_UPLOAD]')) {
+      requestPreapproval = true;
+      text = text.replace(/\[REQUEST_PREAPPROVAL_UPLOAD\]/g, '');
+    }
+
     if (text.includes('[START_LEAD_CAPTURE]')) {
       startLead = true;
       text = text.replace(/\[START_LEAD_CAPTURE\]/g, '');
@@ -698,7 +704,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     const allProperties = [...(existingProps || []), ...parsedProperties];
     if (allProperties.length > 0) newModelMsg.properties = allProperties;
 
-    return { msg: newModelMsg, startLead, multiButtons, properties: allProperties };
+    return { msg: newModelMsg, startLead, requestPreapproval, multiButtons, properties: allProperties };
   };
 
   // Poll Apify results if a run is active
@@ -1083,7 +1089,18 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     // ── Buy a Home Flow ─────────────────────────────────────────
-    if (msg.includes("I'm looking to buy a home") && !buyHomeStep) {
+    const lower = (msg || '').toLowerCase();
+    const isBuyIntent =
+      msg.includes("I'm looking to buy a home") ||
+      lower.includes('buy a home') ||
+      lower.includes('buying a home') ||
+      lower.includes('looking to buy') ||
+      lower.includes('want to buy') ||
+      lower.includes('buy property') ||
+      lower.includes('purchase a home') ||
+      lower.includes('buy home');
+
+    if (isBuyIntent && !buyHomeStep && botIndustry !== 'E-Commerce') {
       resetFlows();
       setBuyHomeStep('goal');
       setMessages(prev => [...prev, {
@@ -2278,8 +2295,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         setIsHumanTakeover(true);
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "🔄 You've been connected to a live agent. Please wait for their response..." }] }]);
       } else if (data.reply) {
-        const { msg: newModelMsg, startLead, multiButtons } = parseModelReply(data.reply, data.properties || []);
+        const { msg: newModelMsg, startLead, requestPreapproval, multiButtons } = parseModelReply(data.reply, data.properties || []);
         setMessages(prev => [...prev, newModelMsg]);
+
+        if (requestPreapproval) {
+          setBuyHomeStep('mortgage_upload');
+        }
 
         if (data.apifyRunId) {
           setActiveApifyRunId(data.apifyRunId);

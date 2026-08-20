@@ -1444,7 +1444,12 @@ Step 9. Ask for pre-approval status:
 "Have you been pre-approved for a mortgage?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 9b. Ask about real estate agent:
+Step 9b. Pre-Approval Letter Upload & Agent Status:
+If the user says "Yes" (they are pre-approved), respond with:
+"Great! 📄 Please upload your mortgage pre-approval letter below so we can keep it on file for seller showings."
+[REQUEST_PREAPPROVAL_UPLOAD]
+
+Step 9c. Ask about real estate agent:
 "Are you currently working with any other real estate agent?"
 [BUTTON: Yes] [BUTTON: No]
 
