@@ -28,6 +28,8 @@ const RE_INTENT_OPTIONS = [
   "❓ I have a general real estate question"
 ];
 
+const isGoogleMapsImg = (url) => typeof url === 'string' && (url.includes('maps.googleapis.com') || url.includes('staticmap'));
+
 // ── Error Boundary: Prevents any rendering crash from crashing the iframe ──
 class ChatErrorBoundary extends React.Component {
   constructor(props) {
@@ -2296,6 +2298,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         setMessages(prev => [...prev, { role: 'model', parts: [{ text: "🔄 You've been connected to a live agent. Please wait for their response..." }] }]);
       } else if (data.reply) {
         const { msg: newModelMsg, startLead, requestPreapproval, multiButtons } = parseModelReply(data.reply, data.properties || []);
+        if (data.city) newModelMsg.city = data.city;
         setMessages(prev => [...prev, newModelMsg]);
 
         if (requestPreapproval) {
@@ -2518,7 +2521,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                                 }
                               }
 
-                              const cityName = buyHomeData?.city || rentData?.city || 'this city';
+                              const cityName = msg.city || buyHomeData?.city || rentData?.city || (msg?.parts?.[0]?.text?.match(/Searching for live properties in\s+([a-zA-Z\s]+?)(?:\.\.\.|\!)/i)?.[1]) || 'this city';
                               const fallbacks = {
                                 school: `**Schools & Education in ${cityName}**\n\n${cityName} is served by reputable school districts with high-performing public elementary, middle, and high schools alongside private and charter options. The area offers strong academic support, AP programs, extracurriculars, and active parent-teacher communities.`,
                                 park: `**Parks & Outdoor Recreation in ${cityName}**\n\n${cityName} features expansive green spaces, nature trails, paved cycling paths, modern playgrounds, and sports facilities. It's a wonderful environment for outdoor activities, weekend family picnics, and pet-friendly recreation.`,
