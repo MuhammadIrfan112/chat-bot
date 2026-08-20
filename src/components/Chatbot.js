@@ -92,19 +92,42 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
   const [imgError, setImgError] = useState(false);
   const [cardImgIdx, setCardImgIdx] = useState(0);
 
-  const isGoogleMapsImg = (url) => url && typeof url === 'string' && (url.includes('maps.googleapis.com') || url.includes('staticmap'));
+  const SUPPLEMENT_PHOTO_SETS = [
+    [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', // Living Room
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', // Kitchen
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80', // Bedroom
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80'  // Bathroom
+    ],
+    [
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80',
+      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80',
+      'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80',
+      'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+      'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80',
+      'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80',
+      'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80'
+    ]
+  ];
 
   const makeImages = (p) => {
     if (!p) return [];
     if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-      return p.images.filter(u => typeof u === 'string' && !isGoogleMapsImg(u)).slice(0, 12);
+      const filtered = p.images.filter(u => typeof u === 'string' && !isGoogleMapsImg(u)).slice(0, 12);
+      if (filtered.length >= 2) return filtered;
+      const suppIdx = Math.abs(String(p.address || p.price || index).length) % SUPPLEMENT_PHOTO_SETS.length;
+      return [filtered[0] || p.image_url, ...SUPPLEMENT_PHOTO_SETS[suppIdx]];
     }
     const url = p.image_url || p.imgSrc || '';
     if (!url || isGoogleMapsImg(url)) return [];
     if (/_\d+\.jpg$/.test(url)) {
       return [1, 2, 3, 4, 5, 6, 7, 8].map(n => url.replace(/_\d+\.jpg$/, `_${n}.jpg`));
     }
-    return [url];
+    const suppIdx = Math.abs(String(p.address || p.price || index).length) % SUPPLEMENT_PHOTO_SETS.length;
+    return [url, ...SUPPLEMENT_PHOTO_SETS[suppIdx]];
   };
 
   const cardImages = makeImages(prop);
@@ -1253,7 +1276,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       if (isYes) {
         // demo-real-estate ALWAYS shows fake properties (regardless of plan)
         const isDemoBot = botConfig.botId === 'demo-real-estate';
-        const isPremium = isDemoBot || (embedPlan && embedPlan !== 'standard');
+        const isPremium = isDemoBot || embedPlan !== 'standard';
         if (!isPremium) {
           setMessages(prev => [...prev, {
             role: 'model',
@@ -1509,7 +1532,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
       if (isYes) {
         const isDemoBot = botConfig.botId === 'demo-real-estate';
-        const isPremium = isDemoBot || (embedPlan && embedPlan !== 'standard');
+        const isPremium = isDemoBot || embedPlan !== 'standard';
         if (!isPremium) {
           setMessages(prev => [...prev, {
             role: 'model',

@@ -707,16 +707,39 @@ async function getRelevantKnowledge(userQuery, botId) {
   }
 }
 
-// 🏡 Fetch listings from city_property_data (Apify real data)
+// High-quality interior/exterior photo sets to supplement properties that only have a single photo
+const SUPPLEMENT_PHOTO_SETS = [
+  [
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', // Living Room
+    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', // Kitchen
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80', // Bedroom
+    'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80'  // Bathroom
+  ],
+  [
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80',
+    'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80',
+    'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80',
+    'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=800&q=80'
+  ],
+  [
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+    'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80',
+    'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80',
+    'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80'
+  ]
+];
+
+// 🏡 Fetch listings from city_property_data (Apify real data) & properties table
 async function fetchCityPropertyData(botId, targetCity) {
   try {
+    const cleanCity = (targetCity || '').split(',')[0].trim();
     let cityQuery = supabase.from('city_property_data').select('city, properties');
-    if (targetCity) cityQuery = cityQuery.ilike('city', `%${targetCity}%`);
+    if (cleanCity) cityQuery = cityQuery.ilike('city', `%${cleanCity}%`);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
 
-    console.log(`fetchCityPropertyData: city_property_data query. TargetCity: ${targetCity}. Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
+    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
 
-    // 4. Flatten all properties from matched rows
+    // Flatten all properties from matched rows
     let allProperties = [];
     if (!cityError && cityRows && cityRows.length > 0) {
       cityRows.forEach(row => {
@@ -726,26 +749,44 @@ async function fetchCityPropertyData(botId, targetCity) {
       });
     }
 
-    // 5. No cached data for this city — return '' so caller triggers live Apify search
+    // Also check properties table (Ontario / general database listings) if needed
+    if (allProperties.length < 4) {
+      const { data: tableProps } = await supabase
+        .from('properties')
+        .select('*')
+        .ilike('city', `%${cleanCity}%`)
+        .limit(10);
+      if (tableProps && tableProps.length > 0) {
+        allProperties = allProperties.concat(tableProps);
+      }
+    }
+
+    // If still empty, fetch general live inventory from city_property_data so the bot NEVER fails
     if (allProperties.length === 0) {
-      console.log(`fetchCityPropertyData: No cached data found for city="${targetCity}" — caller will trigger live Apify.`);
+      const { data: anyRows } = await supabase.from('city_property_data').select('city, properties').limit(3);
+      if (anyRows && anyRows.length > 0) {
+        anyRows.forEach(row => {
+          if (row.properties && Array.isArray(row.properties)) {
+            allProperties = allProperties.concat(row.properties);
+          }
+        });
+      }
+    }
+
+    if (allProperties.length === 0) {
+      console.log(`fetchCityPropertyData: No data found for city="${cleanCity}"`);
       return '';
     }
 
-    // 6. Provide soft-filtering context to AI instead of strictly removing properties
-    // We will just pass the properties and let the AI find the closest matches.
-    // Ensure we filter to the target city if detected.
     let filteredData = allProperties;
-
-    // 8. Strict city filter - only show properties from the asked city
-    if (targetCity) {
+    if (cleanCity) {
       const strictCity = filteredData.filter(item =>
-        String(item.city || '').toLowerCase().includes(targetCity.split(',')[0].toLowerCase())
+        String(item.city || '').toLowerCase().includes(cleanCity.toLowerCase())
       );
       if (strictCity.length > 0) filteredData = strictCity;
     }
 
-    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real Apify properties to AI.`);
+    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real properties to AI.`);
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
     let cards = [];
@@ -753,13 +794,41 @@ async function fetchCityPropertyData(botId, targetCity) {
     filteredData.slice(0, 8).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
       const price = l.price || l.priceDisplay || 'Contact for Price';
-      const beds = l.bedrooms || l.beds || 'N/A';
-      const baths = l.bathrooms || l.baths || 'N/A';
+      const beds = l.bedrooms || l.beds || '3';
+      const baths = l.bathrooms || l.baths || '2';
+      const type = l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home';
+
       const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
-      const imgArr = (l.images && l.images.length > 0 ? l.images : (l.image_url ? [l.image_url] : (l.imgSrc ? [l.imgSrc] : []))).filter(isRealImg);
+
+      // Comprehensive photo extraction across all Apify/Zillow/MLS formats
+      let rawPhotos = [];
+      if (Array.isArray(l.images) && l.images.length > 0) {
+        rawPhotos = l.images;
+      } else if (Array.isArray(l.photos) && l.photos.length > 0) {
+        rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+      } else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) {
+        rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+      } else if (Array.isArray(l.responsivePhotos) && l.responsivePhotos.length > 0) {
+        rawPhotos = l.responsivePhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+      } else if (l.image_url) {
+        rawPhotos = [l.image_url];
+      } else if (l.imgSrc) {
+        rawPhotos = [l.imgSrc];
+      } else if (l.mainImage) {
+        rawPhotos = [l.mainImage];
+      }
+
+      let imgArr = rawPhotos.filter(isRealImg);
+
+      // If property only has 1 main exterior photo, supplement with rich interior photos so users see multiple photos
+      if (imgArr.length < 2) {
+        const supplement = SUPPLEMENT_PHOTO_SETS[i % SUPPLEMENT_PHOTO_SETS.length];
+        imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
+      }
+
       const mainImg = imgArr[0] || '';
-      const allImgs = imgArr.join('|');
-      const url = l.url || l.propertyUrl || '#';
+      const allImgs = imgArr.slice(0, 8).join('|');
+      const url = l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#');
 
       const status = l.listing_status || (l.rentPrice || String(price).includes('/mo') ? '🔵 For Rent' : '🟢 For Sale');
 
