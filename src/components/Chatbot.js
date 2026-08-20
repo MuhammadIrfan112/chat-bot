@@ -883,6 +883,24 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           finalPropertyInterest += `\n• Pre-Approval Letter: ${buyHomeData.pre_approval_letter_url}`;
         }
       }
+
+      // Collect all properties that were liked by the user
+      const allRenderedProps = messages.flatMap(m => m.properties || []);
+      const likedPropObjs = allRenderedProps.filter((p, idx) => {
+        const pId = String(p?.mls_number || p?.address || p?.url || idx);
+        return Array.isArray(likedProperties) && likedProperties.includes(pId);
+      });
+
+      if (likedPropObjs.length > 0) {
+        const likedFormatted = likedPropObjs.map(p => {
+          const addr = p.address ? p.address.split('|')[0] : 'Property';
+          const url = p.url && p.url !== '#' ? p.url : (p.image_url || '');
+          return url ? `[${addr}](${url})` : addr;
+        }).join(', ');
+        finalPropertyInterest += `\n• ❤️ Liked Property: ${likedFormatted}`;
+      } else if (likedProperty && likedProperty !== 'None' && likedProperty !== 'Unknown') {
+        finalPropertyInterest += `\n• ❤️ Liked Property: ${likedProperty}`;
+      }
     } else {
       // Create a fallback summary of what they asked for
       finalPropertyInterest = messages
