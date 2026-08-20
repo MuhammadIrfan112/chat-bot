@@ -41,6 +41,7 @@ CREATE TABLE properties (
   features JSONB DEFAULT '[]'::jsonb,
   status TEXT DEFAULT 'Active',
   photos JSONB DEFAULT '[]'::jsonb,
+  source_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
