@@ -2220,7 +2220,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   if (intentSelected && closingStep && closingStep !== 'open_ended' && showHumanTakeover) {
     activeQuickReplies = ["🙋‍♀️ Talk to Human"];
   } else if (lastMsg && lastMsg.role === 'model' && lastMsg.properties && Array.isArray(lastMsg.properties) && lastMsg.properties.length > 0) {
-    activeQuickReplies = ["❤️ I'm interested in a property", "🔍 Show More Properties"];
+    activeQuickReplies = ["❤️ I'm interested in a property", "🔍 Show More Properties", "🔄 Change Search Criteria"];
   } else if (lastMsg && lastMsg.role === 'model' && lastMsg.quickReplies) {
     activeQuickReplies = lastMsg.quickReplies;
   } else if (!intentSelected && isREBot) {

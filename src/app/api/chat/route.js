@@ -760,7 +760,7 @@ Link: ${url}
     section += cards.join('\n\n');
     section += `\n\nCRITICAL INSTRUCTION: There are properties available from the database.
 You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
-If you don't have exact matches for their budget/bedrooms, show the CLOSEST matches (e.g. slightly over budget but correct beds, or within budget but 1 less bed) and explicitly explain the tradeoff to the user.
+If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
 CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
 
 After showing the properties, you MUST include these two buttons:
@@ -841,7 +841,7 @@ Link: ${p.url || '#'}
     section += cards.join('\n\n');
     section += `\n\nCRITICAL INSTRUCTION: There are properties available from the private CRM.
 You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
-If you don't have exact matches for their budget/bedrooms, show the CLOSEST matches (e.g. slightly over budget but correct beds, or within budget but 1 less bed) and explicitly explain the tradeoff to the user.
+If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
 CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
 
 After showing the properties, you MUST include these two buttons:
@@ -1195,7 +1195,7 @@ ${matchedProperties}
 
 CRITICAL INSTRUCTION: There are properties available from the database.
 You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them.
-If you don't have exact matches for their budget/bedrooms, show the CLOSEST matches (e.g. slightly over budget but correct beds, or within budget but 1 less bed) and explicitly explain the tradeoff to the user.
+If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
 CRITICAL: You MUST output the properties EXACTLY as they appear using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
 
 After showing the properties, you MUST include these two buttons:
@@ -1402,7 +1402,7 @@ Then immediately reply ONLY with this hidden tag on the next line:
 
 ⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings. If the data is not explicitly in this prompt, it does not exist.
 
-If the user says "No" to the summary, ask them what information they would like to correct and update your understanding.
+If the user says "No" to the summary, or if they say "Change Search Criteria", ask them what information they would like to correct and update your understanding.
 
 Step 12. Lead Capture:
 If the user specifically asks to arrange a viewing, reply ONLY with exactly this hidden tag:
