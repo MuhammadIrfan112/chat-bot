@@ -431,6 +431,21 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
       filterState.isTownhouse = { value: false };
       filterState.isCondo = { value: false };
     }
+
+    // Beds and Baths Filters — apply relaxed minimums for flexibility
+    const bedsMatch = fullChatText.match(/Bedrooms:\s*(\d+)/i) || fullChatText.match(/(\d+)\s*beds?/i);
+    if (bedsMatch && parseInt(bedsMatch[1]) > 0) {
+      const requestedBeds = parseInt(bedsMatch[1]);
+      // Relax beds by 1 to show more options within budget, but keep a reasonable floor
+      filterState.beds = { min: Math.max(1, requestedBeds - 1) };
+    }
+
+    const bathsMatch = fullChatText.match(/Bathrooms:\s*(\d+)/i) || fullChatText.match(/(\d+)\s*baths?/i);
+    if (bathsMatch && parseInt(bathsMatch[1]) > 0) {
+      const requestedBaths = parseInt(bathsMatch[1]);
+      // Relax baths by 1 
+      filterState.baths = { min: Math.max(1, requestedBaths - 1) };
+    }
   }
 
   const searchQueryState = {
