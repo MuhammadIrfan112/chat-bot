@@ -101,9 +101,9 @@ export async function POST(req) {
     
     if (existingBots && existingBots.length > 0) {
       debugLog.push(`Bot already exists: ${existingBots[0].id}`);
-      // Also fix industry/plan in case it was created before this rule
-      await supabaseAdmin.from('bots').update({ industry: 'Real Estate', plan: 'premium' }).eq('id', existingBots[0].id);
-      return Response.json({ success: true, bot: { ...existingBots[0], industry: 'Real Estate', plan: 'premium' }, debug: debugLog });
+      // Also fix industry in case it was created before this rule
+      await supabaseAdmin.from('bots').update({ industry: 'Real Estate' }).eq('id', existingBots[0].id);
+      return Response.json({ success: true, bot: { ...existingBots[0], industry: 'Real Estate' }, debug: debugLog });
     }
 
     // 4. Create a default chatbot — industry is ALWAYS 'Real Estate', plan is ALWAYS 'premium'
@@ -117,8 +117,7 @@ export async function POST(req) {
       system_prompt: `You are an AI assistant for ${name}. Be helpful and professional.`,
       primary_color: '#4F46E5',
       bot_avatar: '🤖',
-      status: 'Active',
-      plan: 'premium'
+      status: 'Active'
     }).select().single();
 
     if (botError) {
