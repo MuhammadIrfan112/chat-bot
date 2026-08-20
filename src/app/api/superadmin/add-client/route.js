@@ -110,7 +110,6 @@ export async function POST(req) {
     const { data: botData, error: botError } = await supabaseAdmin.from('bots').insert({
       user_id: userId,
       name: `${name}'s Assistant`,
-      company_name: `${name} Real Estate`,
       industry: 'Real Estate',
       website_url: website_url,
       welcome_message: `Hi there! 👋 I'm ${name}'s AI assistant. How can I help you today?`,
