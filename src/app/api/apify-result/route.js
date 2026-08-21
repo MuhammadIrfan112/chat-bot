@@ -217,12 +217,15 @@ export async function GET(req) {
 
     if (savedCity && savedCity !== 'unknown') {
       try {
+        // Save under intent-specific key so rent and sale data never overwrite each other
+        // e.g. 'dallas-rent' for rental listings, 'dallas' for sale listings
+        const dbCityKey = intent === 'rent' ? `${savedCity}-rent` : savedCity;
         await supabase.from('city_property_data').upsert({
-          city: savedCity,
+          city: dbCityKey,
           properties: properties,
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
-        console.log(`[apify-result] Successfully saved ${properties.length} properties to DB for city: ${savedCity}`);
+        console.log(`[apify-result] Successfully saved ${properties.length} properties to DB for city key: "${dbCityKey}"`);
       } catch (dbErr) {
         console.error('[apify-result] DB Save Error:', dbErr.message);
       }

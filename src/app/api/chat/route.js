@@ -730,14 +730,15 @@ const SUPPLEMENT_PHOTO_SETS = [
 ];
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
-async function fetchCityPropertyData(botId, targetCity) {
+async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
   try {
     const cleanCity = (targetCity || '').split(',')[0].trim();
+    const isRentIntent = intent === 'rent';
     let cityQuery = supabase.from('city_property_data').select('city, properties');
     if (cleanCity) cityQuery = cityQuery.ilike('city', `%${cleanCity}%`);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
 
-    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
+    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Intent: "${intent}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
 
     // Flatten all properties from matched rows
     let allProperties = [];
@@ -775,7 +776,32 @@ async function fetchCityPropertyData(botId, targetCity) {
       if (strictCity.length > 0) filteredData = strictCity;
     }
 
-    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real properties to AI.`);
+    // ── INTENT FILTER: rent vs buy ──────────────────────────────────────────
+    // Filter by listing intent so rent searches don't show sale properties and vice versa
+    if (isRentIntent) {
+      const rentOnly = filteredData.filter(item => {
+        const status = String(item.listing_status || item.status || '').toLowerCase();
+        const priceStr = String(item.price || '').toLowerCase();
+        return status.includes('rent') || priceStr.includes('/mo') || priceStr.includes('per month');
+      });
+      if (rentOnly.length < 2) {
+        // DB has no rent listings for this city → let Apify run live rent search
+        console.log(`fetchCityPropertyData: No rent listings found for city="${cleanCity}" — falling back to live Apify rent search.`);
+        return '';
+      }
+      filteredData = rentOnly;
+    } else {
+      // Buy intent: exclude obvious rent-only properties
+      const saleOnly = filteredData.filter(item => {
+        const status = String(item.listing_status || item.status || '').toLowerCase();
+        const priceStr = String(item.price || '').toLowerCase();
+        return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
+      });
+      // Only apply strict filter if we have enough results (don't leave user with nothing)
+      if (saleOnly.length >= 2) filteredData = saleOnly;
+    }
+
+    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real properties to AI (intent=${intent}).`);
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
     let cards = [];
@@ -1295,7 +1321,7 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
           // PRIORITY 1 & 2: Client's CRM properties + City cached data
           // ============================================================
           const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText);
-          const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity);
+          const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity, propIntent);
 
           const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;
           const hasCache = cachedCityContext && cachedCityContext.length > 50;
@@ -1332,8 +1358,9 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
                 ].join(' ');
 
                 return Response.json({
-                  reply: `🔍 Searching for live properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️\n\n${cityBtns}`,
+                  reply: `🔍 Searching for live ${propIntent === 'rent' ? 'rental' : ''} properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️\n\n${cityBtns}`,
                   apifyRunId,
+                  intent: propIntent,
                   city: detectedCity
                 });
               } else {
