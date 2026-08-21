@@ -53,9 +53,21 @@ export default function PropertiesPage() {
         .eq('user_id', userId)
         .single();
         
-      if (userProfile?.bot_id) {
-        setBotId(userProfile.bot_id);
-        const res = await fetch(`/api/crm/properties?bot_id=${userProfile.bot_id}`);
+      let effectiveBotId = userProfile?.bot_id;
+      if (!effectiveBotId) {
+        const { data: bots } = await supabase
+          .from('bots')
+          .select('id')
+          .eq('user_id', userId)
+          .limit(1);
+        if (bots && bots.length > 0) {
+          effectiveBotId = bots[0].id;
+        }
+      }
+        
+      if (effectiveBotId) {
+        setBotId(effectiveBotId);
+        const res = await fetch(`/api/crm/properties?bot_id=${effectiveBotId}`);
         const data = await res.json();
         setProperties(data.properties || []);
       }
