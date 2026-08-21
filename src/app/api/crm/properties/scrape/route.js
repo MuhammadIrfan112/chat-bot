@@ -335,21 +335,32 @@ If no properties are found in this content, return { "properties": [] }.`
       return Response.json({ message: 'No properties found on the website.', added: 0, removed: 0 });
     }
 
-    // 4. Update Database (Upsert new and updated properties with full photos and city data)
+    // 4. Update Database: Full 2-Way Sync (Insert New, Update Existing, Delete Removed)
+    // Fetch all current properties in DB for this bot
+    const { data: dbProps } = await supabase
+      .from('properties')
+      .select('property_id, address')
+      .eq('bot_id', bot_id);
+
+    const dbAddressesMap = new Map();
+    if (dbProps && Array.isArray(dbProps)) {
+      dbProps.forEach(p => {
+        if (p.address) {
+          dbAddressesMap.set(p.address.toLowerCase().trim(), p.property_id);
+        }
+      });
+    }
+
     let addedCount = 0;
     let updatedCount = 0;
+    let removedCount = 0;
 
     for (const prop of allProperties) {
-      // Check if property with this address already exists for this bot
-      const { data: existing } = await supabase
-        .from('properties')
-        .select('property_id')
-        .eq('bot_id', bot_id)
-        .ilike('address', prop.address)
-        .single();
+      const addrKey = prop.address.toLowerCase().trim();
+      const existingPropId = dbAddressesMap.get(addrKey);
 
-      if (existing) {
-        // Update existing property with latest photos, city, state, price
+      if (existingPropId) {
+        // 1. Property exists on website AND in DB -> Update with latest details & photos
         const { error: updErr } = await supabase
           .from('properties')
           .update({
@@ -367,11 +378,13 @@ If no properties are found in this content, return { "properties": [] }.`
             status: 'Active',
             updated_at: new Date().toISOString()
           })
-          .eq('property_id', existing.property_id);
+          .eq('property_id', existingPropId);
 
         if (!updErr) updatedCount++;
+        // Remove from map so we know it's still alive on the website
+        dbAddressesMap.delete(addrKey);
       } else {
-        // Insert new property
+        // 2. New property found on website -> Insert into DB
         const { error: insErr } = await supabase
           .from('properties')
           .insert([{
@@ -395,10 +408,25 @@ If no properties are found in this content, return { "properties": [] }.`
       }
     }
 
+    // 3. Any properties left in dbAddressesMap were NOT found on the website anymore -> Delete them from DB
+    for (const [address, property_id] of dbAddressesMap.entries()) {
+      const { error: deleteError } = await supabase
+        .from('properties')
+        .delete()
+        .eq('property_id', property_id);
+
+      if (!deleteError) {
+        removedCount++;
+      }
+    }
+
+    console.log(`[Scraper] Sync completed: Added=${addedCount}, Updated=${updatedCount}, Removed=${removedCount}, ActiveTotal=${allProperties.length}`);
+
     return Response.json({ 
-      message: `Website synced successfully! Found ${allProperties.length} properties.`, 
+      message: `Website synced successfully! Active listings: ${allProperties.length}.`, 
       added: addedCount, 
       updated: updatedCount,
+      removed: removedCount,
       total: allProperties.length
     });
 

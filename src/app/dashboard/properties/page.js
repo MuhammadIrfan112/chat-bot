@@ -114,11 +114,11 @@ export default function PropertiesPage() {
       const data = await res.json();
       
       if (res.ok) {
-        setScrapeMessage(`✅ ${data.message} (Added: ${data.added || 0}, Updated: ${data.updated || 0})`);
+        setScrapeMessage(`✅ ${data.message} (Added: ${data.added || 0}, Updated: ${data.updated || 0}, Removed: ${data.removed || 0})`);
         fetchProperties();
         setTimeout(() => {
           setScrapeMessage('');
-        }, 5000);
+        }, 6000);
       } else {
         setScrapeMessage(`❌ Error: ${data.error || 'Failed to sync'}`);
       }
