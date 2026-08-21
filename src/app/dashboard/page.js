@@ -150,12 +150,13 @@ export default function AgentProfilePage() {
 
     // Get bot info
     const { data: bots } = await supabase.from('bots').select('*').eq('user_id', uid).limit(1);
-    if (bots && bots.length > 0) {
-      setBotId(bots[0].id);
-      if (!profile.full_name) setField('full_name', bots[0].name || '');
-      setPrimaryColor(bots[0].primary_color || '#4F46E5');
-      setWelcomeMessage(bots[0].welcome_message || '');
-      const av = bots[0].bot_avatar || '🤖';
+    const currentBot = bots?.[0] || null;
+
+    if (currentBot) {
+      setBotId(currentBot.id);
+      setPrimaryColor(currentBot.primary_color || '#4F46E5');
+      setWelcomeMessage(currentBot.welcome_message || '');
+      const av = currentBot.bot_avatar || '🤖';
       if (av.startsWith('http') || av.startsWith('/')) {
         setAvatarMode('image');
         setImagePreview(av);
@@ -166,11 +167,11 @@ export default function AgentProfilePage() {
       }
     }
 
-    // Get subscription info for email/phone pre-fill
-    const { data: sub } = await supabase.from('users_subscription').select('name, email').eq('user_id', uid).single();
+    // Get subscription info for email/phone/website pre-fill
+    const { data: sub } = await supabase.from('users_subscription').select('name, email, website_url').eq('user_id', uid).single();
 
     // Load existing profile from knowledge_base
-    const botIdToUse = bots?.[0]?.id;
+    const botIdToUse = currentBot?.id;
     let existingProfile = null;
     if (botIdToUse) {
       const { data: kb } = await supabase
@@ -181,16 +182,25 @@ export default function AgentProfilePage() {
         .single();
 
       if (kb && kb.content) {
-        try { existingProfile = JSON.parse(kb.content); setKbRecordId(kb.id); } catch {}
+        try { 
+          existingProfile = JSON.parse(kb.content); 
+          setKbRecordId(kb.id); 
+        } catch {}
       }
     }
 
-    // Merge: existing profile > subscription data > bot name
+    // Resolve values: knowledge_base > bots table > users_subscription table
+    const resolvedFullName = existingProfile?.full_name || currentBot?.name || sub?.name || '';
+    const resolvedEmail = existingProfile?.email || sub?.email || session.user.email || '';
+    const resolvedWebsite = existingProfile?.website_url || currentBot?.website_url || sub?.website_url || '';
+
+    // Merge: existing profile + resolved fields
     setProfile(prev => ({
       ...prev,
-      full_name: existingProfile?.full_name || bots?.[0]?.name || sub?.name || '',
-      email: existingProfile?.email || sub?.email || session.user.email || '',
       ...(existingProfile || {}),
+      full_name: resolvedFullName,
+      email: resolvedEmail,
+      website_url: resolvedWebsite,
     }));
     setLoading(false);
   };
@@ -231,6 +241,7 @@ export default function AgentProfilePage() {
 
     const { data: { session } } = await supabase.auth.getSession();
     const uid = userId || session?.user?.id;
+    const cleanWebsite = profile.website_url ? profile.website_url.trim() : null;
 
     // 1. Sync name, avatar, color, welcome message, and website_url to bots table
     if (botId) {
@@ -239,12 +250,25 @@ export default function AgentProfilePage() {
         primary_color: primaryColor,
         bot_avatar: botAvatar,
         welcome_message: welcomeMessage,
-        website_url: profile.website_url || null
+        website_url: cleanWebsite
       }).eq('id', botId);
     }
 
-    // 2. Save full profile to knowledge_base
-    const profileJson = JSON.stringify(profile);
+    // 2. Sync to users_subscription table
+    if (uid) {
+      await supabase.from('users_subscription').update({
+        name: profile.full_name,
+        website_url: cleanWebsite
+      }).eq('user_id', uid);
+    }
+
+    // 3. Save full profile to knowledge_base
+    const profileToSave = {
+      ...profile,
+      website_url: cleanWebsite || ''
+    };
+    const profileJson = JSON.stringify(profileToSave);
+
     if (kbRecordId) {
       await supabase.from('knowledge_base').update({ content: profileJson }).eq('id', kbRecordId);
     } else if (botId) {
@@ -256,13 +280,22 @@ export default function AgentProfilePage() {
       }).select().single();
       if (inserted) setKbRecordId(inserted.id);
     }
-    // 3. Trigger background website scraping if URL is provided
-    if (botId && profile.website_url) {
+
+    // 4. Trigger background website knowledge scraping AND property scraping automatically!
+    if (botId && cleanWebsite) {
+      // A) Scrape general website knowledge (FAQs, services, business details)
       fetch('/api/bot/scrape-website', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: profile.website_url, bot_id: botId })
-      }).catch(err => console.error('Background scrape failed:', err));
+        body: JSON.stringify({ url: cleanWebsite, bot_id: botId })
+      }).catch(err => console.error('Background website scrape failed:', err));
+
+      // B) Automatically scrape all real estate properties listed on the website into DB inventory
+      fetch('/api/crm/properties/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bot_id: botId })
+      }).catch(err => console.error('Background property scrape failed:', err));
     }
 
     setSaving(false);
