@@ -903,11 +903,10 @@ function parseBudget(text) {
   return 0;
 }
 
-// 🏡 Fetch listings from private CRM properties table
-async function fetchCRMProperties(botId, fullChatText) {
+// 🏡 Fetch listings from private CRM properties table with strict criteria checking
+async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIntent = 'buy', propBudget = 0, propBeds = 0) {
   try {
     if (!botId) return '';
-    const q = fullChatText.toLowerCase();
 
     const { data: properties, error } = await supabase
       .from('properties')
@@ -915,22 +914,103 @@ async function fetchCRMProperties(botId, fullChatText) {
       .eq('bot_id', botId)
       .eq('status', 'Active');
 
-    if (error || !properties || properties.length === 0) return '';
+    if (error || !properties || properties.length === 0) {
+      console.log(`[fetchCRMProperties] No CRM properties found for bot=${botId}`);
+      return '';
+    }
 
-    // 6. Provide soft-filtering context to AI instead of strictly removing properties
-    let filteredData = properties;
+    console.log(`[fetchCRMProperties] Bot has ${properties.length} active listings. Checking criteria: city="${detectedCity}", intent="${propIntent}", budget=${propBudget}, beds=${propBeds}`);
+
+    // Criteria 1: City Match (if city requested)
+    let matched = properties;
+    if (detectedCity && detectedCity.trim()) {
+      const cleanCity = detectedCity.toLowerCase().trim().replace(/,/g, '');
+      const cityMatches = matched.filter(p => {
+        const pCity = String(p.city || '').toLowerCase().trim();
+        const pAddr = String(p.address || '').toLowerCase().trim();
+        return pCity.includes(cleanCity) || pAddr.includes(cleanCity) || cleanCity.includes(pCity);
+      });
+
+      if (cityMatches.length > 0) {
+        matched = cityMatches;
+      } else {
+        // No properties in this requested city in CRM -> criteria NOT met, return '' to fallback to live scrape
+        console.log(`[fetchCRMProperties] 0 CRM properties matched city="${detectedCity}". Falling back to live scrape/city data.`);
+        return '';
+      }
+    }
+
+    // Criteria 2: Intent Match (Rent vs Buy)
+    const isRent = propIntent === 'rent';
+    if (isRent) {
+      const rentMatches = matched.filter(p => {
+        const status = String(p.status || '').toLowerCase();
+        const pType = String(p.property_type || '').toLowerCase();
+        const desc = String(p.description || '').toLowerCase();
+        const isLowPrice = p.price && p.price < 25000;
+        return status.includes('rent') || pType.includes('rent') || desc.includes('rent') || isLowPrice;
+      });
+      if (rentMatches.length > 0) {
+        matched = rentMatches;
+      } else {
+        console.log(`[fetchCRMProperties] 0 CRM properties matched rent intent in ${detectedCity}. Falling back to live rental scrape.`);
+        return '';
+      }
+    } else {
+      // Buy intent: exclude rentals if price is under $25,000 or marked for rent
+      const buyMatches = matched.filter(p => {
+        const status = String(p.status || '').toLowerCase();
+        const isRentTagged = status.includes('rent') || String(p.property_type || '').toLowerCase().includes('rental');
+        const isRentPrice = p.price && p.price > 0 && p.price < 25000;
+        return !isRentTagged && !isRentPrice;
+      });
+      if (buyMatches.length > 0) {
+        matched = buyMatches;
+      }
+    }
+
+    // Criteria 3: Budget Match (if budget specified)
+    if (propBudget > 0 && matched.length > 0) {
+      const maxAllowed = isRent ? propBudget * 1.5 : propBudget * 1.4;
+      const minAllowed = (!isRent && propBudget >= 100000) ? propBudget * 0.4 : 0;
+      const budgetMatches = matched.filter(p => {
+        if (!p.price || p.price === 0) return true; // Keep "contact for price"
+        return p.price <= maxAllowed && p.price >= minAllowed;
+      });
+      if (budgetMatches.length > 0) {
+        matched = budgetMatches;
+      }
+    }
+
+    // Criteria 4: Bedroom Match (if beds specified)
+    if (propBeds > 0 && matched.length > 0) {
+      const bedMatches = matched.filter(p => {
+        if (!p.bedrooms) return true;
+        return Number(p.bedrooms) >= Math.max(1, propBeds - 1);
+      });
+      if (bedMatches.length > 0) {
+        matched = bedMatches;
+      }
+    }
+
+    if (matched.length === 0) {
+      console.log(`[fetchCRMProperties] CRM criteria check yielded 0 matches. Falling back to live scrape.`);
+      return '';
+    }
+
+    console.log(`[fetchCRMProperties] Found ${matched.length} matching CRM properties for user! Showing from website.`);
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
     let cards = [];
 
-    filteredData.slice(0, 8).forEach((p, i) => {
-      const price = p.price ? `$${p.price.toLocaleString()}` : 'Contact for Price';
+    matched.slice(0, 8).forEach((p, i) => {
+      const price = p.price ? `$${Number(p.price).toLocaleString()}${isRent ? '/mo' : ''}` : 'Contact for Price';
       const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
       const photosArr = (Array.isArray(p.photos) ? p.photos : (p.photos ? [p.photos] : (p.image_url ? [p.image_url] : []))).filter(isRealImg);
       const img = photosArr[0] || '';
       const allImgs = photosArr.join('|');
-      const address = `${p.address} ${p.city ? ', ' + p.city : ''}`;
-      const status = p.status === 'Active' ? '🟢 For Sale' : '⚪ Property';
+      const address = `${p.address}${p.city ? ', ' + p.city : ''}${p.state ? ', ' + p.state : ''}`;
+      const status = isRent ? '🔵 For Rent' : '🟢 For Sale';
 
       cards.push(`[PROPERTY_CARD]
 Status: ${status}
@@ -945,7 +1025,7 @@ Link: ${p.url || '#'}
     });
 
     section += cards.join('\n\n');
-    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the private CRM.
+    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the client's website inventory.
 You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
 If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
 CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
@@ -1320,7 +1400,7 @@ If the user clicks/asks to "Show more properties", show the NEXT 2 properties us
           // ============================================================
           // PRIORITY 1 & 2: Client's CRM properties + City cached data
           // ============================================================
-          const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText);
+          const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds);
           const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity, propIntent);
 
           const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;

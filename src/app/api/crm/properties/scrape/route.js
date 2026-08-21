@@ -10,6 +10,79 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Helper: parse city, state, zip from full address
+function parseAddressDetails(addressStr) {
+  if (!addressStr) return { city: '', state: '', zip_code: '' };
+  const str = addressStr.trim();
+  // Match: Street, City, ST 12345 or Street, City, ST
+  const match = str.match(/,\s*([^,]+?),\s*([A-Za-z]{2})(?:\s+([0-9]{5}(?:-[0-9]{4})?|[A-Za-z][0-9][A-Za-z]\s*[0-9][A-Za-z][0-9]))?/i);
+  if (match) {
+    return {
+      city: match[1].trim(),
+      state: match[2].toUpperCase().trim(),
+      zip_code: (match[3] || '').trim()
+    };
+  }
+  const parts = str.split(',');
+  if (parts.length >= 2) {
+    return {
+      city: parts[1].trim(),
+      state: '',
+      zip_code: ''
+    };
+  }
+  return { city: '', state: '', zip_code: '' };
+}
+
+// Helper: extract valid absolute image URLs from an element
+function extractImagesFromEl($, el, baseUrl) {
+  const images = [];
+  const isValidImg = (u) => {
+    if (!u || typeof u !== 'string') return false;
+    const lower = u.toLowerCase();
+    if (lower.includes('.svg') || lower.includes('logo') || lower.includes('icon') || lower.includes('avatar') || lower.includes('pixel') || lower.includes('badge') || lower.includes('1x1') || lower.includes('facebook') || lower.includes('instagram') || lower.includes('twitter') || lower.includes('linkedin') || lower.includes('placeholder')) {
+      return false;
+    }
+    return true;
+  };
+
+  $(el).find('img').each((_, img) => {
+    const src = $(img).attr('data-src') || $(img).attr('data-lazy-src') || $(img).attr('data-original') || $(img).attr('data-highres') || $(img).attr('src');
+    if (src) {
+      try {
+        const abs = new URL(src, baseUrl).href;
+        if (isValidImg(abs) && !images.includes(abs)) images.push(abs);
+      } catch (e) {}
+    }
+    // Also check srcset
+    const srcset = $(img).attr('srcset') || $(img).attr('data-srcset');
+    if (srcset) {
+      try {
+        const parts = srcset.split(',').map(s => s.trim().split(' ')[0]);
+        const last = parts[parts.length - 1];
+        if (last) {
+          const abs = new URL(last, baseUrl).href;
+          if (isValidImg(abs) && !images.includes(abs)) images.push(abs);
+        }
+      } catch (e) {}
+    }
+  });
+
+  // Check background images in styles
+  $(el).find('[style*="background"]').each((_, bgEl) => {
+    const style = $(bgEl).attr('style') || '';
+    const match = style.match(/url\(['"]?([^'"]+)['"]?\)/i);
+    if (match && match[1]) {
+      try {
+        const abs = new URL(match[1], baseUrl).href;
+        if (isValidImg(abs) && !images.includes(abs)) images.push(abs);
+      } catch (e) {}
+    }
+  });
+
+  return images;
+}
+
 export async function POST(request) {
   try {
     const { bot_id } = await request.json();
@@ -19,7 +92,7 @@ export async function POST(request) {
     }
 
     // 1. Fetch website_url from bot profile (check bots table first, then users_subscription as fallback)
-    const { data: botProfile, error: botErr } = await supabase
+    const { data: botProfile } = await supabase
       .from('bots')
       .select('website_url, user_id')
       .eq('id', bot_id)
@@ -42,13 +115,25 @@ export async function POST(request) {
     }
     const baseUrl = new URL(websiteUrl).origin;
 
-    console.log(`Starting crawl for ${websiteUrl}...`);
+    console.log(`[Scraper] Starting comprehensive crawl for ${websiteUrl}...`);
 
-    // 2. Discover links on the main page
+    // 2. Discover links with priority for listing pages, pagination, and detail pages
     const visited = new Set();
     const toVisit = [websiteUrl];
     const pagesToScrape = [];
-    const MAX_PAGES = 99999; // No limit (will scrape all properties until Vercel 5-minute timeout)
+    const MAX_PAGES = 30; // Visit up to 30 relevant pages per sync
+
+    // Seed common real estate paths
+    const commonPaths = [
+      '/listings', '/properties', '/our-listings', '/featured-listings', 
+      '/homes-for-sale', '/for-sale', '/rentals', '/search', '/inventory'
+    ];
+    commonPaths.forEach(p => {
+      try {
+        const u = new URL(p, baseUrl).href;
+        if (!toVisit.includes(u)) toVisit.push(u);
+      } catch (e) {}
+    });
 
     while (toVisit.length > 0 && pagesToScrape.length < MAX_PAGES) {
       const currentUrl = toVisit.shift();
@@ -57,52 +142,117 @@ export async function POST(request) {
 
       try {
         const res = await fetch(currentUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' }
+          headers: { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+          }
         });
         if (!res.ok) continue;
 
         const html = await res.text();
         pagesToScrape.push({ url: currentUrl, html });
 
-        // Extract internal links
+        // Extract internal links with smart priority
         const $ = cheerio.load(html);
         $('a').each((i, link) => {
           const href = $(link).attr('href');
-          if (href) {
+          if (href && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
             try {
               const absUrl = new URL(href, baseUrl).href;
-              // Only add internal links, try to prioritize property-related pages
               if (absUrl.startsWith(baseUrl) && !visited.has(absUrl)) {
-                if (absUrl.toLowerCase().includes('listing') || absUrl.toLowerCase().includes('property') || absUrl.toLowerCase().includes('real-estate')) {
-                  toVisit.unshift(absUrl); // prioritize these
-                } else {
+                const lowerUrl = absUrl.toLowerCase();
+                const isPagination = lowerUrl.includes('page=') || lowerUrl.includes('/page/') || lowerUrl.includes('p=') || lowerUrl.includes('pg=') || lowerUrl.includes('start=');
+                const isListing = lowerUrl.includes('listing') || lowerUrl.includes('property') || lowerUrl.includes('real-estate') || lowerUrl.includes('homes') || lowerUrl.includes('for-sale') || lowerUrl.includes('rental');
+
+                if (isPagination || isListing) {
+                  toVisit.unshift(absUrl); // high priority
+                } else if (!lowerUrl.includes('privacy') && !lowerUrl.includes('terms') && !lowerUrl.includes('login')) {
                   toVisit.push(absUrl);
                 }
               }
-            } catch (e) {
-              // ignore invalid URLs
-            }
+            } catch (e) {}
           }
         });
+
+        // Also proactively generate pagination links if on a listing page
+        if (currentUrl.toLowerCase().includes('listing') || currentUrl.toLowerCase().includes('propert') || currentUrl.toLowerCase().includes('search')) {
+          for (let pNum = 2; pNum <= 5; pNum++) {
+            const pageUrls = [
+              `${currentUrl}${currentUrl.includes('?') ? '&' : '?'}page=${pNum}`,
+              `${currentUrl.replace(/\/$/, '')}/page/${pNum}/`,
+              `${currentUrl}${currentUrl.includes('?') ? '&' : '?'}p=${pNum}`
+            ];
+            pageUrls.forEach(pu => {
+              try {
+                const absPu = new URL(pu, baseUrl).href;
+                if (!visited.has(absPu) && !toVisit.includes(absPu)) toVisit.push(absPu);
+              } catch (e) {}
+            });
+          }
+        }
+
       } catch (err) {
-        console.error(`Failed to fetch ${currentUrl}:`, err);
+        console.error(`[Scraper] Failed to fetch ${currentUrl}:`, err.message);
       }
     }
 
-    // 3. Process pages with OpenAI to extract properties
+    console.log(`[Scraper] Fetched ${pagesToScrape.length} pages. Extracting property cards and photos...`);
+
+    // 3. Extract properties from cards/blocks with photos
     const allProperties = [];
     const existingAddresses = new Set();
 
     for (const page of pagesToScrape) {
-      console.log(`Sending text from ${page.url} to OpenAI...`);
-      
-      const cleanText = page.html
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-        .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
-        .replace(/(<([^>]+)>)/gi, ' ')
-        .replace(/\s+/g, ' ')
-        .slice(0, 30000);
+      const $ = cheerio.load(page.html);
+
+      // Collect all listing card blocks or entire page content with photo context
+      const cardBlocks = [];
+      const cardSelectors = [
+        '.property-card', '.listing-card', '.property-item', '.listing-item',
+        '.card-property', '.estate-item', '.property', '.listing', 'article',
+        '[data-listing]', '[data-property]', '.home-card', '.mls-item', 'div[class*="property"]', 'div[class*="listing"]'
+      ];
+
+      $(cardSelectors.join(', ')).each((i, cardEl) => {
+        const cardText = $(cardEl).text().replace(/\s+/g, ' ').trim();
+        // Only consider if it contains price or bed or bath indicators
+        if (cardText.length > 20 && (cardText.includes('$') || cardText.toLowerCase().includes('bed') || cardText.toLowerCase().includes('bath') || cardText.toLowerCase().includes('sqft') || cardText.toLowerCase().includes('sq ft'))) {
+          const cardImgs = extractImagesFromEl($, cardEl, baseUrl);
+          let link = $(cardEl).find('a').attr('href') || '';
+          if (link) {
+            try { link = new URL(link, baseUrl).href; } catch (e) {}
+          }
+          cardBlocks.push({
+            text: cardText.slice(0, 1500),
+            images: cardImgs.slice(0, 6),
+            link
+          });
+        }
+      });
+
+      // Format payload for OpenAI
+      let extractionPayload = '';
+      if (cardBlocks.length > 0) {
+        extractionPayload = cardBlocks.slice(0, 15).map((cb, idx) => `
+[CARD ${idx + 1}]
+Text: ${cb.text}
+Images: ${cb.images.join(', ') || 'None'}
+Link: ${cb.link || page.url}
+[/CARD]
+        `).join('\n\n');
+      } else {
+        // Fallback: full page text with all page images
+        const pageImgs = extractImagesFromEl($, 'body', baseUrl).slice(0, 12);
+        const cleanText = page.html
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+          .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, ' ')
+          .replace(/(<([^>]+)>)/gi, ' ')
+          .replace(/\s+/g, ' ')
+          .slice(0, 25000);
+
+        extractionPayload = `Page URL: ${page.url}\nPage Images: ${pageImgs.join(', ')}\n\nPage Text:\n${cleanText}`;
+      }
 
       try {
         const completion = await openai.chat.completions.create({
@@ -110,22 +260,29 @@ export async function POST(request) {
           messages: [
             {
               role: "system",
-              content: `Extract real estate properties from the following webpage text.
-Return a valid JSON object with an array called "properties".
-For each property, try to extract:
-- address: The full street address (required, string). Must not be empty.
-- price: The numeric price (number). Strip out $, commas, etc.
-- property_type: e.g. "Single Family", "Condo", "Townhouse" (string)
-- bedrooms: number of bedrooms (number)
-- bathrooms: number of bathrooms (number)
-- square_feet: size in sqft (number)
-- description: any short description available (string)
+              content: `You are a real estate listing data extraction expert.
+Extract all individual real estate properties from the provided webpage content.
+Return a valid JSON object with an array named "properties".
 
-If no properties are found, return { "properties": [] }.`
+For each property, extract:
+- address: The full street address (e.g. "1444 W Barry Street, Chicago, IL 60657" or "123 Main St, Dallas, TX"). Required.
+- city: City name (e.g. "Chicago", "Dallas", "Milton"). If not specified separately, extract it from the address.
+- state: 2-letter state or province code (e.g. "IL", "TX", "ON", "FL"). Extract from address if needed.
+- zip_code: ZIP or Postal code if present.
+- price: Numeric price (number only, e.g. 850000 or 2500 for rent). Strip out $, commas, /mo.
+- property_type: e.g. "Single Family", "Condo", "Townhouse", "Multi-Family", "Apartment", "Commercial".
+- bedrooms: Number of bedrooms (number, e.g. 3).
+- bathrooms: Number of bathrooms (number, e.g. 2 or 2.5).
+- square_feet: Area in sqft (number).
+- description: Short highlight or description.
+- photos: Array of image URLs matching this specific property (from the provided Images list). Include all matching photo URLs.
+- url: Link to the property listing page.
+
+If no properties are found in this content, return { "properties": [] }.`
             },
             {
               role: "user",
-              content: cleanText
+              content: extractionPayload
             }
           ],
           response_format: { type: "json_object" }
@@ -134,81 +291,115 @@ If no properties are found, return { "properties": [] }.`
         const aiResult = JSON.parse(completion.choices[0].message.content);
         if (aiResult.properties && Array.isArray(aiResult.properties)) {
           for (const p of aiResult.properties) {
-            if (p.address && !existingAddresses.has(p.address.toLowerCase())) {
-              existingAddresses.add(p.address.toLowerCase());
-              allProperties.push({ ...p, source_url: websiteUrl });
+            if (p.address && String(p.address).trim().length > 5) {
+              const addrKey = p.address.toLowerCase().trim();
+              if (!existingAddresses.has(addrKey)) {
+                existingAddresses.add(addrKey);
+
+                // Auto-fill city/state/zip if missing from address
+                const parsedAddr = parseAddressDetails(p.address);
+                const city = p.city?.trim() || parsedAddr.city || '';
+                const state = p.state?.trim() || parsedAddr.state || '';
+                const zip = p.zip_code?.trim() || parsedAddr.zip_code || '';
+
+                // Photos array sanitation
+                const photos = Array.isArray(p.photos) ? p.photos.filter(u => u && typeof u === 'string' && u.startsWith('http')) : [];
+
+                allProperties.push({
+                  address: p.address.trim(),
+                  city,
+                  state,
+                  zip_code: zip,
+                  price: p.price ? Number(p.price) : null,
+                  property_type: p.property_type || 'Single Family',
+                  bedrooms: p.bedrooms ? Number(p.bedrooms) : null,
+                  bathrooms: p.bathrooms ? Number(p.bathrooms) : null,
+                  square_feet: p.square_feet ? Number(p.square_feet) : null,
+                  description: p.description || null,
+                  photos: photos,
+                  url: p.url || page.url,
+                  source_url: websiteUrl
+                });
+              }
             }
           }
         }
       } catch (err) {
-        console.error(`OpenAI parsing failed for ${page.url}:`, err);
+        console.error(`[Scraper] AI parsing error on ${page.url}:`, err.message);
       }
     }
+
+    console.log(`[Scraper] Successfully extracted ${allProperties.length} total unique properties.`);
 
     if (allProperties.length === 0) {
       return Response.json({ message: 'No properties found on the website.', added: 0, removed: 0 });
     }
 
-    // 4. Update Database (Insert new, Delete removed)
-    // Fetch current properties for this bot that were auto-scraped
-    const { data: currentDbProps } = await supabase
-      .from('properties')
-      .select('property_id, address')
-      .eq('bot_id', bot_id)
-      .eq('source_url', websiteUrl);
-
-    const currentDbAddresses = new Map();
-    if (currentDbProps) {
-      currentDbProps.forEach(p => {
-        currentDbAddresses.set(p.address.toLowerCase(), p.property_id);
-      });
-    }
-
+    // 4. Update Database (Upsert new and updated properties with full photos and city data)
     let addedCount = 0;
-    let removedCount = 0;
+    let updatedCount = 0;
 
-    // Insert new properties
     for (const prop of allProperties) {
-      const addressKey = prop.address.toLowerCase();
-      if (!currentDbAddresses.has(addressKey)) {
-        // It's a new property, insert it
-        const { error: insertError } = await supabase
+      // Check if property with this address already exists for this bot
+      const { data: existing } = await supabase
+        .from('properties')
+        .select('property_id')
+        .eq('bot_id', bot_id)
+        .ilike('address', prop.address)
+        .single();
+
+      if (existing) {
+        // Update existing property with latest photos, city, state, price
+        const { error: updErr } = await supabase
           .from('properties')
-          .insert([{
-            bot_id,
-            address: prop.address,
+          .update({
+            city: prop.city || null,
+            state: prop.state || null,
+            zip_code: prop.zip_code || null,
             price: prop.price || null,
             property_type: prop.property_type || null,
             bedrooms: prop.bedrooms || null,
             bathrooms: prop.bathrooms || null,
             square_feet: prop.square_feet || null,
             description: prop.description || null,
-            source_url: websiteUrl
-          }]);
-        if (!insertError) {
-          addedCount++;
-        }
-      } else {
-        // It exists, we keep it. Remove from our Map so we don't delete it.
-        currentDbAddresses.delete(addressKey);
-      }
-    }
+            photos: prop.photos || [],
+            source_url: websiteUrl,
+            status: 'Active',
+            updated_at: new Date().toISOString()
+          })
+          .eq('property_id', existing.property_id);
 
-    // Any addresses left in currentDbAddresses are no longer on the website, so we delete them
-    for (const [address, property_id] of currentDbAddresses.entries()) {
-      const { error: deleteError } = await supabase
-        .from('properties')
-        .delete()
-        .eq('property_id', property_id);
-      if (!deleteError) {
-        removedCount++;
+        if (!updErr) updatedCount++;
+      } else {
+        // Insert new property
+        const { error: insErr } = await supabase
+          .from('properties')
+          .insert([{
+            bot_id,
+            address: prop.address,
+            city: prop.city || null,
+            state: prop.state || null,
+            zip_code: prop.zip_code || null,
+            price: prop.price || null,
+            property_type: prop.property_type || null,
+            bedrooms: prop.bedrooms || null,
+            bathrooms: prop.bathrooms || null,
+            square_feet: prop.square_feet || null,
+            description: prop.description || null,
+            photos: prop.photos || [],
+            source_url: websiteUrl,
+            status: 'Active'
+          }]);
+
+        if (!insErr) addedCount++;
       }
     }
 
     return Response.json({ 
-      message: 'Website synced successfully!', 
+      message: `Website synced successfully! Found ${allProperties.length} properties.`, 
       added: addedCount, 
-      removed: removedCount 
+      updated: updatedCount,
+      total: allProperties.length
     });
 
   } catch (error) {
