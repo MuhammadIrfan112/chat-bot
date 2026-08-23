@@ -1038,6 +1038,20 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }]);
   };
 
+  const handleSkipUpload = () => {
+    setBuyHomeData(prev => ({ ...prev, pre_approval_letter_url: 'Pending / Later' }));
+    setBuyHomeStep('agent');
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', parts: [{ text: `I'll provide later` }] },
+      {
+        role: 'model',
+        parts: [{ text: `No problem! You can provide it later.\n\nAre you currently working with any other real estate agent?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }
+    ]);
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1066,7 +1080,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       console.error(err);
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Oops, something went wrong while uploading your letter. You can try again or just type a message to continue without it.` }]
+        parts: [{ text: `Oops, something went wrong while uploading your letter. You can try again or click "Provide Later" to continue without it.` }],
+        quickReplies: ["⏩ I'll provide later"]
       }]);
     } finally {
       setIsUploading(false);
@@ -1255,7 +1270,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         setBuyHomeStep('mortgage_upload');
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: `Great! Please upload your mortgage pre-approval letter below.` }]
+          parts: [{ text: `Great! Please upload your mortgage pre-approval letter below, or choose to provide it later.` }],
+          quickReplies: ["⏩ I'll provide later"]
         }]);
       } else {
         setBuyHomeStep('agent');
@@ -1269,11 +1285,13 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (buyHomeStep === 'mortgage_upload') {
-      // This step is advanced by the file upload handler directly.
-      // If the user types something instead of uploading, remind them.
+      // If the user types anything or clicks "I'll provide later", advance to agent step
+      setBuyHomeData(prev => ({ ...prev, pre_approval_letter_url: 'Pending / Later' }));
+      setBuyHomeStep('agent');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Please use the upload button to attach your pre-approval letter.` }]
+        parts: [{ text: `No problem! You can provide it later.\n\nAre you currently working with any other real estate agent?` }],
+        quickReplies: ['✅ Yes', '❌ No']
       }]);
       return;
     }
@@ -1282,20 +1300,22 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
       const newBuyData = { ...buyHomeData, agent: hasAgent ? 'Yes' : 'No' };
       setBuyHomeData(newBuyData);
-      setBuyHomeStep('summary');
 
-      let replyParts = [];
       if (hasAgent) {
-        replyParts.push(`Thanks for letting me know! How are things going with your current agent—are you happy with them, or are you considering a change? If you have an agreement with them, do you know when it ends?\n\nSince you're already working with a real estate agent, we'll respect that relationship. If you need help with anything else related to your home search or mortgage, I'm happy to help.`);
-      } else {
-        replyParts.push(`Got it! Since you're not currently working with another agent, I can help you take the next step.`);
+        setBuyHomeStep(null);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Thanks for letting me know. Since you’re currently working with another real estate agent, we want to respect that relationship and wouldn’t want to interfere. If your situation changes in the future, we’d be happy to assist you.` }]
+        }]);
+        return;
       }
 
-      const summaryText = `Here's what I have for your home search:\nLocation: ${newBuyData.city}\nProperty: Family Home\nBedrooms: ${newBuyData.bedrooms}\nBathrooms: ${newBuyData.bathrooms}\nImportant features: ${newBuyData.features}\nSchool preference: ${newBuyData.schools}\nMaximum budget: ${newBuyData.budget}\nFirst-time buyer: ${newBuyData.firstTime}\nMortgage: ${newBuyData.mortgage}\nPurchase timeline: ${newBuyData.timeline}\nCurrently working with an agent: ${newBuyData.agent}\n\nDoes everything look correct?`;
+      setBuyHomeStep('summary');
+      const summaryText = `Here's what I have for your home search:\nLocation: ${newBuyData.city}\nProperty: Family Home\nBedrooms: ${newBuyData.bedrooms}\nBathrooms: ${newBuyData.bathrooms}\nImportant features: ${newBuyData.features}\nSchool preference: ${newBuyData.schools}\nMaximum budget: ${newBuyData.budget}\nFirst-time buyer: ${newBuyData.firstTime}\nMortgage: ${newBuyData.mortgage}\nPurchase timeline: ${newBuyData.timeline}\nCurrently working with an agent: No\n\nDoes everything look correct?`;
 
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: replyParts.join('\n\n') }]
+        parts: [{ text: `Got it! Since you're not currently working with another agent, I can help you take the next step.` }]
       }, {
         role: 'model',
         parts: [{ text: summaryText }],
@@ -1549,8 +1569,19 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     if (rentStep === 'has_agent') {
-      const rd = { ...rentData, has_agent: msg.toLowerCase().includes('yes') ? 'Yes' : 'No' };
+      const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      const rd = { ...rentData, has_agent: hasAgent ? 'Yes' : 'No' };
       setRentData(rd);
+
+      if (hasAgent) {
+        setRentStep(null);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Thanks for letting me know. Since you’re currently working with another real estate agent, we want to respect that relationship and wouldn’t want to interfere. If your situation changes in the future, we’d be happy to assist you.` }]
+        }]);
+        return;
+      }
+
       setRentStep('summary');
       const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms} | 🛁 Bathrooms: ${rd.bathrooms}\n🚗 Parking: ${rd.parking}\n✨ Features: ${rd.features}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${rd.move_in}\n\nDoes everything look correct?`;
       setMessages(prev => [...prev, {
@@ -1817,20 +1848,20 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     if (rentOutStep === 'has_agent') {
       const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
       setRentOutData(prev => ({ ...prev, has_agent: hasAgent ? 'Yes' : 'No' }));
-      setRentOutStep('priority');
       if (hasAgent) {
+        setRentOutStep(null);
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: `Thanks for letting me know! Are you happy with your current agent or property manager, or are you considering making a change?` }],
-          quickReplies: ['😊 Happy with them', '🤔 Considering a change']
+          parts: [{ text: `Thanks for letting me know. Since you’re currently working with another real estate agent, we want to respect that relationship and wouldn’t want to interfere. If your situation changes in the future, we’d be happy to assist you.` }]
         }]);
-      } else {
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: [{ text: `Got it! I can connect you with someone who can help you **determine the rental value**, market the property, and guide you through the rental process.\n\nWhat’s most important to you with this rental?` }],
-          quickReplies: ['⏰ Finding a tenant quickly', '💰 Getting the best possible rent', '👤 Having someone manage the process for me', '📝 All of the above']
-        }]);
+        return;
       }
+      setRentOutStep('priority');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Got it! I can connect you with someone who can help you **determine the rental value**, market the property, and guide you through the rental process.\n\nWhat’s most important to you with this rental?` }],
+        quickReplies: ['⏰ Finding a tenant quickly', '💰 Getting the best possible rent', '👤 Having someone manage the process for me', '📝 All of the above']
+      }]);
       return;
     }
 
@@ -1985,6 +2016,14 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
       setHomeValueData(prev => ({ ...prev, has_agent: hasAgent ? 'Yes' : 'No' }));
       setHomeValueStep(null);
+
+      if (hasAgent) {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Thanks for letting me know. Since you’re currently working with another real estate agent, we want to respect that relationship and wouldn’t want to interfere. If your situation changes in the future, we’d be happy to assist you.` }]
+        }]);
+        return;
+      }
       
       const action = homeValueData.reason.toLowerCase().includes('sell') ? 'sell your home' : 'rent out your property';
       
@@ -2764,7 +2803,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
           <div className={styles.inputArea}>
             {buyHomeStep === 'mortgage_upload' ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="file"
                   id="letter-upload"
@@ -2777,20 +2816,43 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                   style={{
                     flex: 1,
                     textAlign: 'center',
-                    padding: '10px 16px',
-                    backgroundColor: '#1E6FD9',
+                    padding: '10px 14px',
+                    backgroundColor: botConfig.primaryColor || '#1E6FD9',
                     color: 'white',
                     borderRadius: '24px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: '14px',
+                    fontSize: '13px',
                     transition: 'all 0.2s',
                     opacity: isUploading ? 0.7 : 1,
-                    pointerEvents: isUploading ? 'none' : 'auto'
+                    pointerEvents: isUploading ? 'none' : 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
                   }}
                 >
-                  {isUploading ? 'Uploading...' : '📎 Choose File'}
+                  {isUploading ? 'Uploading...' : '📎 Upload Letter'}
                 </label>
+                <button
+                  type="button"
+                  onClick={() => handleSkipUpload()}
+                  disabled={isUploading}
+                  style={{
+                    padding: '10px 16px',
+                    backgroundColor: 'var(--bg-hover, #f1f5f9)',
+                    color: 'var(--text-primary, #334155)',
+                    border: '1px solid var(--border, #cbd5e1)',
+                    borderRadius: '24px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ⏩ Provide Later
+                </button>
               </div>
             ) : (
               <input

@@ -1349,14 +1349,13 @@ ${areasNotServed.length ? `
       // AND has confirmed the summary with "yes"
       const lastUserMsg = userQuery.toLowerCase().trim();
       const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg);
-      // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
-      const isDemoBot = bot_id === 'demo-real-estate';
-      // For premium bots: city + confirmed summary is enough. Budget/beds are used as filters but NOT required to trigger.
-      // Also allow trigger if the message itself contains 'User confirmed requirements' (from frontend searchPrompt)
-      const isConfirmedSearchPrompt = messages[messages.length - 1]?.parts?.[0]?.text?.includes('User confirmed requirements');
-      const hasEnoughInfo = isDemoBot
+      // Check if user is already working with another agent (if so, never trigger property search)
+      const userHasAgent = /working with (?:an|another|any other) agent.*?\b(?:yes|yep|i am|we are|true)\b/i.test(fullChatText) ||
+                           /currently working with an agent:\s*yes/i.test(fullChatText);
+
+      const hasEnoughInfo = !userHasAgent && (isDemoBot
         ? (detectedCity || recentSummary) && hasConfirmedSummary
-        : (propIntent && detectedCity && hasConfirmedSummary) || isConfirmedSearchPrompt;
+        : (propIntent && detectedCity && hasConfirmedSummary) || isConfirmedSearchPrompt);
 
       // DEBUG: log extracted values to Vercel logs
       console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
@@ -1540,17 +1539,26 @@ Step 9. Ask for pre-approval status:
 "Have you been pre-approved for a mortgage?"
 [BUTTON: Yes] [BUTTON: No]
 
-Step 9b. Pre-Approval Letter Upload & Agent Status:
+Step 9b. Pre-Approval Letter Upload:
 If the user says "Yes" (they are pre-approved), respond with:
-"Great! 📄 Please upload your mortgage pre-approval letter below so we can keep it on file for seller showings."
+"Great! 📄 Please upload your mortgage pre-approval letter below, or choose to provide it later."
 [REQUEST_PREAPPROVAL_UPLOAD]
 
 Step 9c. Ask about real estate agent:
 "Are you currently working with any other real estate agent?"
 [BUTTON: Yes] [BUTTON: No]
 
+IMPORTANT RULE FOR AGENT REPRESENTATION:
+If the user answers "Yes" to working with another real estate agent:
+You MUST respond with EXACTLY this message:
+"Thanks for letting me know. Since you’re currently working with another real estate agent, we want to respect that relationship and wouldn’t want to interfere. If your situation changes in the future, we’d be happy to assist you."
+⛔ CRITICAL: Do NOT summarize their requirements, do NOT show any property cards, and do NOT push lead capture. If they ask any general real estate or market questions afterwards, simply answer their questions politely and helpfully.
+
+If the user answers "No" to working with another real estate agent:
+Proceed to Step 10 (Summarize and Confirm).
+
 Step 10. Summarize and Confirm:
-Once all information is collected (including agent status from Step 9b), you MUST generate a summary and ask for confirmation using EXACTLY this format:
+Once all information is collected (including agent status from Step 9b/9c), you MUST generate a summary and ask for confirmation using EXACTLY this format:
 
 Here's what I have for your home search:
 Location: [City, State]
