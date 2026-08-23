@@ -2516,7 +2516,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                                 }
                               }
 
-                              const cityName = msg.city || buyHomeData?.city || rentData?.city || (msg?.parts?.[0]?.text?.match(/Searching for live properties in\s+([a-zA-Z\s]+?)(?:\.\.\.|\!)/i)?.[1]) || 'this city';
+                              const cityName = msg.city || rentData?.city || (msg?.parts?.[0]?.text?.match(/(?:in|for)\s+\*\*?([a-zA-Z\s]+?)\*\*?(?:\.\.\.|\!|\s+that)/i)?.[1]) || (msg?.parts?.[0]?.text?.match(/Searching for live properties in\s+([a-zA-Z\s]+?)(?:\.\.\.|\!)/i)?.[1]) || 'this area';
                               const fallbacks = {
                                 school: `**Schools & Education in ${cityName}**\n\n${cityName} is served by reputable school districts with high-performing public elementary, middle, and high schools alongside private and charter options. The area offers strong academic support, AP programs, extracurriculars, and active parent-teacher communities.`,
                                 park: `**Parks & Outdoor Recreation in ${cityName}**\n\n${cityName} features expansive green spaces, nature trails, paved cycling paths, modern playgrounds, and sports facilities. It's a wonderful environment for outdoor activities, weekend family picnics, and pet-friendly recreation.`,
