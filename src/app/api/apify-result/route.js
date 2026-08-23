@@ -196,36 +196,49 @@ export async function GET(req) {
       // Filter out completely empty results
       .filter(p => p.address !== 'Address not available' || p.price !== 'Contact for price');
 
-    console.log('[apify-result] Mapped properties:', properties.length);
+    const requestedCity = (searchParams.get('city') || '').toLowerCase().trim();
 
-    if (properties.length === 0) {
+    // ── Filter properties by requested city if specified ────────────────────
+    let finalProperties = properties;
+    let savedCity = requestedCity || 'unknown';
+
+    if (requestedCity) {
+      const cityMatches = properties.filter(p => {
+        const addr = String(p.address || '').toLowerCase();
+        const c = String(p.city || '').toLowerCase();
+        return addr.includes(requestedCity) || c.includes(requestedCity);
+      });
+
+      if (cityMatches.length > 0) {
+        console.log(`[apify-result] Filtered from ${properties.length} down to ${cityMatches.length} properties strictly in "${requestedCity}"`);
+        finalProperties = cityMatches;
+      } else {
+        console.log(`[apify-result] 0 properties found strictly in requested city "${requestedCity}" — returning empty.`);
+        return Response.json({ status: 'empty' });
+      }
+    } else {
+      const firstValid = properties.find(p => p.city);
+      if (firstValid) {
+        savedCity = firstValid.city.toLowerCase().trim();
+      } else {
+        const match = properties[0].address.match(/,\s*([^,]+?),\s*[A-Z]{2}\b/i);
+        if (match) savedCity = match[1].toLowerCase().trim();
+      }
+    }
+
+    if (finalProperties.length === 0) {
       return Response.json({ status: 'empty' });
     }
 
-    // Attempt to extract the city name to save into city_property_data
-    let savedCity = 'unknown';
-    const firstValid = properties.find(p => p.city);
-    if (firstValid) {
-      savedCity = firstValid.city;
-    } else {
-      // Try to parse city from address: "123 Main St, Morton Grove, IL 60053"
-      const match = properties[0].address.match(/,\s*([^,]+?),\s*[A-Z]{2}\b/i);
-      if (match) savedCity = match[1].trim();
-    }
-
-    savedCity = savedCity.toLowerCase().trim();
-
     if (savedCity && savedCity !== 'unknown') {
       try {
-        // Save under intent-specific key so rent and sale data never overwrite each other
-        // e.g. 'dallas-rent' for rental listings, 'dallas' for sale listings
         const dbCityKey = intent === 'rent' ? `${savedCity}-rent` : savedCity;
         await supabase.from('city_property_data').upsert({
           city: dbCityKey,
-          properties: properties,
+          properties: finalProperties,
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
-        console.log(`[apify-result] Successfully saved ${properties.length} properties to DB for city key: "${dbCityKey}"`);
+        console.log(`[apify-result] Successfully saved ${finalProperties.length} properties to DB for city key: "${dbCityKey}"`);
       } catch (dbErr) {
         console.error('[apify-result] DB Save Error:', dbErr.message);
       }
@@ -234,7 +247,7 @@ export async function GET(req) {
     return Response.json({ 
       status: 'done', 
       city: savedCity, 
-      properties: properties.slice(0, 16) 
+      properties: finalProperties.slice(0, 16) 
     });
 
   } catch (e) {

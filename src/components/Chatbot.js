@@ -61,62 +61,25 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
-// Paginated wrapper: shows 4 cards first, then +4 per local click
+// Paginated wrapper: shows clean 4-card grid
 function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties, onLikeMore, onShowMoreAI }) {
-  const INITIAL = 4;
-  const STEP = 4;
-  const [visibleCount, setVisibleCount] = useState(INITIAL);
-
-  const visible = properties.slice(0, visibleCount);
-  const hasMoreLocal = visibleCount < properties.length;
+  const visible = properties.slice(0, 4);
 
   return (
-    <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
-        {visible.map((prop, i) => (
-          <PropertyCardItem
-            key={i}
-            prop={prop}
-            index={i}
-            onOpenGallery={onOpenGallery}
-            likedProperties={likedProperties}
-            dislikedProperties={dislikedProperties}
-            setLikedProperties={setLikedProperties}
-            setDislikedProperties={setDislikedProperties}
-          />
-        ))}
-      </div>
-      {hasMoreLocal && (
-        <div style={{ marginTop: '10px', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setVisibleCount(prev => prev + STEP);
-            }}
-            style={{
-              width: '100%',
-              padding: '10px 16px',
-              backgroundColor: '#f0fdf4',
-              color: '#16a34a',
-              border: '1px solid #bbf7d0',
-              borderRadius: '10px',
-              fontWeight: '700',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-            }}
-          >
-            🔍 Show More Properties ({properties.length - visibleCount} more)
-          </button>
-        </div>
-      )}
-    </>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+      {visible.map((prop, i) => (
+        <PropertyCardItem
+          key={i}
+          prop={prop}
+          index={i}
+          onOpenGallery={onOpenGallery}
+          likedProperties={likedProperties}
+          dislikedProperties={dislikedProperties}
+          setLikedProperties={setLikedProperties}
+          setDislikedProperties={setDislikedProperties}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -361,9 +324,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
   const [likedProperties, setLikedProperties] = useState([]);
-  const [dislikedProperties, setDislikedProperties] = useState([]);
   const [activeApifyRunId, setActiveApifyRunId] = useState(null);
   const [activeApifyIntent, setActiveApifyIntent] = useState('buy');
+  const [activeApifyCity, setActiveApifyCity] = useState('');
   const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
 
   // ── Closing flow state ─────────────────────────────────────────
@@ -595,7 +558,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}`);
+        const cityParam = activeApifyCity ? `&city=${encodeURIComponent(activeApifyCity)}` : '';
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}`);
         const data = await res.json();
 
         if (data.status === 'done') {
@@ -608,7 +572,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             : [];
 
           if (props.length > 0) {
-            const cityName = data.city ? data.city.charAt(0).toUpperCase() + data.city.slice(1) : 'the area';
+            const cityName = data.city && data.city !== 'unknown' ? data.city.charAt(0).toUpperCase() + data.city.slice(1) : (activeApifyCity || 'the area');
             const intro = activeApifyIntent === 'rent'
               ? `Here are live rental properties in **${cityName}** that match your criteria:`
               : `Here are live properties in **${cityName}** that match your criteria:`;
@@ -632,7 +596,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           
           setMessages(prev => [...prev, { 
             role: 'model', 
-            parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
+            parts: [{ text: `I'm sorry, I couldn't find any live properties directly in ${activeApifyCity || 'the area'} matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!` }] 
           }]);
         }
       } catch (e) {
@@ -641,7 +605,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }, 6000); // Poll every 6 seconds
 
     return () => clearInterval(interval);
-  }, [activeApifyRunId, activeApifyIntent]);
+  }, [activeApifyRunId, activeApifyIntent, activeApifyCity]);
 
   // Reusable parser for AI replies (both live chat and Apify background responses)
   const parseModelReply = (rawText, existingProps = []) => {
@@ -753,60 +717,6 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
     return { msg: newModelMsg, startLead, requestPreapproval, multiButtons, properties: allProperties };
   };
-
-  // Poll Apify results if a run is active
-  useEffect(() => {
-    if (!activeApifyRunId) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}`);
-        const data = await res.json();
-
-        if (data.status === 'done') {
-          clearInterval(interval);
-          setActiveApifyRunId(null);
-          setIsLoading(false);
-
-          const props = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
-            ? data.properties
-            : [];
-
-          if (props.length > 0) {
-            const cityName = data.city ? data.city.charAt(0).toUpperCase() + data.city.slice(1) : 'the area';
-            const intro = activeApifyIntent === 'rent'
-              ? `Here are live rental properties in **${cityName}** that match your criteria:`
-              : `Here are live properties in **${cityName}** that match your criteria:`;
-
-            const newModelMsg = {
-              role: 'model',
-              parts: [{ text: intro }],
-              properties: props
-            };
-            setMessages(prev => [...prev, newModelMsg]);
-          } else {
-            setMessages(prev => [...prev, { 
-              role: 'model', 
-              parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
-            }]);
-          }
-        } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
-          clearInterval(interval);
-          setActiveApifyRunId(null);
-          setIsLoading(false);
-          
-          setMessages(prev => [...prev, { 
-            role: 'model', 
-            parts: [{ text: "I'm sorry, I couldn't find any live properties matching your exact criteria right now. Let me know if you want to try a different city, or adjust your budget/bedrooms!" }] 
-          }]);
-        }
-      } catch (e) {
-        console.error('Apify polling error:', e);
-      }
-    }, 8000); // Poll every 8 seconds
-
-    return () => clearInterval(interval);
-  }, [activeApifyRunId]);
 
   async function initSession(force_new = false) {
     const visitor_id = getVisitorId();
@@ -2392,6 +2302,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         if (data.apifyRunId) {
           setActiveApifyRunId(data.apifyRunId);
           setActiveApifyIntent(data.intent || (rentData?.city ? 'rent' : 'buy'));
+          setActiveApifyCity(data.city || '');
         }
         // Activate multi-select if needed
         if (multiButtons.length > 0) {

@@ -365,9 +365,9 @@ Link: ${p.property_url}
 // In-memory cache for geocoded city center (avoids repeated API calls for same city)
 const GEOCODE_CACHE = {};
 
-// TIGHT_BOX_DEG: ~0.10 degrees ≈ 12 km radius
-// Covers full city and immediate surroundings to reliably find 10-30 properties
-const TIGHT_BOX_DEG = 0.10;
+// TIGHT_BOX_DEG: ~0.04 degrees ≈ 4.5 km radius
+// Keeps search strictly centered on the requested city / municipality
+const TIGHT_BOX_DEG = 0.04;
 
 // Fetch city center lat/lng using OpenStreetMap Nominatim (free, no API key needed)
 // Returns a bounding box (~12km radius) around the city center
