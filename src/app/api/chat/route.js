@@ -392,21 +392,31 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
     const maxBudget = parseBudget(fullChatText);
     if (maxBudget > 0) {
       if (isRent) {
-        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.5) };
-        filterState.price = { max: Math.round(maxBudget * 1.5) };
+        // For rentals: use budget as max monthly payment
+        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.15) };
+        filterState.price = { max: Math.round(maxBudget * 1.15) };
       } else {
-        filterState.price = { max: Math.round(maxBudget * 1.35) };
+        // For buying: use ±15% range on Zillow to ensure we get results even in areas
+        // with limited inventory. The AI will then filter further to ±10%.
+        filterState.price = {
+          min: Math.round(maxBudget * 0.85),
+          max: Math.round(maxBudget * 1.15)
+        };
       }
     }
 
-    // Property Type Filters — strictly parse from confirmed summary or user messages
+    // Property Type Filters — prefer user's selection but don't block search if not available
+    // Note: Not applying strict type filter on Zillow URL so we always get results.
+    // The AI will describe any type mismatch naturally (e.g. "I found condos in your budget").
     const summaryTypeMatch = fullChatText.match(/Property:\s*([^\n.]+)/i) || fullChatText.match(/type of home[^:]*:\s*([^\n.]+)/i);
     const userSelectedText = summaryTypeMatch ? summaryTypeMatch[1].toLowerCase() : fullChatText.toLowerCase();
 
-    const isDetached = userSelectedText.includes('detached') || userSelectedText.includes('single family') || userSelectedText.includes('single_family') || userSelectedText.includes('family home') || userSelectedText.includes('villa');
+    const isDetached = userSelectedText.includes('detached') || userSelectedText.includes('single family') || userSelectedText.includes('single_family') || userSelectedText.includes('villa');
     const isTownhouse = !isDetached && (userSelectedText.includes('townhouse') || userSelectedText.includes('townhome'));
-    const isCondo = !isDetached && (userSelectedText.includes('condo') || userSelectedText.includes('apartment'));
-    const isMultiFamily = !isDetached && (userSelectedText.includes('duplex') || userSelectedText.includes('multi-family') || userSelectedText.includes('multi family') || userSelectedText.includes('multi_family'));
+    const isCondo = !isDetached && !isTownhouse && (userSelectedText.includes('condo') || userSelectedText.includes('apartment'));
+    const isMultiFamily = !isDetached && !isTownhouse && !isCondo && (userSelectedText.includes('duplex') || userSelectedText.includes('multi-family') || userSelectedText.includes('multi family') || userSelectedText.includes('multi_family'));
+    // 'Family Home' is a general category — do NOT restrict to single family only, allow all types
+    const isFamilyHomeGeneral = userSelectedText.includes('family home') && !userSelectedText.includes('single family');
 
     if (isDetached) {
       filterState.isSingleFamily = { value: true };
@@ -434,6 +444,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
       filterState.isTownhouse = { value: false };
       filterState.isCondo = { value: false };
     }
+    // isFamilyHomeGeneral or unknown type: no type restriction — let Zillow return all available types
 
     // Beds and Baths Filters — apply relaxed minimums for flexibility
     const bedsMatch = fullChatText.match(/Bedrooms:\s*(\d+)/i) || fullChatText.match(/(\d+)\s*beds?/i);
@@ -1430,6 +1441,12 @@ ${areasNotServed.length ? `
       // AND has confirmed the summary with "yes"
       const lastUserMsg = userQuery.toLowerCase().trim();
       const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg);
+
+      // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
+      const isDemoBot = bot_id === 'demo-real-estate';
+      // Also allow trigger if the message itself contains 'User confirmed requirements' (from frontend searchPrompt)
+      const isConfirmedSearchPrompt = messages[messages.length - 1]?.parts?.[0]?.text?.includes('User confirmed requirements');
+
       // Check if user is already working with another agent (if so, never trigger property search)
       const userHasAgent = /working with (?:an|another|any other) agent.*?\b(?:yes|yep|i am|we are|true)\b/i.test(fullChatText) ||
                            /currently working with an agent:\s*yes/i.test(fullChatText);
