@@ -217,11 +217,55 @@ const CITY_STATE_MAP = {
   iqaluit: 'NU',
 };
 
+// ─── Levenshtein Distance for Fuzzy City Matching ────────────────────────────
+function levenshteinDistance(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) dp[i][j] = dp[i - 1][j - 1];
+      else dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+const ALL_KNOWN_CITIES = Object.keys(CITY_STATE_MAP);
+
+// Normalize city names and fix common user typos (e.g. "militon" -> "milton", "misissauga" -> "mississauga")
+function normalizeCityName(input) {
+  if (!input || typeof input !== 'string') return input || '';
+  const raw = input.toLowerCase().trim().replace(/[^a-z\s]/g, '');
+  if (!raw) return input.trim();
+
+  // 1. Direct exact match
+  if (CITY_STATE_MAP[raw]) return raw;
+
+  // 2. Fuzzy match against all known North American cities
+  let bestCity = input.trim();
+  let minDistance = 999;
+
+  for (const c of ALL_KNOWN_CITIES) {
+    if (c === raw) return c;
+    if (Math.abs(c.length - raw.length) > 2) continue; // Length filter for performance
+    const dist = levenshteinDistance(raw, c);
+    const maxAllowed = c.length >= 6 ? 2 : 1;
+    if (dist <= maxAllowed && dist < minDistance) {
+      minDistance = dist;
+      bestCity = c;
+    }
+  }
+
+  return bestCity;
+}
+
 function resolveStateOrProvince(city, detectedState) {
   // If state was already detected from user input, use it directly
   if (detectedState && detectedState.trim()) return detectedState.trim().toUpperCase();
-  // Auto-resolve from comprehensive city map
-  const key = (city || '').toLowerCase().trim();
+  // Auto-resolve from comprehensive city map with typo tolerance
+  const key = normalizeCityName(city).toLowerCase().trim();
   return CITY_STATE_MAP[key] || '';
 }
 
@@ -328,11 +372,13 @@ const TIGHT_BOX_DEG = 0.10;
 // Fetch city center lat/lng using OpenStreetMap Nominatim (free, no API key needed)
 // Returns a bounding box (~12km radius) around the city center
 async function getCityBounds(city, state) {
-  const cacheKey = `${city.toLowerCase()}_${(state || '').toLowerCase()}`;
+  const normCity = normalizeCityName(city);
+  const normState = state || resolveStateOrProvince(normCity, state);
+  const cacheKey = `${normCity.toLowerCase()}_${(normState || '').toLowerCase()}`;
   if (GEOCODE_CACHE[cacheKey]) return GEOCODE_CACHE[cacheKey];
 
   try {
-    const q = state ? `${city}, ${state}` : city;
+    const q = normState ? `${normCity}, ${normState}` : normCity;
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
     const res = await fetch(url, { headers: { 'User-Agent': 'RealtyPropFlow-AI/2.0' } });
     const data = await res.json();
@@ -347,11 +393,11 @@ async function getCityBounds(city, state) {
         north: lat + TIGHT_BOX_DEG,
       };
       GEOCODE_CACHE[cacheKey] = bounds;
-      console.log(`[Geocode] ${city}, ${state} → bounds (${TIGHT_BOX_DEG}° radius):`, bounds);
+      console.log(`[Geocode] ${normCity}, ${normState} → bounds (${TIGHT_BOX_DEG}° radius):`, bounds);
       return bounds;
     }
   } catch (e) {
-    console.warn(`[Geocode] Failed for ${city}:`, e.message);
+    console.warn(`[Geocode] Failed for ${normCity}:`, e.message);
   }
 
   // Fallback default box (Chicago area)
@@ -361,10 +407,12 @@ async function getCityBounds(city, state) {
 // Build a proper Zillow search URL with ?searchQueryState= (required by zillow-scraper actor)
 async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
   const isRent = intent === 'rent';
-  const citySlug = city.trim().toLowerCase().replace(/\s+/g, '-');
-  const stateSlug = state ? state.trim().toLowerCase().replace(/\s+/g, '-') : '';
+  const normCity = normalizeCityName(city);
+  const normState = state || resolveStateOrProvince(normCity, state);
+  const citySlug = normCity.trim().toLowerCase().replace(/\s+/g, '-');
+  const stateSlug = normState ? normState.trim().toLowerCase().replace(/\s+/g, '-') : '';
 
-  const bounds = await getCityBounds(city, state);
+  const bounds = await getCityBounds(normCity, normState);
 
   const filterState = isRent
     ? {
@@ -1466,6 +1514,13 @@ ${areasNotServed.length ? `
         } else if (genericMatches.length > 0) {
           detectedCity = genericMatches[genericMatches.length - 1][1].trim();
           detectedState = '';
+        }
+      }
+
+      if (detectedCity) {
+        detectedCity = normalizeCityName(detectedCity);
+        if (!detectedState) {
+          detectedState = resolveStateOrProvince(detectedCity, detectedState);
         }
       }
 
