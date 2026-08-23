@@ -444,10 +444,8 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
         filterState.monthlyPayment = { max: Math.round(maxBudget * 1.15) };
         filterState.price = { max: Math.round(maxBudget * 1.15) };
       } else {
-        // For buying: use ±15% range on Zillow to ensure we get results even in areas
-        // with limited inventory. The AI will then filter further to ±10%.
+        // For buying: cap at max budget + 15% (no minimum restriction so all affordable properties within budget are returned)
         filterState.price = {
-          min: Math.round(maxBudget * 0.85),
           max: Math.round(maxBudget * 1.15)
         };
       }
@@ -927,23 +925,24 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       if (saleOnly.length >= 2) filteredData = saleOnly;
     }
 
-    // Apply ±10% budget filter if budget is known
+    // Apply budget filter: properties must be within the user's maximum budget (+10% ceiling)
     if (propBudget > 0) {
-      const minBudget = propBudget * 0.90;
       const maxBudget = propBudget * 1.10;
+      const minBudget = isRentIntent ? 0 : 50000;
       const budgetFiltered = filteredData.filter(item => {
         const rawPrice = item.price || item.priceDisplay || '';
         const numericPrice = parseBudget(String(rawPrice));
-        if (!numericPrice || numericPrice === 0) return false; // Exclude no-price items when budget is set
+        if (!numericPrice || numericPrice === 0) return true; // Keep contact for price
         return numericPrice >= minBudget && numericPrice <= maxBudget;
       });
       if (budgetFiltered.length > 0) {
-        filteredData = budgetFiltered;
-        console.log(`fetchCityPropertyData: After ±10% budget filter (${propBudget}), ${filteredData.length} properties remain.`);
-      } else {
-        // No cached properties within budget → trigger live Apify search for accurate price-filtered results
-        console.log(`fetchCityPropertyData: ±10% budget filter yielded 0 results for budget=${propBudget} in ${cleanCity}. Returning empty to trigger Apify.`);
-        return '';
+        // Sort from highest affordable price to lowest so best matches appear first
+        filteredData = budgetFiltered.sort((a, b) => {
+          const pA = parseBudget(String(a.price || ''));
+          const pB = parseBudget(String(b.price || ''));
+          return pB - pA;
+        });
+        console.log(`fetchCityPropertyData: After budget filter (<= ${maxBudget}), ${filteredData.length} properties remain.`);
       }
     }
 
@@ -1159,15 +1158,14 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       }
     }
 
-    // Criteria 3: Budget Match (if budget specified) — strict ±10% window
+    // Criteria 3: Budget Match (if budget specified) — must be <= max budget (+10% ceiling)
     if (propBudget > 0 && matched.length > 0) {
-      const minAllowed = propBudget * 0.90;
       const maxAllowed = propBudget * 1.10;
+      const minAllowed = isRent ? 0 : 50000;
       const budgetMatches = matched.filter(p => {
         if (!p.price || p.price === 0) return true; // Keep "contact for price"
         return p.price >= minAllowed && p.price <= maxAllowed;
       });
-      // Only apply filter if it gives us results; otherwise keep all
       if (budgetMatches.length > 0) {
         matched = budgetMatches;
       }
