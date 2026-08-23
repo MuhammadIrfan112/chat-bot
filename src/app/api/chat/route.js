@@ -787,7 +787,8 @@ const SUPPLEMENT_PHOTO_SETS = [
 ];
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
-async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
+// 🏡 Fetch listings from city_property_data (Apify real data) & properties table
+async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, fullChatText = '') {
   try {
     const cleanCity = (targetCity || '').split(',')[0].trim();
     const isRentIntent = intent === 'rent';
@@ -834,7 +835,6 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
     }
 
     // ── INTENT FILTER: rent vs buy ──────────────────────────────────────────
-    // Filter by listing intent so rent searches don't show sale properties and vice versa
     if (isRentIntent) {
       const rentOnly = filteredData.filter(item => {
         const status = String(item.listing_status || item.status || '').toLowerCase();
@@ -842,19 +842,16 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
         return status.includes('rent') || priceStr.includes('/mo') || priceStr.includes('per month');
       });
       if (rentOnly.length < 2) {
-        // DB has no rent listings for this city → let Apify run live rent search
         console.log(`fetchCityPropertyData: No rent listings found for city="${cleanCity}" — falling back to live Apify rent search.`);
         return '';
       }
       filteredData = rentOnly;
     } else {
-      // Buy intent: exclude obvious rent-only properties
       const saleOnly = filteredData.filter(item => {
         const status = String(item.listing_status || item.status || '').toLowerCase();
         const priceStr = String(item.price || '').toLowerCase();
         return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
       });
-      // Only apply strict filter if we have enough results (don't leave user with nothing)
       if (saleOnly.length >= 2) filteredData = saleOnly;
     }
 
@@ -876,18 +873,56 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
       }
     }
 
-    // Shuffle for session uniqueness
-    for (let i = filteredData.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [filteredData[i], filteredData[j]] = [filteredData[j], filteredData[i]];
+    // ── Extract already-shown property addresses to prevent duplicates ────────
+    const shownAddresses = [];
+    const addrRegex = /Address:\s*([^\n,]+)/gi;
+    let match;
+    while ((match = addrRegex.exec(fullChatText)) !== null) {
+      shownAddresses.push(match[1].trim().toLowerCase());
+    }
+    const lines = fullChatText.split('\n');
+    for (const line of lines) {
+      const m = line.match(/^(\d+\s+[A-Za-z0-9\s]+(?:Cir|Way|Dr|Hts|Cross|St|Ave|Rd|Blvd|Court|Lane|Place|Terrace|Drive|Circle))/i);
+      if (m) shownAddresses.push(m[1].trim().toLowerCase());
     }
 
-    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 16)} real properties to AI (intent=${intent}).)`);
+    const isShowMore = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(fullChatText.slice(-300));
 
-    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget, shuffled for this session):\n`;
+    // Separate unseen from already seen properties
+    const unseenData = [];
+    const seenData = [];
+    filteredData.forEach(p => {
+      const addr = String(p.address || '').toLowerCase();
+      const isSeen = shownAddresses.some(sa => sa && addr && (addr.includes(sa) || sa.includes(addr.slice(0, 12))));
+      if (isSeen) {
+        seenData.push(p);
+      } else {
+        unseenData.push(p);
+      }
+    });
+
+    console.log(`fetchCityPropertyData: Total=${filteredData.length}, Unseen=${unseenData.length}, Seen=${seenData.length}, isShowMore=${isShowMore}`);
+
+    // If user asked for Show More and all properties were already shown:
+    if (isShowMore && unseenData.length === 0) {
+      return `\n\nNO_MORE_PROPERTIES: The user has already seen all available ${filteredData.length} matching properties in ${cleanCity} within their budget. CRITICAL INSTRUCTION: Politely inform the user: "You've seen all current listings matching your budget in ${cleanCity}! Would you like me to broaden the search to nearby areas, adjust the price range, or connect you with an agent who can access exclusive off-market listings?"`;
+    }
+
+    // Determine candidate list: prioritize unseen properties
+    let candidateList = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
+
+    if (!isShowMore) {
+      // Shuffle initially for session uniqueness
+      for (let i = candidateList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [candidateList[i], candidateList[j]] = [candidateList[j], candidateList[i]];
+      }
+    }
+
+    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
     let cards = [];
 
-    filteredData.slice(0, 16).forEach((l, i) => {
+    candidateList.slice(0, 16).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
       const price = l.price || l.priceDisplay || 'Contact for Price';
       const beds = l.bedrooms || l.beds || '3';
@@ -896,7 +931,6 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
 
       const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
 
-      // Comprehensive photo extraction across all Apify/Zillow/MLS formats
       let rawPhotos = [];
       if (Array.isArray(l.images) && l.images.length > 0) {
         rawPhotos = l.images;
@@ -916,7 +950,6 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
 
       let imgArr = rawPhotos.filter(isRealImg);
 
-      // If property only has 1 main exterior photo, supplement with rich interior photos so users see multiple photos
       if (imgArr.length < 2) {
         const supplement = SUPPLEMENT_PHOTO_SETS[i % SUPPLEMENT_PHOTO_SETS.length];
         imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
@@ -925,7 +958,6 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
       const mainImg = imgArr[0] || '';
       const allImgs = imgArr.slice(0, 8).join('|');
       const url = l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#');
-
       const status = l.listing_status || (l.rentPrice || String(price).includes('/mo') ? '🔵 For Rent' : '🟢 For Sale');
 
       cards.push(`[PROPERTY_CARD]
@@ -942,18 +974,18 @@ Link: ${url}
 
     section += cards.join('\n\n');
     section += `\n\nCRITICAL INSTRUCTIONS:
-1. Show EXACTLY the FIRST 4 properties in your immediate response.
+1. Show EXACTLY 4 properties in your immediate response.
 2. All properties are pre-filtered to be within ±10% of the user's stated budget. Show them as-is.
 3. Output properties EXACTLY using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags.
-4. After showing properties 1-4, add these buttons:
+4. After showing the properties, add these buttons:
 [BUTTON: Show more properties]
 [BUTTON: I like one of these properties!]
 
-⛔ SHOW MORE RULE — STRICTLY FOLLOW:
-- First response: show properties #1, #2, #3, #4.
-- If user clicks "Show more properties": show properties #5, #6, #7, #8 — NEVER repeat previously shown ones.
-- Each subsequent "Show more" click: continue with the NEXT 4 in sequence (#9-12, then #13-16).
-- NEVER show a property that was already displayed in this conversation.`;
+⛔ STRICT NON-DUPLICATION RULE:
+- NEVER repeat a property that was already shown earlier in this chat.
+- Show ONLY new properties from the list above.`;
+
+    return section;
 
     return section;
   } catch (err) {
@@ -1502,7 +1534,7 @@ CRITICAL INSTRUCTIONS:
           // PRIORITY 1 & 2: Client's CRM properties + City cached data
           // ============================================================
           const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds);
-          const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity, propIntent);
+          const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, fullChatText);
 
           const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;
           const hasCache = cachedCityContext && cachedCityContext.length > 50;
@@ -1526,7 +1558,8 @@ CRITICAL INSTRUCTIONS:
               apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText);
 
               if (apifyRunId) {
-                const cityBtns = [
+                const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
+                const cityBtns = isShowMoreRequest ? '' : [
                   '[CITY_BTN: 🏫 Schools]',
                   '[CITY_BTN: 🌳 Parks]',
                   '[CITY_BTN: 🚇 Transportation]',
@@ -1538,8 +1571,12 @@ CRITICAL INSTRUCTIONS:
                   '[CITY_BTN: 💡 Buyer Tips]'
                 ].join(' ');
 
+                const replyText = isShowMoreRequest
+                  ? `🔍 Searching for more properties in ${detectedCity}... This will take about 30 seconds.`
+                  : `🔍 Searching for live ${propIntent === 'rent' ? 'rental' : ''} properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️\n\n${cityBtns}`;
+
                 return Response.json({
-                  reply: `🔍 Searching for live ${propIntent === 'rent' ? 'rental' : ''} properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️\n\n${cityBtns}`,
+                  reply: replyText,
                   apifyRunId,
                   intent: propIntent,
                   city: detectedCity

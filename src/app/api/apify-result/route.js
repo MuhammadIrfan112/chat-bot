@@ -234,7 +234,7 @@ export async function GET(req) {
     return Response.json({ 
       status: 'done', 
       city: savedCity, 
-      properties: properties.slice(0, 8) 
+      properties: properties.slice(0, 16) 
     });
 
   } catch (e) {

@@ -61,10 +61,10 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
-// Paginated wrapper: shows 4 cards first, then +2 per local click
+// Paginated wrapper: shows 4 cards first, then +4 per local click
 function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties, onLikeMore, onShowMoreAI }) {
   const INITIAL = 4;
-  const STEP = 2;
+  const STEP = 4;
   const [visibleCount, setVisibleCount] = useState(INITIAL);
 
   const visible = properties.slice(0, visibleCount);
@@ -86,6 +86,36 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
           />
         ))}
       </div>
+      {hasMoreLocal && (
+        <div style={{ marginTop: '10px', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setVisibleCount(prev => prev + STEP);
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              backgroundColor: '#f0fdf4',
+              color: '#16a34a',
+              border: '1px solid #bbf7d0',
+              borderRadius: '10px',
+              fontWeight: '700',
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+            }}
+          >
+            🔍 Show More Properties ({properties.length - visibleCount} more)
+          </button>
+        </div>
+      )}
     </>
   );
 }
