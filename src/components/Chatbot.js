@@ -324,6 +324,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
   const [likedProperties, setLikedProperties] = useState([]);
+  const [dislikedProperties, setDislikedProperties] = useState([]);
   const [activeApifyRunId, setActiveApifyRunId] = useState(null);
   const [activeApifyIntent, setActiveApifyIntent] = useState('buy');
   const [activeApifyCity, setActiveApifyCity] = useState('');
