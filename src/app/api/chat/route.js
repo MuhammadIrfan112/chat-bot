@@ -1560,8 +1560,8 @@ ${areasNotServed.length ? `
       const isConfirmedSearchPrompt = messages[messages.length - 1]?.parts?.[0]?.text?.includes('User confirmed requirements');
 
       // Check if user is already working with another agent (if so, never trigger property search)
-      const userHasAgent = /working with (?:an|another|any other) agent.*?\b(?:yes|yep|i am|we are|true)\b/i.test(fullChatText) ||
-                           /currently working with an agent:\s*yes/i.test(fullChatText);
+      const userHasAgent = /(?:currently\s+)?working with (?:an|another|any other) agent[:\s-]+yes\b/i.test(fullChatText) ||
+                           /already have an agent[:\s-]+yes\b/i.test(fullChatText);
 
       const hasEnoughInfo = !userHasAgent && (isDemoBot
         ? (detectedCity || recentSummary) && hasConfirmedSummary
