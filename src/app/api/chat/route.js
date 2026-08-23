@@ -910,14 +910,16 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       const budgetFiltered = filteredData.filter(item => {
         const rawPrice = item.price || item.priceDisplay || '';
         const numericPrice = parseBudget(String(rawPrice));
-        if (!numericPrice || numericPrice === 0) return true; // Keep no-price items
+        if (!numericPrice || numericPrice === 0) return false; // Exclude no-price items when budget is set
         return numericPrice >= minBudget && numericPrice <= maxBudget;
       });
       if (budgetFiltered.length > 0) {
         filteredData = budgetFiltered;
         console.log(`fetchCityPropertyData: After ±10% budget filter (${propBudget}), ${filteredData.length} properties remain.`);
       } else {
-        console.log(`fetchCityPropertyData: ±10% budget filter yielded 0 results, keeping all ${filteredData.length} properties.`);
+        // No cached properties within budget → trigger live Apify search for accurate price-filtered results
+        console.log(`fetchCityPropertyData: ±10% budget filter yielded 0 results for budget=${propBudget} in ${cleanCity}. Returning empty to trigger Apify.`);
+        return '';
       }
     }
 
@@ -1603,7 +1605,24 @@ CRITICAL INSTRUCTIONS:
             propertyContext = crmPropertyContext;
           } else if (hasCache) {
             console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity}`);
-            propertyContext = cachedCityContext;
+            const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
+            if (!isShowMoreRequest) {
+              // First property search — inject city explore buttons alongside the properties
+              const cityBtns = [
+                '[CITY_BTN: 🏫 Schools]',
+                '[CITY_BTN: 🌳 Parks]',
+                '[CITY_BTN: 🚇 Transportation]',
+                '[CITY_BTN: 🛒 Shopping & Dining]',
+                '[CITY_BTN: 🏥 Healthcare]',
+                '[CITY_BTN: 🏡 Neighborhood]',
+                '[CITY_BTN: 🏘️ Housing Market]',
+                '[CITY_BTN: 👥 Community]',
+                '[CITY_BTN: 💡 Buyer Tips]'
+              ].join(' ');
+              propertyContext = cachedCityContext + `\n\nAFTER SHOWING PROPERTIES, also add this line: "While you browse, feel free to explore ${detectedCity}! ${cityBtns}"`;
+            } else {
+              propertyContext = cachedCityContext;
+            }
           } else {
             // ============================================================
             // PRIORITY 3: Live Apify search (Zillow)
