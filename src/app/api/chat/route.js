@@ -1822,9 +1822,10 @@ Then immediately reply ONLY with this hidden tag on the next line:
 `If the user confirms the information is correct in Step 10, follow these rules STRICTLY in order:
 
 **RULE A — IF you see AVAILABLE PROPERTIES FROM DATABASE in the prompt:**
-Immediately show ONLY those exact property cards. Do NOT add, invent, or modify any details.
-CRITICAL: Even if the properties do not perfectly match every single one of the user's requirements (e.g., missing features), you MUST STILL SHOW THEM. Do not reject them. Say "Here are some properties that closely match your criteria:" and show them.
-⛔ After showing properties, do NOT ask if they want to view more or capture a lead. The conversation continues naturally.
+Immediately output the exact `[PROPERTY_CARD]` ... `[/PROPERTY_CARD]` blocks VERBATIM from the AVAILABLE PROPERTIES FROM DATABASE section.
+⛔ MANDATORY CARD TAGS: You MUST output the raw `[PROPERTY_CARD]` and `[/PROPERTY_CARD]` tags exactly as written. NEVER replace them with markdown images like `![Property](...)`, never invent example.com URLs, and never omit the `[PROPERTY_CARD]` wrapper tags.
+CRITICAL: Even if the properties do not perfectly match every single one of the user's requirements (e.g., missing features), you MUST STILL SHOW THEM. Say "Here are live properties in [City] that match your criteria:" and paste the exact `[PROPERTY_CARD]` blocks.
+⛔ After showing properties, do NOT capture a lead yet. The conversation continues naturally.
 
 **RULE B — IF you see a CRITICAL OVERRIDE FOR STEP 11 or CRITICAL OVERRIDE FOR STEP 11 AND STEP 12 in the prompt:**
 Follow it EXACTLY. This means properties are being fetched live. Show the searching message and ALL city engagement buttons (Schools, Parks, Transportation, Shopping, Dining, Healthcare, Community) with their CITY_INFO content. Do NOT show any properties yet. The properties will arrive automatically.
@@ -1835,7 +1836,7 @@ Do NOT make up properties. Do NOT use general knowledge. Say exactly this:
 Then immediately reply ONLY with this hidden tag on the next line:
 [START_LEAD_CAPTURE]
 
-⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings. If the data is not explicitly in this prompt, it does not exist.
+⛔ ABSOLUTE PROHIBITION: NEVER generate, invent, or hallucinate property listings or fake example.com URLs. If the data is not explicitly in this prompt, it does not exist.
 
 If the user says "No" to the summary, or if they say "Change Search Criteria", ask them what information they would like to correct and update your understanding.
 
