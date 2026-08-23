@@ -243,56 +243,56 @@ function getRelevantFaqs(userQuery) {
   return '';
 }
 
-// Search properties from Supabase
+// Search properties from Supabase — uses ±10% price range for flexible matching
 async function getMatchingProperties(intent, propType, beds, maxBudget) {
   try {
-    // Normalize intent to DB value
     const statusFilter = intent === 'rent' ? 'forRent' : intent === 'buy' ? 'forSale' : null;
 
-    const buildQuery = (budgetLimit) => {
+    // ±10% price window
+    const minPrice = maxBudget > 0 ? Math.round(maxBudget * 0.90) : 0;
+    const maxPrice = maxBudget > 0 ? Math.round(maxBudget * 1.10) : 0;
+
+    const runQuery = async (bedsFilter, budgetMin, budgetMax) => {
       let query = supabase
         .from('morton_grove_properties')
         .select('listing_status, home_type, address_full, price_amount, price_formatted, bedrooms, bathrooms, main_image, property_url')
         .not('main_image', 'is', null)
         .not('property_url', 'is', null)
-        .limit(4);
+        .limit(20); // Fetch more so we can paginate with Show More
 
       if (statusFilter) query = query.eq('listing_status', statusFilter);
-      if (beds && beds > 0) query = query.eq('bedrooms', beds);
-      if (budgetLimit && budgetLimit > 0) query = query.eq('price_amount', budgetLimit);
+      if (bedsFilter && bedsFilter > 0) query = query.eq('bedrooms', bedsFilter);
       if (propType) query = query.ilike('home_type', `%${propType}%`);
-      
+      if (budgetMin > 0 && budgetMax > 0) {
+        query = query.gte('price_amount', budgetMin).lte('price_amount', budgetMax);
+      }
       return query;
     };
 
-    // Try EXACT budget first
-    let { data, error } = await buildQuery(maxBudget);
+    // Pass 1: exact beds + ±10% budget
+    let { data, error } = await runQuery(beds, minPrice, maxPrice);
 
-    // If no results, try 1.5% increased budget
+    // Pass 2: relax beds by ±1, keep ±10% budget
     if (!data || data.length === 0) {
-      const expandedBudget = maxBudget ? maxBudget + (maxBudget * 0.015) : null;
-      let query = supabase
-        .from('morton_grove_properties')
-        .select('listing_status, home_type, address_full, price_amount, price_formatted, bedrooms, bathrooms, main_image, property_url')
-        .not('main_image', 'is', null)
-        .not('property_url', 'is', null)
-        .limit(4);
+      const relaxedBeds = beds > 1 ? beds - 1 : (beds < 10 ? beds + 1 : 0);
+      const res = await runQuery(relaxedBeds, minPrice, maxPrice);
+      data = res.data; error = res.error;
+    }
 
-      if (statusFilter) query = query.eq('listing_status', statusFilter);
-      if (beds && beds > 0) query = query.eq('bedrooms', beds);
-      if (propType) query = query.ilike('home_type', `%${propType}%`);
-      if (expandedBudget && expandedBudget > 0) {
-          // Find properties between exact budget and budget + 1.5%
-          query = query.gt('price_amount', maxBudget).lte('price_amount', expandedBudget);
-      }
-      
-      const res = await query;
-      data = res.data;
-      error = res.error;
+    // Pass 3: drop beds filter, keep ±10% budget
+    if (!data || data.length === 0) {
+      const res = await runQuery(0, minPrice, maxPrice);
+      data = res.data; error = res.error;
     }
 
     if (error || !data || data.length === 0) {
-        return "I'm sorry, but we currently don't have any properties that perfectly match your specific requirements and budget. However, our inventory updates frequently! If you are open to slightly adjusting your budget, bedroom requirements, or preferred locations, I can show you some excellent alternatives.";
+      return "I'm sorry, but we currently don't have any properties that match your budget range. However, our inventory updates frequently! If you are open to slightly adjusting your budget or bedroom requirements, I can show you some excellent alternatives.";
+    }
+
+    // Shuffle results so different users/sessions see different orderings
+    for (let i = data.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [data[i], data[j]] = [data[j], data[i]];
     }
 
     const cards = data.map(p => {
@@ -513,6 +513,11 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
 function generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures) {
   const formatPrice = (price) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
   const baseBudget = propBudget > 0 ? propBudget : 700000;
+  
+  // ±10% price range — no property outside this range will be shown
+  const minPrice = baseBudget * 0.90;
+  const maxPrice = baseBudget * 1.10;
+
   const imageSets = [
     [
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
@@ -531,27 +536,68 @@ function generateFakeProperties(propIntent, propType, detectedCity, detectedStat
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
       'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
       'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80',
+      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80',
+      'https://images.unsplash.com/photo-1576941089067-2de3c901e126?w=800&q=80',
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1523217582562-09d0def993a6?w=800&q=80',
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+      'https://images.unsplash.com/photo-1494526585095-c41746248156?w=800&q=80',
+      'https://images.unsplash.com/photo-1504615755583-2916b52192a3?w=800&q=80'
     ]
   ];
+
+  // Street names for variety
+  const streetNames = [
+    'Maple Avenue', 'Oak Street', 'Cedar Lane', 'Pine Road', 'Elm Drive',
+    'Willow Court', 'Birch Boulevard', 'Sunset Way', 'Lakeview Terrace', 'Hillcrest Circle',
+    'Parkside Avenue', 'Riverside Drive', 'Garden Path', 'Meadow Lane', 'Forest Drive',
+    'Valley Road', 'Summit Street', 'Heritage Way', 'Orchard Lane', 'Stonegate Court'
+  ];
+
+  const requestedBeds = propBeds || 3;
+  const requestedBaths = Math.max(1, requestedBeds - 1);
+
   const generatedCards = [];
-  for (let i = 1; i <= 20; i++) {
-    const priceVariance = 0.8 + (Math.random() * 0.2);
-    const price = baseBudget * priceVariance;
-    const currentSet = imageSets[(i - 1) % imageSets.length];
-    const img = currentSet[0];
-    const allImgs = currentSet.join('|');
+  // Generate 20 unique property cards with prices strictly within ±10% of budget
+  for (let i = 0; i < 20; i++) {
+    // Price: random within ±10% of baseBudget
+    const price = minPrice + (Math.random() * (maxPrice - minPrice));
+    // Beds: requested ±1 for variety (but never below 1)
+    const bedVariance = i % 3 === 0 ? 1 : (i % 3 === 1 ? -1 : 0);
+    const beds = Math.max(1, requestedBeds + (i > 10 ? bedVariance : 0));
+    const baths = beds === requestedBeds ? requestedBaths : Math.max(1, beds - 1);
+
+    const streetNum = 100 + (i * 47 + Math.floor(Math.random() * 30));
+    const street = streetNames[i % streetNames.length];
+    const imageSetIdx = i % imageSets.length;
+    const imgSet = imageSets[imageSetIdx];
+    const img = imgSet[i % imgSet.length];
+    const allImgs = imgSet.join('|');
+
     generatedCards.push(`[PROPERTY_CARD]
 Status: ${propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'}
 Type: ${propType || 'Family Home'}
-Address: ${i * 10 + 15} Demo Street, ${detectedCity || 'the city'}, ${detectedState || ''}
+Address: ${streetNum} ${street}, ${detectedCity || 'the city'}, ${detectedState || ''}
 Price: ${formatPrice(price)}
-Beds: ${propBeds || 4} | Baths: ${Math.max(1, (propBeds || 4) - 1)}
-Features: Includes ${propFeatures || 'Beautiful property with modern finishes'}
+Beds: ${beds} | Baths: ${baths}
+Features: ${propFeatures || 'Modern kitchen, hardwood floors, private backyard'}
 Image: ${img}
 Images: ${allImgs}
-Link: #demo-property-${i}
+Link: #demo-property-${i + 1}
 [/PROPERTY_CARD]`);
   }
+
+  // Shuffle the cards so each session sees a different order (session uniqueness)
+  for (let i = generatedCards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [generatedCards[i], generatedCards[j]] = [generatedCards[j], generatedCards[i]];
+  }
+
   return generatedCards.join('\n\n');
 }
 
@@ -801,12 +847,36 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy') {
       if (saleOnly.length >= 2) filteredData = saleOnly;
     }
 
-    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 8)} real properties to AI (intent=${intent}).`);
+    // Apply ±10% budget filter if budget is known
+    if (propBudget > 0) {
+      const minBudget = propBudget * 0.90;
+      const maxBudget = propBudget * 1.10;
+      const budgetFiltered = filteredData.filter(item => {
+        const rawPrice = item.price || item.priceDisplay || '';
+        const numericPrice = parseBudget(String(rawPrice));
+        if (!numericPrice || numericPrice === 0) return true; // Keep no-price items
+        return numericPrice >= minBudget && numericPrice <= maxBudget;
+      });
+      if (budgetFiltered.length > 0) {
+        filteredData = budgetFiltered;
+        console.log(`fetchCityPropertyData: After ±10% budget filter (${propBudget}), ${filteredData.length} properties remain.`);
+      } else {
+        console.log(`fetchCityPropertyData: ±10% budget filter yielded 0 results, keeping all ${filteredData.length} properties.`);
+      }
+    }
 
-    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
+    // Shuffle for session uniqueness
+    for (let i = filteredData.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [filteredData[i], filteredData[j]] = [filteredData[j], filteredData[i]];
+    }
+
+    console.log(`fetchCityPropertyData: Passing ${Math.min(filteredData.length, 16)} real properties to AI (intent=${intent}).)`);
+
+    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget, shuffled for this session):\n`;
     let cards = [];
 
-    filteredData.slice(0, 8).forEach((l, i) => {
+    filteredData.slice(0, 16).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
       const price = l.price || l.priceDisplay || 'Contact for Price';
       const beds = l.bedrooms || l.beds || '3';
@@ -860,16 +930,19 @@ Link: ${url}
     });
 
     section += cards.join('\n\n');
-    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the database.
-You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
-If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
-CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
-
-After showing the properties, you MUST include these two buttons:
+    section += `\n\nCRITICAL INSTRUCTIONS:
+1. Show EXACTLY the FIRST 4 properties in your immediate response.
+2. All properties are pre-filtered to be within ±10% of the user's stated budget. Show them as-is.
+3. Output properties EXACTLY using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags.
+4. After showing properties 1-4, add these buttons:
 [BUTTON: Show more properties]
 [BUTTON: I like one of these properties!]
 
-If the user clicks/asks to "Show more properties", show the NEXT 2 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+⛔ SHOW MORE RULE — STRICTLY FOLLOW:
+- First response: show properties #1, #2, #3, #4.
+- If user clicks "Show more properties": show properties #5, #6, #7, #8 — NEVER repeat previously shown ones.
+- Each subsequent "Show more" click: continue with the NEXT 4 in sequence (#9-12, then #13-16).
+- NEVER show a property that was already displayed in this conversation.`;
 
     return section;
   } catch (err) {
@@ -969,14 +1042,15 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       }
     }
 
-    // Criteria 3: Budget Match (if budget specified)
+    // Criteria 3: Budget Match (if budget specified) — strict ±10% window
     if (propBudget > 0 && matched.length > 0) {
-      const maxAllowed = isRent ? propBudget * 1.5 : propBudget * 1.4;
-      const minAllowed = (!isRent && propBudget >= 100000) ? propBudget * 0.4 : 0;
+      const minAllowed = propBudget * 0.90;
+      const maxAllowed = propBudget * 1.10;
       const budgetMatches = matched.filter(p => {
         if (!p.price || p.price === 0) return true; // Keep "contact for price"
-        return p.price <= maxAllowed && p.price >= minAllowed;
+        return p.price >= minAllowed && p.price <= maxAllowed;
       });
+      // Only apply filter if it gives us results; otherwise keep all
       if (budgetMatches.length > 0) {
         matched = budgetMatches;
       }
@@ -998,12 +1072,16 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       return '';
     }
 
-    console.log(`[fetchCRMProperties] Found ${matched.length} matching CRM properties for user! Showing from website.`);
+    // Shuffle for session uniqueness — different users see different ordering
+    for (let i = matched.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [matched[i], matched[j]] = [matched[j], matched[i]];
+    }
 
-    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE:\n`;
+    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget, shuffled for this session):\n`;
     let cards = [];
 
-    matched.slice(0, 8).forEach((p, i) => {
+    matched.slice(0, 16).forEach((p, i) => {
       const price = p.price ? `$${Number(p.price).toLocaleString()}${isRent ? '/mo' : ''}` : 'Contact for Price';
       const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
       const photosArr = (Array.isArray(p.photos) ? p.photos : (p.photos ? [p.photos] : (p.image_url ? [p.image_url] : []))).filter(isRealImg);
@@ -1025,16 +1103,19 @@ Link: ${p.url || '#'}
     });
 
     section += cards.join('\n\n');
-    section += `\n\nCRITICAL INSTRUCTION: There are properties available from the client's website inventory.
-You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them at once.
-If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
-CRITICAL: You MUST output the properties EXACTLY as they appear above using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
-
-After showing the properties, you MUST include these two buttons:
+    section += `\n\nCRITICAL INSTRUCTIONS:
+1. Show EXACTLY the FIRST 4 properties in your immediate response.
+2. All properties are pre-filtered to be within ±10% of the user's budget. Show them as-is without modification.
+3. Output properties EXACTLY using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags.
+4. After showing properties 1-4, add these buttons:
 [BUTTON: Show more properties]
 [BUTTON: I like one of these properties!]
 
-If the user clicks/asks to "Show more properties", show the NEXT 2 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+⛔ SHOW MORE RULE — STRICTLY FOLLOW:
+- First response: show properties #1, #2, #3, #4.
+- If user clicks "Show more properties": show properties #5, #6, #7, #8 — NEVER repeat previously shown ones.
+- Each subsequent "Show more" click: continue with the NEXT 4 in sequence (#9-12, then #13-16).
+- NEVER show a property that was already displayed in this conversation.`;
 
     return section;
   } catch (err) {
@@ -1375,19 +1456,23 @@ ${areasNotServed.length ? `
           // Demo bot ALWAYS shows fake properties — regardless of plan setting
           matchedProperties = generateFakeProperties(propIntent, propType, detectedCity, detectedState, propBudget, propBeds, propFeatures);
 
-          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE:
+          propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (ordered for this session — all prices are within ±10% of the user's budget):
 ${matchedProperties}
 
-CRITICAL INSTRUCTION: There are properties available from the database.
-You MUST show EXACTLY 4 properties in your immediate response. Do NOT show all of them.
-If you don't have exact matches for their budget/bedrooms/bathrooms, PRIORITIZE THEIR BUDGET. Show properties within ±20% of their budget even if the bedrooms or bathrooms are higher or lower. Explicitly explain the tradeoff to the user (e.g., 'I couldn't find a 5 bed 4 bath, but here is a 4 bed 3 bath well within your budget').
-CRITICAL: You MUST output the properties EXACTLY as they appear using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT format them as standard text or markdown. Just copy the tags exactly.
-
-After showing the properties, you MUST include these two buttons:
+CRITICAL INSTRUCTIONS:
+1. Show EXACTLY the FIRST 4 properties in your immediate response. Do NOT skip any.
+2. All these properties are already pre-filtered to be within ±10% of the user's stated budget. Show them as-is.
+3. You MUST output the properties EXACTLY using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags. Do NOT modify prices, addresses, or any data.
+4. After showing properties 1-4, add these buttons:
 [BUTTON: Show more properties]
 [BUTTON: I like one of these properties!]
 
-If the user clicks/asks to "Show more properties", show the NEXT 2 properties using the raw tags and show the buttons again. Keep doing this for every "show more" request.`;
+⛔ SHOW MORE RULE — STRICTLY FOLLOW:
+- First response: show properties #1, #2, #3, #4 from the list above.
+- If user clicks "Show more properties": show properties #5, #6, #7, #8 — these MUST be properties that were NOT shown before.
+- Each subsequent "Show more" click: continue with the NEXT 4 properties in sequence (#9-12, then #13-16, etc.).
+- NEVER repeat a property that was already shown in this conversation.
+- Keep track of how many "Show more" clicks have been made to determine which batch to show next.`;
         } else if (plan === 'standard') {
           // Standard plan: NEVER search or show properties. Lead capture is triggered by system instruction.
           // No property context needed here.
