@@ -890,10 +890,10 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       }
     }
 
-    // City not in DB → return '' so caller triggers live Apify search
+    // City not in DB → return empty so caller triggers live Apify search
     if (allProperties.length === 0) {
       console.log(`fetchCityPropertyData: No data found for city="${cleanCity}" — caller will trigger live Apify.`);
-      return '';
+      return { text: '', rawProperties: [] };
     }
 
     let filteredData = allProperties;
@@ -913,7 +913,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       });
       if (rentOnly.length < 2) {
         console.log(`fetchCityPropertyData: No rent listings found for city="${cleanCity}" — falling back to live Apify rent search.`);
-        return '';
+        return { text: '', rawProperties: [] };
       }
       filteredData = rentOnly;
     } else {
@@ -1058,12 +1058,13 @@ Link: ${url}
 - NEVER repeat a property that was already shown earlier in this chat.
 - Show ONLY new properties from the list above.`;
 
-    return section;
+    // Return both the text section for system prompt AND the raw property objects for direct JSON response
+    return { text: section, rawProperties: candidateList.slice(0, 16) };
 
     return section;
   } catch (err) {
     console.error('City property fetch error:', err);
-    return '';
+    return { text: '', rawProperties: [] };
   }
 }
 
@@ -1613,7 +1614,10 @@ CRITICAL INSTRUCTIONS:
           // PRIORITY 1 & 2: Client's CRM properties + City cached data
           // ============================================================
           const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds);
-          const cachedCityContext = await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, fullChatText);
+          const cachedResult = await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, fullChatText);
+          // Support both old string return and new {text, rawProperties} return
+          const cachedCityContext = (typeof cachedResult === 'object' && cachedResult !== null) ? cachedResult.text : cachedResult;
+          const cachedRawProperties = (typeof cachedResult === 'object' && cachedResult !== null) ? (cachedResult.rawProperties || []) : [];
 
           const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;
           const hasCache = cachedCityContext && cachedCityContext.length > 50;
@@ -1626,10 +1630,61 @@ CRITICAL INSTRUCTIONS:
             console.log(`[Route] PRIORITY 1: Found client CRM properties for bot=${bot_id}`);
             propertyContext = crmPropertyContext;
           } else if (hasCache) {
-            console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity}`);
+            console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity} (${cachedRawProperties.length} raw props)`);
             const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
+
+            // ✅ DIRECT RETURN: bypass AI hallucination by returning structured property JSON immediately
+            if (cachedRawProperties.length > 0) {
+              const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
+              const structuredProps = cachedRawProperties.slice(0, 4).map((l, i) => {
+                let rawPhotos = [];
+                if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
+                else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+                else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+                else if (l.image_url) rawPhotos = [l.image_url];
+                else if (l.imgSrc) rawPhotos = [l.imgSrc];
+                const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+                let imgArr = rawPhotos.filter(isRealImg);
+                if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
+                  const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
+                  imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
+                }
+                return {
+                  address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
+                  price: l.price || l.priceDisplay || 'Contact for Price',
+                  bedrooms: String(l.bedrooms || l.beds || ''),
+                  bathrooms: String(l.bathrooms || l.baths || ''),
+                  property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
+                  city: l.city || detectedCity,
+                  province: l.province || l.state || '',
+                  image_url: imgArr[0] || '',
+                  images: imgArr.slice(0, 8),
+                  url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
+                  listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
+                  mls_number: l.mls_number || l.mlsNumber || l.zpid || ''
+                };
+              });
+
+              const cityBtnsList = !isShowMoreRequest ? [
+                '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
+                '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
+              ] : [];
+
+              const introText = `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
+                + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
+
+              console.log(`[Route] ✅ Returning ${structuredProps.length} structured properties directly (bypassing AI render)`);
+              return Response.json({
+                reply: introText,
+                properties: structuredProps,
+                apifyRunId: null,
+                intent: propIntent,
+                city: detectedCity
+              });
+            }
+
+            // Fallback: put in system prompt (AI may not follow verbatim but tries)
             if (!isShowMoreRequest) {
-              // First property search — inject city explore buttons alongside the properties
               const cityBtns = [
                 '[CITY_BTN: 🏫 Schools]',
                 '[CITY_BTN: 🌳 Parks]',
