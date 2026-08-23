@@ -525,8 +525,20 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
 }
 
 
+// ─── Apify Run Sharing: Deduplicate concurrent searches ────────────────────
+// Key = "city_budgetBucket_intent" → prevents duplicate Apify runs for same search
+const ACTIVE_APIFY_RUNS = {};
+const APIFY_RUN_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Round budget to nearest 50k bucket (e.g. 680k, 700k, 720k → all 700k bucket)
+function getBudgetBucket(budget) {
+  if (!budget || budget === 0) return 'any';
+  return Math.round(budget / 50000) * 50000;
+}
+
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
-async function startApifyRun(city, state, intent, fullChatText = '') {
+// If another user already started the same city+budget+intent run recently, reuse it
+async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
     if (!APIFY_TOKEN) {
@@ -534,8 +546,18 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
       return null;
     }
 
-    const searchUrl = await buildZillowSearchUrl(city, state, intent, fullChatText);
-    console.log(`[Apify] Starting run with URL: ${searchUrl.substring(0, 120)}...`);
+    // ── Check for an active shared run (same city + budget bucket + intent) ──
+    const normCity = normalizeCityName(city);
+    const budgetBucket = getBudgetBucket(propBudget);
+    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}`;
+    const existing = ACTIVE_APIFY_RUNS[runKey];
+    if (existing && (Date.now() - existing.startedAt) < APIFY_RUN_TTL_MS) {
+      console.log(`[Apify] ♻️ Reusing active run ${existing.runId} for key="${runKey}" (started ${Math.round((Date.now()-existing.startedAt)/1000)}s ago)`);
+      return existing.runId;
+    }
+
+    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText);
+    console.log(`[Apify] Starting NEW run with URL: ${searchUrl.substring(0, 120)}...`);
 
     let runRes = await fetch(
       `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=20&token=${APIFY_TOKEN}`,
@@ -561,7 +583,9 @@ async function startApifyRun(city, state, intent, fullChatText = '') {
     }
 
     const runId = runData.data.id;
-    console.log(`[Apify] Run started successfully: ${runId}`);
+    // ── Store this run so concurrent users can share it ──
+    ACTIVE_APIFY_RUNS[runKey] = { runId, startedAt: Date.now(), intent };
+    console.log(`[Apify] ✅ Run started successfully: ${runId} (key="${runKey}")`);
     return runId;
   } catch (e) {
     console.error('[Apify] Start error Exception thrown:', e.message, e.stack);
@@ -1628,8 +1652,8 @@ CRITICAL INSTRUCTIONS:
             // PRIORITY 3: Live Apify search (Zillow)
             // ============================================================
               const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
-              console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState}...`);
-              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText);
+              console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState} Budget=${propBudget}...`);
+              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget);
 
               if (apifyRunId) {
                 const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
