@@ -881,57 +881,92 @@ function parseBudget(text) {
   return 0;
 }
 
-// 🏡 Smart property scoring & ranking
-// Tier 1: Exact beds & baths match within budget (+10%) comes FIRST
-// Tier 2: Exact beds match comes NEXT
-// Tier 3: Closest beds & baths match comes NEXT
-// Tier 4: Closest price to user budget
-function sortPropertiesByCriteria(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false) {
-  if (!Array.isArray(properties) || properties.length === 0) return properties;
+// 🏡 Smart 4-Property Recommendation Algorithm:
+// ─── Smart Property Recommendation Algorithm ──────────────────────────────
+// User requirement:
+// 1. Initial Search: First 2 properties match user's budget (highest beds/baths in budget), Next 2 match exact/closest bed/bath count (regardless of price). (Total: 4 properties)
+// 2. See More: 1 property matches user's budget (highest beds/baths in budget), 1 matches exact/closest bed/bath count. (Total: 2 properties)
+function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2) {
+  if (!Array.isArray(properties) || properties.length === 0) return [];
+  const totalTarget = budgetCountNeeded + bedCountNeeded;
+  if (properties.length <= totalTarget) return properties;
 
-  return [...properties].sort((a, b) => {
+  const usedKeys = new Set();
+  const selected = [];
+
+  const getPropKey = (p) => {
+    return (p.url || p.address || p.id || p.mls_number || JSON.stringify(p)).toLowerCase().trim();
+  };
+
+  const addProp = (p) => {
+    if (!p) return false;
+    const key = getPropKey(p);
+    if (!usedKeys.has(key)) {
+      usedKeys.add(key);
+      selected.push(p);
+      return true;
+    }
+    return false;
+  };
+
+  // ── 1. Budget matches: Closest to targetBudget (with highest bed/bath count in that budget) ──
+  const budgetPool = [...properties].sort((a, b) => {
+    const aPrice = parseBudget(String(a.price || a.priceDisplay || ''));
+    const bPrice = parseBudget(String(b.price || b.priceDisplay || ''));
     const aBeds = parseInt(a.bedrooms || a.beds || a.hdpData?.homeInfo?.bedrooms || 0) || 0;
     const bBeds = parseInt(b.bedrooms || b.beds || b.hdpData?.homeInfo?.bedrooms || 0) || 0;
 
+    if (targetBudget > 0) {
+      const aDiff = aPrice > 0 ? Math.abs(aPrice - targetBudget) : 99999999;
+      const bDiff = bPrice > 0 ? Math.abs(bPrice - targetBudget) : 99999999;
+      if (aDiff !== bDiff) return aDiff - bDiff;
+    }
+    return bBeds - aBeds; // Higher beds preferred within budget
+  });
+
+  let budgetCount = 0;
+  for (const p of budgetPool) {
+    if (budgetCount >= budgetCountNeeded) break;
+    if (addProp(p)) budgetCount++;
+  }
+
+  // ── 2. Bed/Bath matches: Closest to targetBeds & targetBaths (regardless of price) ──
+  const bedPool = [...properties].sort((a, b) => {
+    const aBeds = parseInt(a.bedrooms || a.beds || a.hdpData?.homeInfo?.bedrooms || 0) || 0;
+    const bBeds = parseInt(b.bedrooms || b.beds || b.hdpData?.homeInfo?.bedrooms || 0) || 0;
     const aBaths = parseFloat(a.bathrooms || a.baths || a.hdpData?.homeInfo?.bathrooms || 0) || 0;
     const bBaths = parseFloat(b.bathrooms || b.baths || b.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
-    const aPrice = parseBudget(String(a.price || a.priceDisplay || ''));
-    const bPrice = parseBudget(String(b.price || b.priceDisplay || ''));
-
-    // 1. Bed difference (exact beds first: diff 0, then 1, etc.)
     if (targetBeds > 0) {
       const aBedDiff = aBeds > 0 ? Math.abs(aBeds - targetBeds) : 99;
       const bBedDiff = bBeds > 0 ? Math.abs(bBeds - targetBeds) : 99;
-
-      if (aBedDiff !== bBedDiff) {
-        return aBedDiff - bBedDiff;
-      }
+      if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
     }
 
-    // 2. Bath difference (exact baths next: diff 0, then 1, etc.)
     if (targetBaths > 0) {
       const aBathDiff = aBaths > 0 ? Math.abs(aBaths - targetBaths) : 99;
       const bBathDiff = bBaths > 0 ? Math.abs(bBaths - targetBaths) : 99;
-
-      if (aBathDiff !== bBathDiff) {
-        return aBathDiff - bBathDiff;
-      }
-    }
-
-    // 3. Closeness to budget (highest affordable price under budget, or closest price)
-    if (targetBudget > 0) {
-      if (aPrice > 0 && bPrice > 0) {
-        const aDiff = Math.abs(aPrice - targetBudget);
-        const bDiff = Math.abs(bPrice - targetBudget);
-        return aDiff - bDiff;
-      }
-      if (aPrice > 0) return -1;
-      if (bPrice > 0) return 1;
+      if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
     }
 
     return 0;
   });
+
+  let bedCount = 0;
+  for (const p of bedPool) {
+    if (bedCount >= bedCountNeeded) break;
+    if (addProp(p)) bedCount++;
+  }
+
+  // ── 3. Backfill up to totalTarget if not reached yet ──
+  for (const p of properties) {
+    if (selected.length >= totalTarget) break;
+    addProp(p);
+  }
+
+  // Append remaining properties for subsequent "Show more"
+  const remaining = properties.filter(p => !usedKeys.has(getPropKey(p)));
+  return [...selected, ...remaining];
 }
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
@@ -969,7 +1004,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
 
     // City not in DB → return empty so caller triggers live Apify search
     if (allProperties.length === 0) {
-      console.log(`fetchCityPropertyData: No data found for city="${cleanCity}" — caller will trigger live Apify.`);
+      console.log(`fetchCityPropertyData: No data found for city="${cleanCity}" in DB — caller will trigger live Apify.`);
       return { text: '', rawProperties: [] };
     }
 
@@ -1001,57 +1036,6 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       });
       if (saleOnly.length >= 2) filteredData = saleOnly;
     }
-
-    // Apply budget filter: properties must be within the user's maximum budget (+10% ceiling)
-    if (propBudget > 0) {
-      const maxBudget = propBudget * 1.10;
-      const minBudget = isRentIntent ? 0 : 50000;
-      const budgetFiltered = filteredData.filter(item => {
-        const rawPrice = item.price || item.priceDisplay || '';
-        const numericPrice = parseBudget(String(rawPrice));
-        if (!numericPrice || numericPrice === 0) return true; // Keep contact for price
-        return numericPrice >= minBudget && numericPrice <= maxBudget;
-      });
-      if (budgetFiltered.length > 0) {
-        filteredData = budgetFiltered;
-        console.log(`fetchCityPropertyData: After budget filter (<= ${maxBudget}), ${filteredData.length} properties remain.`);
-      }
-    }
-
-    // ── CRITERIA QUALITY CHECK ────────────────────────────────────────────────
-    // Agar user ne beds/baths specify kiye hain, check karo kitni properties exact match karti hain.
-    // Rule:
-    //   - exactMatches === 0 → DB mein criteria match nahi → live Apify scrape trigger karo
-    //   - exactMatches >= 1 → DB se serve karo (exact matches pehle, baaki baad mein)
-    if (propBeds > 0 || propBaths > 0) {
-      const exactMatches = filteredData.filter(item => {
-        const iBeds = parseInt(item.bedrooms || item.beds || 0) || 0;
-        const iBaths = parseFloat(item.bathrooms || item.baths || 0) || 0;
-        const bedsOk = propBeds > 0 ? iBeds === propBeds : true;
-        const bathsOk = propBaths > 0 ? iBaths >= propBaths : true; // allow same or more baths
-        return bedsOk && bathsOk;
-      });
-      console.log(`fetchCityPropertyData: Exact bed/bath matches (${propBeds}bd/${propBaths}ba): ${exactMatches.length} out of ${filteredData.length} filtered.`);
-
-      // Agar koi bhi exact match nahi mila → live Apify scrape trigger karo
-      if (exactMatches.length === 0) {
-        console.log(`fetchCityPropertyData: ZERO exact matches for ${propBeds}bd/${propBaths}ba in DB — triggering live Apify scrape.`);
-        return { text: '', rawProperties: [] };
-      }
-
-      // Exact matches pehle show karo, baaki properties baad mein (as additional options)
-      const nonExact = filteredData.filter(item => {
-        const iBeds = parseInt(item.bedrooms || item.beds || 0) || 0;
-        const iBaths = parseFloat(item.bathrooms || item.baths || 0) || 0;
-        const bedsOk = propBeds > 0 ? iBeds === propBeds : true;
-        const bathsOk = propBaths > 0 ? iBaths >= propBaths : true;
-        return !(bedsOk && bathsOk);
-      });
-      filteredData = [...exactMatches, ...nonExact];
-    }
-
-    // Smart sort properties by criteria (exact beds & baths first, then closest beds/baths, closest budget)
-    filteredData = sortPropertiesByCriteria(filteredData, propBudget, propBeds, propBaths, isRentIntent);
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
     const shownAddresses = [];
@@ -1088,14 +1072,20 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       return `\n\nNO_MORE_PROPERTIES: The user has already seen all available ${filteredData.length} matching properties in ${cleanCity} within their budget. CRITICAL INSTRUCTION: Politely inform the user: "You've seen all current listings matching your budget in ${cleanCity}! Would you like me to broaden the search to nearby areas, adjust the price range, or connect you with an agent who can access exclusive off-market listings?"`;
     }
 
-    // Determine candidate list: prioritize unseen properties while preserving the exact smart ranking
-    let candidateList = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
-    candidateList = sortPropertiesByCriteria(candidateList, propBudget, propBeds, propBaths, isRentIntent);
+    // Determine batch counts:
+    // Initial search: 4 cards (2 budget matches + 2 bed/bath matches)
+    // See more search: 2 cards (1 budget match + 1 bed/bath match) from unseen properties
+    const budgetNeeded = isShowMore ? 1 : 2;
+    const bedNeeded = isShowMore ? 1 : 2;
+    const cardsLimit = isShowMore ? 2 : 4;
+
+    const sourcePool = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
+    const candidateList = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded);
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
     let cards = [];
 
-    candidateList.slice(0, 16).forEach((l, i) => {
+    candidateList.slice(0, cardsLimit).forEach((l, i) => {
       const addr = `${l.address || ''}, ${l.city || ''}, ${l.province || ''}`.replace(/^, | , /g, '').trim();
       const price = l.price || l.priceDisplay || 'Contact for Price';
       const beds = l.bedrooms || l.beds || '3';
@@ -1147,7 +1137,7 @@ Link: ${url}
 
     section += cards.join('\n\n');
     section += `\n\nCRITICAL INSTRUCTIONS:
-1. Show EXACTLY 4 properties in your immediate response.
+1. Show EXACTLY ${cardsLimit} properties in your immediate response.
 2. All properties are pre-filtered to be within ±10% of the user's stated budget. Show them as-is.
 3. Output properties EXACTLY using the raw [PROPERTY_CARD] and [/PROPERTY_CARD] tags.
 4. After showing the properties, add these buttons:
