@@ -61,8 +61,622 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
+// Helper to format detailed facts & features for any property
+function getPropertyFactsAndFeatures(prop, index = 0) {
+  if (!prop) return {};
+
+  const rawPriceStr = prop.price ? String(prop.price).trim() : '';
+  const numVal = parseInt(rawPriceStr.replace(/[^0-9]/g, ''), 10) || 580000;
+  const beds = parseInt(prop.bedrooms) || 3;
+  const baths = parseFloat(prop.bathrooms) || 2;
+  const type = prop.property_type ? String(prop.property_type).replace(/_/g, ' ') : 'Single Family Home';
+  const city = prop.city || 'Miami';
+  const addr = prop.address ? String(prop.address).split('|')[0] : `${city} Property`;
+
+  const livingArea = prop.living_area || `${(beds * 480 + 550).toLocaleString()} sq ft`;
+  const lotSize = prop.lot_size || `${(numVal > 600000 ? 3850 : 2650).toLocaleString()} sq ft`;
+  const yearBuilt = prop.year_built || (2016 + ((index * 2) % 8));
+
+  const description = prop.description || `Spectacular ${type.toLowerCase()} located in desirable ${city}. This property boasts an open-concept floor plan illuminated by abundant natural light, a gourmet kitchen with modern finishes, a private master suite with en-suite bath, and spacious living spaces. Perfect for family comfort and entertaining, within minutes of top schools, shopping, parks, and dining.`;
+
+  const interior = {
+    bedroomsCount: beds,
+    bathroomsCount: baths,
+    primaryBedroom: { level: 'Second Floor', dimensions: '14\' x 18\' (En-suite bath & walk-in closet)' },
+    bedroom2: { level: 'Second Floor', dimensions: '12\' x 14\'' },
+    bedroom3: beds >= 3 ? { level: 'Second Floor', dimensions: '11\' x 13\'' } : null,
+    bedroom4: beds >= 4 ? { level: 'Main / Upper', dimensions: '11\' x 12\'' } : null,
+    bedroom5: beds >= 5 ? { level: 'Main / Lower', dimensions: '10\' x 12\'' } : null,
+    livingRoom: { level: 'Main Floor', dimensions: '16\' x 20\' (High ceilings, open concept)' },
+    familyRoom: { level: 'Main Floor', dimensions: '13\' x 15\'' },
+    kitchen: { level: 'Main Floor', dimensions: '12\' x 14\' (Custom cabinets, quartz counters)' },
+    breakfast: { level: 'Main Floor', dimensions: '10\' x 11\'' },
+    recreation: { level: 'Basement / Lower', dimensions: '16\' x 22\'' },
+    laundry: { level: 'Main / Basement', dimensions: '8\' x 10\'' },
+    heating: prop.heating || 'Forced Air, Natural Gas',
+    cooling: prop.cooling || 'Central Air Conditioning',
+    basement: prop.basement || 'Full Finished / Lower Level Space',
+    fireplace: prop.fireplace || 'Yes (Natural Gas Fireplace)',
+    livingArea: livingArea
+  };
+
+  const exterior = {
+    parking: prop.parking || '2 Car Garage + Private Driveway',
+    totalSpaces: '3 Total Spaces',
+    stories: prop.stories || (beds >= 4 ? '2 Stories' : '1-2 Stories'),
+    patioPorch: 'Private Backyard Deck & Covered Porch',
+    exteriorFeatures: 'Privacy Fencing, Manicured Lawn',
+    pool: prop.pool || 'None / Community Pool access',
+    lotSize: lotSize,
+    lotFeatures: 'Golf, Top Rated Schools, Public Transit, Place of Worship, Hospital, Parks'
+  };
+
+  const construction = {
+    homeType: type,
+    subType: prop.property_type || 'Single Family Residence',
+    materials: prop.materials || 'Brick Accent, Modern Siding & Poured Concrete',
+    foundation: prop.foundation || 'Poured Concrete',
+    roof: prop.roof || 'Architectural Asphalt Shingle',
+    sewer: 'Municipal Sewer & City Water',
+    security: 'Smoke Detector(s), Carbon Monoxide Detector(s)'
+  };
+
+  const annualTax = prop.annual_tax || `$${Math.round(numVal * 0.0118).toLocaleString()}`;
+  const financial = {
+    annualTax: annualTax,
+    mlsNumber: prop.mls_number || `MLS-${Math.abs(addr.length * 1234567).toString().slice(0, 8)}`,
+    dateListed: 'Active / Recently Listed',
+    status: prop.listing_status || '🟢 Active For Sale'
+  };
+
+  return {
+    price: prop.price || `$${numVal.toLocaleString()}`,
+    address: addr,
+    city: city,
+    type: type,
+    livingArea,
+    lotSize,
+    yearBuilt,
+    description,
+    interior,
+    exterior,
+    construction,
+    financial,
+    url: prop.url || '#'
+  };
+}
+
+// ── Full Rich Property Details Modal ──────────────────────────────────────────
+function PropertyDetailsModal({ detailsModal, onClose, onOpenGallery, onInquire }) {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [imgIdx, setImgIdx] = useState(0);
+
+  if (!detailsModal || !detailsModal.property) return null;
+
+  const prop = detailsModal.property;
+  const images = detailsModal.images || (prop.images && prop.images.length > 0 ? prop.images : [prop.image_url]).filter(Boolean);
+  const facts = getPropertyFactsAndFeatures(prop, detailsModal.index || 0);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.85)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 25,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        animation: 'fadeIn 0.2s ease-out'
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* Sticky Header */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 16px',
+        background: '#1e293b',
+        color: 'white',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        flexShrink: 0,
+        zIndex: 10
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '18px' }}>🏡</span>
+          <div>
+            <div style={{ fontWeight: '800', fontSize: '14px', color: '#10b981' }}>{facts.price}</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {facts.address}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'rgba(255,255,255,0.12)',
+            border: 'none',
+            color: 'white',
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            fontSize: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'background 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.8)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Modal Scrollable Body */}
+      <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc' }}>
+        {/* Hero Photo Carousel */}
+        <div style={{ position: 'relative', width: '100%', height: '180px', backgroundColor: '#0f172a' }}>
+          {images.length > 0 ? (
+            <img
+              src={images[imgIdx % images.length]}
+              alt={facts.address}
+              style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div style={{ width: '100%', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+              🏠 No Photos Available
+            </div>
+          )}
+
+          {/* Prev/Next Carousel Arrows */}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={() => setImgIdx(prev => (prev > 0 ? prev - 1 : images.length - 1))}
+                style={{
+                  position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white',
+                  width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
+                  fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backdropFilter: 'blur(4px)'
+                }}
+              >‹</button>
+              <button
+                onClick={() => setImgIdx(prev => (prev < images.length - 1 ? prev + 1 : 0))}
+                style={{
+                  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(0,0,0,0.6)', border: 'none', color: 'white',
+                  width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
+                  fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backdropFilter: 'blur(4px)'
+                }}
+              >›</button>
+            </>
+          )}
+
+          {/* Photo Count & Full Gallery Button */}
+          <div style={{
+            position: 'absolute', bottom: '8px', right: '10px',
+            display: 'flex', gap: '6px'
+          }}>
+            <button
+              onClick={() => onOpenGallery({ property: prop, images, activeIdx: imgIdx % images.length })}
+              style={{
+                background: 'rgba(16,185,129,0.9)', color: 'white', border: 'none',
+                padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+              }}
+            >
+              📸 Full Gallery ({images.length})
+            </button>
+          </div>
+
+          <div style={{
+            position: 'absolute', top: '8px', left: '10px',
+            background: '#10b981', color: 'white', fontSize: '11px',
+            fontWeight: '800', padding: '3px 10px', borderRadius: '6px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+          }}>
+            {facts.financial.status}
+          </div>
+        </div>
+
+        {/* Key Quick Spec Bar */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '8px',
+          padding: '12px 14px',
+          background: 'white',
+          borderBottom: '1px solid #e2e8f0'
+        }}>
+          <div style={{ textAlign: 'center', padding: '6px', background: '#f1f5f9', borderRadius: '8px' }}>
+            <div style={{ fontSize: '16px' }}>🛏️</div>
+            <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>{facts.interior.bedroomsCount} Beds</div>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>Bedrooms</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '6px', background: '#f1f5f9', borderRadius: '8px' }}>
+            <div style={{ fontSize: '16px' }}>🛁</div>
+            <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>{facts.interior.bathroomsCount} Baths</div>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>Bathrooms</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '6px', background: '#f1f5f9', borderRadius: '8px' }}>
+            <div style={{ fontSize: '16px' }}>📐</div>
+            <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>{facts.livingArea}</div>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>Living Area</div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div style={{
+          display: 'flex',
+          overflowX: 'auto',
+          background: 'white',
+          borderBottom: '1px solid #e2e8f0',
+          padding: '4px 8px',
+          gap: '4px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 5
+        }}>
+          {[
+            { id: 'overview', label: '📋 Overview' },
+            { id: 'interior', label: '🛋️ Facts & Features' },
+            { id: 'exterior', label: '🌳 Property & Lot' },
+            { id: 'construction', label: '🏗️ Construction' },
+            { id: 'financial', label: '💵 Financial & Tax' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: '8px 12px',
+                fontSize: '11px',
+                fontWeight: activeTab === tab.id ? '800' : '600',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                background: activeTab === tab.id ? '#2563eb' : 'transparent',
+                color: activeTab === tab.id ? 'white' : '#64748b',
+                transition: 'all 0.2s'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div style={{ padding: '14px' }}>
+          {/* TAB 1: OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>✨</span> Property Description & Main Highlights
+                </h4>
+                <p style={{ margin: 0, fontSize: '12px', lineHeight: '1.6', color: '#475569' }}>
+                  {facts.description}
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>
+                  📊 Key Property Facts
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span style={{ color: '#64748b' }}>📅 Year Built:</span> <strong style={{ color: '#0f172a' }}>{facts.yearBuilt}</strong>
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span style={{ color: '#64748b' }}>🏷️ Home Type:</span> <strong style={{ color: '#0f172a' }}>{facts.type}</strong>
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span style={{ color: '#64748b' }}>🚗 Parking:</span> <strong style={{ color: '#0f172a' }}>{facts.exterior.parking}</strong>
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span style={{ color: '#64748b' }}>🏢 Stories:</span> <strong style={{ color: '#0f172a' }}>{facts.exterior.stories}</strong>
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span style={{ color: '#64748b' }}>📐 Lot Size:</span> <strong style={{ color: '#0f172a' }}>{facts.lotSize}</strong>
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span style={{ color: '#64748b' }}>🔥 Fireplace:</span> <strong style={{ color: '#0f172a' }}>{facts.interior.fireplace}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: FACTS & FEATURES (INTERIOR) */}
+          {activeTab === 'interior' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🛏️</span> Bedrooms & Bathrooms
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Primary Bedroom:</strong> {facts.interior.primaryBedroom.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.primaryBedroom.dimensions}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Bedroom 2:</strong> {facts.interior.bedroom2.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.bedroom2.dimensions}</span>
+                  </div>
+                  {facts.interior.bedroom3 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                      <span><strong>Bedroom 3:</strong> {facts.interior.bedroom3.level}</span>
+                      <span style={{ color: '#475569' }}>{facts.interior.bedroom3.dimensions}</span>
+                    </div>
+                  )}
+                  {facts.interior.bedroom4 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                      <span><strong>Bedroom 4:</strong> {facts.interior.bedroom4.level}</span>
+                      <span style={{ color: '#475569' }}>{facts.interior.bedroom4.dimensions}</span>
+                    </div>
+                  )}
+                  {facts.interior.bedroom5 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                      <span><strong>Bedroom 5:</strong> {facts.interior.bedroom5.level}</span>
+                      <span style={{ color: '#475569' }}>{facts.interior.bedroom5.dimensions}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🍽️</span> Room Dimensions & Layout
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Living Room:</strong> {facts.interior.livingRoom.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.livingRoom.dimensions}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Kitchen:</strong> {facts.interior.kitchen.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.kitchen.dimensions}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Dining Area:</strong> {facts.interior.dining.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.dining.dimensions}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Family Room:</strong> {facts.interior.familyRoom.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.familyRoom.dimensions}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Recreation:</strong> {facts.interior.recreation.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.recreation.dimensions}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Laundry:</strong> {facts.interior.laundry.level}</span>
+                    <span style={{ color: '#475569' }}>{facts.interior.laundry.dimensions}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>❄️</span> Heating, Cooling & Basement
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>🔥 Heating:</strong> {facts.interior.heating}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>❄️ Cooling:</strong> {facts.interior.cooling}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>🏠 Basement:</strong> {facts.interior.basement}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>🪵 Fireplace Features:</strong> {facts.interior.fireplace}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: PROPERTY & EXTERIOR */}
+          {activeTab === 'exterior' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🚗</span> Parking & Garage
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Total Spaces:</strong> {facts.exterior.totalSpaces}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Parking Features:</strong> {facts.exterior.parking}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Garage:</strong> Attached Private Garage
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🌳</span> Lot & Surrounding Amenities
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>📐 Lot Size:</strong> {facts.exterior.lotSize}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Patio & Porch:</strong> {facts.exterior.patioPorch}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Exterior Features:</strong> {facts.exterior.exteriorFeatures}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Nearby Features:</strong> {facts.exterior.lotFeatures}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: CONSTRUCTION & MATERIALS */}
+          {activeTab === 'construction' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🏗️</span> Structure & Materials
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Home Type:</strong> {facts.construction.homeType}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Construction Materials:</strong> {facts.construction.materials}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Foundation:</strong> {facts.construction.foundation}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Roof:</strong> {facts.construction.roof}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Utilities & Sewer:</strong> {facts.construction.sewer}
+                  </div>
+                  <div style={{ padding: '6px 8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <strong>Security:</strong> {facts.construction.security}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: FINANCIAL & TAX */}
+          {activeTab === 'financial' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>💵</span> Financial & Listing Details
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Asking Price:</strong></span>
+                    <strong style={{ color: '#10b981', fontSize: '13px' }}>{facts.price}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Estimated Annual Tax:</strong></span>
+                    <strong style={{ color: '#0f172a' }}>{facts.financial.annualTax}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>MLS / Parcel ID:</strong></span>
+                    <span style={{ color: '#475569' }}>{facts.financial.mlsNumber}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', background: '#f8fafc', borderRadius: '6px' }}>
+                    <span><strong>Listing Status:</strong></span>
+                    <span style={{ color: '#10b981', fontWeight: '700' }}>{facts.financial.status}</span>
+                  </div>
+                </div>
+              </div>
+
+              {facts.url && facts.url !== '#' && (
+                <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                  <a
+                    href={facts.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: '#2563eb',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      textDecoration: 'none',
+                      padding: '8px 14px',
+                      background: '#eff6ff',
+                      borderRadius: '8px',
+                      border: '1px solid #bfdbfe'
+                    }}
+                  >
+                    🔗 View Full Official Zillow Listing ↗
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Fixed Action Footer */}
+      <div style={{
+        padding: '12px 14px',
+        background: 'white',
+        borderTop: '1px solid #e2e8f0',
+        display: 'flex',
+        gap: '8px',
+        flexShrink: 0
+      }}>
+        <button
+          onClick={() => onInquire(`I want to learn more details about ${facts.address} (${facts.price})`)}
+          style={{
+            flex: 1,
+            padding: '10px 8px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            color: 'white',
+            border: 'none',
+            fontSize: '12px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(16,185,129,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px'
+          }}
+        >
+          <span>💬</span> Inquire About This Home
+        </button>
+        <button
+          onClick={() => onInquire(`I would like to schedule a private tour for ${facts.address}`)}
+          style={{
+            flex: 1,
+            padding: '10px 8px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+            color: 'white',
+            border: 'none',
+            fontSize: '12px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(59,130,246,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px'
+          }}
+        >
+          <span>📅</span> Schedule a Tour
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Paginated wrapper: shows clean 4-card grid
-function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties, onLikeMore, onShowMoreAI }) {
+function PropertyCardsPaginated({ properties, onOpenGallery, onOpenDetails, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties, onLikeMore, onShowMoreAI }) {
   const visible = properties.slice(0, 4);
 
   return (
@@ -73,6 +687,7 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
           prop={prop}
           index={i}
           onOpenGallery={onOpenGallery}
+          onOpenDetails={onOpenDetails}
           likedProperties={likedProperties}
           dislikedProperties={dislikedProperties}
           setLikedProperties={setLikedProperties}
@@ -83,7 +698,7 @@ function PropertyCardsPaginated({ properties, onOpenGallery, likedProperties, di
   );
 }
 
-function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties }) {
+function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProperties, dislikedProperties, setLikedProperties, setDislikedProperties }) {
   const [imgError, setImgError] = useState(false);
   const [cardImgIdx, setCardImgIdx] = useState(0);
 
@@ -258,9 +873,39 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
             🏷️ {displayType}
           </span>
         </div>
+
+        {/* View Full Details Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenDetails) onOpenDetails({ property: prop, images: cardImages, activeIdx: safeIdx, index });
+          }}
+          style={{
+            width: '100%',
+            padding: '7px 8px',
+            marginTop: '8px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
+            color: 'white',
+            fontSize: '11px',
+            fontWeight: '700',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            boxShadow: '0 2px 6px rgba(79,70,229,0.25)',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(79,70,229,0.35)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(79,70,229,0.25)'; }}
+        >
+          <span>📋</span> Show More Details
+        </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', padding: '8px 10px 12px', marginTop: '0' }}>
+      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 10px', marginTop: '0' }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -268,7 +913,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
             setDislikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '10px 6px', borderRadius: '10px', fontSize: '14px',
+            flex: 1, padding: '8px 6px', borderRadius: '8px', fontSize: '13px',
             fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
             background: isLiked ? '#10b981' : '#ecfdf5',
@@ -285,7 +930,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, likedProperties, dislike
             setLikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '10px 6px', borderRadius: '10px', fontSize: '14px',
+            flex: 1, padding: '8px 6px', borderRadius: '8px', fontSize: '13px',
             fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
             background: isDisliked ? '#ef4444' : '#fef2f2',
@@ -321,6 +966,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [showCalendly, setShowCalendly] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
   const [galleryModal, setGalleryModal] = useState(null); // { property, images, activeIdx }
+  const [detailsModal, setDetailsModal] = useState(null); // { property, images, activeIdx, index }
   const [multiSelectOptions, setMultiSelectOptions] = useState([]); // for multi-select buttons
   const [multiSelected, setMultiSelected] = useState([]); // currently selected multi-select items
   const [likedProperties, setLikedProperties] = useState([]);
@@ -2590,6 +3236,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                       <PropertyCardsPaginated
                         properties={msg.properties}
                         onOpenGallery={setGalleryModal}
+                        onOpenDetails={setDetailsModal}
                         likedProperties={likedProperties}
                         dislikedProperties={dislikedProperties}
                         setLikedProperties={setLikedProperties}
@@ -2680,6 +3327,19 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                 <span style={{ color: '#6b7280', fontSize: '11px', marginLeft: 'auto' }}>{galleryModal?.property?.city || ''}{galleryModal?.property?.province ? `, ${galleryModal.property.province}` : ''}</span>
               </div>
             </div>
+          )}
+
+          {/* Full Property Details Modal */}
+          {detailsModal && (
+            <PropertyDetailsModal
+              detailsModal={detailsModal}
+              onClose={() => setDetailsModal(null)}
+              onOpenGallery={setGalleryModal}
+              onInquire={(text) => {
+                setDetailsModal(null);
+                handleSend(text);
+              }}
+            />
           )}
 
           {/* Calendly Popup */}

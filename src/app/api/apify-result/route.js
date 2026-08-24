@@ -194,11 +194,22 @@ const SUPPLEMENT_PHOTO_SETS = [
         // Price — resolve accurately and never return $0
         const price = resolveAndFormatPrice(p, intent === 'rent');
 
-        // Beds / Baths / Type
-        const beds = p.bedrooms ?? p.beds ?? p.hdpData?.homeInfo?.bedrooms ?? '?';
-        const baths = p.bathrooms ?? p.baths ?? p.hdpData?.homeInfo?.bathrooms ?? '?';
-        const type = p.homeType || p.cardType || p.hdpData?.homeInfo?.homeType || 'Property';
-        const city = p.addressCity || p.city || (typeof p.address === 'object' ? p.address?.city : null) || p.hdpData?.homeInfo?.city || '';
+        // Rich Facts & Features
+        const livingArea = p.livingArea || p.sqft || p.area || p.hdpData?.homeInfo?.livingArea || p.resoFacts?.livingArea || null;
+        const lotSize = p.lotSize || p.lotAreaValue || (p.hdpData?.homeInfo?.lotAreaValue ? `${p.hdpData?.homeInfo?.lotAreaValue} ${p.hdpData?.homeInfo?.lotAreaUnits || 'sqft'}` : null);
+        const yearBuilt = p.yearBuilt || p.hdpData?.homeInfo?.yearBuilt || p.resoFacts?.yearBuilt || null;
+        const description = p.description || p.resoFacts?.description || p.hdpData?.homeInfo?.description || null;
+        const stories = p.stories || p.resoFacts?.stories || p.hdpData?.homeInfo?.stories || null;
+        const parking = p.parking || p.garageSpaces || p.resoFacts?.garageSpaces || p.resoFacts?.parkingCapacity || null;
+        const heating = (Array.isArray(p.resoFacts?.heating) ? p.resoFacts?.heating?.join(', ') : p.heating) || null;
+        const cooling = (Array.isArray(p.resoFacts?.cooling) ? p.resoFacts?.cooling?.join(', ') : p.cooling) || null;
+        const basement = p.resoFacts?.basement || p.basement || (p.resoFacts?.hasBasement ? 'Finished / Full' : null);
+        const fireplace = p.resoFacts?.hasFireplace ? 'Yes' : (p.resoFacts?.fireplaces ? `${p.resoFacts.fireplaces}` : null);
+        const materials = (Array.isArray(p.resoFacts?.constructionMaterials) ? p.resoFacts?.constructionMaterials?.join(', ') : p.constructionMaterials) || null;
+        const foundation = (Array.isArray(p.resoFacts?.foundationDetails) ? p.resoFacts?.foundationDetails?.join(', ') : p.foundation) || null;
+        const roof = p.resoFacts?.roofType || p.roof || null;
+        const annualTax = p.annualTax || (p.hdpData?.homeInfo?.taxAssessedValue ? '$' + Math.round(p.hdpData.homeInfo.taxAssessedValue * 0.012).toLocaleString() : null);
+        const mlsNumber = p.mls_number || p.mlsNumber || p.zpid || p.hdpData?.homeInfo?.zpid || '';
 
         return {
           image_url: image,
@@ -210,7 +221,22 @@ const SUPPLEMENT_PHOTO_SETS = [
           bathrooms: baths,
           property_type: type,
           listing_status: listingLabel,
-          city: city
+          city: city,
+          living_area: livingArea,
+          lot_size: lotSize,
+          year_built: yearBuilt,
+          description: description,
+          stories: stories,
+          parking: parking,
+          heating: heating,
+          cooling: cooling,
+          basement: basement,
+          fireplace: fireplace,
+          materials: materials,
+          foundation: foundation,
+          roof: roof,
+          annual_tax: annualTax,
+          mls_number: mlsNumber
         };
       })
       // Filter out completely empty results

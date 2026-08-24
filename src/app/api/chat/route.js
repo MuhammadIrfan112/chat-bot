@@ -1756,7 +1756,21 @@ CRITICAL INSTRUCTIONS:
                 images: imgArr.slice(0, 8),
                 url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
                 listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
-                mls_number: l.mls_number || l.mlsNumber || l.zpid || ''
+                mls_number: l.mls_number || l.mlsNumber || l.zpid || '',
+                living_area: l.living_area || l.livingArea || l.sqft || null,
+                lot_size: l.lot_size || l.lotSize || null,
+                year_built: l.year_built || l.yearBuilt || null,
+                description: l.description || null,
+                stories: l.stories || null,
+                parking: l.parking || l.garageSpaces || null,
+                heating: l.heating || null,
+                cooling: l.cooling || null,
+                basement: l.basement || null,
+                fireplace: l.fireplace || null,
+                materials: l.materials || null,
+                foundation: l.foundation || null,
+                roof: l.roof || null,
+                annual_tax: l.annual_tax || l.annualTax || null
               };
             });
 
