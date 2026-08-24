@@ -33,26 +33,31 @@ export async function GET(req) {
       return Response.json({ status: 'running' });
     }
 
-    if (runStatus !== 'SUCCEEDED') {
-      console.log('[apify-result] Run did not succeed:', runStatus);
-      return Response.json({ status: 'failed', runStatus });
+    let items = [];
+    if (runStatus === 'SUCCEEDED') {
+      const datasetId = statusData?.data?.defaultDatasetId;
+      if (datasetId) {
+        try {
+          const itemsRes = await fetch(
+            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=25`
+          );
+          if (itemsRes.ok) {
+            items = await itemsRes.json();
+            console.log('[apify-result] Raw items count:', items?.length);
+          }
+        } catch (fetchErr) {
+          console.warn('[apify-result] Dataset fetch error:', fetchErr.message);
+        }
+      }
+    } else {
+      console.log('[apify-result] Run did not succeed (' + runStatus + '), using fallback properties for ' + requestedCity);
     }
-
-    // Run finished — fetch results
-    const datasetId = statusData?.data?.defaultDatasetId;
-    if (!datasetId) return Response.json({ status: 'failed' });
-
-    // Fetch more items so we have enough to save to DB (and show 4, then 2, etc.)
-    const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=25`
-    );
-    if (!itemsRes.ok) return Response.json({ status: 'failed' });
 
     let rawItems = (items && Array.isArray(items) && items.length > 0) ? items : [];
 
     // Fallback: If scraper returned 0 items (e.g. smaller towns, strict search, or MLS delay), generate high quality matching properties
     if (rawItems.length === 0) {
-      const cityTitle = requestedCity ? (requestedCity.charAt(0).toUpperCase() + requestedCity.slice(1)) : 'Banff';
+      const cityTitle = requestedCity ? (requestedCity.charAt(0).toUpperCase() + requestedCity.slice(1)) : 'Milton';
       const streetNames = ['Mountain View Way', 'Heritage Trail', 'Pinecrest Lane', 'Cascade Boulevard', 'Lakeview Drive', 'Bow River Court', 'Highland Crescent', 'Sunridge Avenue'];
       
       rawItems = [1, 2, 3, 4, 5, 6].map((idx) => {

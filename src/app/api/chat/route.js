@@ -983,20 +983,6 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       if (saleOnly.length >= 2) filteredData = saleOnly;
     }
 
-    // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
-    if (propBudget > 0) {
-      const maxBudget = Math.round(propBudget * 1.10);
-      const minBudget = Math.round(propBudget * 0.40);
-      const inBudget = filteredData.filter(p => {
-        const price = parseBudget(String(p.price || p.priceDisplay || ''));
-        return price <= 0 || (price <= maxBudget && price >= minBudget);
-      });
-      if (inBudget.length === 0) {
-        console.log(`fetchCityPropertyData: 0 DB properties within budget (${propBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);
-        return { text: '', rawProperties: [] };
-      }
-    }
-
     // ── Extract already-shown property addresses to prevent duplicates ────────
     const shownAddresses = [];
     const addrRegex = /Address:\s*([^\n,]+)/gi;
