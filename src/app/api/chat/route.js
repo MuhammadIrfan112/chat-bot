@@ -889,7 +889,6 @@ function parseBudget(text) {
 function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2) {
   if (!Array.isArray(properties) || properties.length === 0) return [];
   const totalTarget = budgetCountNeeded + bedCountNeeded;
-  if (properties.length <= totalTarget) return properties;
 
   const usedKeys = new Set();
   const selected = [];
@@ -909,20 +908,31 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     return false;
   };
 
-  // ── 1. Budget matches: Closest to targetBudget (with highest bed/bath count in that budget) ──
-  const budgetPool = [...properties].sort((a, b) => {
-    const aPrice = parseBudget(String(a.price || a.priceDisplay || ''));
-    const bPrice = parseBudget(String(b.price || b.priceDisplay || ''));
-    const aBeds = parseInt(a.bedrooms || a.beds || a.hdpData?.homeInfo?.bedrooms || 0) || 0;
-    const bBeds = parseInt(b.bedrooms || b.beds || b.hdpData?.homeInfo?.bedrooms || 0) || 0;
+  const getPrice = (p) => parseBudget(String(p.price || p.priceDisplay || ''));
+  const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0) || 0;
+  const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
-    if (targetBudget > 0) {
-      const aDiff = aPrice > 0 ? Math.abs(aPrice - targetBudget) : 99999999;
-      const bDiff = bPrice > 0 ? Math.abs(bPrice - targetBudget) : 99999999;
-      if (aDiff !== bDiff) return aDiff - bDiff;
-    }
-    return bBeds - aBeds; // Higher beds preferred within budget
-  });
+  // ── 1. BUDGET CARDS: MUST be within budget (max +10%). Sort by closest to budget, then most beds ──
+  // Cards 1 & 2 (or card 1 on Show More): strictly within budget
+  const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
+  const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.40) : 0;
+
+  const budgetPool = properties
+    .filter(p => {
+      if (targetBudget <= 0) return true; // no budget filter if not specified
+      const price = getPrice(p);
+      if (price <= 0) return true; // include if price unknown
+      return price <= maxBudget && price >= minBudget;
+    })
+    .sort((a, b) => {
+      // Sort by closest to budget, then by most beds
+      if (targetBudget > 0) {
+        const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
+        const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
+        if (aDiff !== bDiff) return aDiff - bDiff;
+      }
+      return getBeds(b) - getBeds(a); // prefer more beds
+    });
 
   let budgetCount = 0;
   for (const p of budgetPool) {
@@ -930,25 +940,19 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (addProp(p)) budgetCount++;
   }
 
-  // ── 2. Bed/Bath matches: Closest to targetBeds & targetBaths (regardless of price) ──
+  // ── 2. BED/BATH CARDS: Exact/closest bed & bath match regardless of price ──
+  // Cards 3 & 4 (or card 2 on Show More): exact bed/bath match
   const bedPool = [...properties].sort((a, b) => {
-    const aBeds = parseInt(a.bedrooms || a.beds || a.hdpData?.homeInfo?.bedrooms || 0) || 0;
-    const bBeds = parseInt(b.bedrooms || b.beds || b.hdpData?.homeInfo?.bedrooms || 0) || 0;
-    const aBaths = parseFloat(a.bathrooms || a.baths || a.hdpData?.homeInfo?.bathrooms || 0) || 0;
-    const bBaths = parseFloat(b.bathrooms || b.baths || b.hdpData?.homeInfo?.bathrooms || 0) || 0;
-
     if (targetBeds > 0) {
-      const aBedDiff = aBeds > 0 ? Math.abs(aBeds - targetBeds) : 99;
-      const bBedDiff = bBeds > 0 ? Math.abs(bBeds - targetBeds) : 99;
+      const aBedDiff = getBeds(a) > 0 ? Math.abs(getBeds(a) - targetBeds) : 99;
+      const bBedDiff = getBeds(b) > 0 ? Math.abs(getBeds(b) - targetBeds) : 99;
       if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
     }
-
     if (targetBaths > 0) {
-      const aBathDiff = aBaths > 0 ? Math.abs(aBaths - targetBaths) : 99;
-      const bBathDiff = bBaths > 0 ? Math.abs(bBaths - targetBaths) : 99;
+      const aBathDiff = getBaths(a) > 0 ? Math.abs(getBaths(a) - targetBaths) : 99;
+      const bBathDiff = getBaths(b) > 0 ? Math.abs(getBaths(b) - targetBaths) : 99;
       if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
     }
-
     return 0;
   });
 
@@ -958,13 +962,13 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (addProp(p)) bedCount++;
   }
 
-  // ── 3. Backfill up to totalTarget if not reached yet ──
+  // ── 3. Backfill if we didn't reach totalTarget ──
   for (const p of properties) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
 
-  // Append remaining properties for subsequent "Show more"
+  // Append remaining for subsequent "Show more" clicks
   const remaining = properties.filter(p => !usedKeys.has(getPropKey(p)));
   return [...selected, ...remaining];
 }
@@ -1035,6 +1039,20 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
         return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
       });
       if (saleOnly.length >= 2) filteredData = saleOnly;
+    }
+
+    // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
+    if (propBudget > 0) {
+      const maxBudget = Math.round(propBudget * 1.10);
+      const minBudget = Math.round(propBudget * 0.40);
+      const inBudget = filteredData.filter(p => {
+        const price = parseBudget(String(p.price || p.priceDisplay || ''));
+        return price <= 0 || (price <= maxBudget && price >= minBudget);
+      });
+      if (inBudget.length === 0) {
+        console.log(`fetchCityPropertyData: 0 DB properties within budget (${propBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
     }
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
