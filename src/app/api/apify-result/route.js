@@ -13,6 +13,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const runId = searchParams.get('runId');
     const intent = searchParams.get('intent') || 'buy'; // 'buy' or 'rent'
+    const requestedCity = (searchParams.get('city') || '').toLowerCase().trim();
     if (!runId) return Response.json({ error: 'Missing runId' }, { status: 400 });
 
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
@@ -194,6 +195,12 @@ const SUPPLEMENT_PHOTO_SETS = [
         // Price — resolve accurately and never return $0
         const price = resolveAndFormatPrice(p, intent === 'rent');
 
+        // Beds, baths, type, city
+        const beds = parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0) || 3;
+        const baths = parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0) || 2;
+        const type = p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
+        const city = p.city || p.addressCity || p.hdpData?.homeInfo?.city || (typeof address === 'string' && address.includes(',') ? address.split(',')[1]?.trim() : '') || requestedCity || '';
+
         // Rich Facts & Features
         const livingArea = p.livingArea || p.sqft || p.area || p.hdpData?.homeInfo?.livingArea || p.resoFacts?.livingArea || null;
         const lotSize = p.lotSize || p.lotAreaValue || (p.hdpData?.homeInfo?.lotAreaValue ? `${p.hdpData?.homeInfo?.lotAreaValue} ${p.hdpData?.homeInfo?.lotAreaUnits || 'sqft'}` : null);
@@ -242,13 +249,11 @@ const SUPPLEMENT_PHOTO_SETS = [
       // Filter out completely empty results
       .filter(p => p.address !== 'Address not available' || p.price !== 'Contact for price');
 
-    const requestedCity = (searchParams.get('city') || '').toLowerCase().trim();
-
     // ── Filter properties by requested city if specified ────────────────────
     let finalProperties = properties;
     let savedCity = requestedCity || 'unknown';
 
-    if (requestedCity) {
+    if (requestedCity && properties.length > 0) {
       const cityMatches = properties.filter(p => {
         const addr = String(p.address || '').toLowerCase();
         const c = String(p.city || '').toLowerCase();
@@ -259,10 +264,11 @@ const SUPPLEMENT_PHOTO_SETS = [
         console.log(`[apify-result] Filtered from ${properties.length} down to ${cityMatches.length} properties strictly in "${requestedCity}"`);
         finalProperties = cityMatches;
       } else {
-        console.log(`[apify-result] 0 properties found strictly in requested city "${requestedCity}" — returning empty.`);
-        return Response.json({ status: 'empty' });
+        // Fallback: If scraper returned properties from that city search URL, keep them rather than showing empty
+        console.log(`[apify-result] Strict city filter matched 0, keeping all ${properties.length} scraper results for "${requestedCity}".`);
+        finalProperties = properties;
       }
-    } else {
+    } else if (properties.length > 0) {
       const firstValid = properties.find(p => p.city);
       if (firstValid) {
         savedCity = firstValid.city.toLowerCase().trim();
