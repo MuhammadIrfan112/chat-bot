@@ -856,9 +856,86 @@ const SUPPLEMENT_PHOTO_SETS = [
   ]
 ];
 
+// ─── Universal Budget Parser ───────────────────────────────────────────────
+// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, 500 thousand, etc.
+function parseBudget(text) {
+  if (!text) return 0;
+  const t = text.replace(/,/g, '').toLowerCase().trim();
+
+  // Match: 1.2m, 7m, 4 million, 1.5 million
+  const mMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/);
+  if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
+
+  // Match: 990k, 650k, 1.5k
+  const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
+  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
+
+  // Match: 500 thousand
+  const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
+  if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
+
+  // Match: plain number like 1200000 or $990000
+  const plainMatch = t.match(/\$?\s*([\d]{4,})/);
+  if (plainMatch) return parseInt(plainMatch[1]);
+
+  return 0;
+}
+
+// 🏡 Smart property scoring & ranking
+// Tier 1: Exact beds & baths match within budget (+10%) comes FIRST
+// Tier 2: Exact beds match comes NEXT
+// Tier 3: Closest beds & baths match comes NEXT
+// Tier 4: Closest price to user budget
+function sortPropertiesByCriteria(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false) {
+  if (!Array.isArray(properties) || properties.length === 0) return properties;
+
+  return [...properties].sort((a, b) => {
+    const aBeds = parseInt(a.bedrooms || a.beds || a.hdpData?.homeInfo?.bedrooms || 0) || 0;
+    const bBeds = parseInt(b.bedrooms || b.beds || b.hdpData?.homeInfo?.bedrooms || 0) || 0;
+
+    const aBaths = parseFloat(a.bathrooms || a.baths || a.hdpData?.homeInfo?.bathrooms || 0) || 0;
+    const bBaths = parseFloat(b.bathrooms || b.baths || b.hdpData?.homeInfo?.bathrooms || 0) || 0;
+
+    const aPrice = parseBudget(String(a.price || a.priceDisplay || ''));
+    const bPrice = parseBudget(String(b.price || b.priceDisplay || ''));
+
+    // 1. Bed difference (exact beds first: diff 0, then 1, etc.)
+    if (targetBeds > 0) {
+      const aBedDiff = aBeds > 0 ? Math.abs(aBeds - targetBeds) : 99;
+      const bBedDiff = bBeds > 0 ? Math.abs(bBeds - targetBeds) : 99;
+
+      if (aBedDiff !== bBedDiff) {
+        return aBedDiff - bBedDiff;
+      }
+    }
+
+    // 2. Bath difference (exact baths next: diff 0, then 1, etc.)
+    if (targetBaths > 0) {
+      const aBathDiff = aBaths > 0 ? Math.abs(aBaths - targetBaths) : 99;
+      const bBathDiff = bBaths > 0 ? Math.abs(bBaths - targetBaths) : 99;
+
+      if (aBathDiff !== bBathDiff) {
+        return aBathDiff - bBathDiff;
+      }
+    }
+
+    // 3. Closeness to budget (highest affordable price under budget, or closest price)
+    if (targetBudget > 0) {
+      if (aPrice > 0 && bPrice > 0) {
+        const aDiff = Math.abs(aPrice - targetBudget);
+        const bDiff = Math.abs(bPrice - targetBudget);
+        return aDiff - bDiff;
+      }
+      if (aPrice > 0) return -1;
+      if (bPrice > 0) return 1;
+    }
+
+    return 0;
+  });
+}
+
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
-// 🏡 Fetch listings from city_property_data (Apify real data) & properties table
-async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, fullChatText = '') {
+async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '') {
   try {
     const cleanCity = (targetCity || '').split(',')[0].trim();
     const isRentIntent = intent === 'rent';
@@ -866,7 +943,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     if (cleanCity) cityQuery = cityQuery.ilike('city', `%${cleanCity}%`);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
 
-    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Intent: "${intent}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
+    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Intent: "${intent}". Beds: ${propBeds}. Baths: ${propBaths}. Budget: ${propBudget}. Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
 
     // Flatten all properties from matched rows
     let allProperties = [];
@@ -936,15 +1013,45 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
         return numericPrice >= minBudget && numericPrice <= maxBudget;
       });
       if (budgetFiltered.length > 0) {
-        // Sort from highest affordable price to lowest so best matches appear first
-        filteredData = budgetFiltered.sort((a, b) => {
-          const pA = parseBudget(String(a.price || ''));
-          const pB = parseBudget(String(b.price || ''));
-          return pB - pA;
-        });
+        filteredData = budgetFiltered;
         console.log(`fetchCityPropertyData: After budget filter (<= ${maxBudget}), ${filteredData.length} properties remain.`);
       }
     }
+
+    // ── CRITERIA QUALITY CHECK ────────────────────────────────────────────────
+    // Agar user ne beds/baths specify kiye hain, check karo kitni properties exact match karti hain.
+    // Rule:
+    //   - exactMatches === 0 → DB mein criteria match nahi → live Apify scrape trigger karo
+    //   - exactMatches >= 1 → DB se serve karo (exact matches pehle, baaki baad mein)
+    if (propBeds > 0 || propBaths > 0) {
+      const exactMatches = filteredData.filter(item => {
+        const iBeds = parseInt(item.bedrooms || item.beds || 0) || 0;
+        const iBaths = parseFloat(item.bathrooms || item.baths || 0) || 0;
+        const bedsOk = propBeds > 0 ? iBeds === propBeds : true;
+        const bathsOk = propBaths > 0 ? iBaths >= propBaths : true; // allow same or more baths
+        return bedsOk && bathsOk;
+      });
+      console.log(`fetchCityPropertyData: Exact bed/bath matches (${propBeds}bd/${propBaths}ba): ${exactMatches.length} out of ${filteredData.length} filtered.`);
+
+      // Agar koi bhi exact match nahi mila → live Apify scrape trigger karo
+      if (exactMatches.length === 0) {
+        console.log(`fetchCityPropertyData: ZERO exact matches for ${propBeds}bd/${propBaths}ba in DB — triggering live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
+
+      // Exact matches pehle show karo, baaki properties baad mein (as additional options)
+      const nonExact = filteredData.filter(item => {
+        const iBeds = parseInt(item.bedrooms || item.beds || 0) || 0;
+        const iBaths = parseFloat(item.bathrooms || item.baths || 0) || 0;
+        const bedsOk = propBeds > 0 ? iBeds === propBeds : true;
+        const bathsOk = propBaths > 0 ? iBaths >= propBaths : true;
+        return !(bedsOk && bathsOk);
+      });
+      filteredData = [...exactMatches, ...nonExact];
+    }
+
+    // Smart sort properties by criteria (exact beds & baths first, then closest beds/baths, closest budget)
+    filteredData = sortPropertiesByCriteria(filteredData, propBudget, propBeds, propBaths, isRentIntent);
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
     const shownAddresses = [];
@@ -981,16 +1088,9 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       return `\n\nNO_MORE_PROPERTIES: The user has already seen all available ${filteredData.length} matching properties in ${cleanCity} within their budget. CRITICAL INSTRUCTION: Politely inform the user: "You've seen all current listings matching your budget in ${cleanCity}! Would you like me to broaden the search to nearby areas, adjust the price range, or connect you with an agent who can access exclusive off-market listings?"`;
     }
 
-    // Determine candidate list: prioritize unseen properties
+    // Determine candidate list: prioritize unseen properties while preserving the exact smart ranking
     let candidateList = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
-
-    if (!isShowMore) {
-      // Shuffle initially for session uniqueness
-      for (let i = candidateList.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [candidateList[i], candidateList[j]] = [candidateList[j], candidateList[i]];
-      }
-    }
+    candidateList = sortPropertiesByCriteria(candidateList, propBudget, propBeds, propBaths, isRentIntent);
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
     let cards = [];
@@ -1069,32 +1169,8 @@ Link: ${url}
 }
 
 // ─── Universal Budget Parser ───────────────────────────────────────────────
-// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, 500 thousand, etc.
-function parseBudget(text) {
-  if (!text) return 0;
-  const t = text.replace(/,/g, '').toLowerCase().trim();
-
-  // Match: 1.2m, 7m, 4 million, 1.5 million
-  const mMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/);
-  if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
-
-  // Match: 990k, 650k, 1.5k
-  const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
-  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
-
-  // Match: 500 thousand
-  const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
-  if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
-
-  // Match: plain number like 1200000 or $990000
-  const plainMatch = t.match(/\$?\s*([\d]{4,})/);
-  if (plainMatch) return parseInt(plainMatch[1]);
-
-  return 0;
-}
-
 // 🏡 Fetch listings from private CRM properties table with strict criteria checking
-async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIntent = 'buy', propBudget = 0, propBeds = 0) {
+async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIntent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0) {
   try {
     if (!botId) return '';
 
@@ -1109,7 +1185,7 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       return '';
     }
 
-    console.log(`[fetchCRMProperties] Bot has ${properties.length} active listings. Checking criteria: city="${detectedCity}", intent="${propIntent}", budget=${propBudget}, beds=${propBeds}`);
+    console.log(`[fetchCRMProperties] Bot has ${properties.length} active listings. Checking criteria: city="${detectedCity}", intent="${propIntent}", budget=${propBudget}, beds=${propBeds}, baths=${propBaths}`);
 
     // Criteria 1: City Match (if city requested)
     let matched = properties;
@@ -1169,32 +1245,47 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       });
       if (budgetMatches.length > 0) {
         matched = budgetMatches;
+      } else {
+        console.log(`[fetchCRMProperties] 0 CRM properties within budget range for ${detectedCity}.`);
+        return { text: '', rawProperties: [] };
       }
     }
 
-    // Criteria 4: Bedroom Match (if beds specified)
-    if (propBeds > 0 && matched.length > 0) {
-      const bedMatches = matched.filter(p => {
-        if (!p.bedrooms) return true;
-        return Number(p.bedrooms) >= Math.max(1, propBeds - 1);
+    // Criteria 4: Bedroom and Bathroom Quality Check
+    if (propBeds > 0 || propBaths > 0) {
+      const exactMatches = matched.filter(item => {
+        const iBeds = parseInt(item.bedrooms || item.beds || 0) || 0;
+        const iBaths = parseFloat(item.bathrooms || item.baths || 0) || 0;
+        const bedsOk = propBeds > 0 ? iBeds === propBeds : true;
+        const bathsOk = propBaths > 0 ? iBaths >= propBaths : true;
+        return bedsOk && bathsOk;
       });
-      if (bedMatches.length > 0) {
-        matched = bedMatches;
+      console.log(`[fetchCRMProperties] Exact bed/bath matches (${propBeds}bd/${propBaths}ba): ${exactMatches.length} out of ${matched.length} filtered.`);
+
+      if (exactMatches.length === 0) {
+        console.log(`[fetchCRMProperties] ZERO exact matches for ${propBeds}bd/${propBaths}ba in CRM — falling back to DB/live scrape.`);
+        return { text: '', rawProperties: [] };
       }
+
+      const nonExact = matched.filter(item => {
+        const iBeds = parseInt(item.bedrooms || item.beds || 0) || 0;
+        const iBaths = parseFloat(item.bathrooms || item.baths || 0) || 0;
+        const bedsOk = propBeds > 0 ? iBeds === propBeds : true;
+        const bathsOk = propBaths > 0 ? iBaths >= propBaths : true;
+        return !(bedsOk && bathsOk);
+      });
+      matched = [...exactMatches, ...nonExact];
     }
 
     if (matched.length === 0) {
       console.log(`[fetchCRMProperties] CRM criteria check yielded 0 matches. Falling back to live scrape.`);
-      return '';
+      return { text: '', rawProperties: [] };
     }
 
-    // Shuffle for session uniqueness — different users see different ordering
-    for (let i = matched.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [matched[i], matched[j]] = [matched[j], matched[i]];
-    }
+    // Smart sort CRM listings (exact beds & baths first, then closest beds/baths, closest budget)
+    matched = sortPropertiesByCriteria(matched, propBudget, propBeds, propBaths, isRent);
 
-    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget, shuffled for this session):\n`;
+    let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
     let cards = [];
 
     matched.slice(0, 16).forEach((p, i) => {
@@ -1233,10 +1324,10 @@ Link: ${p.url || '#'}
 - Each subsequent "Show more" click: continue with the NEXT 4 in sequence (#9-12, then #13-16).
 - NEVER show a property that was already displayed in this conversation.`;
 
-    return section;
+    return { text: section, rawProperties: matched };
   } catch (err) {
     console.error('CRM property fetch error:', err);
-    return '';
+    return { text: '', rawProperties: [] };
   }
 }
 
@@ -1318,8 +1409,9 @@ export async function POST(req) {
           if (websiteData) {
             liveInventory = `\n\n--- PRIMARY WEBSITE INVENTORY ---\n${websiteData}`;
           }
-          if (crmListings) {
-            liveInventory = (liveInventory || '') + crmListings;
+          const crmTextEarly = (typeof crmListings === 'object' && crmListings !== null) ? crmListings.text : crmListings;
+          if (crmTextEarly) {
+            liveInventory = (liveInventory || '') + crmTextEarly;
           }
         }
         // 🛒 E-commerce: Use live scraping only (with timeout)
@@ -1451,7 +1543,7 @@ ${areasNotServed.length ? `
         (m.role === 'model' || m.role === 'user') &&
         (m.parts?.[0]?.text?.includes('Location:') || m.parts?.[0]?.text?.includes('To summarize') || m.parts?.[0]?.text?.includes('User confirmed requirements'))
       );
-      let sumCity = null, sumState = null, sumBeds = 0, sumBudget = 0, sumType = null, sumFeatures = null;
+      let sumCity = null, sumState = null, sumBeds = 0, sumBaths = 0, sumBudget = 0, sumType = null, sumFeatures = null;
       if (recentSummary) {
         const sumText = recentSummary.parts[0].text;
         // Stop at period OR newline so searchPrompt fields don't bleed into state
@@ -1463,6 +1555,9 @@ ${areasNotServed.length ? `
         }
         const bedsMatch = sumText.match(/Bedrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bedroom/i);
         if (bedsMatch) sumBeds = parseInt(bedsMatch[1]);
+
+        const bathsMatch = sumText.match(/Bathrooms:\s*(\d+)/i) || sumText.match(/(\d+)-bathroom/i);
+        if (bathsMatch) sumBaths = parseInt(bathsMatch[1]);
         
         const budMatch = sumText.match(/Maximum budget:\s*\$?([^\n]+)/i)
           || sumText.match(/budget(?:\s+of|:)?\s*\$?([^\n]{1,30})/i);
@@ -1483,6 +1578,10 @@ ${areasNotServed.length ? `
       // Extract bedrooms (fallback from raw chat)
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       const propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
+
+      // Extract bathrooms (fallback from raw chat)
+      const bathsMatch = fullText.match(/(\d)\s*(?:bath(?:room)?s?|ba\b)/);
+      const propBaths = sumBaths > 0 ? sumBaths : (bathsMatch ? parseInt(bathsMatch[1]) : 0);
 
       // ── Budget Extraction (robust) ──────────────────────────────────────────
       let propBudget = sumBudget > 0 ? sumBudget : 0;
@@ -1568,7 +1667,7 @@ ${areasNotServed.length ? `
         : (propIntent && detectedCity && hasConfirmedSummary) || isConfirmedSearchPrompt);
 
       // DEBUG: log extracted values to Vercel logs
-      console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
+      console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} baths=${propBaths} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
 
       if (hasEnoughInfo && hasConfirmedSummary) {
         const cityLower = (detectedCity || '').toLowerCase().trim();
@@ -1611,95 +1710,74 @@ CRITICAL INSTRUCTIONS:
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity) {
           // ============================================================
-          // PRIORITY 1 & 2: Client's CRM properties + City cached data
+          // PRIORITY 1 & 2: Client's CRM (website) properties + City cached data
           // ============================================================
-          const crmPropertyContext = await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds);
-          const cachedResult = await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, fullChatText);
-          // Support both old string return and new {text, rawProperties} return
+          const crmResult = await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds, propBaths);
+          const crmPropertyContext = (typeof crmResult === 'object' && crmResult !== null) ? crmResult.text : crmResult;
+          const crmRawProperties = (typeof crmResult === 'object' && crmResult !== null) ? (crmResult.rawProperties || []) : [];
+
+          const cachedResult = await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText);
           const cachedCityContext = (typeof cachedResult === 'object' && cachedResult !== null) ? cachedResult.text : cachedResult;
           const cachedRawProperties = (typeof cachedResult === 'object' && cachedResult !== null) ? (cachedResult.rawProperties || []) : [];
 
+          // Merge: Agent CRM (website) properties first, then City DB properties
+          const allRawProperties = [...crmRawProperties, ...cachedRawProperties];
           const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;
           const hasCache = cachedCityContext && cachedCityContext.length > 50;
 
-          if (hasCRM && hasCache) {
-            // Both available: show client's own listings first, then supplement with city listings
-            console.log(`[Route] Merging CRM properties with cached city data for bot=${bot_id}`);
-            propertyContext = crmPropertyContext + "\n\nADDITIONAL AREA LISTINGS:\n" + cachedCityContext;
-          } else if (hasCRM) {
-            console.log(`[Route] PRIORITY 1: Found client CRM properties for bot=${bot_id}`);
-            propertyContext = crmPropertyContext;
-          } else if (hasCache) {
-            console.log(`[Route] PRIORITY 2: Found cached city data for ${detectedCity} (${cachedRawProperties.length} raw props)`);
+          if (allRawProperties.length > 0) {
+            console.log(`[Route] Found matching properties (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity}`);
             const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
 
             // ✅ DIRECT RETURN: bypass AI hallucination by returning structured property JSON immediately
-            if (cachedRawProperties.length > 0) {
-              const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
-              const structuredProps = cachedRawProperties.slice(0, 4).map((l, i) => {
-                let rawPhotos = [];
-                if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
-                else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
-                else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
-                else if (l.image_url) rawPhotos = [l.image_url];
-                else if (l.imgSrc) rawPhotos = [l.imgSrc];
-                const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
-                let imgArr = rawPhotos.filter(isRealImg);
-                if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
-                  const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
-                  imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
-                }
-                return {
-                  address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
-                  price: l.price || l.priceDisplay || 'Contact for Price',
-                  bedrooms: String(l.bedrooms || l.beds || ''),
-                  bathrooms: String(l.bathrooms || l.baths || ''),
-                  property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
-                  city: l.city || detectedCity,
-                  province: l.province || l.state || '',
-                  image_url: imgArr[0] || '',
-                  images: imgArr.slice(0, 8),
-                  url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
-                  listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
-                  mls_number: l.mls_number || l.mlsNumber || l.zpid || ''
-                };
-              });
+            const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
+            const structuredProps = allRawProperties.slice(0, 4).map((l, i) => {
+              let rawPhotos = [];
+              if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
+              else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+              else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+              else if (l.image_url) rawPhotos = [l.image_url];
+              else if (l.imgSrc) rawPhotos = [l.imgSrc];
+              const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+              let imgArr = rawPhotos.filter(isRealImg);
+              if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
+                const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
+                imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
+              }
+              return {
+                address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
+                price: l.price ? (typeof l.price === 'number' ? `$${l.price.toLocaleString()}` : l.price) : (l.priceDisplay || 'Contact for Price'),
+                bedrooms: String(l.bedrooms || l.beds || ''),
+                bathrooms: String(l.bathrooms || l.baths || ''),
+                property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
+                city: l.city || detectedCity,
+                province: l.province || l.state || '',
+                image_url: imgArr[0] || '',
+                images: imgArr.slice(0, 8),
+                url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
+                listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
+                mls_number: l.mls_number || l.mlsNumber || l.zpid || ''
+              };
+            });
 
-              const cityBtnsList = !isShowMoreRequest ? [
-                '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
-                '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
-              ] : [];
+            const cityBtnsList = !isShowMoreRequest ? [
+              '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
+              '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
+            ] : [];
 
-              const introText = `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
-                + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
+            const introText = `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
+              + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
 
-              console.log(`[Route] ✅ Returning ${structuredProps.length} structured properties directly (bypassing AI render)`);
-              return Response.json({
-                reply: introText,
-                properties: structuredProps,
-                apifyRunId: null,
-                intent: propIntent,
-                city: detectedCity
-              });
-            }
-
-            // Fallback: put in system prompt (AI may not follow verbatim but tries)
-            if (!isShowMoreRequest) {
-              const cityBtns = [
-                '[CITY_BTN: 🏫 Schools]',
-                '[CITY_BTN: 🌳 Parks]',
-                '[CITY_BTN: 🚇 Transportation]',
-                '[CITY_BTN: 🛒 Shopping & Dining]',
-                '[CITY_BTN: 🏥 Healthcare]',
-                '[CITY_BTN: 🏡 Neighborhood]',
-                '[CITY_BTN: 🏘️ Housing Market]',
-                '[CITY_BTN: 👥 Community]',
-                '[CITY_BTN: 💡 Buyer Tips]'
-              ].join(' ');
-              propertyContext = cachedCityContext + `\n\nAFTER SHOWING PROPERTIES, also add this line: "While you browse, feel free to explore ${detectedCity}! ${cityBtns}"`;
-            } else {
-              propertyContext = cachedCityContext;
-            }
+            console.log(`[Route] ✅ Returning ${structuredProps.length} structured properties directly (bypassing AI render)`);
+            return Response.json({
+              reply: introText,
+              properties: structuredProps,
+              apifyRunId: null,
+              intent: propIntent,
+              city: detectedCity
+            });
+          } else if (hasCRM || hasCache) {
+            propertyContext = (hasCRM ? crmPropertyContext : '') + (hasCRM && hasCache ? "\n\nADDITIONAL AREA LISTINGS:\n" : '') + (hasCache ? cachedCityContext : '');
           } else {
             // ============================================================
             // PRIORITY 3: Live Apify search (Zillow)
