@@ -335,40 +335,108 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      {/* Top Header & Action Controls */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '28px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#111827', margin: 0 }}>👥 Clients & Chatbots</h1>
-          <p style={{ color: '#6B7280', marginTop: '4px' }}>Click on a client to see & manage their chatbots individually.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '26px', fontWeight: '900', color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>
+              Clients & Chatbots
+            </h1>
+            <span style={{
+              background: '#EEF2FF',
+              color: '#4F46E5',
+              padding: '3px 10px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '800',
+              border: '1px solid #C7D2FE'
+            }}>
+              {users.length} Total
+            </span>
+          </div>
+          <p style={{ color: '#64748B', marginTop: '4px', fontSize: '13px', margin: '4px 0 0 0' }}>
+            Manage client accounts, active chatbots, subscriptions, and live scraping links.
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+
+        {/* Action Buttons Toolbar */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={() => setShowAddModal(true)}
-            style={{ padding: '10px 16px', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}
+            style={{
+              padding: '10px 18px',
+              background: 'linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%)',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 3px 12px rgba(79,70,229,0.3)',
+              transition: 'all 0.2s'
+            }}
           >
-            ➕ Add Client
+            <span>➕</span> Add Client
           </button>
-          <a
-            href="/superadmin/bulk-scrape"
-            style={{ padding: '10px 16px', backgroundColor: '#C9A227', color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', textDecoration: 'none', fontSize: '14px' }}
+
+          <button
+            onClick={fetchUsers}
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#FFFFFF',
+              color: '#334155',
+              border: '1px solid #CBD5E1',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
           >
-            🏙️ Ontario Bulk Scraper
-          </a>
-          <button onClick={fetchUsers} style={{ padding: '10px 16px', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
-            🔄 Refresh
+            <span>🔄</span> Refresh
           </button>
-          <button 
+
+          <button
             onClick={async () => {
               if (!confirm('This will fix bot_id links for all existing clients. Proceed?')) return;
               const res = await fetch('/api/superadmin/fix-bot-links', { method: 'POST' });
               const data = await res.json();
               alert(`✅ Fixed: ${data.fixed} clients\n❌ Failed: ${data.failed || 0}\n\n${(data.log || []).join('\n')}`);
               fetchUsers();
-            }} 
-            style={{ padding: '10px 16px', backgroundColor: '#DC2626', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}
+            }}
+            style={{
+              padding: '10px 14px',
+              background: '#FEF2F2',
+              color: '#DC2626',
+              border: '1px solid #FECACA',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
           >
-            🔧 Fix Bot Links
+            <span>🔧</span> Fix Bot Links
           </button>
-          <button 
+
+          <button
             onClick={async () => {
               if (!confirm('⚠️ This will set ALL existing bots:\n• industry = "Real Estate"\n• plan = "premium"\n\nThis allows all bots to show Live Properties (like Shawna\'s).\n\nProceed?')) return;
               const res = await fetch('/api/superadmin/fix-all-bots', { method: 'POST' });
@@ -379,31 +447,48 @@ export default function AdminPage() {
               } else {
                 alert('❌ Error: ' + (data.error || 'Unknown error'));
               }
-            }} 
-            style={{ padding: '10px 16px', backgroundColor: '#059669', color: '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px' }}
+            }}
+            style={{
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 3px 12px rgba(16,185,129,0.3)',
+              transition: 'all 0.2s'
+            }}
           >
-            🏡 Fix All Bots (Live Properties)
+            <span>🏡</span> Fix All Bots (Live Properties)
           </button>
         </div>
-
       </div>
 
+      {/* Add Client Modal */}
       {showAddModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h2 style={{ margin: 0, fontSize: '20px', color: '#111827' }}>Add New Client</h2>
-              <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6B7280', padding: '4px' }}>✕</button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '18px', padding: '32px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 60px rgba(0,0,0,0.35)', border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#0F172A' }}>➕ Add New Client</h2>
+                <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748B' }}>Create a client account and configure their real estate bot</p>
+              </div>
+              <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ background: '#F1F5F9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
             </div>
             
             {addResult?.type === 'success' ? (
-              <div style={{ backgroundColor: '#F0FDF4', color: '#166534', padding: '16px', borderRadius: '8px', border: '1px solid #BBF7D0' }}>
-                <h3 style={{ margin: '0 0 12px 0' }}>✅ Client & Chatbot Created!</h3>
-                <p style={{ margin: '0 0 16px 0', fontSize: '14px' }}>The client can now log in using the email and password you set. Here is their chatbot embed code:</p>
+              <div style={{ backgroundColor: '#F0FDF4', color: '#166534', padding: '20px', borderRadius: '12px', border: '1px solid #BBF7D0' }}>
+                <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: '800' }}>✅ Client & Chatbot Created!</h3>
+                <p style={{ margin: '0 0 14px 0', fontSize: '13px', lineHeight: '1.5' }}>The client can now log in using the credentials you set. Here is their chatbot embed code:</p>
                 <textarea 
                   readOnly 
                   rows={8}
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontFamily: 'monospace', fontSize: '12px', backgroundColor: '#F9FAFB', color: '#111827' }}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontFamily: 'monospace', fontSize: '11px', backgroundColor: '#FFFFFF', color: '#111827', boxSizing: 'border-box' }}
                   value={`<!-- AI Chatbot by RealtyPropFlow -->
 <script>
   window.CHATBOT_CONFIG = {
@@ -413,36 +498,36 @@ export default function AdminPage() {
 </script>
 <script src="${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/chatbot-embed.js" defer></script>`}
                 />
-                <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ width: '100%', marginTop: '16px', padding: '12px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Done</button>
+                <button onClick={() => { setShowAddModal(false); setAddResult(null); }} style={{ width: '100%', marginTop: '16px', padding: '12px', backgroundColor: '#10B981', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}>Done</button>
               </div>
             ) : (
               <form onSubmit={handleAddClient} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {addResult?.type === 'error' && (
-                  <div style={{ backgroundColor: '#FEF2F2', color: '#991B1B', padding: '12px', borderRadius: '8px', fontSize: '14px' }}>
+                  <div style={{ backgroundColor: '#FEF2F2', color: '#991B1B', padding: '12px', borderRadius: '10px', fontSize: '13px', border: '1px solid #FCA5A5' }}>
                     {addResult.message}
                   </div>
                 )}
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Client Name (Agent Name)</label>
-                  <input required type="text" value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="e.g. John Smith" />
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Client Name (Agent Name)</label>
+                  <input required type="text" value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})} style={{ width: '100%', padding: '11px 14px', borderRadius: '9px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} placeholder="e.g. John Smith" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Email</label>
-                  <input required type="email" value={addForm.email} onChange={e => setAddForm({...addForm, email: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="client@example.com" />
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Email Address</label>
+                  <input required type="email" value={addForm.email} onChange={e => setAddForm({...addForm, email: e.target.value})} style={{ width: '100%', padding: '11px 14px', borderRadius: '9px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} placeholder="client@example.com" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Password</label>
-                  <input required type="text" value={addForm.password} onChange={e => setAddForm({...addForm, password: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="Set a secure password" />
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Password</label>
+                  <input required type="text" value={addForm.password} onChange={e => setAddForm({...addForm, password: e.target.value})} style={{ width: '100%', padding: '11px 14px', borderRadius: '9px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} placeholder="Set a secure password" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Phone Number (Optional)</label>
-                  <input type="text" value={addForm.phone} onChange={e => setAddForm({...addForm, phone: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="+1 234 567 8900" />
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Phone Number (Optional)</label>
+                  <input type="text" value={addForm.phone} onChange={e => setAddForm({...addForm, phone: e.target.value})} style={{ width: '100%', padding: '11px 14px', borderRadius: '9px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} placeholder="+1 234 567 8900" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Website URL (For Property Auto-Scraping)</label>
-                  <input required type="url" value={addForm.website_url || ''} onChange={e => setAddForm({...addForm, website_url: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #D1D5DB' }} placeholder="https://www.remax.com" />
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Website URL (For Property Auto-Scraping)</label>
+                  <input required type="url" value={addForm.website_url || ''} onChange={e => setAddForm({...addForm, website_url: e.target.value})} style={{ width: '100%', padding: '11px 14px', borderRadius: '9px', border: '1px solid #CBD5E1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} placeholder="https://www.remax.com" />
                 </div>
-                <button type="submit" disabled={isAdding} style={{ padding: '12px', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '8px', cursor: isAdding ? 'not-allowed' : 'pointer', fontWeight: '700', marginTop: '8px', opacity: isAdding ? 0.7 : 1 }}>
+                <button type="submit" disabled={isAdding} style={{ padding: '13px', background: 'linear-gradient(135deg, #4F46E5, #3B82F6)', color: '#FFF', border: 'none', borderRadius: '10px', cursor: isAdding ? 'not-allowed' : 'pointer', fontWeight: '800', fontSize: '14px', marginTop: '6px', opacity: isAdding ? 0.7 : 1, boxShadow: '0 4px 14px rgba(79,70,229,0.35)' }}>
                   {isAdding ? 'Creating Client...' : 'Create Client & Chatbot'}
                 </button>
               </form>
@@ -451,30 +536,119 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* Clients List */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6B7280' }}>Loading clients...</div>
+        <div style={{ textAlign: 'center', padding: '80px 20px', color: '#64748B' }}>
+          <div style={{ fontSize: '32px', marginBottom: '10px' }}>⏳</div>
+          <div style={{ fontWeight: '700', fontSize: '16px' }}>Loading clients...</div>
+        </div>
       ) : users.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6B7280' }}>No clients found.</div>
+        <div style={{ textAlign: 'center', padding: '80px 20px', background: 'white', borderRadius: '16px', border: '1px dashed #CBD5E1', color: '#64748B' }}>
+          <div style={{ fontSize: '36px', marginBottom: '10px' }}>👥</div>
+          <div style={{ fontWeight: '800', fontSize: '16px', color: '#0F172A' }}>No clients found</div>
+          <p style={{ fontSize: '13px', marginTop: '4px' }}>Get started by adding your first client using the button above.</p>
+        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {users.map((user) => (
-            <div key={user.user_id} style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              
-              {/* User Row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', flex: 1 }} onClick={() => toggleUserExpand(user.user_id)}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #4F46E5, #0EA5E9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '16px' }}>
+            <div
+              key={user.user_id}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                border: '1px solid #E2E8F0',
+                overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {/* User Main Row */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '18px 22px',
+                flexWrap: 'wrap',
+                gap: '14px'
+              }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', flex: 1, minWidth: '260px' }}
+                  onClick={() => toggleUserExpand(user.user_id)}
+                >
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: '800',
+                    fontSize: '17px',
+                    boxShadow: '0 3px 10px rgba(79,70,229,0.25)',
+                    flexShrink: 0
+                  }}>
                     {(user.email || 'U')[0].toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ fontWeight: '700', color: '#111827', fontSize: '15px' }}>{user.email || 'Email not captured'}</div>
-                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      Joined: {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'} &nbsp;·&nbsp;
-                      {(() => { const t = getTrialInfo(user); if (!t) return null; return (<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>{t.expired ? <span style={{ color: '#EF4444', fontWeight: '700' }}>⏰ Trial Expired</span> : <span style={{ color: t.daysLeft <= 3 ? '#F59E0B' : '#10B981', fontWeight: '700' }}>🕐 {t.daysLeft} days trial left</span>}<button onClick={(e) => { e.stopPropagation(); if(window.confirm('Reset trial to 15 days from today?')) resetTrialTo15Days(user.user_id); }} style={{ padding: '2px 7px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', borderRadius: '5px', fontSize: '10px', fontWeight: '700', cursor: 'pointer' }}>Fix 15d</button></span>); })()}
-                      &nbsp;·&nbsp;
+                    <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '15px', letterSpacing: '-0.01em' }}>
+                      {user.email || 'Email not captured'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>Joined: <strong style={{ color: '#334155' }}>{user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</strong></span>
+                      <span style={{ color: '#CBD5E1' }}>•</span>
+                      {(() => {
+                        const t = getTrialInfo(user);
+                        if (!t) return null;
+                        return (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            {t.expired ? (
+                              <span style={{ color: '#EF4444', fontWeight: '800', background: '#FEE2E2', padding: '2px 8px', borderRadius: '12px', fontSize: '11px' }}>
+                                ⏰ Trial Expired
+                              </span>
+                            ) : (
+                              <span style={{ color: t.daysLeft <= 3 ? '#B45309' : '#047857', background: t.daysLeft <= 3 ? '#FEF3C7' : '#D1FAE5', padding: '2px 8px', borderRadius: '12px', fontWeight: '700', fontSize: '11px' }}>
+                                🕐 {t.daysLeft} days trial left
+                              </span>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Reset trial to 15 days from today?')) resetTrialTo15Days(user.user_id);
+                              }}
+                              style={{
+                                padding: '2px 8px',
+                                background: '#FFFBEB',
+                                color: '#92400E',
+                                border: '1px solid #FDE68A',
+                                borderRadius: '6px',
+                                fontSize: '10px',
+                                fontWeight: '800',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Fix 15d
+                            </button>
+                          </span>
+                        );
+                      })()}
+                      <span style={{ color: '#CBD5E1' }}>•</span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleUserExpand(user.user_id); }}
-                        style={{ padding: '4px 10px', backgroundColor: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{
+                          padding: '3px 10px',
+                          backgroundColor: '#EEF2FF',
+                          color: '#4F46E5',
+                          border: '1px solid #C7D2FE',
+                          borderRadius: '6px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
                       >
                         {expandedUser === user.user_id ? '▲ Hide Bots' : '▼ View Bots & Get Code'}
                       </button>
@@ -482,7 +656,8 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* Right Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => {
                       localStorage.setItem('impersonated_user_id', user.user_id);
@@ -490,39 +665,69 @@ export default function AdminPage() {
                       window.location.href = '/dashboard';
                     }}
                     style={{
-                      padding: '8px 16px', borderRadius: '8px', border: '1px solid #4F46E5', fontWeight: '600', cursor: 'pointer', fontSize: '13px',
-                      backgroundColor: 'white',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #C7D2FE',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      backgroundColor: '#FFFFFF',
                       color: '#4F46E5',
-                      display: 'flex', alignItems: 'center', gap: '6px'
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s'
                     }}
                   >
-                    👤 Login as Client
+                    <span>👤</span> Login as Client
                   </button>
+
                   <span style={{
-                    padding: '4px 14px', borderRadius: '50px', fontSize: '12px', fontWeight: '700',
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: '800',
                     backgroundColor: user.status === 'Active' ? '#D1FAE5' : '#FEE2E2',
-                    color: user.status === 'Active' ? '#065F46' : '#991B1B'
+                    color: user.status === 'Active' ? '#065F46' : '#991B1B',
+                    border: user.status === 'Active' ? '1px solid #A7F3D0' : '1px solid #FECACA'
                   }}>
                     {user.status === 'Active' ? '🟢 Active' : '🔴 Inactive'}
                   </span>
+
                   <button
                     onClick={() => toggleUserStatus(user.user_id, user.status)}
                     style={{
-                      padding: '8px 16px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '13px',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontSize: '12px',
                       backgroundColor: user.status === 'Active' ? '#FEE2E2' : '#10B981',
                       color: user.status === 'Active' ? '#991B1B' : 'white',
+                      transition: 'all 0.2s'
                     }}
                   >
                     {user.status === 'Active' ? 'Deactivate All' : 'Activate Account'}
                   </button>
+
                   <button
                     onClick={() => deleteUser(user.user_id, user.email)}
                     disabled={deletingUser === user.user_id}
                     style={{
-                      padding: '8px 14px', borderRadius: '8px', border: 'none', fontWeight: '600', cursor: deletingUser === user.user_id ? 'not-allowed' : 'pointer', fontSize: '13px',
-                      backgroundColor: '#111827',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #E2E8F0',
+                      fontWeight: '700',
+                      cursor: deletingUser === user.user_id ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      backgroundColor: '#0F172A',
                       color: 'white',
-                      opacity: deletingUser === user.user_id ? 0.6 : 1
+                      opacity: deletingUser === user.user_id ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
                     }}
                   >
                     {deletingUser === user.user_id ? '⏳ Deleting...' : '🗑️ Delete'}
@@ -532,44 +737,44 @@ export default function AdminPage() {
 
               {/* Expanded Bots Section */}
               {expandedUser === user.user_id && (
-                <div style={{ borderTop: '1px solid #F3F4F6', backgroundColor: '#F9FAFB', padding: '16px 24px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: '#4B5563', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    🤖 Chatbots
+                <div style={{ borderTop: '1px solid #F1F5F9', backgroundColor: '#F8FAFC', padding: '18px 24px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#64748B', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    🤖 Active Chatbots for this Client
                   </div>
 
                   {botsLoading[user.user_id] ? (
-                    <div style={{ color: '#6B7280', fontSize: '14px', padding: '12px 0' }}>Loading bots...</div>
+                    <div style={{ color: '#64748B', fontSize: '13px', padding: '12px 0' }}>Loading bots...</div>
                   ) : !userBots[user.user_id] || userBots[user.user_id].length === 0 ? (
-                    <div style={{ color: '#9CA3AF', fontSize: '14px', padding: '12px 0' }}>No chatbots created yet.</div>
+                    <div style={{ color: '#94A3B8', fontSize: '13px', padding: '12px 0' }}>No chatbots created yet.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {userBots[user.user_id].map(bot => (
-                        <div key={bot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', padding: '14px 18px', borderRadius: '10px', border: '1px solid #E5E7EB' }}>
+                        <div key={bot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E2E8F0', flexWrap: 'wrap', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                           <div>
-                            <div style={{ fontWeight: '700', color: '#111827', fontSize: '14px' }}>
+                            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
                               {bot.bot_avatar || '🤖'} {bot.name}
                             </div>
-                            <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '3px' }}>🌐 {bot.website_url || 'No URL'}</div>
-                            <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.industry === 'Real Estate' ? '#D1FAE5' : '#FEF3C7', color: bot.industry === 'Real Estate' ? '#065F46' : '#92400E', fontWeight: '700' }}>
+                            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>🌐 {bot.website_url || 'No URL'}</div>
+                            <div style={{ fontSize: '11px', marginTop: '6px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.industry === 'Real Estate' ? '#D1FAE5' : '#FEF3C7', color: bot.industry === 'Real Estate' ? '#065F46' : '#92400E', fontWeight: '800' }}>
                                 {bot.industry === 'Real Estate' ? '🏡 Real Estate' : `⚠️ ${bot.industry || 'No Industry'}`}
                               </span>
-                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.plan === 'premium' ? '#EEF2FF' : '#FEF3C7', color: bot.plan === 'premium' ? '#4338CA' : '#92400E', fontWeight: '700' }}>
+                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.plan === 'premium' ? '#EEF2FF' : '#FEF3C7', color: bot.plan === 'premium' ? '#4338CA' : '#92400E', fontWeight: '800' }}>
                                 {bot.plan === 'premium' ? '⭐ Premium' : `⚠️ ${bot.plan || 'No Plan'}`}
                               </span>
                             </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                            <span style={{ padding: '3px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: '700', backgroundColor: bot.status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: bot.status === 'Active' ? '#065F46' : '#991B1B' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <span style={{ padding: '3px 10px', borderRadius: '50px', fontSize: '11px', fontWeight: '800', backgroundColor: bot.status === 'Active' ? '#D1FAE5' : '#FEE2E2', color: bot.status === 'Active' ? '#065F46' : '#991B1B' }}>
                               {bot.status === 'Active' ? '🟢 Active' : '🔴 Inactive'}
                             </span>
-                            <button onClick={() => { setAssignModal({ userId: user.user_id, email: user.email }); setAssignForm({ plan: 'starter', cycle: 'monthly', note: '' }); setAssignResult(null); }} style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #10B981', fontWeight: '600', cursor: 'pointer', fontSize: '12px', backgroundColor: '#ECFDF5', color: '#065F46' }}>
+                            <button onClick={() => { setAssignModal({ userId: user.user_id, email: user.email }); setAssignForm({ plan: 'starter', cycle: 'monthly', note: '' }); setAssignResult(null); }} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #A7F3D0', fontWeight: '700', cursor: 'pointer', fontSize: '11px', backgroundColor: '#ECFDF5', color: '#065F46' }}>
                               💳 Assign Plan
                             </button>
-                            <button onClick={() => setCodeModal(bot)} style={{ padding: '7px 14px', borderRadius: '7px', border: '1px solid #4F46E5', fontWeight: '600', cursor: 'pointer', fontSize: '12px', backgroundColor: 'white', color: '#4F46E5' }}>
+                            <button onClick={() => setCodeModal(bot)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontWeight: '700', cursor: 'pointer', fontSize: '11px', backgroundColor: 'white', color: '#4F46E5' }}>
                               📋 Get Code
                             </button>
-                            <button onClick={() => toggleBotStatus(bot)} style={{ padding: '7px 14px', borderRadius: '7px', border: 'none', fontWeight: '600', cursor: 'pointer', fontSize: '12px', backgroundColor: bot.status === 'Active' ? '#FEE2E2' : '#4F46E5', color: bot.status === 'Active' ? '#991B1B' : 'white' }}>
+                            <button onClick={() => toggleBotStatus(bot)} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '11px', backgroundColor: bot.status === 'Active' ? '#FEE2E2' : '#4F46E5', color: bot.status === 'Active' ? '#991B1B' : 'white' }}>
                               {bot.status === 'Active' ? 'Deactivate' : '✓ Activate Bot'}
                             </button>
                           </div>

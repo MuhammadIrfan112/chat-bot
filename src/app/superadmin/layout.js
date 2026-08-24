@@ -119,71 +119,128 @@ export default function SuperAdminLayout({ children }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif" }}>
       {/* Sidebar */}
-      <div style={{ width: '280px', backgroundColor: '#0F172A', color: 'white', display: 'flex', flexDirection: 'column', borderRight: '1px solid #1E293B' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid #1E293B' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '24px' }}>🛡️</span>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>Super Admin</h2>
+      <div style={{
+        width: '270px',
+        backgroundColor: '#0F172A',
+        background: 'linear-gradient(180deg, #0B1329 0%, #0F172A 100%)',
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.12)',
+        flexShrink: 0
+      }}>
+        {/* Brand Header */}
+        <div style={{ padding: '24px 22px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #4F46E5, #06B6D4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '22px',
+              boxShadow: '0 4px 14px rgba(79,70,229,0.35)'
+            }}>
+              🛡️
+            </div>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', color: '#FFFFFF' }}>Super Admin</h2>
+              <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Control Center
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        {/* Navigation */}
+        <div style={{ padding: '20px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <Link
             href="/superadmin"
             style={{
-              display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-              borderRadius: '12px', color: 'white',
-              backgroundColor: pathname === '/superadmin' ? '#4F46E5' : 'transparent',
-              textDecoration: 'none', fontWeight: '500', fontSize: '14px'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              color: 'white',
+              backgroundColor: pathname === '/superadmin' ? '#4F46E5' : 'rgba(255,255,255,0.04)',
+              background: pathname === '/superadmin' ? 'linear-gradient(135deg, #4F46E5, #3B82F6)' : 'rgba(255,255,255,0.04)',
+              textDecoration: 'none',
+              fontWeight: '700',
+              fontSize: '14px',
+              boxShadow: pathname === '/superadmin' ? '0 4px 14px rgba(79,70,229,0.35)' : 'none',
+              transition: 'all 0.2s ease'
             }}
           >
-            <span style={{ fontSize: '18px' }}>👥</span> Manage Users
+            <span style={{ fontSize: '18px' }}>👥</span>
+            <span>Manage Users</span>
+            <span style={{ marginLeft: 'auto', width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981' }}></span>
           </Link>
+        </div>
 
-          <Link
-            href="/superadmin/bulk-scrape"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-              borderRadius: '12px', color: 'white',
-              backgroundColor: pathname === '/superadmin/bulk-scrape' ? '#C9A227' : 'transparent',
-              textDecoration: 'none', fontWeight: '500', fontSize: '14px'
-            }}
-          >
-            <span style={{ fontSize: '18px' }}>🏙️</span> Ontario Bulk Scraper
-          </Link>
-
-          <button
-            onClick={() => {
-              sessionStorage.removeItem(SESSION_KEY);
-              localStorage.removeItem('impersonated_user_id');
-              localStorage.removeItem('impersonated_user_email');
-              window.location.href = '/dashboard';
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-              borderRadius: '12px', color: '#9CA3AF', background: 'none',
-              border: 'none', cursor: 'pointer', width: '100%', fontWeight: '500', fontSize: '14px'
-            }}
-          >
-            <span style={{ fontSize: '18px' }}>↩️</span> Enter as Client
-          </button>
+        {/* User Info & Session Exit in Sidebar Bottom */}
+        <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+              color: 'white', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontWeight: '800', fontSize: '13px'
+            }}>
+              AD
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#F8FAFC', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {userEmail || 'Super Admin'}
+              </div>
+              <div style={{ fontSize: '10px', color: '#10B981', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }}></span> Active Session
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
-        <header style={{ backgroundColor: 'white', padding: '20px 40px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'flex-end' }}>
+        {/* Modern Header */}
+        <header style={{
+          backgroundColor: '#FFFFFF',
+          padding: '16px 36px',
+          borderBottom: '1px solid #E2E8F0',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.02)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>Admin Dashboard</span>
+            <span style={{ color: '#CBD5E1' }}>/</span>
+            <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '700' }}>Clients & Chatbots</span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontWeight: '600', color: '#1E293B' }}>{userEmail}</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#4F46E5', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-              AD
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '6px 14px', background: '#F1F5F9', borderRadius: '20px',
+              border: '1px solid #E2E8F0'
+            }}>
+              <span style={{ fontSize: '12px', color: '#334155', fontWeight: '700' }}>{userEmail}</span>
+              <div style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#4F46E5', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
+                AD
+              </div>
             </div>
           </div>
         </header>
 
-        <main style={{ padding: '40px', flex: 1 }}>
+        <main style={{ padding: '36px', flex: 1, maxWidth: '1440px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
           {children}
         </main>
       </div>
