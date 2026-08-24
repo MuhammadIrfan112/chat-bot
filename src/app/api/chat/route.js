@@ -874,9 +874,13 @@ function parseBudget(text) {
   const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
   if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
 
-  // Match: plain number like 1200000 or $990000
-  const plainMatch = t.match(/\$?\s*([\d]{4,})/);
-  if (plainMatch) return parseInt(plainMatch[1]);
+  // Match: with dollar sign like $850 or $1200 or $990000
+  const dollarMatch = t.match(/\$\s*([\d]+(?:\.[\d]+)?)/);
+  if (dollarMatch) return Math.round(parseFloat(dollarMatch[1]));
+
+  // Match: plain number like 1200000 or 990000
+  const plainMatch = t.match(/\b([\d]{3,})\b/);
+  if (plainMatch) return parseInt(plainMatch[1], 10);
 
   return 0;
 }
@@ -969,6 +973,42 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   return [...selected, ...remaining];
 }
 
+// 🏡 Sort properties strictly by criteria (exact bed/bath matches first, closest budget)
+function sortPropertiesByCriteria(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false) {
+  if (!Array.isArray(properties) || properties.length <= 1) return properties;
+  return [...properties].sort((a, b) => {
+    const aPrice = parseBudget(String(a.price || a.priceDisplay || ''));
+    const bPrice = parseBudget(String(b.price || b.priceDisplay || ''));
+    const aBeds = parseInt(a.bedrooms || a.beds || a.hdpData?.homeInfo?.bedrooms || 0) || 0;
+    const bBeds = parseInt(b.bedrooms || b.beds || b.hdpData?.homeInfo?.bedrooms || 0) || 0;
+    const aBaths = parseFloat(a.bathrooms || a.baths || a.hdpData?.homeInfo?.bathrooms || 0) || 0;
+    const bBaths = parseFloat(b.bathrooms || b.baths || b.hdpData?.homeInfo?.bathrooms || 0) || 0;
+
+    // 1. Exact or closest bed match
+    if (targetBeds > 0) {
+      const aBedDiff = aBeds > 0 ? Math.abs(aBeds - targetBeds) : 99;
+      const bBedDiff = bBeds > 0 ? Math.abs(bBeds - targetBeds) : 99;
+      if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
+    }
+
+    // 2. Exact or closest bath match
+    if (targetBaths > 0) {
+      const aBathDiff = aBaths > 0 ? Math.abs(aBaths - targetBaths) : 99;
+      const bBathDiff = bBaths > 0 ? Math.abs(bBaths - targetBaths) : 99;
+      if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
+    }
+
+    // 3. Closest to budget
+    if (targetBudget > 0) {
+      const aDiff = aPrice > 0 ? Math.abs(aPrice - targetBudget) : 99999999;
+      const bDiff = bPrice > 0 ? Math.abs(bPrice - targetBudget) : 99999999;
+      if (aDiff !== bDiff) return aDiff - bDiff;
+    }
+
+    return 0;
+  });
+}
+
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
 async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '') {
   try {
@@ -1035,6 +1075,46 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
         return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
       });
       if (saleOnly.length >= 2) filteredData = saleOnly;
+    }
+
+    // ── CRITERIA VALIDATION: beds, baths, budget ─────────────────────────────
+    // If criteria specified, verify that matching properties actually exist in DB.
+    // If none match, return empty so live Apify scrape is triggered.
+    if (propBeds > 0 || propBaths > 0 || propBudget > 0) {
+      const criteriaMatches = filteredData.filter(item => {
+        const iBeds = parseInt(item.bedrooms || item.beds || item.hdpData?.homeInfo?.bedrooms || 0) || 0;
+        const iBaths = parseFloat(item.bathrooms || item.baths || item.hdpData?.homeInfo?.bathrooms || 0) || 0;
+        const itemPrice = parseBudget(String(item.price || item.priceDisplay || ''));
+
+        // Check beds (allow +/- 1 if exact match not strictly forced, but reject if far off)
+        if (propBeds > 0 && iBeds > 0) {
+          if (iBeds < propBeds && Math.abs(iBeds - propBeds) > 1) return false;
+        }
+
+        // Check baths
+        if (propBaths > 0 && iBaths > 0) {
+          if (iBaths < propBaths && Math.abs(iBaths - propBaths) > 1.5) return false;
+        }
+
+        // Check budget (allow up to +15% or down to 40% of budget)
+        if (propBudget > 0 && itemPrice > 0) {
+          const maxAllowed = propBudget * 1.15;
+          const minAllowed = isRentIntent ? 0 : Math.max(30000, propBudget * 0.4);
+          if (itemPrice > maxAllowed || itemPrice < minAllowed) return false;
+        }
+
+        return true;
+      });
+
+      console.log(`fetchCityPropertyData: Criteria filter (beds=${propBeds}, baths=${propBaths}, budget=${propBudget}) matched ${criteriaMatches.length}/${filteredData.length} properties.`);
+
+      // If user specified criteria and 0 properties in DB match -> fall back to live Apify scrape!
+      if (criteriaMatches.length === 0) {
+        console.log(`fetchCityPropertyData: 0 DB properties matched user criteria for city="${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
+
+      filteredData = criteriaMatches;
     }
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
