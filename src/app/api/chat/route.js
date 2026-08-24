@@ -365,12 +365,12 @@ Link: ${p.property_url}
 // In-memory cache for geocoded city center (avoids repeated API calls for same city)
 const GEOCODE_CACHE = {};
 
-// TIGHT_BOX_DEG: ~0.04 degrees ≈ 4.5 km radius
-// Keeps search strictly centered on the requested city / municipality
-const TIGHT_BOX_DEG = 0.04;
+// TIGHT_BOX_DEG: ~0.12 degrees ≈ 14 km radius
+// Covers the entire city and immediate suburban communities
+const TIGHT_BOX_DEG = 0.12;
 
 // Fetch city center lat/lng using OpenStreetMap Nominatim (free, no API key needed)
-// Returns a bounding box (~12km radius) around the city center
+// Returns a bounding box (~14km radius) around the city center
 async function getCityBounds(city, state) {
   const normCity = normalizeCityName(city);
   const normState = state || resolveStateOrProvince(normCity, state);
@@ -440,71 +440,13 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
     const maxBudget = parseBudget(fullChatText);
     if (maxBudget > 0) {
       if (isRent) {
-        // For rentals: use budget as max monthly payment
-        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.15) };
-        filterState.price = { max: Math.round(maxBudget * 1.15) };
+        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.25) };
+        filterState.price = { max: Math.round(maxBudget * 1.25) };
       } else {
-        // For buying: cap at max budget + 15% (no minimum restriction so all affordable properties within budget are returned)
         filterState.price = {
-          max: Math.round(maxBudget * 1.15)
+          max: Math.round(maxBudget * 1.25)
         };
       }
-    }
-
-    // Property Type Filters — prefer user's selection but don't block search if not available
-    // Note: Not applying strict type filter on Zillow URL so we always get results.
-    // The AI will describe any type mismatch naturally (e.g. "I found condos in your budget").
-    const summaryTypeMatch = fullChatText.match(/Property:\s*([^\n.]+)/i) || fullChatText.match(/type of home[^:]*:\s*([^\n.]+)/i);
-    const userSelectedText = summaryTypeMatch ? summaryTypeMatch[1].toLowerCase() : fullChatText.toLowerCase();
-
-    const isDetached = userSelectedText.includes('detached') || userSelectedText.includes('single family') || userSelectedText.includes('single_family') || userSelectedText.includes('villa');
-    const isTownhouse = !isDetached && (userSelectedText.includes('townhouse') || userSelectedText.includes('townhome'));
-    const isCondo = !isDetached && !isTownhouse && (userSelectedText.includes('condo') || userSelectedText.includes('apartment'));
-    const isMultiFamily = !isDetached && !isTownhouse && !isCondo && (userSelectedText.includes('duplex') || userSelectedText.includes('multi-family') || userSelectedText.includes('multi family') || userSelectedText.includes('multi_family'));
-    // 'Family Home' is a general category — do NOT restrict to single family only, allow all types
-    const isFamilyHomeGeneral = userSelectedText.includes('family home') && !userSelectedText.includes('single family');
-
-    if (isDetached) {
-      filterState.isSingleFamily = { value: true };
-      filterState.isTownhouse = { value: false };
-      filterState.isCondo = { value: false };
-      filterState.isApartment = { value: false };
-      filterState.isMultiFamily = { value: false };
-      filterState.isManufactured = { value: false };
-      filterState.isLotLand = { value: false };
-    } else if (isTownhouse) {
-      filterState.isTownhouse = { value: true };
-      filterState.isSingleFamily = { value: false };
-      filterState.isCondo = { value: false };
-      filterState.isApartment = { value: false };
-      filterState.isMultiFamily = { value: false };
-    } else if (isCondo) {
-      filterState.isCondo = { value: true };
-      filterState.isApartment = { value: true };
-      filterState.isSingleFamily = { value: false };
-      filterState.isTownhouse = { value: false };
-      filterState.isMultiFamily = { value: false };
-    } else if (isMultiFamily) {
-      filterState.isMultiFamily = { value: true };
-      filterState.isSingleFamily = { value: false };
-      filterState.isTownhouse = { value: false };
-      filterState.isCondo = { value: false };
-    }
-    // isFamilyHomeGeneral or unknown type: no type restriction — let Zillow return all available types
-
-    // Beds and Baths Filters — apply relaxed minimums for flexibility
-    const bedsMatch = fullChatText.match(/Bedrooms:\s*(\d+)/i) || fullChatText.match(/(\d+)\s*beds?/i);
-    if (bedsMatch && parseInt(bedsMatch[1]) > 0) {
-      const requestedBeds = parseInt(bedsMatch[1]);
-      // Relax beds by 1 to show more options within budget, but keep a reasonable floor
-      filterState.beds = { min: Math.max(1, requestedBeds - 1) };
-    }
-
-    const bathsMatch = fullChatText.match(/Bathrooms:\s*(\d+)/i) || fullChatText.match(/(\d+)\s*baths?/i);
-    if (bathsMatch && parseInt(bathsMatch[1]) > 0) {
-      const requestedBaths = parseInt(bathsMatch[1]);
-      // Relax baths by 1 
-      filterState.baths = { min: Math.max(1, requestedBaths - 1) };
     }
   }
 
