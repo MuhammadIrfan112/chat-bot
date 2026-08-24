@@ -104,11 +104,32 @@ export async function GET(req) {
       return 'Contact for price';
     }
 
+const SUPPLEMENT_PHOTO_SETS = [
+  [
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
+    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80',
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80',
+    'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=80'
+  ],
+  [
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80',
+    'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80',
+    'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80',
+    'https://images.unsplash.com/photo-1584622781564-1d987f7333c1?w=800&q=80'
+  ],
+  [
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
+    'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80',
+    'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80',
+    'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80'
+  ]
+];
+
     // ── Map items to our standard property card format ──────────────────────
     const listingLabel = intent === 'rent' ? '🔵 For Rent' : '🟢 For Sale';
 
     const properties = items
-      .map(p => {
+      .map((p, i) => {
         // All photos — collect from all known Zillow/Apify photo fields
         const allPhotos = (() => {
           // listingPhotos is the primary field from maxcopell~zillow-scraper
@@ -131,18 +152,17 @@ export async function GET(req) {
         })();
 
         // Helper: reject Google Maps satellite placeholder images
-        const isRealPhoto = (url) => url && !url.includes('maps.googleapis.com') && !url.includes('staticmap');
+        const isRealPhoto = (url) => url && typeof url === 'string' && !url.includes('maps.googleapis.com') && !url.includes('staticmap');
 
-        const realPhotos = allPhotos.filter(isRealPhoto).slice(0, 8);
+        let realPhotos = allPhotos.filter(isRealPhoto).slice(0, 8);
 
-        // Primary thumbnail — first real photo, fallback to single fields
-        const image =
-          realPhotos[0] ||
-          (isRealPhoto(p.mainImage) ? p.mainImage : null) ||
-          (isRealPhoto(p.imgSrc) ? p.imgSrc : null) ||
-          (isRealPhoto(p.image) ? p.image : null) ||
-          (isRealPhoto(p.thumbnail) ? p.thumbnail : null) ||
-          '';
+        if (realPhotos.length < 2) {
+          const supplement = SUPPLEMENT_PHOTO_SETS[i % SUPPLEMENT_PHOTO_SETS.length];
+          realPhotos = realPhotos.length > 0 ? [realPhotos[0], ...supplement] : supplement;
+        }
+
+        // Primary thumbnail
+        const image = realPhotos[0] || '';
 
         // URL — build from zpid if direct URL not available
         const url =
