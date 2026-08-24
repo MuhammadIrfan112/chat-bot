@@ -505,10 +505,11 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          startUrls: [{ url: searchUrl }],
           searchUrls: [{ url: searchUrl }],
+          search: `${normCity}, ${normState || ''}`.trim(),
           proxy: { 
-            useApifyProxy: true,
-            apifyProxyGroups: ['SHADER']
+            useApifyProxy: true
           }
         })
       }
@@ -981,6 +982,20 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
         return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
       });
       if (saleOnly.length >= 2) filteredData = saleOnly;
+    }
+
+    // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
+    if (propBudget > 0) {
+      const maxBudget = Math.round(propBudget * 1.10);
+      const minBudget = Math.round(propBudget * 0.40);
+      const inBudget = filteredData.filter(p => {
+        const price = parseBudget(String(p.price || p.priceDisplay || ''));
+        return price <= 0 || (price <= maxBudget && price >= minBudget);
+      });
+      if (inBudget.length === 0) {
+        console.log(`fetchCityPropertyData: 0 DB properties within budget (${propBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
     }
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
