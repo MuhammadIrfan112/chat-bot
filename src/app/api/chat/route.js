@@ -1528,11 +1528,11 @@ ${areasNotServed.length ? `
 
       // Extract bedrooms (fallback from raw chat)
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
-      const propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
+      let propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
 
       // Extract bathrooms (fallback from raw chat)
       const bathsMatch = fullText.match(/(\d)\s*(?:bath(?:room)?s?|ba\b)/);
-      const propBaths = sumBaths > 0 ? sumBaths : (bathsMatch ? parseInt(bathsMatch[1]) : 0);
+      let propBaths = sumBaths > 0 ? sumBaths : (bathsMatch ? parseInt(bathsMatch[1]) : 0);
 
       // ── Budget Extraction (robust) ──────────────────────────────────────────
       let propBudget = sumBudget > 0 ? sumBudget : 0;
