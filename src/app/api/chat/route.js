@@ -1599,10 +1599,85 @@ ${areasNotServed.length ? `
         }
       }
 
-      // Only trigger property search after user has provided city + budget + beds
-      // AND has confirmed the summary with "yes"
+      // ── Change Search Criteria Flow (3 Buttons: 📍 City, 💰 Budget, 🛏️ Bedrooms & Bathrooms) ──
       const lastUserMsg = userQuery.toLowerCase().trim();
-      const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg);
+      const prevModelMsg = [...messages].reverse().find(m => m.role === 'model')?.parts?.[0]?.text || '';
+      const hasPriorSearch = messages.some(m =>
+        m.role === 'model' && (
+          m.parts?.[0]?.text?.includes('Location:') ||
+          m.parts?.[0]?.text?.includes('Here are live properties') ||
+          m.parts?.[0]?.text?.includes('Searching for live') ||
+          (Array.isArray(m.properties) && m.properties.length > 0)
+        )
+      );
+
+      // 1. User asks to change search criteria
+      const isChangeCriteriaRequest = /(change\s*search\s*criteria|change\s*criteria|update\s*criteria|modify\s*search)/i.test(lastUserMsg);
+      if (isChangeCriteriaRequest) {
+        return Response.json({
+          reply: "What information would you like to update in your search criteria?\n\n[BUTTON: 📍 City] [BUTTON: 💰 Budget] [BUTTON: 🛏️ Bedrooms & Bathrooms]",
+          intent: propIntent,
+          city: detectedCity
+        });
+      }
+
+      // 2. User picks which criteria to change
+      const isChangeCityChoice = /^(📍\s*city|city|change\s*city|i\s*want\s*(to\s*)?change?\s*city)$/i.test(lastUserMsg);
+      if (isChangeCityChoice && hasPriorSearch) {
+        return Response.json({
+          reply: "Which city or area would you like to search in?",
+          intent: propIntent,
+          city: detectedCity
+        });
+      }
+
+      const isChangeBudgetChoice = /^(💰\s*budget|budget|change\s*budget|i\s*want\s*(to\s*)?change?\s*budget)$/i.test(lastUserMsg);
+      if (isChangeBudgetChoice && hasPriorSearch) {
+        return Response.json({
+          reply: "What is your new maximum budget?",
+          intent: propIntent,
+          city: detectedCity
+        });
+      }
+
+      const isChangeBedsChoice = /^(🛏️\s*bedrooms?\s*&?\s*bathrooms?|bedrooms?\s*&?\s*bathrooms?|bedrooms?|bathrooms?|beds?|baths?|change\s*beds?)$/i.test(lastUserMsg);
+      if (isChangeBedsChoice && hasPriorSearch) {
+        return Response.json({
+          reply: "How many bedrooms and bathrooms are you looking for?",
+          intent: propIntent,
+          city: detectedCity
+        });
+      }
+
+      // 3. Check if user is replying with the updated value to previous criteria prompt
+      let isCriteriaUpdate = false;
+      if (prevModelMsg.includes('Which city or area would you like to search in?') || prevModelMsg.includes('Which city would you like to search in?')) {
+        const rawNewCity = userQuery.replace(/^(in|at|for|to)\s+/i, '').trim();
+        if (rawNewCity) {
+          detectedCity = normalizeCityName(rawNewCity);
+          detectedState = resolveStateOrProvince(detectedCity, detectedState);
+          isCriteriaUpdate = true;
+          console.log(`[CriteriaUpdate] User updated city to: "${detectedCity}"`);
+        }
+      } else if (prevModelMsg.includes('What is your new maximum budget?')) {
+        const newBud = parseBudget(userQuery);
+        if (newBud > 0) {
+          propBudget = newBud;
+          isCriteriaUpdate = true;
+          console.log(`[CriteriaUpdate] User updated budget to: $${propBudget}`);
+        }
+      } else if (prevModelMsg.includes('How many bedrooms and bathrooms are you looking for?')) {
+        const bMatch = userQuery.match(/(\d+)\s*(?:bed|br)/i) || userQuery.match(/^(\d+)/);
+        if (bMatch) propBeds = parseInt(bMatch[1], 10);
+        const baMatch = userQuery.match(/(\d+)\s*(?:bath|ba)/i);
+        if (baMatch) propBaths = parseInt(baMatch[1], 10);
+        isCriteriaUpdate = true;
+        console.log(`[CriteriaUpdate] User updated beds=${propBeds}, baths=${propBaths}`);
+      }
+
+      // Only trigger property search after user has provided city + budget + beds
+      // AND has confirmed the summary with "yes", or just updated their search criteria
+      const hasConfirmedSummary = /(yes|yeah|correct|yep|sure|exactly|more|next|show)/i.test(lastUserMsg) || isCriteriaUpdate;
 
       // For demo bot: trigger if summary exists + confirmed (city is enough for fake props)
       const isDemoBot = bot_id === 'demo-real-estate';
@@ -1615,10 +1690,10 @@ ${areasNotServed.length ? `
 
       const hasEnoughInfo = !userHasAgent && (isDemoBot
         ? (detectedCity || recentSummary) && hasConfirmedSummary
-        : (propIntent && detectedCity && hasConfirmedSummary) || isConfirmedSearchPrompt);
+        : (propIntent && detectedCity && hasConfirmedSummary) || isConfirmedSearchPrompt || isCriteriaUpdate);
 
       // DEBUG: log extracted values to Vercel logs
-      console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} baths=${propBaths} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} lastMsg="${lastUserMsg}"`);
+      console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} baths=${propBaths} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} isCriteriaUpdate=${isCriteriaUpdate} lastMsg="${lastUserMsg}"`);
 
       if (hasEnoughInfo && hasConfirmedSummary) {
         const cityLower = (detectedCity || '').toLowerCase().trim();
