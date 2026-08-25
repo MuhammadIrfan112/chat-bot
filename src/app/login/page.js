@@ -17,8 +17,32 @@ export default function Login() {
   const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
 
-  // ── Auto-redirect if already logged in ──────────────────────
+  // ── Auto-redirect if already logged in or auto-login for demo ──────────────────────
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isAutoDemo = params.get('demo_login') === 'adnan' || params.get('auto') === 'demo' || params.get('auto') === 'adnan' || params.get('demo') === 'adnan';
+
+    if (isAutoDemo) {
+      setLoading(true);
+      // Auto-sign in to the dedicated demo account
+      supabase.auth.signInWithPassword({
+        email: 'demo@gmail.com',
+        password: 'Demo@7788'
+      }).then(({ data, error: loginErr }) => {
+        if (!loginErr && data?.session) {
+          localStorage.removeItem('isDemo');
+          localStorage.removeItem('impersonated_user_id');
+          localStorage.removeItem('impersonated_user_email');
+          window.location.href = '/dashboard';
+        } else {
+          console.warn('Auto demo login error:', loginErr?.message);
+          setLoading(false);
+          setCheckingSession(false);
+        }
+      });
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         // Check role

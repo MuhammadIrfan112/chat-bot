@@ -68,6 +68,14 @@ export default function DashboardLayout({ children }) {
           .limit(1);
         const sub = rows?.[0];
 
+        if (session.user.email === 'demo@gmail.com') {
+          setSubscriptionStatus('Active');
+          setPlanName('premium');
+          setWebsiteType('Real Estate');
+          setLoading(false);
+          return;
+        }
+
         if (sub) {
           setSubscriptionStatus(sub.status);
           setPlanName(sub.plan || 'starter');
@@ -97,11 +105,16 @@ export default function DashboardLayout({ children }) {
     checkAuthAndSub();
 
     const interval = setInterval(async () => {
+      const isDemo = localStorage.getItem('isDemo') === 'true';
+      if (isDemo) return;
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
         return;
       }
+      if (session.user.email === 'demo@gmail.com') return;
+
       const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
       const { data: sub, error } = await supabase
         .from('users_subscription')
