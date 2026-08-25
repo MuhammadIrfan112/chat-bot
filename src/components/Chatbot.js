@@ -1360,8 +1360,6 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setActiveApifyRunId(null);
           setIsLoading(false);
 
-          const props = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
-            ? data.properties
           let props = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
             ? data.properties
             : [];
