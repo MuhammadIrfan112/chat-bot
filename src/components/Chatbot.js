@@ -1120,6 +1120,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [activeApifyRunId, setActiveApifyRunId] = useState(null);
   const [activeApifyIntent, setActiveApifyIntent] = useState('buy');
   const [activeApifyCity, setActiveApifyCity] = useState('');
+  const [activeApifyBudget, setActiveApifyBudget] = useState(0);
+  const [activeApifyBeds, setActiveApifyBeds] = useState(0);
+  const [activeApifyBaths, setActiveApifyBaths] = useState(0);
   const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
 
   // ── Closing flow state ─────────────────────────────────────────
@@ -1352,7 +1355,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     const interval = setInterval(async () => {
       try {
         const cityParam = activeApifyCity ? `&city=${encodeURIComponent(activeApifyCity)}` : '';
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}`);
+        const budgetParam = activeApifyBudget ? `&budget=${encodeURIComponent(activeApifyBudget)}` : '';
+        const bedsParam = activeApifyBeds ? `&beds=${encodeURIComponent(activeApifyBeds)}` : '';
+        const bathsParam = activeApifyBaths ? `&baths=${encodeURIComponent(activeApifyBaths)}` : '';
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}${budgetParam}${bedsParam}${bathsParam}`);
         const data = await res.json();
 
         if (data.status === 'done') {
@@ -1366,7 +1372,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
           const cityName = data.city && data.city !== 'unknown'
             ? data.city.charAt(0).toUpperCase() + data.city.slice(1)
-            : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Milton');
+            : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton');
 
           if (props.length === 0) {
             const streetNames = ['Heritage Way', 'Pinecrest Boulevard', 'Mountain View Way', 'Valley Stream Crescent'];
@@ -1379,9 +1385,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             props = [1, 2, 3, 4].map(idx => ({
               address: `${100 + idx * 34} ${streetNames[idx - 1]}, ${cityName}`,
               city: cityName,
-              price: activeApifyIntent === 'rent' ? `$${(2200 + idx * 250).toLocaleString()}/mo` : `$${(560000 + idx * 28000).toLocaleString()}`,
-              bedrooms: 3 + (idx % 2),
-              bathrooms: 2 + (idx % 2),
+              price: activeApifyIntent === 'rent' ? `$${(2200 + idx * 250).toLocaleString()}/mo` : `$${(activeApifyBudget ? activeApifyBudget : 560000) + idx * 28000}`,
+              bedrooms: activeApifyBeds ? activeApifyBeds : (3 + (idx % 2)),
+              bathrooms: activeApifyBaths ? activeApifyBaths : (2 + (idx % 2)),
               property_type: idx % 2 === 0 ? 'Townhouse' : 'Single Family Home',
               image_url: sampleImgs[idx - 1][0],
               images: sampleImgs[idx - 1],
@@ -1408,7 +1414,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setActiveApifyRunId(null);
           setIsLoading(false);
 
-          const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Milton';
+          const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton';
           const streetNames = ['Heritage Way', 'Pinecrest Boulevard', 'Mountain View Way', 'Valley Stream Crescent'];
           const sampleImgs = [
             ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80'],
@@ -1419,9 +1425,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           const fallbackProps = [1, 2, 3, 4].map(idx => ({
             address: `${100 + idx * 34} ${streetNames[idx - 1]}, ${cityName}`,
             city: cityName,
-            price: activeApifyIntent === 'rent' ? `$${(2200 + idx * 250).toLocaleString()}/mo` : `$${(560000 + idx * 28000).toLocaleString()}`,
-            bedrooms: 3 + (idx % 2),
-            bathrooms: 2 + (idx % 2),
+            price: activeApifyIntent === 'rent' ? `$${(2200 + idx * 250).toLocaleString()}/mo` : `$${(activeApifyBudget ? activeApifyBudget : 560000) + idx * 28000}`,
+            bedrooms: activeApifyBeds ? activeApifyBeds : (3 + (idx % 2)),
+            bathrooms: activeApifyBaths ? activeApifyBaths : (2 + (idx % 2)),
             property_type: idx % 2 === 0 ? 'Townhouse' : 'Single Family Home',
             image_url: sampleImgs[idx - 1][0],
             images: sampleImgs[idx - 1],
@@ -1448,7 +1454,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }, 6000); // Poll every 6 seconds
 
     return () => clearInterval(interval);
-  }, [activeApifyRunId, activeApifyIntent, activeApifyCity]);
+  }, [activeApifyRunId, activeApifyIntent, activeApifyCity, activeApifyBudget, activeApifyBeds, activeApifyBaths]);
 
   // Reusable parser for AI replies (both live chat and Apify background responses)
   const parseModelReply = (rawText, existingProps = []) => {
@@ -3146,6 +3152,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setActiveApifyRunId(data.apifyRunId);
           setActiveApifyIntent(data.intent || (rentData?.city ? 'rent' : 'buy'));
           setActiveApifyCity(data.city || '');
+          setActiveApifyBudget(data.budget || buyHomeData?.budget || rentData?.budget || 0);
+          setActiveApifyBeds(data.beds || buyHomeData?.bedrooms || rentData?.bedrooms || 0);
+          setActiveApifyBaths(data.baths || buyHomeData?.bathrooms || rentData?.bathrooms || 0);
         }
         // Activate multi-select if needed
         if (multiButtons.length > 0) {

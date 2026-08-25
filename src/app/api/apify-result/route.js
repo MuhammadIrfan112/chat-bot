@@ -14,6 +14,30 @@ export async function GET(req) {
     const runId = searchParams.get('runId');
     const intent = searchParams.get('intent') || 'buy'; // 'buy' or 'rent'
     const requestedCity = (searchParams.get('city') || '').toLowerCase().trim();
+    const rawBudget = searchParams.get('budget') || '';
+    const rawBeds = searchParams.get('beds') || '0';
+    const rawBaths = searchParams.get('baths') || '0';
+
+    const parseBudgetNum = (text) => {
+      if (!text) return 0;
+      const t = String(text).replace(/,/g, '').toLowerCase().trim();
+      const mMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/);
+      if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
+      const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
+      if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
+      const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
+      if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
+      const plainMatch = t.match(/\$?\s*([\d]{4,})/);
+      if (plainMatch) return parseInt(plainMatch[1], 10);
+      const smallNum = t.match(/\$?\s*([\d]+)/);
+      if (smallNum) return parseInt(smallNum[1], 10);
+      return 0;
+    };
+
+    const propBudget = parseBudgetNum(rawBudget);
+    const propBeds = parseInt(rawBeds, 10) || 0;
+    const propBaths = parseFloat(rawBaths) || 0;
+
     if (!runId) return Response.json({ error: 'Missing runId' }, { status: 400 });
 
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
@@ -27,7 +51,7 @@ export async function GET(req) {
     const statusData = await statusRes.json();
     const runStatus = statusData?.data?.status;
 
-    console.log(`[apify-result] runId=${runId} status=${runStatus} intent=${intent}`);
+    console.log(`[apify-result] runId=${runId} status=${runStatus} intent=${intent} budget=${propBudget} beds=${propBeds} baths=${propBaths}`);
 
     if (runStatus === 'RUNNING' || runStatus === 'READY' || runStatus === 'CREATED') {
       return Response.json({ status: 'running' });
@@ -39,7 +63,7 @@ export async function GET(req) {
       if (datasetId) {
         try {
           const itemsRes = await fetch(
-            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=25`
+            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=35`
           );
           if (itemsRes.ok) {
             items = await itemsRes.json();
@@ -57,17 +81,40 @@ export async function GET(req) {
 
     // Fallback: If scraper returned 0 items (e.g. smaller towns, strict search, or MLS delay), generate high quality matching properties
     if (rawItems.length === 0) {
-      const cityTitle = requestedCity ? (requestedCity.charAt(0).toUpperCase() + requestedCity.slice(1)) : 'Milton';
+      const cityTitle = requestedCity ? (requestedCity.charAt(0).toUpperCase() + requestedCity.slice(1)) : 'Edmonton';
       const streetNames = ['Mountain View Way', 'Heritage Trail', 'Pinecrest Lane', 'Cascade Boulevard', 'Lakeview Drive', 'Bow River Court', 'Highland Crescent', 'Sunridge Avenue'];
       
+      const baseTargetBudget = propBudget > 0 ? propBudget : (intent === 'rent' ? 2400 : 650000);
+      const baseTargetBeds = propBeds > 0 ? propBeds : 3;
+      const baseTargetBaths = propBaths > 0 ? propBaths : 2;
+
       rawItems = [1, 2, 3, 4, 5, 6].map((idx) => {
-        const basePrice = intent === 'rent' ? (2200 + idx * 300) : (580000 + (idx * 35000));
+        let priceNum = 0;
+        let bedsNum = baseTargetBeds;
+        let bathsNum = baseTargetBaths;
+
+        if (idx === 1) {
+          priceNum = Math.round(baseTargetBudget * 0.96);
+        } else if (idx === 2) {
+          priceNum = Math.round(baseTargetBudget * 1.02);
+        } else if (idx === 3) {
+          priceNum = Math.round(baseTargetBudget * 1.15);
+          bedsNum = baseTargetBeds;
+          bathsNum = baseTargetBaths;
+        } else if (idx === 4) {
+          priceNum = Math.round(baseTargetBudget * 0.88);
+          bedsNum = baseTargetBeds;
+          bathsNum = baseTargetBaths;
+        } else {
+          priceNum = Math.round(baseTargetBudget * (0.90 + (idx * 0.05)));
+        }
+
         return {
           address: `${100 + idx * 28} ${streetNames[idx % streetNames.length]}, ${cityTitle}`,
           city: cityTitle,
-          price: `$${basePrice.toLocaleString()}${intent === 'rent' ? '/mo' : ''}`,
-          bedrooms: 3 + (idx % 2),
-          bathrooms: 2 + (idx % 2),
+          price: intent === 'rent' ? `$${priceNum.toLocaleString()}/mo` : `$${priceNum.toLocaleString()}`,
+          bedrooms: bedsNum,
+          bathrooms: bathsNum,
           homeType: idx % 2 === 0 ? 'Townhouse' : 'Single Family Home',
           listingPhotos: SUPPLEMENT_PHOTO_SETS[idx % SUPPLEMENT_PHOTO_SETS.length],
           livingArea: `${1650 + idx * 120} sq ft`,
@@ -301,19 +348,107 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    if (finalProperties.length === 0) {
-      return Response.json({ status: 'empty' });
+    // ── Apply recommendation rules: Cards 1 & 2 (budget match), Cards 3 & 4 (exact bed/bath match) ──
+    function selectRecommendedProperties(propsList, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2) {
+      if (!Array.isArray(propsList) || propsList.length === 0) return [];
+      const totalTarget = budgetCountNeeded + bedCountNeeded;
+
+      const usedKeys = new Set();
+      const selected = [];
+
+      const getPropKey = (p) => (p.url || p.address || p.id || p.mls_number || JSON.stringify(p)).toLowerCase().trim();
+
+      const addProp = (p) => {
+        if (!p) return false;
+        const key = getPropKey(p);
+        if (!usedKeys.has(key)) {
+          usedKeys.add(key);
+          selected.push(p);
+          return true;
+        }
+        return false;
+      };
+
+      const getPrice = (p) => parseBudgetNum(String(p.price || p.priceDisplay || ''));
+      const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0, 10) || 0;
+      const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
+
+      // ── 1. BUDGET CARDS (Cards 1 & 2): within budget (max +10%). Sort by closest to budget, then most beds
+      const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
+      const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.40) : 0;
+
+      const budgetPool = [...propsList]
+        .filter(p => {
+          if (targetBudget <= 0) return true;
+          const price = getPrice(p);
+          if (price <= 0) return true;
+          return price <= maxBudget && price >= minBudget;
+        })
+        .sort((a, b) => {
+          if (targetBudget > 0) {
+            const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
+            const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
+            if (aDiff !== bDiff) return aDiff - bDiff;
+          }
+          return getBeds(b) - getBeds(a);
+        });
+
+      let budgetCount = 0;
+      for (const p of budgetPool) {
+        if (budgetCount >= budgetCountNeeded) break;
+        if (addProp(p)) budgetCount++;
+      }
+
+      // ── 2. BED/BATH CARDS (Cards 3 & 4): Exact or closest bed & bath match regardless of price
+      const bedPool = [...propsList].sort((a, b) => {
+        if (targetBeds > 0) {
+          const aBedDiff = getBeds(a) > 0 ? Math.abs(getBeds(a) - targetBeds) : 99;
+          const bBedDiff = getBeds(b) > 0 ? Math.abs(getBeds(b) - targetBeds) : 99;
+          if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
+        }
+        if (targetBaths > 0) {
+          const aBathDiff = getBaths(a) > 0 ? Math.abs(getBaths(a) - targetBaths) : 99;
+          const bBathDiff = getBaths(b) > 0 ? Math.abs(getBaths(b) - targetBaths) : 99;
+          if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
+        }
+        return 0;
+      });
+
+      let bedCount = 0;
+      for (const p of bedPool) {
+        if (bedCount >= bedCountNeeded) break;
+        if (addProp(p)) bedCount++;
+      }
+
+      // ── 3. Backfill
+      for (const p of propsList) {
+        if (selected.length >= totalTarget) break;
+        addProp(p);
+      }
+
+      const remaining = propsList.filter(p => !usedKeys.has(getPropKey(p)));
+      return [...selected, ...remaining];
     }
+
+    const orderedProperties = selectRecommendedProperties(
+      finalProperties,
+      propBudget,
+      propBeds,
+      propBaths,
+      intent === 'rent',
+      2,
+      2
+    );
 
     if (savedCity && savedCity !== 'unknown') {
       try {
         const dbCityKey = intent === 'rent' ? `${savedCity}-rent` : savedCity;
         await supabase.from('city_property_data').upsert({
           city: dbCityKey,
-          properties: finalProperties,
+          properties: orderedProperties,
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
-        console.log(`[apify-result] Successfully saved ${finalProperties.length} properties to DB for city key: "${dbCityKey}"`);
+        console.log(`[apify-result] Successfully saved ${orderedProperties.length} properties to DB for city key: "${dbCityKey}"`);
       } catch (dbErr) {
         console.error('[apify-result] DB Save Error:', dbErr.message);
       }
@@ -322,7 +457,7 @@ const SUPPLEMENT_PHOTO_SETS = [
     return Response.json({ 
       status: 'done', 
       city: savedCity, 
-      properties: finalProperties.slice(0, 16) 
+      properties: orderedProperties.slice(0, 16) 
     });
 
   } catch (e) {

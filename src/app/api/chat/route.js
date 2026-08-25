@@ -1773,7 +1773,10 @@ CRITICAL INSTRUCTIONS:
                   reply: replyText,
                   apifyRunId,
                   intent: propIntent,
-                  city: detectedCity
+                  city: detectedCity,
+                  budget: propBudget,
+                  beds: propBeds,
+                  baths: propBaths
                 });
               } else {
                 // Apify failed — for real client bots, show honest message. Never show fake properties.
