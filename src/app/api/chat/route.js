@@ -507,7 +507,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
         body: JSON.stringify({
           startUrls: [{ url: searchUrl }],
           searchUrls: [{ url: searchUrl }],
-          search: `${normCity}, ${normState || ''}`.trim(),
+          search: `${normCity}${state ? ', ' + state : ''}`.trim(),
           proxy: { 
             useApifyProxy: true
           }
