@@ -1651,12 +1651,14 @@ ${areasNotServed.length ? `
 
       // 3. Check if user is replying with the updated value to previous criteria prompt
       let isCriteriaUpdate = false;
+      let criteriaChangedType = null; // 'budget' | 'beds' | 'city'
       if (prevModelMsg.includes('Which city or area would you like to search in?') || prevModelMsg.includes('Which city would you like to search in?')) {
         const rawNewCity = userQuery.replace(/^(in|at|for|to)\s+/i, '').trim();
         if (rawNewCity) {
           detectedCity = normalizeCityName(rawNewCity);
           detectedState = resolveStateOrProvince(detectedCity, detectedState);
           isCriteriaUpdate = true;
+          criteriaChangedType = 'city';
           console.log(`[CriteriaUpdate] User updated city to: "${detectedCity}"`);
         }
       } else if (prevModelMsg.includes('What is your new maximum budget?')) {
@@ -1664,6 +1666,7 @@ ${areasNotServed.length ? `
         if (newBud > 0) {
           propBudget = newBud;
           isCriteriaUpdate = true;
+          criteriaChangedType = 'budget';
           console.log(`[CriteriaUpdate] User updated budget to: $${propBudget}`);
         }
       } else if (prevModelMsg.includes('How many bedrooms and bathrooms are you looking for?')) {
@@ -1672,6 +1675,7 @@ ${areasNotServed.length ? `
         const baMatch = userQuery.match(/(\d+)\s*(?:bath|ba)/i);
         if (baMatch) propBaths = parseInt(baMatch[1], 10);
         isCriteriaUpdate = true;
+        criteriaChangedType = 'beds';
         console.log(`[CriteriaUpdate] User updated beds=${propBeds}, baths=${propBaths}`);
       }
 
@@ -1736,13 +1740,18 @@ CRITICAL INSTRUCTIONS:
           propertyContext = `\n\nAVAILABLE PROPERTIES FROM DATABASE (Show these as property cards):\n${matchedProperties}`;
         } else if (detectedCity) {
           // ============================================================
+          // When budget or beds changed → skip cache → fresh Apify search
+          // ============================================================
+          const skipCache = isCriteriaUpdate && (criteriaChangedType === 'budget' || criteriaChangedType === 'beds');
+
+          // ============================================================
           // PRIORITY 1 & 2: Client's CRM (website) properties + City cached data
           // ============================================================
-          const crmResult = await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds, propBaths);
+          const crmResult = skipCache ? null : await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds, propBaths);
           const crmPropertyContext = (typeof crmResult === 'object' && crmResult !== null) ? crmResult.text : crmResult;
           const crmRawProperties = (typeof crmResult === 'object' && crmResult !== null) ? (crmResult.rawProperties || []) : [];
 
-          const cachedResult = await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText);
+          const cachedResult = skipCache ? null : await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText);
           const cachedCityContext = (typeof cachedResult === 'object' && cachedResult !== null) ? cachedResult.text : cachedResult;
           const cachedRawProperties = (typeof cachedResult === 'object' && cachedResult !== null) ? (cachedResult.rawProperties || []) : [];
 
@@ -1750,6 +1759,10 @@ CRITICAL INSTRUCTIONS:
           const allRawProperties = [...crmRawProperties, ...cachedRawProperties];
           const hasCRM = crmPropertyContext && crmPropertyContext.length > 50;
           const hasCache = cachedCityContext && cachedCityContext.length > 50;
+
+          if (skipCache) {
+            console.log(`[CriteriaUpdate] ${criteriaChangedType} changed — skipping cache, forcing fresh Apify search for ${detectedCity} budget=$${propBudget}`);
+          }
 
           if (allRawProperties.length > 0) {
             console.log(`[Route] Found matching properties (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity}`);
