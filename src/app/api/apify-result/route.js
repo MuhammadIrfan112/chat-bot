@@ -417,7 +417,12 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       function isPropertyRental(p) {
         if (!p) return false;
-        // 1. Zillow explicit boolean flags
+        // 1. Price threshold: Monthly rentals in USA/Canada are $500 - $25,000. Homes for sale are $50k - $20M+.
+        const numPrice = getPrice(p);
+        if (numPrice > 0 && numPrice < 35000) return true; // Definitely a monthly rental!
+        if (numPrice >= 35000) return false; // Definitely a for-sale property!
+
+        // 2. Zillow explicit boolean flags
         if (p.isForRent === true || p.is_for_rent === true) return true;
         if (p.isForSale === true || p.is_for_sale === true) return false;
 

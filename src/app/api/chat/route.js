@@ -998,7 +998,12 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   function isPropertyRental(p) {
     if (!p) return false;
-    // 1. Zillow explicit boolean flags
+    // 1. Price threshold: Monthly rentals in USA/Canada are $500 - $25,000. Homes for sale are $50k - $20M+.
+    const numPrice = getPrice(p);
+    if (numPrice > 0 && numPrice < 35000) return true; // Definitely a monthly rental!
+    if (numPrice >= 35000) return false; // Definitely a for-sale property!
+
+    // 2. Zillow explicit boolean flags
     if (p.isForRent === true || p.is_for_rent === true) return true;
     if (p.isForSale === true || p.is_for_sale === true) return false;
 
@@ -1214,7 +1219,8 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       const rentOnly = filteredData.filter(item => {
         const status = String(item.listing_status || item.status || '').toLowerCase();
         const priceStr = String(item.price || '').toLowerCase();
-        return status.includes('rent') || priceStr.includes('/mo') || priceStr.includes('per month');
+        const priceNum = parseBudget(priceStr);
+        return status.includes('rent') || priceStr.includes('/mo') || priceStr.includes('per month') || (priceNum > 0 && priceNum < 35000);
       });
       if (rentOnly.length < 2) {
         console.log(`fetchCityPropertyData: No rent listings found for city="${cleanCity}" — falling back to live Apify rent search.`);
@@ -1225,9 +1231,15 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       const saleOnly = filteredData.filter(item => {
         const status = String(item.listing_status || item.status || '').toLowerCase();
         const priceStr = String(item.price || '').toLowerCase();
-        return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
+        const priceNum = parseBudget(priceStr);
+        return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month') && priceNum >= 35000;
       });
-      if (saleOnly.length >= 2) filteredData = saleOnly;
+      if (saleOnly.length >= 2) {
+        filteredData = saleOnly;
+      } else {
+        console.log(`fetchCityPropertyData: Less than 2 for-sale listings for city="${cleanCity}" in DB — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
     }
 
     // ── PROPERTY TYPE: filter; if 0 match, show ALL (don't dead-end user) ──
