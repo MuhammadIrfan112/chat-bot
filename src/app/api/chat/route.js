@@ -592,8 +592,39 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       return existing.runId;
     }
 
+    // ── Canada check: If Canadian city, search Realtor.ca first, fallback to Zillow Canada ──
+    const canadianProvinces = new Set(['ON', 'BC', 'AB', 'QC', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE', 'NT', 'YT', 'NU']);
+    const isCanada = canadianProvinces.has(String(state || '').toUpperCase().trim());
+
+    if (isCanada) {
+      console.log(`[Apify] 🇨🇦 Canadian city detected: ${normCity}, ${state}. Attempting Realtor.ca scraper run...`);
+      try {
+        const realtorRes = await fetch(
+          `https://api.apify.com/v2/acts/fatihtahta~realtor-canada-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              search: `${normCity}, ${state || 'ON'}`.trim(),
+              maxItems: 25,
+              transactionType: intent === 'rent' ? 'For rent' : 'For sale'
+            })
+          }
+        );
+        const realtorData = await realtorRes.json();
+        if (realtorData.data?.id) {
+          const runId = realtorData.data.id;
+          ACTIVE_APIFY_RUNS[runKey] = { runId, startedAt: Date.now(), intent, source: 'realtor_ca' };
+          console.log(`[Apify] 🇨🇦 Realtor.ca scraper run started: ${runId} for ${normCity}, ${state}`);
+          return runId;
+        }
+      } catch (err) {
+        console.warn('[Apify] Realtor.ca scraper start failed, falling back to Zillow Canada:', err.message);
+      }
+    }
+
     const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType);
-    console.log(`[Apify] Starting NEW run | Type=${propType || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
+    console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runRes = await fetch(
       `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
@@ -620,7 +651,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     }
 
     const runId = runData.data.id;
-    ACTIVE_APIFY_RUNS[runKey] = { runId, startedAt: Date.now(), intent };
+    ACTIVE_APIFY_RUNS[runKey] = { runId, startedAt: Date.now(), intent, source: 'zillow' };
     console.log(`[Apify] ✅ Run started successfully: ${runId} (key="${runKey}")`);
     return runId;
   } catch (e) {

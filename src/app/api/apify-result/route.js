@@ -204,8 +204,12 @@ const SUPPLEMENT_PHOTO_SETS = [
 
     const properties = itemsToProcess
       .map((p, i) => {
-        // All photos — collect from all known Zillow/Apify photo fields
+        // All photos — collect from Realtor.ca, Zillow, or Apify photo fields
         const allPhotos = (() => {
+          // Realtor.ca format
+          if (Array.isArray(p.Property?.Photo) && p.Property.Photo.length > 0) {
+            return p.Property.Photo.map(ph => (typeof ph === 'string' ? ph : (ph.HighResPath || ph.MedResPath || ph.LowResPath || ph.url))).filter(Boolean);
+          }
           // listingPhotos is the primary field from maxcopell~zillow-scraper
           if (Array.isArray(p.listingPhotos) && p.listingPhotos.length > 0) {
             return p.listingPhotos.map(ph => (typeof ph === 'string' ? ph : ph.url)).filter(Boolean);
@@ -214,7 +218,10 @@ const SUPPLEMENT_PHOTO_SETS = [
             return p.carouselPhotos.map(ph => ph.url || ph).filter(Boolean);
           }
           if (Array.isArray(p.photos) && p.photos.length > 0) {
-            return p.photos.map(ph => (typeof ph === 'string' ? ph : ph.url)).filter(Boolean);
+            return p.photos.map(ph => (typeof ph === 'string' ? ph : (ph.url || ph.HighResPath))).filter(Boolean);
+          }
+          if (Array.isArray(p.images) && p.images.length > 0) {
+            return p.images.map(ph => (typeof ph === 'string' ? ph : ph.url)).filter(Boolean);
           }
           if (Array.isArray(p.carouselPhotosComposable) && p.carouselPhotosComposable.length > 0) {
             return p.carouselPhotosComposable.map(ph => ph.url || ph).filter(Boolean);
@@ -222,6 +229,7 @@ const SUPPLEMENT_PHOTO_SETS = [
           // Fallback to single image fields
           if (p.mainImage) return [p.mainImage];
           if (p.imgSrc) return [p.imgSrc];
+          if (p.image) return [p.image];
           return [];
         })();
 
@@ -238,18 +246,21 @@ const SUPPLEMENT_PHOTO_SETS = [
         // Primary thumbnail
         const image = realPhotos[0] || '';
 
-        // URL — build from zpid if direct URL not available
+        // URL — build from Realtor.ca or Zillow fields
         const url =
+          (p.RelativeDetailsURL ? `https://www.realtor.ca${p.RelativeDetailsURL}` : null) ||
           p.propertyUrl ||
           p.detailUrl ||
           p.url ||
           p.link ||
           p.hdpData?.homeInfo?.detailUrl ||
-          (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.zillow.com');
+          (p.zpid ? `https://www.zillow.com/homedetails/${p.zpid}_zpid/` : 'https://www.realtor.ca');
 
-        // Address — try all known Zillow field combinations
+        // Address — try Realtor.ca and all known Zillow field combinations
         let address = 'Address not available';
-        if (typeof p.address === 'string' && p.address.trim()) {
+        if (p.Property?.Address?.AddressText) {
+          address = p.Property.Address.AddressText.replace(/\|/g, ', ');
+        } else if (typeof p.address === 'string' && p.address.trim()) {
           address = p.address;
         } else if (p.addressStreet && p.addressCity) {
           address = `${p.addressStreet}, ${p.addressCity}, ${p.addressState || ''} ${p.addressZipcode || ''}`.trim();
@@ -266,30 +277,35 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
 
         // Price — resolve accurately and never return $0
-        const price = resolveAndFormatPrice(p, intent === 'rent');
+        const price = p.Property?.Price || resolveAndFormatPrice(p, intent === 'rent');
 
-        // Beds, baths, type, city
-        const beds = parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0) || 3;
-        const baths = parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0) || 2;
-        const type = p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
-        const city = p.city || p.addressCity || p.hdpData?.homeInfo?.city || (typeof address === 'string' && address.includes(',') ? address.split(',')[1]?.trim() : '') || requestedCity || '';
+        // Beds, baths, type, city (support Realtor.ca + Zillow)
+        const beds = parseInt(
+          p.Building?.Bedrooms || p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0,
+          10
+        ) || 3;
+        const baths = parseFloat(
+          p.Building?.BathroomTotal || p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0
+        ) || 2;
+        const type = p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
+        const city = p.Property?.Address?.AddressText?.split('|')[1]?.trim() || p.city || p.addressCity || p.hdpData?.homeInfo?.city || (typeof address === 'string' && address.includes(',') ? address.split(',')[1]?.trim() : '') || requestedCity || '';
 
         // Rich Facts & Features
-        const livingArea = p.livingArea || p.sqft || p.area || p.hdpData?.homeInfo?.livingArea || p.resoFacts?.livingArea || null;
-        const lotSize = p.lotSize || p.lotAreaValue || (p.hdpData?.homeInfo?.lotAreaValue ? `${p.hdpData?.homeInfo?.lotAreaValue} ${p.hdpData?.homeInfo?.lotAreaUnits || 'sqft'}` : null);
-        const yearBuilt = p.yearBuilt || p.hdpData?.homeInfo?.yearBuilt || p.resoFacts?.yearBuilt || null;
-        const description = p.description || p.resoFacts?.description || p.hdpData?.homeInfo?.description || null;
-        const stories = p.stories || p.resoFacts?.stories || p.hdpData?.homeInfo?.stories || null;
-        const parking = p.parking || p.garageSpaces || p.resoFacts?.garageSpaces || p.resoFacts?.parkingCapacity || null;
-        const heating = (Array.isArray(p.resoFacts?.heating) ? p.resoFacts?.heating?.join(', ') : p.heating) || null;
-        const cooling = (Array.isArray(p.resoFacts?.cooling) ? p.resoFacts?.cooling?.join(', ') : p.cooling) || null;
-        const basement = p.resoFacts?.basement || p.basement || (p.resoFacts?.hasBasement ? 'Finished / Full' : null);
-        const fireplace = p.resoFacts?.hasFireplace ? 'Yes' : (p.resoFacts?.fireplaces ? `${p.resoFacts.fireplaces}` : null);
+        const livingArea = p.Building?.SizeInterior || p.livingArea || p.sqft || p.area || p.hdpData?.homeInfo?.livingArea || p.resoFacts?.livingArea || null;
+        const lotSize = p.Land?.SizeTotal || p.lotSize || p.lotAreaValue || (p.hdpData?.homeInfo?.lotAreaValue ? `${p.hdpData?.homeInfo?.lotAreaValue} ${p.hdpData?.homeInfo?.lotAreaUnits || 'sqft'}` : null);
+        const yearBuilt = p.Building?.ConstructedDate || p.yearBuilt || p.hdpData?.homeInfo?.yearBuilt || p.resoFacts?.yearBuilt || null;
+        const description = p.PublicRemarks || p.description || p.resoFacts?.description || p.hdpData?.homeInfo?.description || null;
+        const stories = p.Building?.StoriesTotal || p.stories || p.resoFacts?.stories || p.hdpData?.homeInfo?.stories || null;
+        const parking = p.Property?.ParkingSpaceTotal || p.parking || p.garageSpaces || p.resoFacts?.garageSpaces || p.resoFacts?.parkingCapacity || null;
+        const heating = (Array.isArray(p.resoFacts?.heating) ? p.resoFacts?.heating?.join(', ') : p.heating) || p.Building?.HeatingType || null;
+        const cooling = (Array.isArray(p.resoFacts?.cooling) ? p.resoFacts?.cooling?.join(', ') : p.cooling) || p.Building?.CoolingType || null;
+        const basement = p.Building?.BasementType || p.resoFacts?.basement || p.basement || (p.resoFacts?.hasBasement ? 'Finished / Full' : null);
+        const fireplace = p.Building?.FireplacePresent === 'True' || p.resoFacts?.hasFireplace ? 'Yes' : (p.resoFacts?.fireplaces ? `${p.resoFacts.fireplaces}` : null);
         const materials = (Array.isArray(p.resoFacts?.constructionMaterials) ? p.resoFacts?.constructionMaterials?.join(', ') : p.constructionMaterials) || null;
         const foundation = (Array.isArray(p.resoFacts?.foundationDetails) ? p.resoFacts?.foundationDetails?.join(', ') : p.foundation) || null;
         const roof = p.resoFacts?.roofType || p.roof || null;
         const annualTax = p.annualTax || (p.hdpData?.homeInfo?.taxAssessedValue ? '$' + Math.round(p.hdpData.homeInfo.taxAssessedValue * 0.012).toLocaleString() : null);
-        const mlsNumber = p.mls_number || p.mlsNumber || p.zpid || p.hdpData?.homeInfo?.zpid || '';
+        const mlsNumber = p.MlsNumber || p.mls_number || p.mlsNumber || p.zpid || p.hdpData?.homeInfo?.zpid || '';
 
         return {
           image_url: image,
