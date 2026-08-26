@@ -41,13 +41,15 @@ export async function GET(req) {
 
     function normalizeHomeType(val) {
       if (!val) return '';
-      const v = String(val).toLowerCase();
+      const v = String(val).toLowerCase().replace(/_/g, ' ');
       // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
       if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'semi-detached';
       if (v.includes('town')) return 'townhouse';
-      if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
-      if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
-      if (v.includes('land') || v.includes('lot')) return 'land';
+      if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'condo';
+      // Villa / Luxury maps to 'detached'
+      if (v.includes('villa') || v.includes('luxury')) return 'detached';
+      if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'detached';
+      if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'land';
       return v;
     }
 
@@ -57,8 +59,8 @@ export async function GET(req) {
       const pType = normalizeHomeType(
         p.property_type || p.propertyType || p.homeType || p.home_type || p.type || ''
       );
-      // 1. Semi-Detached / Multi-Family (MUST check before detached!)
-      if (req.includes('semi') || req.includes('multi') || req.includes('duplex')) {
+      // 1. Semi-Detached / Multi-Family / Duplex (MUST check before detached!)
+      if (req.includes('semi') || req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
         return pType === 'semi-detached';
       }
       // 2. Townhouse
@@ -66,10 +68,14 @@ export async function GET(req) {
         return pType === 'townhouse';
       }
       // 3. Condo / Apartment
-      if (req.includes('condo') || req.includes('apartment') || req.includes('flat')) {
+      if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata')) {
         return pType === 'condo';
       }
-      // 4. Detached / Single Family (strictly detached, NOT semi)
+      // 4. Villa / Luxury → same as Detached (luxury = high-price detached)
+      if (req.includes('villa') || req.includes('luxury')) {
+        return pType === 'detached';
+      }
+      // 5. Detached / Single Family (strictly detached, NOT semi)
       if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
         return pType === 'detached';
       }

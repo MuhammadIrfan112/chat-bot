@@ -415,8 +415,12 @@ function mapPropTypeToZillow(propType) {
   if (t.includes('townhouse') || t.includes('town house') || t.includes('townhome')) {
     return 'TOWNHOUSE';
   }
-  if (t.includes('condo') || t.includes('apartment') || t.includes('flat')) {
+  if (t.includes('condo') || t.includes('apartment') || t.includes('flat') || t.includes('strata')) {
     return 'CONDO';
+  }
+  // Villa / Luxury home → Zillow does not have a separate luxury type; map to SINGLE_FAMILY
+  if (t.includes('villa') || t.includes('luxury')) {
+    return 'SINGLE_FAMILY';
   }
   if (t.includes('detached') || t.includes('single family') || t.includes('single-family') || t.includes('single') || t.includes('house')) {
     return 'SINGLE_FAMILY';
@@ -430,13 +434,15 @@ function mapPropTypeToZillow(propType) {
 // Normalize a DB/API homeType string back to a user-friendly label for matching
 function normalizeHomeType(val) {
   if (!val) return '';
-  const v = String(val).toLowerCase();
+  const v = String(val).toLowerCase().replace(/_/g, ' ');
   // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
   if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'semi-detached';
   if (v.includes('town')) return 'townhouse';
-  if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
-  if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
-  if (v.includes('land') || v.includes('lot')) return 'land';
+  if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'condo';
+  // Villa / Luxury maps to 'detached' (same Zillow type, price differentiates luxury)
+  if (v.includes('villa') || v.includes('luxury')) return 'detached';
+  if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'detached';
+  if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'land';
   return v;
 }
 
@@ -448,8 +454,8 @@ function propTypeMatches(p, requestedType) {
     p.homeType || p.property_type || p.propertyType || p.home_type || p.type || ''
   );
 
-  // 1. Semi-Detached / Multi-Family (MUST check before detached!)
-  if (req.includes('semi') || req.includes('multi') || req.includes('duplex')) {
+  // 1. Semi-Detached / Multi-Family / Duplex (MUST check before detached!)
+  if (req.includes('semi') || req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
     return pType === 'semi-detached';
   }
   // 2. Townhouse
@@ -457,10 +463,14 @@ function propTypeMatches(p, requestedType) {
     return pType === 'townhouse';
   }
   // 3. Condo / Apartment
-  if (req.includes('condo') || req.includes('apartment') || req.includes('flat')) {
+  if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata')) {
     return pType === 'condo';
   }
-  // 4. Detached / Single Family (strictly detached, NOT semi)
+  // 4. Villa / Luxury → same as Detached on Zillow/Realtor.ca (luxury = detached with high price)
+  if (req.includes('villa') || req.includes('luxury')) {
+    return pType === 'detached';
+  }
+  // 5. Detached / Single Family (strictly detached, NOT semi)
   if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
     return pType === 'detached';
   }
