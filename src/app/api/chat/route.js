@@ -367,7 +367,7 @@ const GEOCODE_CACHE = {};
 
 // TIGHT_BOX_DEG: ~0.12 degrees ≈ 14 km radius
 // Covers the entire city and immediate suburban communities
-const TIGHT_BOX_DEG = 0.12;
+const TIGHT_BOX_DEG = 0.20;
 
 // Fetch city center lat/lng using OpenStreetMap Nominatim (free, no API key needed)
 // Returns a bounding box (~14km radius) around the city center
@@ -514,11 +514,31 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     }
   }
 
-  // ── Apply property type filter on Zillow URL ──
+  // ── Apply property type filter on Zillow URL (use proper Zillow boolean flags) ──
   const zillowType = mapPropTypeToZillow(propType);
   if (zillowType) {
-    filterState.homeType = { value: zillowType };
     console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
+    // Zillow uses individual boolean flags, not a generic homeType object
+    // Default all types to false, then enable only the requested type
+    filterState.isSingleFamily = { value: false };
+    filterState.isTownhouse = { value: false };
+    filterState.isCondo = { value: false };
+    filterState.isMultiFamily = { value: false };
+    filterState.isLotLand = { value: false };
+    filterState.isManufactured = { value: false };
+    filterState.isApartment = { value: false };
+    if (zillowType === 'SINGLE_FAMILY') {
+      filterState.isSingleFamily = { value: true };
+    } else if (zillowType === 'TOWNHOUSE') {
+      filterState.isTownhouse = { value: true };
+    } else if (zillowType === 'CONDO') {
+      filterState.isCondo = { value: true };
+      filterState.isApartment = { value: true }; // include apartments with condos
+    } else if (zillowType === 'MULTI_FAMILY') {
+      filterState.isMultiFamily = { value: true };
+    } else if (zillowType === 'LOT') {
+      filterState.isLotLand = { value: true };
+    }
   }
 
   const searchQueryState = {
@@ -939,12 +959,13 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   // ── 1. BUDGET CARDS: MUST be within budget (max +10%). Sort by closest to budget, then most beds ──
   // Cards 1 & 2 (or card 1 on Show More): strictly within budget
+  // maxBudget +10%, minBudget -50% of user budget (properties must be in realistic range)
   const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
   const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.50) : 0;
 
   const budgetPool = [...workingList]
     .filter(p => {
-      if (targetBudget <= 0) return true; // no budget filter if not specified
+      if (targetBudget <= 0) return true;
       const price = getPrice(p);
       if (price <= 0) return true; // include if price unknown
       return price <= maxBudget && price >= minBudget;
@@ -1079,10 +1100,9 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
     if (propBudget > 0) {
       const maxBudget = Math.round(propBudget * 1.10);
-      const minBudget = Math.round(propBudget * 0.40);
       const inBudget = filteredData.filter(p => {
         const price = parseBudget(String(p.price || p.priceDisplay || ''));
-        return price <= 0 || (price <= maxBudget && price >= minBudget);
+        return price <= 0 || price <= maxBudget;
       });
       if (inBudget.length === 0) {
         console.log(`fetchCityPropertyData: 0 DB properties within budget (${propBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);

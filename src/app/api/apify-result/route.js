@@ -388,6 +388,7 @@ const SUPPLEMENT_PHOTO_SETS = [
       console.log(`[apify-result] selectRecommended Type filter "${targetType}": ${propsList.length} → ${typeFiltered.length}`);
 
       // ── 1. BUDGET CARDS (Cards 1 & 2): within budget (max +10%). Sort by closest to budget, then most beds
+      // maxBudget +10%, minBudget -50% of user budget (properties must be in realistic range)
       const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
       const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.50) : 0;
 
