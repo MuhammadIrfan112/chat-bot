@@ -1046,77 +1046,82 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const workingList = (targetType && typeFiltered.length === 0) ? intentFiltered : typeFiltered;
   console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props (workingList: ${workingList.length})`);
 
-  // ── Helper: sort properties by closest to user's target budget ──
-  // If market prices are above user budget, the lowest available prices come first!
-  const sortByClosestPrice = (list) => [...list].sort((a, b) => {
-    if (targetBudget > 0) {
-      const aPrice = getPrice(a);
-      const bPrice = getPrice(b);
-      const aDiff = aPrice > 0 ? Math.abs(aPrice - targetBudget) : 99999999;
-      const bDiff = bPrice > 0 ? Math.abs(bPrice - targetBudget) : 99999999;
-      if (aDiff !== bDiff) return aDiff - bDiff;
-      // If both above budget, show lowest price first
-      return (aPrice || 0) - (bPrice || 0);
+  // ── Helper: Sort with user's MAXIMUM budget as highest priority ──
+  // Properties within budget (price <= targetBudget) ALWAYS come first, closest to budget!
+  // Properties above budget come next, sorted lowest price first!
+  const sortBudgetFirst = (list) => [...list].sort((a, b) => {
+    const aPrice = getPrice(a);
+    const bPrice = getPrice(b);
+    if (targetBudget > 0 && aPrice > 0 && bPrice > 0) {
+      const aInBudget = aPrice <= targetBudget;
+      const bInBudget = bPrice <= targetBudget;
+
+      // Both within budget: closest to targetBudget first (e.g. $525k before $400k)
+      if (aInBudget && bInBudget) {
+        return Math.abs(aPrice - targetBudget) - Math.abs(bPrice - targetBudget);
+      }
+      // One within budget, one above: within budget ALWAYS comes first!
+      if (aInBudget && !bInBudget) return -1;
+      if (!aInBudget && bInBudget) return 1;
+
+      // Both above budget: lowest price first (e.g. $599k before $799k)
+      return aPrice - bPrice;
     }
-    return 0;
+    // Fallback: bed match priority
+    if (targetBeds > 0) {
+      const aBedDiff = Math.abs(getBeds(a) - targetBeds);
+      const bBedDiff = Math.abs(getBeds(b) - targetBeds);
+      if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
+    }
+    return (aPrice || 0) - (bPrice || 0);
   });
 
-  // ── STEP 1: Try EXACT beds + exact baths + exact budget (expanding by $1,000 steps up to ±$2,000) ──
-  const BUDGET_STEP = 1000;
-  const MAX_BUDGET_EXPAND = 2000;
-  let budgetRadius = 0;
-  while (selected.length < totalTarget && budgetRadius <= MAX_BUDGET_EXPAND) {
-    const lo = targetBudget > 0 ? targetBudget - budgetRadius : 0;
-    const hi = targetBudget > 0 ? targetBudget + budgetRadius : Infinity;
+  // ── POOL 1: Exact beds + exact baths within user budget (or ±$2k) ──
+  const exactBedBathInBudget = workingList.filter(p => {
+    const price = getPrice(p);
+    const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
+    const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+    const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+    return inBudget && matchBed && matchBath;
+  });
 
-    const pool = workingList.filter(p => {
+  for (const p of sortBudgetFirst(exactBedBathInBudget)) {
+    if (selected.length >= totalTarget) break;
+    addProp(p);
+  }
+
+  // ── POOL 2: Within user budget with close beds/baths (±1 bed, ±1 bath) ──
+  if (selected.length < totalTarget) {
+    const closeBedBathInBudget = workingList.filter(p => {
       const price = getPrice(p);
-      const inBudget = targetBudget > 0 ? (price > 0 && price >= lo && price <= hi) : true;
-      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-      const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+      const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
+      const matchBed = targetBeds > 0 ? Math.abs(getBeds(p) - targetBeds) <= 1 : true;
+      const matchBath = targetBaths > 0 ? Math.abs(getBaths(p) - targetBaths) <= 1 : true;
       return inBudget && matchBed && matchBath;
     });
 
-    for (const p of sortByClosestPrice(pool)) {
+    for (const p of sortBudgetFirst(closeBedBathInBudget)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
-
-    if (budgetRadius === 0) budgetRadius = BUDGET_STEP;
-    else budgetRadius += BUDGET_STEP;
   }
 
-  // ── STEP 2: If NO properties found within budget — REMOVE budget filter, keep EXACT beds + EXACT baths ──
-  // Show properties with exact bed/bath count, sorted with closest/lowest available market price first
+  // ── POOL 3: Exact beds + exact baths above budget (lowest price first) ──
   if (selected.length < totalTarget) {
-    const exactBedBathPool = workingList.filter(p => {
+    const exactBedBathAbove = workingList.filter(p => {
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
       const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
       return matchBed && matchBath;
     });
 
-    for (const p of sortByClosestPrice(exactBedBathPool)) {
+    for (const p of sortBudgetFirst(exactBedBathAbove)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
   }
 
-  // ── STEP 3: If still not enough — relax beds by ±1, baths by ±1, closest price first ──
-  if (selected.length < totalTarget) {
-    const closeBedBathPool = workingList.filter(p => {
-      const matchBed = targetBeds > 0 ? Math.abs(getBeds(p) - targetBeds) <= 1 : true;
-      const matchBath = targetBaths > 0 ? Math.abs(getBaths(p) - targetBaths) <= 1 : true;
-      return matchBed && matchBath;
-    });
-
-    for (const p of sortByClosestPrice(closeBedBathPool)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-  }
-
-  // ── STEP 4: Backfill any remaining from workingList (closest to budget first) ──
-  for (const p of sortByClosestPrice(workingList)) {
+  // ── POOL 4: Backfill any remaining from workingList (budget-first order) ──
+  for (const p of sortBudgetFirst(workingList)) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }

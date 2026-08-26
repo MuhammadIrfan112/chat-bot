@@ -1063,15 +1063,14 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', padding: '6px 10px 10px', marginTop: '0' }}>
+      <div style={{ padding: '6px 10px 10px', marginTop: '0' }}>
         <button
           onClick={(e) => {
             e.stopPropagation();
             setLikedProperties(prev => prev.includes(propId) ? prev.filter(x => x !== propId) : [...prev, propId]);
-            setDislikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '9px 8px', borderRadius: '8px', fontSize: '13.5px',
+            width: '100%', padding: '9px 8px', borderRadius: '8px', fontSize: '13.5px',
             fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
             background: isLiked ? '#10b981' : '#ecfdf5',
@@ -1079,24 +1078,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
             boxShadow: isLiked ? '0 2px 8px rgba(16,185,129,0.35)' : '0 1px 3px rgba(0,0,0,0.08)'
           }}
         >
-          👍 Like
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setDislikedProperties(prev => prev.includes(propId) ? prev.filter(x => x !== propId) : [...prev, propId]);
-            setLikedProperties(prev => prev.filter(x => x !== propId));
-          }}
-          style={{
-            flex: 1, padding: '9px 8px', borderRadius: '8px', fontSize: '13.5px',
-            fontWeight: '700', border: 'none', cursor: 'pointer',
-            transition: 'all 0.2s',
-            background: isDisliked ? '#ef4444' : '#fef2f2',
-            color: isDisliked ? 'white' : '#dc2626',
-            boxShadow: isDisliked ? '0 2px 8px rgba(239,68,68,0.35)' : '0 1px 3px rgba(0,0,0,0.08)'
-          }}
-        >
-          👎 Pass
+          {isLiked ? '❤️ Liked' : '👍 Like'}
         </button>
       </div>
     </div>
