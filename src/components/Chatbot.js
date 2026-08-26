@@ -2102,7 +2102,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       }
 
       setBuyHomeStep('summary');
-      const summaryText = `Here's what I have for your home search:\nLocation: ${newBuyData.city}\nProperty: Family Home\nBedrooms: ${newBuyData.bedrooms}\nBathrooms: ${newBuyData.bathrooms}\nImportant features: ${newBuyData.features}\nSchool preference: ${newBuyData.schools}\nMaximum budget: ${newBuyData.budget}\nFirst-time buyer: ${newBuyData.firstTime}\nMortgage: ${newBuyData.mortgage}\nPurchase timeline: ${newBuyData.timeline}\nCurrently working with an agent: No\n\nDoes everything look correct?`;
+      const summaryText = `Here's what I have for your home search:\nLocation: ${newBuyData.city}\nProperty: ${newBuyData.type || 'Family Home'}\nBedrooms: ${newBuyData.bedrooms}\nBathrooms: ${newBuyData.bathrooms}\nImportant features: ${newBuyData.features}\nSchool preference: ${newBuyData.schools}\nMaximum budget: ${newBuyData.budget}\nFirst-time buyer: ${newBuyData.firstTime}\nMortgage: ${newBuyData.mortgage}\nPurchase timeline: ${newBuyData.timeline}\nCurrently working with an agent: No\n\nDoes everything look correct?`;
 
       setMessages(prev => [...prev, {
         role: 'model',

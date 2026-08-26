@@ -42,31 +42,39 @@ export async function GET(req) {
     function normalizeHomeType(val) {
       if (!val) return '';
       const v = String(val).toLowerCase();
-      if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
-      if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
+      // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
+      if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'semi-detached';
       if (v.includes('town')) return 'townhouse';
-      if (v.includes('semi') || v.includes('multi') || v.includes('duplex')) return 'semi-detached';
+      if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
+      if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
       if (v.includes('land') || v.includes('lot')) return 'land';
       return v;
     }
 
     function propTypeMatches(p, requestedType) {
       if (!requestedType) return true;
-      const req = requestedType.toLowerCase();
+      const req = requestedType.toLowerCase().trim();
       const pType = normalizeHomeType(
         p.property_type || p.propertyType || p.homeType || p.home_type || p.type || ''
       );
-      if (req.includes('detach') || req.includes('single') || req.includes('house')) {
-        return pType.includes('detach') || pType.includes('single') || pType.includes('house');
-      }
-      if (req.includes('condo') || req.includes('apartment')) {
-        return pType.includes('condo') || pType.includes('apartment') || pType.includes('flat');
-      }
-      if (req.includes('town')) {
-        return pType.includes('town');
-      }
+      // 1. Semi-Detached / Multi-Family (MUST check before detached!)
       if (req.includes('semi') || req.includes('multi') || req.includes('duplex')) {
-        return pType.includes('semi') || pType.includes('multi') || pType.includes('duplex');
+        return pType === 'semi-detached';
+      }
+      // 2. Townhouse
+      if (req.includes('town')) {
+        return pType === 'townhouse';
+      }
+      // 3. Condo / Apartment
+      if (req.includes('condo') || req.includes('apartment') || req.includes('flat')) {
+        return pType === 'condo';
+      }
+      // 4. Detached / Single Family (strictly detached, NOT semi)
+      if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
+        return pType === 'detached';
+      }
+      if (req.includes('land') || req.includes('lot')) {
+        return pType === 'land';
       }
       return pType.includes(req);
     }
@@ -406,12 +414,16 @@ const SUPPLEMENT_PHOTO_SETS = [
       const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0, 10) || 0;
       const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
-      // Filter by requested property type
+      // Filter by requested property type (strict — no fallback to wrong types)
       const typeFiltered = targetType
         ? propsList.filter(p => propTypeMatches(p, targetType))
         : propsList;
-      const workingList = typeFiltered.length > 0 ? typeFiltered : propsList;
-      console.log(`[apify-result] selectRecommended Type filter "${targetType}": ${propsList.length} → ${typeFiltered.length} (using ${workingList.length})`);
+      if (targetType && typeFiltered.length === 0) {
+        console.log(`[apify-result] 0 properties matched requested type "${targetType}" out of ${propsList.length} properties.`);
+        return [];
+      }
+      const workingList = typeFiltered;
+      console.log(`[apify-result] selectRecommended Type filter "${targetType}": ${propsList.length} → ${typeFiltered.length}`);
 
       // ── 1. BUDGET CARDS (Cards 1 & 2): within budget (max +10%). Sort by closest to budget, then most beds
       const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;

@@ -409,17 +409,17 @@ async function getCityBounds(city, state) {
 function mapPropTypeToZillow(propType) {
   if (!propType) return null;
   const t = propType.toLowerCase();
-  if (t.includes('detached') || t.includes('single family') || t.includes('single-family') || t.includes('house')) {
-    return 'SINGLE_FAMILY';
-  }
-  if (t.includes('condo') || t.includes('apartment') || t.includes('flat')) {
-    return 'CONDO';
+  if (t.includes('semi') || t.includes('duplex') || t.includes('multi family') || t.includes('multi-family') || t.includes('triplex')) {
+    return 'MULTI_FAMILY';
   }
   if (t.includes('townhouse') || t.includes('town house') || t.includes('townhome')) {
     return 'TOWNHOUSE';
   }
-  if (t.includes('semi') || t.includes('multi family') || t.includes('duplex')) {
-    return 'MULTI_FAMILY';
+  if (t.includes('condo') || t.includes('apartment') || t.includes('flat')) {
+    return 'CONDO';
+  }
+  if (t.includes('detached') || t.includes('single family') || t.includes('single-family') || t.includes('single') || t.includes('house')) {
+    return 'SINGLE_FAMILY';
   }
   if (t.includes('land') || t.includes('lot')) {
     return 'LOT';
@@ -431,10 +431,11 @@ function mapPropTypeToZillow(propType) {
 function normalizeHomeType(val) {
   if (!val) return '';
   const v = String(val).toLowerCase();
-  if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
-  if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
+  // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
+  if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'semi-detached';
   if (v.includes('town')) return 'townhouse';
-  if (v.includes('semi') || v.includes('multi') || v.includes('duplex')) return 'semi-detached';
+  if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
+  if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
   if (v.includes('land') || v.includes('lot')) return 'land';
   return v;
 }
@@ -442,22 +443,29 @@ function normalizeHomeType(val) {
 // Check if a property's type matches what user requested
 function propTypeMatches(p, requestedType) {
   if (!requestedType) return true; // no filter if not specified
-  const req = requestedType.toLowerCase();
+  const req = requestedType.toLowerCase().trim();
   const pType = normalizeHomeType(
     p.homeType || p.property_type || p.propertyType || p.home_type || p.type || ''
   );
-  // Check if requested type keywords appear in normalized property type
-  if (req.includes('detach') || req.includes('single') || req.includes('house')) {
-    return pType.includes('detach') || pType.includes('single') || pType.includes('house');
-  }
-  if (req.includes('condo') || req.includes('apartment')) {
-    return pType.includes('condo') || pType.includes('apartment') || pType.includes('flat');
-  }
-  if (req.includes('town')) {
-    return pType.includes('town');
-  }
+
+  // 1. Semi-Detached / Multi-Family (MUST check before detached!)
   if (req.includes('semi') || req.includes('multi') || req.includes('duplex')) {
-    return pType.includes('semi') || pType.includes('multi') || pType.includes('duplex');
+    return pType === 'semi-detached';
+  }
+  // 2. Townhouse
+  if (req.includes('town')) {
+    return pType === 'townhouse';
+  }
+  // 3. Condo / Apartment
+  if (req.includes('condo') || req.includes('apartment') || req.includes('flat')) {
+    return pType === 'condo';
+  }
+  // 4. Detached / Single Family (strictly detached, NOT semi)
+  if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
+    return pType === 'detached';
+  }
+  if (req.includes('land') || req.includes('lot')) {
+    return pType === 'land';
   }
   return pType.includes(req);
 }
@@ -918,12 +926,16 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0) || 0;
   const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
-  // ── Apply property type filter FIRST (strict — no fallback) ──
+  // ── Apply property type filter FIRST (strict — no fallback to wrong types) ──
   const typeFiltered = targetType
     ? properties.filter(p => propTypeMatches(p, targetType))
     : properties;
-  const workingList = typeFiltered.length > 0 ? typeFiltered : properties; // if type yielded 0, use all (shouldn't happen with Apify filtered URL)
-  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props (using ${workingList.length})`);
+  if (targetType && typeFiltered.length === 0) {
+    console.log(`[selectRecommended] 0 properties matched requested type "${targetType}" out of ${properties.length} properties.`);
+    return [];
+  }
+  const workingList = typeFiltered;
+  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props`);
 
   // ── 1. BUDGET CARDS: MUST be within budget (max +10%). Sort by closest to budget, then most beds ──
   // Cards 1 & 2 (or card 1 on Show More): strictly within budget
@@ -1052,6 +1064,16 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
         return !status.includes('rent') && !priceStr.includes('/mo') && !priceStr.includes('per month');
       });
       if (saleOnly.length >= 2) filteredData = saleOnly;
+    }
+
+    // ── PROPERTY TYPE GUARD: If user wants a specific property type and 0 DB properties match → Apify ──
+    if (propType) {
+      const typeMatches = filteredData.filter(item => propTypeMatches(item, propType));
+      if (typeMatches.length === 0) {
+        console.log(`fetchCityPropertyData: 0 DB properties matched requested property type="${propType}" for city="${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
+      filteredData = typeMatches;
     }
 
     // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
@@ -1595,16 +1617,22 @@ ${areasNotServed.length ? `
           || sumText.match(/budget(?:\s+of|:)?\s*\$?([^\n]{1,30})/i);
         if (budMatch) sumBudget = parseBudget(budMatch[1]);
         
-        const typeMatch = sumText.match(/Property:\s*([^\n\.]+)/i);
+        const typeMatch = sumText.match(/Property:\s*([^\n\.]+)/i) || sumText.match(/Type:\s*([^\n\.]+)/i);
         if (typeMatch) sumType = typeMatch[1].replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim().toLowerCase();
         
         const featMatch = sumText.match(/Important features:\s*([^\n]+)/i);
         if (featMatch) sumFeatures = featMatch[1].trim();
       }
 
-      // Extract property type (fallback)
-      const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family)/i);
-      const propType = sumType || (typeMatch ? typeMatch[1].toLowerCase() : null);
+      // Check full chat text for specific property type (especially if sumType is generic 'family home')
+      let propType = sumType;
+      const explicitTypeMatch = fullChatText.match(/(semi[- ]detached|detached|single[- ]family|townhouse|condo|apartment|duplex|multi[- ]family|villa)/i);
+      if (explicitTypeMatch && (!propType || propType === 'family home' || propType === 'investment property' || propType === 'home' || propType === 'residential')) {
+        propType = explicitTypeMatch[1].toLowerCase().replace(/\s+/g, '-');
+      } else if (!propType) {
+        const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family|semi detached|detached)/i);
+        propType = typeMatch ? typeMatch[1].toLowerCase() : null;
+      }
       const propFeatures = sumFeatures || 'Beautiful property with modern finishes';
 
       // Extract bedrooms (fallback from raw chat)
@@ -1846,73 +1874,77 @@ CRITICAL INSTRUCTIONS:
           }
 
           if (allRawProperties.length > 0) {
-            console.log(`[Route] Found matching properties (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity} with type="${propType}"`);
+            console.log(`[Route] Found raw properties in CRM/DB (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity} with type="${propType}"`);
             const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
 
             // Filter & sort by recommended criteria (budget, beds/baths, property type)
             const recommendedRaw = selectRecommendedProperties(allRawProperties, propBudget, propBeds, propBaths, propIntent === 'rent', 2, 2, propType);
 
-            // ✅ DIRECT RETURN: bypass AI hallucination by returning structured property JSON immediately
-            const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
-            const structuredProps = (recommendedRaw.length > 0 ? recommendedRaw : allRawProperties).slice(0, 4).map((l, i) => {
-              let rawPhotos = [];
-              if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
-              else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
-              else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
-              else if (l.image_url) rawPhotos = [l.image_url];
-              else if (l.imgSrc) rawPhotos = [l.imgSrc];
-              const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
-              let imgArr = rawPhotos.filter(isRealImg);
-              if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
-                const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
-                imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
-              }
-              return {
-                address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
-                price: l.price ? (typeof l.price === 'number' ? `$${l.price.toLocaleString()}` : l.price) : (l.priceDisplay || 'Contact for Price'),
-                bedrooms: String(l.bedrooms || l.beds || ''),
-                bathrooms: String(l.bathrooms || l.baths || ''),
-                property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
-                city: l.city || detectedCity,
-                province: l.province || l.state || '',
-                image_url: imgArr[0] || '',
-                images: imgArr.slice(0, 8),
-                url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
-                listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
-                mls_number: l.mls_number || l.mlsNumber || l.zpid || '',
-                living_area: l.living_area || l.livingArea || l.sqft || null,
-                lot_size: l.lot_size || l.lotSize || null,
-                year_built: l.year_built || l.yearBuilt || null,
-                description: l.description || null,
-                stories: l.stories || null,
-                parking: l.parking || l.garageSpaces || null,
-                heating: l.heating || null,
-                cooling: l.cooling || null,
-                basement: l.basement || null,
-                fireplace: l.fireplace || null,
-                materials: l.materials || null,
-                foundation: l.foundation || null,
-                roof: l.roof || null,
-                annual_tax: l.annual_tax || l.annualTax || null
-              };
-            });
+            if (recommendedRaw.length > 0) {
+              // ✅ DIRECT RETURN: matching properties found in CRM/DB
+              const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
+              const structuredProps = recommendedRaw.slice(0, 4).map((l, i) => {
+                let rawPhotos = [];
+                if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
+                else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+                else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+                else if (l.image_url) rawPhotos = [l.image_url];
+                else if (l.imgSrc) rawPhotos = [l.imgSrc];
+                const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+                let imgArr = rawPhotos.filter(isRealImg);
+                if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
+                  const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
+                  imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
+                }
+                return {
+                  address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
+                  price: l.price ? (typeof l.price === 'number' ? `$${l.price.toLocaleString()}` : l.price) : (l.priceDisplay || 'Contact for Price'),
+                  bedrooms: String(l.bedrooms || l.beds || ''),
+                  bathrooms: String(l.bathrooms || l.baths || ''),
+                  property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
+                  city: l.city || detectedCity,
+                  province: l.province || l.state || '',
+                  image_url: imgArr[0] || '',
+                  images: imgArr.slice(0, 8),
+                  url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
+                  listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
+                  mls_number: l.mls_number || l.mlsNumber || l.zpid || '',
+                  living_area: l.living_area || l.livingArea || l.sqft || null,
+                  lot_size: l.lot_size || l.lotSize || null,
+                  year_built: l.year_built || l.yearBuilt || null,
+                  description: l.description || null,
+                  stories: l.stories || null,
+                  parking: l.parking || l.garageSpaces || null,
+                  heating: l.heating || null,
+                  cooling: l.cooling || null,
+                  basement: l.basement || null,
+                  fireplace: l.fireplace || null,
+                  materials: l.materials || null,
+                  foundation: l.foundation || null,
+                  roof: l.roof || null,
+                  annual_tax: l.annual_tax || l.annualTax || null
+                };
+              });
 
-            const cityBtnsList = !isShowMoreRequest ? [
-              '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
-              '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
-            ] : [];
+              const cityBtnsList = !isShowMoreRequest ? [
+                '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
+                '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
+              ] : [];
 
-            const introText = `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
-              + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
+              const introText = `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
+                + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
 
-            console.log(`[Route] ✅ Returning ${structuredProps.length} structured properties directly (bypassing AI render)`);
-            return Response.json({
-              reply: introText,
-              properties: structuredProps,
-              apifyRunId: null,
-              intent: propIntent,
-              city: detectedCity
-            });
+              console.log(`[Route] ✅ Returning ${structuredProps.length} matching structured properties directly from DB`);
+              return Response.json({
+                reply: introText,
+                properties: structuredProps,
+                apifyRunId: null,
+                intent: propIntent,
+                city: detectedCity
+              });
+            } else {
+              console.log(`[Route] 0 CRM/DB properties matched criteria (budget=${propBudget}, type=${propType}, beds=${propBeds}) — falling through to live Apify search!`);
+            }
           } else if (hasCRM || hasCache) {
             propertyContext = (hasCRM ? crmPropertyContext : '') + (hasCRM && hasCache ? "\n\nADDITIONAL AREA LISTINGS:\n" : '') + (hasCache ? cachedCityContext : '');
           } else {
