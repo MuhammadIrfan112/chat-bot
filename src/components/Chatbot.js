@@ -1072,7 +1072,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
             setDislikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '8px 6px', borderRadius: '8px', fontSize: '13px',
+            flex: 1, padding: '9px 8px', borderRadius: '8px', fontSize: '13.5px',
             fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
             background: isLiked ? '#10b981' : '#ecfdf5',
@@ -1089,7 +1089,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
             setLikedProperties(prev => prev.filter(x => x !== propId));
           }}
           style={{
-            flex: 1, padding: '8px 6px', borderRadius: '8px', fontSize: '13px',
+            flex: 1, padding: '9px 8px', borderRadius: '8px', fontSize: '13.5px',
             fontWeight: '700', border: 'none', cursor: 'pointer',
             transition: 'all 0.2s',
             background: isDisliked ? '#ef4444' : '#fef2f2',
@@ -3629,20 +3629,20 @@ function formatCityDisplay(msg) {
                   style={{
                     flex: 1,
                     textAlign: 'center',
-                    padding: '10px 14px',
+                    padding: '12px 18px',
                     backgroundColor: botConfig.primaryColor || '#1E6FD9',
                     color: 'white',
                     borderRadius: '24px',
                     cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '13px',
+                    fontWeight: '700',
+                    fontSize: '14px',
                     transition: 'all 0.2s',
                     opacity: isUploading ? 0.7 : 1,
                     pointerEvents: isUploading ? 'none' : 'auto',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px'
+                    gap: '8px'
                   }}
                 >
                   {isUploading ? 'Uploading...' : '📎 Upload Letter'}
