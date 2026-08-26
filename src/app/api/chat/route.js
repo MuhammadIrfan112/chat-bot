@@ -939,23 +939,28 @@ const SUPPLEMENT_PHOTO_SETS = [
 // Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, 500 thousand, etc.
 function parseBudget(text) {
   if (!text) return 0;
-  const t = text.replace(/,/g, '').toLowerCase().trim();
+  // Remove commas ($1,200,000 → $1200000), spaces, dollar signs
+  const t = String(text).replace(/,/g, '').replace(/\$/g, '').trim().toLowerCase();
 
-  // Match: 1.2m, 7m, 4 million, 1.5 million
-  const mMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/);
+  // Match: 1.2m, 1.2M, 7m, 7M, 1m
+  const mMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*m\b/);
   if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
 
-  // Match: 990k, 650k, 1.5k
-  const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
+  // Match: 1.2 million, 4 million, 1.5 million
+  const millionMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*million/);
+  if (millionMatch) return Math.round(parseFloat(millionMatch[1]) * 1_000_000);
+
+  // Match: 990k, 780k, 780K, 1.5k
+  const kMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*k\b/);
   if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
 
-  // Match: 500 thousand
-  const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
-  if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
+  // Match: 500 thousand, 780 thousand
+  const thousandMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*thousand/);
+  if (thousandMatch) return Math.round(parseFloat(thousandMatch[1]) * 1_000);
 
-  // Match: plain number like 1200000 or $990000
-  const plainMatch = t.match(/\$?\s*([\d]{4,})/);
-  if (plainMatch) return parseInt(plainMatch[1]);
+  // Match: plain number (at least 4 digits) like 1200000, 780000, 986000
+  const plainMatch = t.match(/([0-9]{4,})/);
+  if (plainMatch) return parseInt(plainMatch[1], 10);
 
   return 0;
 }
