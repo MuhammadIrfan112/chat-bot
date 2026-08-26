@@ -1107,6 +1107,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [forceDesktopMode, setForceDesktopMode] = useState(isDesktopEmbed);
   const [embedPlan, setEmbedPlan] = useState(null);
   const [embedPosition, setEmbedPosition] = useState('right');
 
@@ -1225,30 +1226,45 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
+      const isDesktopParam = params.get('desktop') === 'true';
+      const isMobileParam = params.get('device') === 'mobile';
+
       // Try URL param first, then window.CHATBOT_CONFIG.plan (injected by server)
       const planFromUrl = params.get('plan');
       const planFromConfig = window.CHATBOT_CONFIG?.plan;
       if (planFromUrl) setEmbedPlan(planFromUrl);
       else if (planFromConfig) setEmbedPlan(planFromConfig);
       if (params.get('position')) setEmbedPosition(params.get('position'));
+
+      if (isDesktopEmbed || isDesktopParam) {
+        setForceDesktopMode(true);
+        setIsMobile(false);
+        setIsTablet(false);
+        return;
+      }
+      if (isMobileParam) {
+        setIsMobile(true);
+        setForceDesktopMode(false);
+        setIsTablet(false);
+        return;
+      }
     }
 
-    if (isDesktopEmbed) {
-      // Force desktop mode — iframe handles sizing externally
-      setIsMobile(false);
-      setIsTablet(false);
-      return;
-    }
     const checkDevice = () => {
       let w = window.innerWidth;
       try {
-        if (window.parent !== window) {
-          w = window.parent.innerWidth || window.innerWidth;
+        if (window.parent !== window && window.parent.innerWidth) {
+          w = window.parent.innerWidth;
         }
       } catch (e) {
-        w = window.innerWidth;
+        // Cross-origin iframe: if not explicitly marked mobile, check screen width
+        if (typeof window !== 'undefined' && window.screen && window.screen.width > 768) {
+          w = window.screen.width;
+        }
       }
-      setIsMobile(w <= 768);
+      const mobile = w <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setForceDesktopMode(true);
       setIsTablet(false);
     };
     checkDevice();
@@ -3307,7 +3323,7 @@ function formatCityDisplay(msg) {
   if (!mounted) return null;
 
   return (
-    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${isDesktopEmbed ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
+    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${forceDesktopMode ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
       {isOpen ? (
         <div className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`}>
           <div className={styles.header}>
