@@ -900,7 +900,19 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
     : 'Contact for price';
   const displayBeds = prop?.bedrooms !== undefined && prop?.bedrooms !== null ? String(prop.bedrooms) : '?';
   const displayBaths = prop?.bathrooms !== undefined && prop?.bathrooms !== null ? String(prop.bathrooms) : '?';
-  const displayType = prop?.property_type ? String(prop.property_type).replace(/_/g, ' ') : 'Property';
+  const normalizeTypeLabel = (val) => {
+    if (!val) return 'Property';
+    const v = String(val).toLowerCase().replace(/_/g, ' ').trim();
+    if (v.includes('semi') || v.includes('duplex') || v.includes('triplex')) return 'Semi-Detached';
+    if (v.includes('town')) return 'Townhouse';
+    if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'Condo';
+    if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'Detached';
+    if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'Land';
+    if (v.includes('multi') || v.includes('family')) return 'Multi-Family';
+    if (v.includes('mobile') || v.includes('manufactured')) return 'Mobile Home';
+    return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+  const displayType = normalizeTypeLabel(prop?.property_type);
   const propId = String(prop?.mls_number || prop?.address || prop?.url || index);
 
   const isLiked = Array.isArray(likedProperties) && likedProperties.includes(propId);
