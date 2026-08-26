@@ -120,51 +120,13 @@ export async function GET(req) {
 
     let rawItems = (items && Array.isArray(items) && items.length > 0) ? items : [];
 
-    // Fallback: If scraper returned 0 items (e.g. smaller towns, strict search, or MLS delay), generate high quality matching properties
+    // If Apify returned 0 real items — return 'empty' status so frontend shows honest no-results message
+    // NEVER generate fake/mock addresses
     if (rawItems.length === 0) {
-      const cityTitle = requestedCity ? (requestedCity.charAt(0).toUpperCase() + requestedCity.slice(1)) : 'Edmonton';
-      const streetNames = ['Mountain View Way', 'Heritage Trail', 'Pinecrest Lane', 'Cascade Boulevard', 'Lakeview Drive', 'Bow River Court', 'Highland Crescent', 'Sunridge Avenue'];
-      
-      const baseTargetBudget = propBudget > 0 ? propBudget : (intent === 'rent' ? 2400 : 650000);
-      const baseTargetBeds = propBeds > 0 ? propBeds : 3;
-      const baseTargetBaths = propBaths > 0 ? propBaths : 2;
-
-      rawItems = [1, 2, 3, 4, 5, 6].map((idx) => {
-        let priceNum = 0;
-        let bedsNum = baseTargetBeds;
-        let bathsNum = baseTargetBaths;
-
-        if (idx === 1) {
-          priceNum = Math.round(baseTargetBudget * 0.96);
-        } else if (idx === 2) {
-          priceNum = Math.round(baseTargetBudget * 1.02);
-        } else if (idx === 3) {
-          priceNum = Math.round(baseTargetBudget * 1.15);
-          bedsNum = baseTargetBeds;
-          bathsNum = baseTargetBaths;
-        } else if (idx === 4) {
-          priceNum = Math.round(baseTargetBudget * 0.88);
-          bedsNum = baseTargetBeds;
-          bathsNum = baseTargetBaths;
-        } else {
-          priceNum = Math.round(baseTargetBudget * (0.90 + (idx * 0.05)));
-        }
-
-        return {
-          address: `${100 + idx * 28} ${streetNames[idx % streetNames.length]}, ${cityTitle}`,
-          city: cityTitle,
-          price: intent === 'rent' ? `$${priceNum.toLocaleString()}/mo` : `$${priceNum.toLocaleString()}`,
-          bedrooms: bedsNum,
-          bathrooms: bathsNum,
-          homeType: idx % 2 === 0 ? 'Townhouse' : 'Single Family Home',
-          listingPhotos: SUPPLEMENT_PHOTO_SETS[idx % SUPPLEMENT_PHOTO_SETS.length],
-          livingArea: `${1650 + idx * 120} sq ft`,
-          lotSize: '2,800 sq ft',
-          yearBuilt: 2019 + (idx % 4),
-          description: `Beautiful ${idx % 2 === 0 ? 'townhouse' : 'single family home'} in desirable ${cityTitle} featuring an open concept layout, modern kitchen with quartz countertops, spacious bedrooms, and private outdoor space.`
-        };
-      });
+      console.log('[apify-result] Apify returned 0 items for city:', requestedCity, '— returning empty status');
+      return Response.json({ status: 'empty', properties: [], city: requestedCity });
     }
+
 
     const itemsToProcess = rawItems;
 

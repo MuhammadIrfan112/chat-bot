@@ -1377,28 +1377,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton');
 
           if (props.length === 0) {
-            const streetNames = ['Heritage Way', 'Pinecrest Boulevard', 'Mountain View Way', 'Valley Stream Crescent'];
-            const sampleImgs = [
-              ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80'],
-              ['https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80', 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80'],
-              ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80', 'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80', 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80'],
-              ['https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80', 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80', 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80']
-            ];
-            props = [1, 2, 3, 4].map(idx => ({
-              address: `${100 + idx * 34} ${streetNames[idx - 1]}, ${cityName}`,
-              city: cityName,
-              price: activeApifyIntent === 'rent' ? `$${(2200 + idx * 250).toLocaleString()}/mo` : `$${(activeApifyBudget ? activeApifyBudget : 560000) + idx * 28000}`,
-              bedrooms: activeApifyBeds ? activeApifyBeds : (3 + (idx % 2)),
-              bathrooms: activeApifyBaths ? activeApifyBaths : (2 + (idx % 2)),
-              property_type: idx % 2 === 0 ? 'Townhouse' : 'Single Family Home',
-              image_url: sampleImgs[idx - 1][0],
-              images: sampleImgs[idx - 1],
-              living_area: `${1600 + idx * 150} sq ft`,
-              lot_size: '2,600 sq ft',
-              year_built: 2018 + idx,
-              description: `Spectacular property in prime ${cityName} featuring modern open-concept design, chef kitchen, and private backyard.`,
-              url: 'https://www.zillow.com'
-            }));
+            // No real properties found — show honest message, NEVER fake data
+            setMessages(prev => [...prev, {
+              role: 'model',
+              parts: [{ text: `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now. Here's what I suggest:\n\n• Try adjusting your budget or bedroom count\n• Ask me about nearby areas with more inventory\n• 📞 Connect directly with the agent for off-market or upcoming listings\n\nWould you like to adjust your search or speak with the agent?` }]
+            }]);
+            return;
           }
 
           const intro = activeApifyIntent === 'rent'
@@ -1416,38 +1400,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setActiveApifyRunId(null);
           setIsLoading(false);
 
-          const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton';
-          const streetNames = ['Heritage Way', 'Pinecrest Boulevard', 'Mountain View Way', 'Valley Stream Crescent'];
-          const sampleImgs = [
-            ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80', 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=80', 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&q=80'],
-            ['https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&q=80', 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&q=80', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&q=80'],
-            ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80', 'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&q=80', 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=800&q=80'],
-            ['https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80', 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80', 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80']
-          ];
-          const fallbackProps = [1, 2, 3, 4].map(idx => ({
-            address: `${100 + idx * 34} ${streetNames[idx - 1]}, ${cityName}`,
-            city: cityName,
-            price: activeApifyIntent === 'rent' ? `$${(2200 + idx * 250).toLocaleString()}/mo` : `$${(activeApifyBudget ? activeApifyBudget : 560000) + idx * 28000}`,
-            bedrooms: activeApifyBeds ? activeApifyBeds : (3 + (idx % 2)),
-            bathrooms: activeApifyBaths ? activeApifyBaths : (2 + (idx % 2)),
-            property_type: idx % 2 === 0 ? 'Townhouse' : 'Single Family Home',
-            image_url: sampleImgs[idx - 1][0],
-            images: sampleImgs[idx - 1],
-            living_area: `${1600 + idx * 150} sq ft`,
-            lot_size: '2,600 sq ft',
-            year_built: 2018 + idx,
-            description: `Spectacular property in prime ${cityName} featuring modern open-concept design, chef kitchen, and private backyard.`,
-            url: 'https://www.zillow.com'
-          }));
-
-          const intro = activeApifyIntent === 'rent'
-            ? `Here are live rental properties in **${cityName}** that match your criteria:`
-            : `Here are live properties in **${cityName}** that match your criteria:`;
-
-          setMessages(prev => [...prev, { 
-            role: 'model', 
-            parts: [{ text: intro }],
-            properties: fallbackProps
+          const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the requested area';
+          // Live search failed or returned no results — NEVER show fake properties
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{ text: `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now. Here's what I suggest:\n\n• Try adjusting your budget or bedroom count\n• Ask me about nearby areas with more inventory\n• 📞 Connect directly with the agent for off-market or upcoming listings\n\nWould you like to adjust your search or speak with the agent?` }]
           }]);
         }
       } catch (e) {
