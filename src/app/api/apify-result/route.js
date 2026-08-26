@@ -376,16 +376,29 @@ const SUPPLEMENT_PHOTO_SETS = [
       const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0, 10) || 0;
       const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
+      // ── Filter by Intent (Buy vs Rent): Never mix rental listings into Buy results or vice-versa ──
+      const intentFiltered = propsList.filter(p => {
+        const price = getPrice(p);
+        const status = String(p.listing_status || p.status || '').toLowerCase();
+        const priceStr = String(p.price || p.priceDisplay || '').toLowerCase();
+        const isRental = priceStr.includes('/mo') || priceStr.includes('per month') || status.includes('rent') || (price > 0 && price < 25000);
+        if (isRent) {
+          return isRental; // Rent intent: only rental listings
+        } else {
+          return !isRental; // Buy intent: reject rentals (< 25k, /mo, rent status)
+        }
+      });
+
       // Filter by requested property type (strict — no fallback to wrong types)
       const typeFiltered = targetType
-        ? propsList.filter(p => propTypeMatches(p, targetType))
-        : propsList;
+        ? intentFiltered.filter(p => propTypeMatches(p, targetType))
+        : intentFiltered;
       if (targetType && typeFiltered.length === 0) {
-        console.log(`[apify-result] 0 properties matched requested type "${targetType}" out of ${propsList.length} properties.`);
+        console.log(`[apify-result] 0 properties matched requested type "${targetType}" out of ${intentFiltered.length} intent-matching properties.`);
         return [];
       }
       const workingList = typeFiltered;
-      console.log(`[apify-result] selectRecommended Type filter "${targetType}": ${propsList.length} → ${typeFiltered.length}`);
+      console.log(`[apify-result] selectRecommended Intent & Type filter "${targetType}": ${propsList.length} → ${workingList.length}`);
 
       // ── 1. BUDGET CARDS (Cards 1 & 2): within budget (max +10%). Sort by closest to budget, then most beds
       // maxBudget +10%, minBudget -50% of user budget (properties must be in realistic range)
