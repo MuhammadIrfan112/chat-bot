@@ -1959,12 +1959,32 @@ function formatCityDisplay(msg) {
     if (buyHomeStep === 'city') {
       const formattedCity = formatCityDisplay(msg);
       setBuyHomeData(prev => ({ ...prev, city: formattedCity }));
-      setBuyHomeStep('type');
+      setBuyHomeStep('city_confirm');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `${formattedCity} is a fantastic area! It has great communities and strong property values.\n\nwhat type of home are you looking for? You can select multiple options!` }]
+        parts: [{ text: `Just to confirm, are you interested in properties in **${formattedCity}**?` }],
+        quickReplies: ['✅ Yes', '❌ No']
       }]);
-      setMultiSelectOptions(['🏢 Condo', '🏘️ Townhouse', 'Detached', 'Semi Detached', '🏡 Duplex / Multi-family home', '🌳 Villa / Luxury home', '🤷 Other']);
+      return;
+    }
+
+    if (buyHomeStep === 'city_confirm') {
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        const confirmedCity = buyHomeData.city || 'your area';
+        setBuyHomeStep('type');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `${confirmedCity} is a fantastic area! It has great communities and strong property values.\n\nwhat type of home are you looking for? You can select multiple options!` }]
+        }]);
+        setMultiSelectOptions(['🏢 Condo', '🏘️ Townhouse', 'Detached', 'Semi Detached', '🏡 Duplex / Multi-family home', '🌳 Villa / Luxury home', '🤷 Other']);
+      } else {
+        setBuyHomeStep('city');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `No problem! Which city or area are you interested in?` }]
+        }]);
+      }
       return;
     }
 
@@ -2286,13 +2306,33 @@ function formatCityDisplay(msg) {
     }
 
     if (rentStep === 'city') {
-      setRentData(prev => ({ ...prev, city: msg }));
-      setRentStep('bedrooms');
+      const formattedCity = formatCityDisplay(msg);
+      setRentData(prev => ({ ...prev, city: formattedCity }));
+      setRentStep('city_confirm');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `How many bedrooms do you need?` }],
-        quickReplies: ['Studio', '1 Bedroom', '2 Bedrooms', '3 Bedrooms', '4+ Bedrooms']
+        parts: [{ text: `Just to confirm, are you looking to rent in **${formattedCity}**?` }],
+        quickReplies: ['✅ Yes', '❌ No']
       }]);
+      return;
+    }
+
+    if (rentStep === 'city_confirm') {
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        setRentStep('bedrooms');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `How many bedrooms do you need?` }],
+          quickReplies: ['Studio', '1 Bedroom', '2 Bedrooms', '3 Bedrooms', '4+ Bedrooms']
+        }]);
+      } else {
+        setRentStep('city');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `No problem! Which city or area are you looking to rent in?` }]
+        }]);
+      }
       return;
     }
 
