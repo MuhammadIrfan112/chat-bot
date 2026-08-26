@@ -1020,7 +1020,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 }
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
-async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '', propType = null) {
+async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '', propType = null, targetState = null) {
   try {
     const cleanCity = (targetCity || '').split(',')[0].trim();
     const isRentIntent = intent === 'rent';
@@ -1028,7 +1028,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     if (cleanCity) cityQuery = cityQuery.ilike('city', `%${cleanCity}%`);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
 
-    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Intent: "${intent}". Beds: ${propBeds}. Baths: ${propBaths}. Budget: ${propBudget}. Type: "${propType}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
+    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". State: "${targetState || 'any'}". Intent: "${intent}". Beds: ${propBeds}. Baths: ${propBaths}. Budget: ${propBudget}. Type: "${propType}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
 
     // Flatten all properties from matched rows
     let allProperties = [];
@@ -1064,6 +1064,31 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
         String(item.city || '').toLowerCase().includes(cleanCity.toLowerCase())
       );
       if (strictCity.length > 0) filteredData = strictCity;
+    }
+
+    // ── STATE / PROVINCE GUARD: Prevent cross-state / US vs Canada city collisions (e.g. Aurora IL vs Aurora ON) ──
+    if (targetState) {
+      const stateClean = targetState.toUpperCase().trim();
+      const stateMatches = filteredData.filter(item => {
+        const itemState = String(item.province || item.state || '').toUpperCase().trim();
+        const itemAddr = String(item.address || item.address_full || '').toUpperCase();
+        if (itemState) {
+          if (stateClean === 'IL') return itemState === 'IL' || itemState.includes('ILLINOIS');
+          if (stateClean === 'ON') return itemState === 'ON' || itemState.includes('ONTARIO');
+          if (stateClean === 'MO') return itemState === 'MO' || itemState.includes('MISSOURI');
+          if (stateClean === 'TX') return itemState === 'TX' || itemState.includes('TEXAS');
+          if (stateClean === 'CA') return itemState === 'CA' || itemState.includes('CALIFORNIA');
+          if (stateClean === 'FL') return itemState === 'FL' || itemState.includes('FLORIDA');
+          if (stateClean === 'NY') return itemState === 'NY' || itemState.includes('YORK');
+          return itemState === stateClean;
+        }
+        return itemAddr.includes(`, ${stateClean} `) || itemAddr.includes(`, ${stateClean},`) || itemAddr.endsWith(`, ${stateClean}`) || itemAddr.includes(` ${stateClean} `);
+      });
+      if (stateMatches.length === 0) {
+        console.log(`fetchCityPropertyData: 0 DB properties matched requested state="${targetState}" for city="${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
+      filteredData = stateMatches;
     }
 
     // ── INTENT FILTER: rent vs buy ──────────────────────────────────────────
@@ -1880,7 +1905,7 @@ CRITICAL INSTRUCTIONS:
           const crmPropertyContext = (typeof crmResult === 'object' && crmResult !== null) ? crmResult.text : crmResult;
           const crmRawProperties = (typeof crmResult === 'object' && crmResult !== null) ? (crmResult.rawProperties || []) : [];
 
-          const cachedResult = skipCache ? null : await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText, propType);
+          const cachedResult = skipCache ? null : await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText, propType, detectedState);
           const cachedCityContext = (typeof cachedResult === 'object' && cachedResult !== null) ? cachedResult.text : cachedResult;
           const cachedRawProperties = (typeof cachedResult === 'object' && cachedResult !== null) ? (cachedResult.rawProperties || []) : [];
 
