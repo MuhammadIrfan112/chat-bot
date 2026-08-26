@@ -1032,16 +1032,14 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   });
 
-  // ── Apply property type filter FIRST (strict — no fallback to wrong types) ──
+  // ── Apply property type filter (with graceful fallback if no type match found) ──
   const typeFiltered = targetType
     ? intentFiltered.filter(p => propTypeMatches(p, targetType))
     : intentFiltered;
-  if (targetType && typeFiltered.length === 0) {
-    console.log(`[selectRecommended] 0 properties matched requested type "${targetType}" out of ${intentFiltered.length} intent-matching properties.`);
-    return [];
-  }
-  const workingList = typeFiltered;
-  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props`);
+  // If type-specific results are empty, fall back to ALL intent-filtered properties
+  // (e.g. Realtor.ca may not have Semi-Detached labelled as such — show closest match)
+  const workingList = (targetType && typeFiltered.length === 0) ? intentFiltered : typeFiltered;
+  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props (workingList: ${workingList.length})`);
 
   // ── Budget tolerance: ±$1,000 incremental search (max ±$2,000 total) ──
   // Strategy: try exact budget first, then widen by $1,000 steps up to $2,000 max
@@ -1223,14 +1221,15 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       if (saleOnly.length >= 2) filteredData = saleOnly;
     }
 
-    // ── PROPERTY TYPE GUARD: If user wants a specific property type and 0 DB properties match → Apify ──
+    // ── PROPERTY TYPE: filter; if 0 match, show ALL (don't dead-end user) ──
     if (propType) {
       const typeMatches = filteredData.filter(item => propTypeMatches(item, propType));
-      if (typeMatches.length === 0) {
-        console.log(`fetchCityPropertyData: 0 DB properties matched requested property type="${propType}" for city="${cleanCity}" — falling back to live Apify scrape.`);
-        return { text: '', rawProperties: [] };
+      if (typeMatches.length > 0) {
+        filteredData = typeMatches;
+      } else {
+        console.log(`fetchCityPropertyData: 0 DB properties matched type="${propType}" — showing closest available properties.`);
+        // Don't return [] — continue with all filteredData so user sees something
       }
-      filteredData = typeMatches;
     }
 
     // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
@@ -1411,8 +1410,8 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       if (typeMatches.length > 0) {
         matched = typeMatches;
       } else {
-        console.log(`[fetchCRMProperties] 0 CRM properties matched property type="${propType}". Falling back to live scrape.`);
-        return { text: '', rawProperties: [] };
+        console.log(`[fetchCRMProperties] 0 CRM properties matched property type="${propType}". Showing closest available.`);
+        // Don't hard-stop — continue with all matched so user sees properties
       }
     }
 
