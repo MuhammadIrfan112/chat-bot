@@ -49,12 +49,12 @@ export async function GET(req) {
     : "position: fixed; bottom: 16px; " + position + ": 16px; width: 200px; height: 68px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
 
   // Open: desktop floating card with rounded corners, tablet same
-  var openStyle = "position: fixed; bottom: 20px; " + position + ": 16px; width: 420px; height: 600px; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22); transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+  var openStyle = "position: fixed; bottom: 20px; " + position + ": 16px; width: 420px; height: 660px; max-height: calc(100vh - 36px); border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22); transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   
   if (isMobile) {
     openStyle = "position: fixed; bottom: 8px; left: 3%; width: 94%; height: 94vh; height: 94dvh; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   } else if (isTablet) {
-    openStyle = "position: fixed; bottom: 20px; " + position + ": 16px; width: 400px; height: 600px; border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22); transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
+    openStyle = "position: fixed; bottom: 20px; " + position + ": 16px; width: 400px; height: 650px; max-height: calc(100vh - 36px); border: none; border-radius: 22px; overflow: hidden; z-index: 2147483647; background: transparent; pointer-events: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.22); transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
   }
 
   iframe.style.cssText = closedStyle;
