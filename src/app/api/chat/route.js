@@ -1941,6 +1941,44 @@ ${areasNotServed.length ? `
         isCriteriaUpdate = true;
         criteriaChangedType = 'beds';
         console.log(`[CriteriaUpdate] User updated beds=${propBeds}, baths=${propBaths}`);
+      } else if (hasPriorSearch && !isCriteriaUpdate) {
+        // ── SMART AUTO-DETECT: After a failed/no-results search, user types new criteria freely ──
+        // Detect new budget (e.g. "800k", "900000", "1.2M")
+        const autoBudget = parseBudget(userQuery);
+        if (autoBudget > 0 && autoBudget !== propBudget) {
+          propBudget = autoBudget;
+          isCriteriaUpdate = true;
+          criteriaChangedType = 'budget';
+          console.log(`[SmartAutoDetect] New budget from free text: $${propBudget}`);
+        }
+        // Detect new beds (e.g. "3 beds", "3 bedrooms", "3 bed 2 bath")
+        const autoBedMatch = userQuery.match(/(\d+)\s*(?:bed(?:room)?s?|br)\b/i);
+        if (autoBedMatch) {
+          propBeds = parseInt(autoBedMatch[1], 10);
+          isCriteriaUpdate = true;
+          criteriaChangedType = criteriaChangedType || 'beds';
+          console.log(`[SmartAutoDetect] New beds from free text: ${propBeds}`);
+        }
+        // Detect new baths (e.g. "2 baths", "2 bathroom")
+        const autoBathMatch = userQuery.match(/(\d+)\s*(?:bath(?:room)?s?|ba)\b/i);
+        if (autoBathMatch) {
+          propBaths = parseInt(autoBathMatch[1], 10);
+          isCriteriaUpdate = true;
+          criteriaChangedType = criteriaChangedType || 'beds';
+          console.log(`[SmartAutoDetect] New baths from free text: ${propBaths}`);
+        }
+        // Detect new city (e.g. "try Toronto", "search in Mississauga", or bare city name)
+        const autoCityMatch = userQuery.match(/(?:try|search\s+in|look\s+in|check|in)\s+([A-Za-z\s]+?)(?:\s*$|,)/i);
+        if (autoCityMatch) {
+          const candidateCity = autoCityMatch[1].trim();
+          if (candidateCity.length > 2) {
+            detectedCity = normalizeCityName(candidateCity);
+            detectedState = resolveStateOrProvince(detectedCity, detectedState);
+            isCriteriaUpdate = true;
+            criteriaChangedType = 'city';
+            console.log(`[SmartAutoDetect] New city from free text: "${detectedCity}"`);
+          }
+        }
       }
 
       // Only trigger property search after user has provided city + budget + beds
