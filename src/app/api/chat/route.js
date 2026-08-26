@@ -1134,7 +1134,8 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const cleanCity = (targetCity || '').split(',')[0].trim();
     const isRentIntent = intent === 'rent';
     let cityQuery = supabase.from('city_property_data').select('city, properties');
-    if (cleanCity) cityQuery = cityQuery.ilike('city', `%${cleanCity}%`);
+    // Use exact ilike without wildcards so Milton does NOT match Hamilton
+    if (cleanCity) cityQuery = cityQuery.ilike('city', cleanCity);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
 
     console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". State: "${targetState || 'any'}". Intent: "${intent}". Beds: ${propBeds}. Baths: ${propBaths}. Budget: ${propBudget}. Type: "${propType}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
@@ -1154,7 +1155,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       const { data: tableProps } = await supabase
         .from('properties')
         .select('*')
-        .ilike('city', `%${cleanCity}%`)
+        .ilike('city', cleanCity)
         .limit(10);
       if (tableProps && tableProps.length > 0) {
         allProperties = allProperties.concat(tableProps);
@@ -1169,10 +1170,18 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
 
     let filteredData = allProperties;
     if (cleanCity) {
-      const strictCity = filteredData.filter(item =>
-        String(item.city || '').toLowerCase().includes(cleanCity.toLowerCase())
-      );
-      if (strictCity.length > 0) filteredData = strictCity;
+      const targetCityNorm = cleanCity.toLowerCase().trim();
+      const cityWordRegex = new RegExp(`\\b${targetCityNorm}\\b`, 'i');
+      const strictCity = filteredData.filter(item => {
+        const itemCity = String(item.city || '').toLowerCase().trim();
+        return itemCity === targetCityNorm || cityWordRegex.test(itemCity);
+      });
+      if (strictCity.length > 0) {
+        filteredData = strictCity;
+      } else {
+        console.log(`fetchCityPropertyData: 0 DB properties matched strict city "${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
+      }
     }
 
     // ── STATE / PROVINCE GUARD: Prevent cross-state / US vs Canada city collisions (e.g. Aurora IL vs Aurora ON) ──
@@ -1389,10 +1398,11 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
     let matched = properties;
     if (detectedCity && detectedCity.trim()) {
       const cleanCity = detectedCity.toLowerCase().trim().replace(/,/g, '');
+      const cityWordRegex = new RegExp(`\\b${cleanCity}\\b`, 'i');
       const cityMatches = matched.filter(p => {
         const pCity = String(p.city || '').toLowerCase().trim();
         const pAddr = String(p.address || '').toLowerCase().trim();
-        return pCity.includes(cleanCity) || pAddr.includes(cleanCity) || cleanCity.includes(pCity);
+        return pCity === cleanCity || cityWordRegex.test(pCity) || cityWordRegex.test(pAddr);
       });
 
       if (cityMatches.length > 0) {
