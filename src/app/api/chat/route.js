@@ -1003,49 +1003,64 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
   const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.50) : 0;
 
-  const budgetPool = [...workingList]
+  // ── 1. EXACT MATCH POOL: Exact Bedrooms + Exact Bathrooms (sorted by closest to budget first) ──
+  const exactMatches = [...workingList]
     .filter(p => {
-      if (targetBudget <= 0) return true;
-      const price = getPrice(p);
-      if (price <= 0) return true; // include if price unknown
-      return price <= maxBudget && price >= minBudget;
+      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+      const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+      return matchBed && matchBath;
     })
     .sort((a, b) => {
-      // Sort by closest to budget, then by most beds
       if (targetBudget > 0) {
         const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
         const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
-        if (aDiff !== bDiff) return aDiff - bDiff;
+        return aDiff - bDiff; // closest to budget first (e.g. ±$1,000 / closest price)
       }
-      return getBeds(b) - getBeds(a); // prefer more beds
+      return 0;
     });
 
-  let budgetCount = 0;
-  for (const p of budgetPool) {
-    if (budgetCount >= budgetCountNeeded) break;
-    if (addProp(p)) budgetCount++;
+  for (const p of exactMatches) {
+    if (selected.length >= totalTarget) break;
+    addProp(p);
   }
 
-  // ── 2. BED/BATH CARDS: Exact/closest bed & bath match regardless of price ──
-  // Cards 3 & 4 (or card 2 on Show More): exact bed/bath match
-  const bedPool = [...workingList].sort((a, b) => {
-    if (targetBeds > 0) {
-      const aBedDiff = getBeds(a) > 0 ? Math.abs(getBeds(a) - targetBeds) : 99;
-      const bBedDiff = getBeds(b) > 0 ? Math.abs(getBeds(b) - targetBeds) : 99;
-      if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
-    }
-    if (targetBaths > 0) {
-      const aBathDiff = getBaths(a) > 0 ? Math.abs(getBaths(a) - targetBaths) : 99;
-      const bBathDiff = getBaths(b) > 0 ? Math.abs(getBaths(b) - targetBaths) : 99;
-      if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
-    }
-    return 0;
-  });
+  // ── 2. CLOSE MATCH POOL: Exact / ±1 Bed + closest budget ──
+  if (selected.length < totalTarget) {
+    const closeMatches = [...workingList]
+      .filter(p => {
+        if (targetBudget > 0) {
+          const price = getPrice(p);
+          if (price > 0 && price > maxBudget) return false;
+          if (price > 0 && price < minBudget) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // First priority: Bed closeness
+        if (targetBeds > 0) {
+          const aBedDiff = Math.abs(getBeds(a) - targetBeds);
+          const bBedDiff = Math.abs(getBeds(b) - targetBeds);
+          if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
+        }
+        // Second priority: Price closeness to targetBudget
+        if (targetBudget > 0) {
+          const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
+          const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
+          if (aDiff !== bDiff) return aDiff - bDiff;
+        }
+        // Third priority: Bath closeness
+        if (targetBaths > 0) {
+          const aBathDiff = Math.abs(getBaths(a) - targetBaths);
+          const bBathDiff = Math.abs(getBaths(b) - targetBaths);
+          if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
+        }
+        return 0;
+      });
 
-  let bedCount = 0;
-  for (const p of bedPool) {
-    if (bedCount >= bedCountNeeded) break;
-    if (addProp(p)) bedCount++;
+    for (const p of closeMatches) {
+      if (selected.length >= totalTarget) break;
+      addProp(p);
+    }
   }
 
   // ── 3. Backfill from type-filtered list only ──
