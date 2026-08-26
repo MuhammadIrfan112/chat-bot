@@ -17,6 +17,7 @@ export async function GET(req) {
     const rawBudget = searchParams.get('budget') || '';
     const rawBeds = searchParams.get('beds') || '0';
     const rawBaths = searchParams.get('baths') || '0';
+    const rawType = searchParams.get('type') || '';
 
     const parseBudgetNum = (text) => {
       if (!text) return 0;
@@ -37,6 +38,38 @@ export async function GET(req) {
     const propBudget = parseBudgetNum(rawBudget);
     const propBeds = parseInt(rawBeds, 10) || 0;
     const propBaths = parseFloat(rawBaths) || 0;
+
+    function normalizeHomeType(val) {
+      if (!val) return '';
+      const v = String(val).toLowerCase();
+      if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
+      if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
+      if (v.includes('town')) return 'townhouse';
+      if (v.includes('semi') || v.includes('multi') || v.includes('duplex')) return 'semi-detached';
+      if (v.includes('land') || v.includes('lot')) return 'land';
+      return v;
+    }
+
+    function propTypeMatches(p, requestedType) {
+      if (!requestedType) return true;
+      const req = requestedType.toLowerCase();
+      const pType = normalizeHomeType(
+        p.property_type || p.propertyType || p.homeType || p.home_type || p.type || ''
+      );
+      if (req.includes('detach') || req.includes('single') || req.includes('house')) {
+        return pType.includes('detach') || pType.includes('single') || pType.includes('house');
+      }
+      if (req.includes('condo') || req.includes('apartment')) {
+        return pType.includes('condo') || pType.includes('apartment') || pType.includes('flat');
+      }
+      if (req.includes('town')) {
+        return pType.includes('town');
+      }
+      if (req.includes('semi') || req.includes('multi') || req.includes('duplex')) {
+        return pType.includes('semi') || pType.includes('multi') || pType.includes('duplex');
+      }
+      return pType.includes(req);
+    }
 
     if (!runId) return Response.json({ error: 'Missing runId' }, { status: 400 });
 
@@ -349,7 +382,7 @@ const SUPPLEMENT_PHOTO_SETS = [
     }
 
     // ── Apply recommendation rules: Cards 1 & 2 (budget match), Cards 3 & 4 (exact bed/bath match) ──
-    function selectRecommendedProperties(propsList, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2) {
+    function selectRecommendedProperties(propsList, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
       if (!Array.isArray(propsList) || propsList.length === 0) return [];
       const totalTarget = budgetCountNeeded + bedCountNeeded;
 
@@ -373,11 +406,18 @@ const SUPPLEMENT_PHOTO_SETS = [
       const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0, 10) || 0;
       const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
+      // Filter by requested property type
+      const typeFiltered = targetType
+        ? propsList.filter(p => propTypeMatches(p, targetType))
+        : propsList;
+      const workingList = typeFiltered.length > 0 ? typeFiltered : propsList;
+      console.log(`[apify-result] selectRecommended Type filter "${targetType}": ${propsList.length} → ${typeFiltered.length} (using ${workingList.length})`);
+
       // ── 1. BUDGET CARDS (Cards 1 & 2): within budget (max +10%). Sort by closest to budget, then most beds
       const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
-      const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.40) : 0;
+      const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.50) : 0;
 
-      const budgetPool = [...propsList]
+      const budgetPool = [...workingList]
         .filter(p => {
           if (targetBudget <= 0) return true;
           const price = getPrice(p);
@@ -400,7 +440,7 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
 
       // ── 2. BED/BATH CARDS (Cards 3 & 4): Exact or closest bed & bath match regardless of price
-      const bedPool = [...propsList].sort((a, b) => {
+      const bedPool = [...workingList].sort((a, b) => {
         if (targetBeds > 0) {
           const aBedDiff = getBeds(a) > 0 ? Math.abs(getBeds(a) - targetBeds) : 99;
           const bBedDiff = getBeds(b) > 0 ? Math.abs(getBeds(b) - targetBeds) : 99;
@@ -420,13 +460,13 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (addProp(p)) bedCount++;
       }
 
-      // ── 3. Backfill
-      for (const p of propsList) {
+      // ── 3. Backfill from workingList only
+      for (const p of workingList) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      const remaining = propsList.filter(p => !usedKeys.has(getPropKey(p)));
+      const remaining = workingList.filter(p => !usedKeys.has(getPropKey(p)));
       return [...selected, ...remaining];
     }
 
@@ -437,7 +477,8 @@ const SUPPLEMENT_PHOTO_SETS = [
       propBaths,
       intent === 'rent',
       2,
-      2
+      2,
+      rawType
     );
 
     if (savedCity && savedCity !== 'unknown') {

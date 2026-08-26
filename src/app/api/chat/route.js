@@ -405,7 +405,64 @@ async function getCityBounds(city, state) {
 }
 
 // Build a proper Zillow search URL with ?searchQueryState= (required by zillow-scraper actor)
-async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
+// Map user-friendly type names to Zillow homeType filter values
+function mapPropTypeToZillow(propType) {
+  if (!propType) return null;
+  const t = propType.toLowerCase();
+  if (t.includes('detached') || t.includes('single family') || t.includes('single-family') || t.includes('house')) {
+    return 'SINGLE_FAMILY';
+  }
+  if (t.includes('condo') || t.includes('apartment') || t.includes('flat')) {
+    return 'CONDO';
+  }
+  if (t.includes('townhouse') || t.includes('town house') || t.includes('townhome')) {
+    return 'TOWNHOUSE';
+  }
+  if (t.includes('semi') || t.includes('multi family') || t.includes('duplex')) {
+    return 'MULTI_FAMILY';
+  }
+  if (t.includes('land') || t.includes('lot')) {
+    return 'LOT';
+  }
+  return null;
+}
+
+// Normalize a DB/API homeType string back to a user-friendly label for matching
+function normalizeHomeType(val) {
+  if (!val) return '';
+  const v = String(val).toLowerCase();
+  if (v.includes('single') || v.includes('detach') || v.includes('house')) return 'detached';
+  if (v.includes('condo') || v.includes('apartment') || v.includes('flat')) return 'condo';
+  if (v.includes('town')) return 'townhouse';
+  if (v.includes('semi') || v.includes('multi') || v.includes('duplex')) return 'semi-detached';
+  if (v.includes('land') || v.includes('lot')) return 'land';
+  return v;
+}
+
+// Check if a property's type matches what user requested
+function propTypeMatches(p, requestedType) {
+  if (!requestedType) return true; // no filter if not specified
+  const req = requestedType.toLowerCase();
+  const pType = normalizeHomeType(
+    p.homeType || p.property_type || p.propertyType || p.home_type || p.type || ''
+  );
+  // Check if requested type keywords appear in normalized property type
+  if (req.includes('detach') || req.includes('single') || req.includes('house')) {
+    return pType.includes('detach') || pType.includes('single') || pType.includes('house');
+  }
+  if (req.includes('condo') || req.includes('apartment')) {
+    return pType.includes('condo') || pType.includes('apartment') || pType.includes('flat');
+  }
+  if (req.includes('town')) {
+    return pType.includes('town');
+  }
+  if (req.includes('semi') || req.includes('multi') || req.includes('duplex')) {
+    return pType.includes('semi') || pType.includes('multi') || pType.includes('duplex');
+  }
+  return pType.includes(req);
+}
+
+async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null) {
   const isRent = intent === 'rent';
   const normCity = normalizeCityName(city);
   const normState = state || resolveStateOrProvince(normCity, state);
@@ -436,18 +493,24 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '') {
         isRecentlySold: { value: false }
       };
 
+  // ── Apply budget filter ──
   if (fullChatText) {
     const maxBudget = parseBudget(fullChatText);
     if (maxBudget > 0) {
       if (isRent) {
-        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.25) };
-        filterState.price = { max: Math.round(maxBudget * 1.25) };
+        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.15) };
+        filterState.price = { max: Math.round(maxBudget * 1.15) };
       } else {
-        filterState.price = {
-          max: Math.round(maxBudget * 1.25)
-        };
+        filterState.price = { max: Math.round(maxBudget * 1.15) };
       }
     }
+  }
+
+  // ── Apply property type filter on Zillow URL ──
+  const zillowType = mapPropTypeToZillow(propType);
+  if (zillowType) {
+    filterState.homeType = { value: zillowType };
+    console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
   }
 
   const searchQueryState = {
@@ -478,7 +541,7 @@ function getBudgetBucket(budget) {
 
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
 // If another user already started the same city+budget+intent run recently, reuse it
-async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0) {
+async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
     if (!APIFY_TOKEN) {
@@ -486,21 +549,22 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       return null;
     }
 
-    // ── Check for an active shared run (same city + budget bucket + intent) ──
+    // ── Check for an active shared run (same city + budget bucket + intent + type) ──
     const normCity = normalizeCityName(city);
     const budgetBucket = getBudgetBucket(propBudget);
-    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}`;
+    const typeSlug = propType ? propType.toLowerCase().replace(/\s+/g, '_') : 'any';
+    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}`;
     const existing = ACTIVE_APIFY_RUNS[runKey];
     if (existing && (Date.now() - existing.startedAt) < APIFY_RUN_TTL_MS) {
       console.log(`[Apify] ♻️ Reusing active run ${existing.runId} for key="${runKey}" (started ${Math.round((Date.now()-existing.startedAt)/1000)}s ago)`);
       return existing.runId;
     }
 
-    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText);
-    console.log(`[Apify] Starting NEW run with URL: ${searchUrl.substring(0, 120)}...`);
+    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType);
+    console.log(`[Apify] Starting NEW run | Type=${propType || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=20&token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -508,7 +572,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
           startUrls: [{ url: searchUrl }],
           searchUrls: [{ url: searchUrl }],
           search: `${normCity}${state ? ', ' + state : ''}`.trim(),
-          proxy: { 
+          proxy: {
             useApifyProxy: true
           }
         })
@@ -524,7 +588,6 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     }
 
     const runId = runData.data.id;
-    // ── Store this run so concurrent users can share it ──
     ACTIVE_APIFY_RUNS[runKey] = { runId, startedAt: Date.now(), intent };
     console.log(`[Apify] ✅ Run started successfully: ${runId} (key="${runKey}")`);
     return runId;
@@ -829,7 +892,7 @@ function parseBudget(text) {
 // User requirement:
 // 1. Initial Search: First 2 properties match user's budget (highest beds/baths in budget), Next 2 match exact/closest bed/bath count (regardless of price). (Total: 4 properties)
 // 2. See More: 1 property matches user's budget (highest beds/baths in budget), 1 matches exact/closest bed/bath count. (Total: 2 properties)
-function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2) {
+function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
   if (!Array.isArray(properties) || properties.length === 0) return [];
   const totalTarget = budgetCountNeeded + bedCountNeeded;
 
@@ -855,12 +918,19 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0) || 0;
   const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
+  // ── Apply property type filter FIRST (strict — no fallback) ──
+  const typeFiltered = targetType
+    ? properties.filter(p => propTypeMatches(p, targetType))
+    : properties;
+  const workingList = typeFiltered.length > 0 ? typeFiltered : properties; // if type yielded 0, use all (shouldn't happen with Apify filtered URL)
+  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props (using ${workingList.length})`);
+
   // ── 1. BUDGET CARDS: MUST be within budget (max +10%). Sort by closest to budget, then most beds ──
   // Cards 1 & 2 (or card 1 on Show More): strictly within budget
   const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
-  const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.40) : 0;
+  const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.50) : 0;
 
-  const budgetPool = properties
+  const budgetPool = [...workingList]
     .filter(p => {
       if (targetBudget <= 0) return true; // no budget filter if not specified
       const price = getPrice(p);
@@ -885,7 +955,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   // ── 2. BED/BATH CARDS: Exact/closest bed & bath match regardless of price ──
   // Cards 3 & 4 (or card 2 on Show More): exact bed/bath match
-  const bedPool = [...properties].sort((a, b) => {
+  const bedPool = [...workingList].sort((a, b) => {
     if (targetBeds > 0) {
       const aBedDiff = getBeds(a) > 0 ? Math.abs(getBeds(a) - targetBeds) : 99;
       const bBedDiff = getBeds(b) > 0 ? Math.abs(getBeds(b) - targetBeds) : 99;
@@ -905,19 +975,19 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (addProp(p)) bedCount++;
   }
 
-  // ── 3. Backfill if we didn't reach totalTarget ──
-  for (const p of properties) {
+  // ── 3. Backfill from type-filtered list only ──
+  for (const p of workingList) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
 
-  // Append remaining for subsequent "Show more" clicks
-  const remaining = properties.filter(p => !usedKeys.has(getPropKey(p)));
+  // Remaining for "Show more" — also from type-filtered list only
+  const remaining = workingList.filter(p => !usedKeys.has(getPropKey(p)));
   return [...selected, ...remaining];
 }
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
-async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '') {
+async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '', propType = null) {
   try {
     const cleanCity = (targetCity || '').split(',')[0].trim();
     const isRentIntent = intent === 'rent';
@@ -925,7 +995,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     if (cleanCity) cityQuery = cityQuery.ilike('city', `%${cleanCity}%`);
     const { data: cityRows, error: cityError } = await cityQuery.limit(5);
 
-    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Intent: "${intent}". Beds: ${propBeds}. Baths: ${propBaths}. Budget: ${propBudget}. Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
+    console.log(`fetchCityPropertyData: city_property_data query. CleanCity: "${cleanCity}". Intent: "${intent}". Beds: ${propBeds}. Baths: ${propBaths}. Budget: ${propBudget}. Type: "${propType}". Rows: ${cityRows?.length || 0}. Error: ${cityError?.message || 'none'}`);
 
     // Flatten all properties from matched rows
     let allProperties = [];
@@ -1041,7 +1111,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const cardsLimit = isShowMore ? 2 : 4;
 
     const sourcePool = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
-    const candidateList = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded);
+    const candidateList = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
     let cards = [];
@@ -1121,7 +1191,7 @@ Link: ${url}
 
 // ─── Universal Budget Parser ───────────────────────────────────────────────
 // 🏡 Fetch listings from private CRM properties table with strict criteria checking
-async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIntent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0) {
+async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIntent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, propType = null) {
   try {
     if (!botId) return '';
 
@@ -1136,7 +1206,7 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
       return '';
     }
 
-    console.log(`[fetchCRMProperties] Bot has ${properties.length} active listings. Checking criteria: city="${detectedCity}", intent="${propIntent}", budget=${propBudget}, beds=${propBeds}, baths=${propBaths}`);
+    console.log(`[fetchCRMProperties] Bot has ${properties.length} active listings. Checking criteria: city="${detectedCity}", intent="${propIntent}", budget=${propBudget}, beds=${propBeds}, baths=${propBaths}, type="${propType}"`);
 
     // Criteria 1: City Match (if city requested)
     let matched = properties;
@@ -1154,6 +1224,17 @@ async function fetchCRMProperties(botId, fullChatText, detectedCity = '', propIn
         // No properties in this requested city in CRM -> criteria NOT met, return '' to fallback to live scrape
         console.log(`[fetchCRMProperties] 0 CRM properties matched city="${detectedCity}". Falling back to live scrape/city data.`);
         return '';
+      }
+    }
+
+    // Criteria 1.5: Property Type Match (if property type requested)
+    if (propType) {
+      const typeMatches = matched.filter(p => propTypeMatches(p, propType));
+      if (typeMatches.length > 0) {
+        matched = typeMatches;
+      } else {
+        console.log(`[fetchCRMProperties] 0 CRM properties matched property type="${propType}". Falling back to live scrape.`);
+        return { text: '', rawProperties: [] };
       }
     }
 
@@ -1747,11 +1828,11 @@ CRITICAL INSTRUCTIONS:
           // ============================================================
           // PRIORITY 1 & 2: Client's CRM (website) properties + City cached data
           // ============================================================
-          const crmResult = skipCache ? null : await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds, propBaths);
+          const crmResult = skipCache ? null : await fetchCRMProperties(bot_id, fullChatText, detectedCity, propIntent, propBudget, propBeds, propBaths, propType);
           const crmPropertyContext = (typeof crmResult === 'object' && crmResult !== null) ? crmResult.text : crmResult;
           const crmRawProperties = (typeof crmResult === 'object' && crmResult !== null) ? (crmResult.rawProperties || []) : [];
 
-          const cachedResult = skipCache ? null : await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText);
+          const cachedResult = skipCache ? null : await fetchCityPropertyData(bot_id, detectedCity, propIntent, propBudget, propBeds, propBaths, fullChatText, propType);
           const cachedCityContext = (typeof cachedResult === 'object' && cachedResult !== null) ? cachedResult.text : cachedResult;
           const cachedRawProperties = (typeof cachedResult === 'object' && cachedResult !== null) ? (cachedResult.rawProperties || []) : [];
 
@@ -1765,12 +1846,15 @@ CRITICAL INSTRUCTIONS:
           }
 
           if (allRawProperties.length > 0) {
-            console.log(`[Route] Found matching properties (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity}`);
+            console.log(`[Route] Found matching properties (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity} with type="${propType}"`);
             const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
+
+            // Filter & sort by recommended criteria (budget, beds/baths, property type)
+            const recommendedRaw = selectRecommendedProperties(allRawProperties, propBudget, propBeds, propBaths, propIntent === 'rent', 2, 2, propType);
 
             // ✅ DIRECT RETURN: bypass AI hallucination by returning structured property JSON immediately
             const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
-            const structuredProps = allRawProperties.slice(0, 4).map((l, i) => {
+            const structuredProps = (recommendedRaw.length > 0 ? recommendedRaw : allRawProperties).slice(0, 4).map((l, i) => {
               let rawPhotos = [];
               if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
               else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
@@ -1836,8 +1920,8 @@ CRITICAL INSTRUCTIONS:
             // PRIORITY 3: Live Apify search (Zillow)
             // ============================================================
               const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
-              console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState} Budget=${propBudget}...`);
-              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget);
+              console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState} Budget=${propBudget} Type=${propType}...`);
+              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType);
 
               if (apifyRunId) {
                 const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
@@ -1864,7 +1948,8 @@ CRITICAL INSTRUCTIONS:
                   city: detectedCity,
                   budget: propBudget,
                   beds: propBeds,
-                  baths: propBaths
+                  baths: propBaths,
+                  type: propType
                 });
               } else {
                 // Apify failed — for real client bots, show honest message. Never show fake properties.

@@ -1123,6 +1123,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [activeApifyBudget, setActiveApifyBudget] = useState(0);
   const [activeApifyBeds, setActiveApifyBeds] = useState(0);
   const [activeApifyBaths, setActiveApifyBaths] = useState(0);
+  const [activeApifyType, setActiveApifyType] = useState('');
   const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
 
   // ── Closing flow state ─────────────────────────────────────────
@@ -1358,7 +1359,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         const budgetParam = activeApifyBudget ? `&budget=${encodeURIComponent(activeApifyBudget)}` : '';
         const bedsParam = activeApifyBeds ? `&beds=${encodeURIComponent(activeApifyBeds)}` : '';
         const bathsParam = activeApifyBaths ? `&baths=${encodeURIComponent(activeApifyBaths)}` : '';
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}${budgetParam}${bedsParam}${bathsParam}`);
+        const typeParam = activeApifyType ? `&type=${encodeURIComponent(activeApifyType)}` : '';
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}${budgetParam}${bedsParam}${bathsParam}${typeParam}`);
         const data = await res.json();
 
         if (data.status === 'done') {
@@ -1454,7 +1456,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }, 6000); // Poll every 6 seconds
 
     return () => clearInterval(interval);
-  }, [activeApifyRunId, activeApifyIntent, activeApifyCity, activeApifyBudget, activeApifyBeds, activeApifyBaths]);
+  }, [activeApifyRunId, activeApifyIntent, activeApifyCity, activeApifyBudget, activeApifyBeds, activeApifyBaths, activeApifyType]);
 
   // Reusable parser for AI replies (both live chat and Apify background responses)
   const parseModelReply = (rawText, existingProps = []) => {
@@ -3155,6 +3157,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setActiveApifyBudget(data.budget || buyHomeData?.budget || rentData?.budget || 0);
           setActiveApifyBeds(data.beds || buyHomeData?.bedrooms || rentData?.bedrooms || 0);
           setActiveApifyBaths(data.baths || buyHomeData?.bathrooms || rentData?.bathrooms || 0);
+          setActiveApifyType(data.type || buyHomeData?.propertyType || rentData?.propertyType || '');
         }
         // Activate multi-select if needed
         if (multiButtons.length > 0) {
