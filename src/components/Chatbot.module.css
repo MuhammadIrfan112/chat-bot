@@ -80,8 +80,8 @@
 }
 
 .globalChatWindow {
-  width: 400px;
-  height: 710px;
+  width: 375px;
+  height: 700px;
   max-height: calc(100vh - 30px);
 }
 
@@ -229,7 +229,7 @@
   padding: 0 12px 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -237,15 +237,14 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 9px 18px;
-  border-radius: 22px;
-  font-size: 14.5px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: normal;
-  line-height: 1.35;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .qrBtn:hover {
@@ -266,15 +265,14 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 9px 18px;
-  border-radius: 22px;
-  font-size: 14.5px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
-  white-space: normal;
-  line-height: 1.35;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 .multiBtn:hover {
@@ -292,13 +290,13 @@
 }
 
 .multiSubmitBtn {
-  margin-top: 8px;
-  padding: 10px 22px;
+  margin-top: 6px;
+  padding: 7px 18px;
   background: var(--primary, #1E6FD9);
   color: white;
   border: none;
-  border-radius: 22px;
-  font-size: 14.5px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(30,111,217,0.3);
