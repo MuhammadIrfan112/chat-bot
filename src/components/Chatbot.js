@@ -1041,19 +1041,19 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
           }}
           style={{
             width: '100%',
-            padding: '7px 8px',
+            padding: '8px 12px',
             marginTop: '8px',
             borderRadius: '8px',
             background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
             color: 'white',
-            fontSize: '11px',
+            fontSize: '12.5px',
             fontWeight: '700',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '5px',
+            gap: '6px',
             boxShadow: '0 2px 6px rgba(79,70,229,0.25)',
             transition: 'all 0.2s ease'
           }}

@@ -223,11 +223,11 @@
    QUICK REPLY BUTTONS
 ══════════════════════════════════════════════ */
 .quickReplies {
-  margin-top: 14px;
+  margin-top: 10px;
   padding: 0 12px 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 7px;
   flex-shrink: 0;
 }
 
@@ -235,13 +235,14 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
@@ -263,13 +264,14 @@
   background: white;
   border: 1.5px solid var(--primary, #1E6FD9);
   color: var(--primary, #1E6FD9);
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
@@ -289,12 +291,12 @@
 
 .multiSubmitBtn {
   margin-top: 6px;
-  padding: 7px 18px;
+  padding: 9px 20px;
   background: var(--primary, #1E6FD9);
   color: white;
   border: none;
-  border-radius: 16px;
-  font-size: 13px;
+  border-radius: 20px;
+  font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(30,111,217,0.3);
@@ -551,32 +553,41 @@
     line-height: 1.65;
   }
 
-  /* Buttons: full-width stacked for easy tapping */
+  /* Buttons: comfortable, finger-friendly size on mobile */
   .quickReplies {
-    padding: 8px 14px 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
+    padding: 8px 14px 14px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
 
   .qrBtn {
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 16px;
-    white-space: nowrap;
+    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: 22px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.35;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   }
 
   .multiBtn {
-    font-size: 11px;
-    padding: 4px 10px;
+    font-size: 13.5px;
+    padding: 8px 15px;
+    border-radius: 20px;
     width: auto;
     text-align: center;
+    line-height: 1.35;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   }
 
   .multiSubmitBtn {
-    padding: 5px 14px;
-    font-size: 11px;
-    border-radius: 16px;
+    padding: 9px 20px;
+    font-size: 14px;
+    border-radius: 22px;
+    margin-top: 8px;
+    font-weight: 700;
   }
 
   /* Input area with safe-area support for iPhone home bar */
