@@ -1877,73 +1877,108 @@ CRITICAL INSTRUCTIONS:
             console.log(`[Route] Found raw properties in CRM/DB (CRM: ${crmRawProperties.length}, City DB: ${cachedRawProperties.length}) for ${detectedCity} with type="${propType}"`);
             const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);
 
-            // Filter & sort by recommended criteria (budget, beds/baths, property type)
-            const recommendedRaw = selectRecommendedProperties(allRawProperties, propBudget, propBeds, propBaths, propIntent === 'rent', 2, 2, propType);
+            // Extract already-shown property addresses from the conversation to NEVER repeat them
+            const shownAddresses = [];
+            messages.forEach(m => {
+              if (Array.isArray(m.properties)) {
+                m.properties.forEach(p => {
+                  if (p.address) shownAddresses.push(String(p.address).toLowerCase().trim());
+                });
+              }
+            });
+            const addrRegex = /Address:\s*([^\n,]+)/gi;
+            let aMatch;
+            while ((aMatch = addrRegex.exec(fullChatText)) !== null) {
+              shownAddresses.push(aMatch[1].trim().toLowerCase());
+            }
 
-            if (recommendedRaw.length > 0) {
-              // ✅ DIRECT RETURN: matching properties found in CRM/DB
-              const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
-              const structuredProps = recommendedRaw.slice(0, 4).map((l, i) => {
-                let rawPhotos = [];
-                if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
-                else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
-                else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
-                else if (l.image_url) rawPhotos = [l.image_url];
-                else if (l.imgSrc) rawPhotos = [l.imgSrc];
-                const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
-                let imgArr = rawPhotos.filter(isRealImg);
-                if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
-                  const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
-                  imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
-                }
-                return {
-                  address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
-                  price: l.price ? (typeof l.price === 'number' ? `$${l.price.toLocaleString()}` : l.price) : (l.priceDisplay || 'Contact for Price'),
-                  bedrooms: String(l.bedrooms || l.beds || ''),
-                  bathrooms: String(l.bathrooms || l.baths || ''),
-                  property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
-                  city: l.city || detectedCity,
-                  province: l.province || l.state || '',
-                  image_url: imgArr[0] || '',
-                  images: imgArr.slice(0, 8),
-                  url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
-                  listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
-                  mls_number: l.mls_number || l.mlsNumber || l.zpid || '',
-                  living_area: l.living_area || l.livingArea || l.sqft || null,
-                  lot_size: l.lot_size || l.lotSize || null,
-                  year_built: l.year_built || l.yearBuilt || null,
-                  description: l.description || null,
-                  stories: l.stories || null,
-                  parking: l.parking || l.garageSpaces || null,
-                  heating: l.heating || null,
-                  cooling: l.cooling || null,
-                  basement: l.basement || null,
-                  fireplace: l.fireplace || null,
-                  materials: l.materials || null,
-                  foundation: l.foundation || null,
-                  roof: l.roof || null,
-                  annual_tax: l.annual_tax || l.annualTax || null
-                };
-              });
+            const unseenProperties = allRawProperties.filter(p => {
+              const addr = String(p.address || '').toLowerCase().trim();
+              if (!addr) return true;
+              return !shownAddresses.some(sa => sa && (addr.includes(sa) || sa.includes(addr.slice(0, 15))));
+            });
 
-              const cityBtnsList = !isShowMoreRequest ? [
-                '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
-                '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
-              ] : [];
+            // Card limits: 2 for Show More (1 budget + 1 bed/bath), 4 for initial search (2 budget + 2 bed/bath)
+            const cardsLimit = isShowMoreRequest ? 2 : 4;
+            const budgetNeeded = isShowMoreRequest ? 1 : 2;
+            const bedNeeded = isShowMoreRequest ? 1 : 2;
 
-              const introText = `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
-                + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
+            const poolToUse = isShowMoreRequest ? unseenProperties : allRawProperties;
 
-              console.log(`[Route] ✅ Returning ${structuredProps.length} matching structured properties directly from DB`);
-              return Response.json({
-                reply: introText,
-                properties: structuredProps,
-                apifyRunId: null,
-                intent: propIntent,
-                city: detectedCity
-              });
+            // If it's a show more request and we have no more unseen properties in DB matching criteria:
+            if (isShowMoreRequest && unseenProperties.length === 0) {
+              console.log(`[Route] User asked for Show More but all DB properties were already shown — falling through to live Apify scrape for fresh properties!`);
             } else {
-              console.log(`[Route] 0 CRM/DB properties matched criteria (budget=${propBudget}, type=${propType}, beds=${propBeds}) — falling through to live Apify search!`);
+              // Filter & sort by recommended criteria (budget, beds/baths, property type)
+              const recommendedRaw = selectRecommendedProperties(poolToUse, propBudget, propBeds, propBaths, propIntent === 'rent', budgetNeeded, bedNeeded, propType);
+
+              if (recommendedRaw.length > 0) {
+                // ✅ DIRECT RETURN: matching unique properties found in CRM/DB
+                const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
+                const structuredProps = recommendedRaw.slice(0, cardsLimit).map((l, i) => {
+                  let rawPhotos = [];
+                  if (Array.isArray(l.images) && l.images.length > 0) rawPhotos = l.images;
+                  else if (Array.isArray(l.photos) && l.photos.length > 0) rawPhotos = l.photos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+                  else if (Array.isArray(l.carouselPhotos) && l.carouselPhotos.length > 0) rawPhotos = l.carouselPhotos.map(p => (typeof p === 'string' ? p : p.url)).filter(Boolean);
+                  else if (l.image_url) rawPhotos = [l.image_url];
+                  else if (l.imgSrc) rawPhotos = [l.imgSrc];
+                  const isRealImg = (u) => u && typeof u === 'string' && !u.includes('maps.googleapis.com') && !u.includes('staticmap');
+                  let imgArr = rawPhotos.filter(isRealImg);
+                  if (imgArr.length < 2 && SUPPLEMENT_PHOTO_SETS_LOCAL.length > 0) {
+                    const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
+                    imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
+                  }
+                  return {
+                    address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
+                    price: l.price ? (typeof l.price === 'number' ? `$${l.price.toLocaleString()}` : l.price) : (l.priceDisplay || 'Contact for Price'),
+                    bedrooms: String(l.bedrooms || l.beds || ''),
+                    bathrooms: String(l.bathrooms || l.baths || ''),
+                    property_type: l.propertyType || l.property_type || l.homeType || l.type || 'Single Family Home',
+                    city: l.city || detectedCity,
+                    province: l.province || l.state || '',
+                    image_url: imgArr[0] || '',
+                    images: imgArr.slice(0, 8),
+                    url: l.url || l.propertyUrl || l.detailUrl || (l.zpid ? `https://www.zillow.com/homedetails/${l.zpid}_zpid/` : '#'),
+                    listing_status: l.listing_status || (propIntent === 'rent' ? '🔵 For Rent' : '🟢 For Sale'),
+                    mls_number: l.mls_number || l.mlsNumber || l.zpid || '',
+                    living_area: l.living_area || l.livingArea || l.sqft || null,
+                    lot_size: l.lot_size || l.lotSize || null,
+                    year_built: l.year_built || l.yearBuilt || null,
+                    description: l.description || null,
+                    stories: l.stories || null,
+                    parking: l.parking || l.garageSpaces || null,
+                    heating: l.heating || null,
+                    cooling: l.cooling || null,
+                    basement: l.basement || null,
+                    fireplace: l.fireplace || null,
+                    materials: l.materials || null,
+                    foundation: l.foundation || null,
+                    roof: l.roof || null,
+                    annual_tax: l.annual_tax || l.annualTax || null
+                  };
+                });
+
+                const cityBtnsList = !isShowMoreRequest ? [
+                  '🏫 Schools', '🌳 Parks', '🚇 Transportation', '🛒 Shopping & Dining',
+                  '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
+                ] : [];
+
+                const introText = isShowMoreRequest
+                  ? `Here are ${structuredProps.length} more properties in **${detectedCity}** that match your criteria! 🏡`
+                  : `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
+                    + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
+
+                console.log(`[Route] ✅ Returning ${structuredProps.length} matching unique properties directly from DB (isShowMore=${isShowMoreRequest})`);
+                return Response.json({
+                  reply: introText,
+                  properties: structuredProps,
+                  apifyRunId: null,
+                  intent: propIntent,
+                  city: detectedCity
+                });
+              } else {
+                console.log(`[Route] 0 CRM/DB properties matched criteria (budget=${propBudget}, type=${propType}, beds=${propBeds}) — falling through to live Apify search!`);
+              }
             }
           } else if (hasCRM || hasCache) {
             propertyContext = (hasCRM ? crmPropertyContext : '') + (hasCRM && hasCache ? "\n\nADDITIONAL AREA LISTINGS:\n" : '') + (hasCache ? cachedCityContext : '');
