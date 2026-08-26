@@ -24,7 +24,7 @@
   }
 
   // Ensure mobile responsiveness
-  var isMobile = window.innerWidth <= 480;
+  var isMobile = window.innerWidth <= 768;
 
   // Create iframe
   var iframe = document.createElement('iframe');
@@ -39,11 +39,11 @@
   
   // Closed state: only button size visible, no scrollbar gap
   var closedStyle = "position: fixed; bottom: 20px; right: 20px; width: 200px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
-  var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 375px; height: 590px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
+  var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 400px; height: 600px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
   
   if (isMobile) {
-    closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 180px; height: 70px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
-    openStyle = "position: fixed; bottom: 16px; right: 16px; width: calc(100vw - 32px); height: calc(100dvh - 32px); max-height: 590px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden; border-radius: 20px; box-sizing: border-box;";
+    closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
+    openStyle = "position: fixed; bottom: 10px; left: 3%; width: 94%; height: 92vh; height: 92dvh; max-height: 92dvh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden; border-radius: 22px; box-sizing: border-box;";
   }
 
   iframe.style.cssText = closedStyle;

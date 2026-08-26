@@ -540,42 +540,42 @@
     line-height: 1.65;
   }
 
-  /* Buttons: comfortable, large touch-friendly size on mobile */
+  /* Buttons: comfortable, clean touch-friendly size on mobile */
   .quickReplies {
-    padding: 10px 14px 16px;
+    padding: 8px 14px 14px;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
 
   .qrBtn {
-    font-size: 15.5px;
-    padding: 12px 20px;
-    border-radius: 26px;
+    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: 22px;
     white-space: normal;
     text-align: center;
     line-height: 1.35;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   }
 
   .multiBtn {
-    font-size: 15px;
-    padding: 11px 20px;
-    border-radius: 24px;
+    font-size: 13.5px;
+    padding: 8px 15px;
+    border-radius: 20px;
     width: auto;
     text-align: center;
     line-height: 1.35;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   }
 
   .multiSubmitBtn {
-    padding: 12px 26px;
-    font-size: 15.5px;
-    border-radius: 26px;
-    margin-top: 10px;
+    padding: 9px 20px;
+    font-size: 14px;
+    border-radius: 22px;
+    margin-top: 8px;
     font-weight: 700;
   }
 
