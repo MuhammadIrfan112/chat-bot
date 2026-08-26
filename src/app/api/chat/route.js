@@ -1038,79 +1038,89 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const workingList = typeFiltered;
   console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props`);
 
-  // ── 1. BUDGET CARDS: MUST be within budget (max +10%). Sort by closest to budget, then most beds ──
-  // Cards 1 & 2 (or card 1 on Show More): strictly within budget
-  // maxBudget +10%, minBudget -50% of user budget (properties must be in realistic range)
-  const maxBudget = targetBudget > 0 ? Math.round(targetBudget * 1.10) : Infinity;
-  const minBudget = targetBudget > 0 ? Math.round(targetBudget * 0.50) : 0;
+  // ── Budget tolerance: ±$1,000 incremental search (NOT ±10%) ──
+  // Strategy: try exact budget first, then widen by $1,000 steps up to $50,000 total range
+  const BUDGET_STEP = 1000; // ±$1,000 per step
+  const MAX_BUDGET_EXPAND = 50000; // max total range to search (stops at ±$50k if still empty)
 
-  // ── 1. EXACT MATCH POOL: Exact Bedrooms + Exact Bathrooms (sorted by closest to budget first) ──
-  const exactMatches = [...workingList]
-    .filter(p => {
+  // Helper: get all properties in the workingList sorted by how close to budget + bed/bath match
+  const sortByClosest = (list) => [...list].sort((a, b) => {
+    // 1. Bed closeness (±1 max)
+    if (targetBeds > 0) {
+      const aBedDiff = Math.abs(getBeds(a) - targetBeds);
+      const bBedDiff = Math.abs(getBeds(b) - targetBeds);
+      if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
+    }
+    // 2. Price closest to budget
+    if (targetBudget > 0) {
+      const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
+      const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
+      if (aDiff !== bDiff) return aDiff - bDiff;
+    }
+    // 3. Bath closeness (±1 max)
+    if (targetBaths > 0) {
+      const aBathDiff = Math.abs(getBaths(a) - targetBaths);
+      const bBathDiff = Math.abs(getBaths(b) - targetBaths);
+      if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
+    }
+    return 0;
+  });
+
+  // ── STEP 1: Try EXACT beds + exact baths + exact budget range (±$1,000 steps) ──
+  let budgetRadius = 0;
+  while (selected.length < totalTarget && budgetRadius <= MAX_BUDGET_EXPAND) {
+    const lo = targetBudget > 0 ? targetBudget - budgetRadius : 0;
+    const hi = targetBudget > 0 ? targetBudget + budgetRadius : Infinity;
+
+    const pool = workingList.filter(p => {
+      const price = getPrice(p);
+      const inBudget = targetBudget > 0 ? (price <= 0 || (price >= lo && price <= hi)) : true;
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
       const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-      return matchBed && matchBath;
-    })
-    .sort((a, b) => {
-      if (targetBudget > 0) {
-        const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
-        const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
-        return aDiff - bDiff; // closest to budget first (e.g. ±$1,000 / closest price)
-      }
-      return 0;
+      return inBudget && matchBed && matchBath;
     });
 
-  for (const p of exactMatches) {
-    if (selected.length >= totalTarget) break;
-    addProp(p);
-  }
-
-  // ── 2. CLOSE MATCH POOL: Exact / ±1 Bed + closest budget ──
-  if (selected.length < totalTarget) {
-    const closeMatches = [...workingList]
-      .filter(p => {
-        if (targetBudget > 0) {
-          const price = getPrice(p);
-          if (price > 0 && price > maxBudget) return false;
-          if (price > 0 && price < minBudget) return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        // First priority: Bed closeness
-        if (targetBeds > 0) {
-          const aBedDiff = Math.abs(getBeds(a) - targetBeds);
-          const bBedDiff = Math.abs(getBeds(b) - targetBeds);
-          if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
-        }
-        // Second priority: Price closeness to targetBudget
-        if (targetBudget > 0) {
-          const aDiff = getPrice(a) > 0 ? Math.abs(getPrice(a) - targetBudget) : 99999999;
-          const bDiff = getPrice(b) > 0 ? Math.abs(getPrice(b) - targetBudget) : 99999999;
-          if (aDiff !== bDiff) return aDiff - bDiff;
-        }
-        // Third priority: Bath closeness
-        if (targetBaths > 0) {
-          const aBathDiff = Math.abs(getBaths(a) - targetBaths);
-          const bBathDiff = Math.abs(getBaths(b) - targetBaths);
-          if (aBathDiff !== bBathDiff) return aBathDiff - bBathDiff;
-        }
-        return 0;
-      });
-
-    for (const p of closeMatches) {
+    for (const p of sortByClosest(pool)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
+
+    if (budgetRadius === 0) budgetRadius = BUDGET_STEP;
+    else budgetRadius += BUDGET_STEP;
   }
 
-  // ── 3. Backfill from type-filtered list only ──
-  for (const p of workingList) {
+  // ── STEP 2: If still not enough — relax beds by ±1, baths by ±1, keep tight budget ──
+  if (selected.length < totalTarget) {
+    let budgetRadius2 = 0;
+    while (selected.length < totalTarget && budgetRadius2 <= MAX_BUDGET_EXPAND) {
+      const lo = targetBudget > 0 ? targetBudget - budgetRadius2 : 0;
+      const hi = targetBudget > 0 ? targetBudget + budgetRadius2 : Infinity;
+
+      const pool = workingList.filter(p => {
+        const price = getPrice(p);
+        const inBudget = targetBudget > 0 ? (price <= 0 || (price >= lo && price <= hi)) : true;
+        const matchBed = targetBeds > 0 ? Math.abs(getBeds(p) - targetBeds) <= 1 : true;
+        const matchBath = targetBaths > 0 ? Math.abs(getBaths(p) - targetBaths) <= 1 : true;
+        return inBudget && matchBed && matchBath;
+      });
+
+      for (const p of sortByClosest(pool)) {
+        if (selected.length >= totalTarget) break;
+        addProp(p);
+      }
+
+      if (budgetRadius2 === 0) budgetRadius2 = BUDGET_STEP;
+      else budgetRadius2 += BUDGET_STEP;
+    }
+  }
+
+  // ── STEP 3: Backfill — any remaining from type-filtered list (closest budget) ──
+  for (const p of sortByClosest(workingList)) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
 
-  // Remaining for "Show more" — also from type-filtered list only
+  // Remaining for "Show more"
   const remaining = workingList.filter(p => !usedKeys.has(getPropKey(p)));
   return [...selected, ...remaining];
 }
