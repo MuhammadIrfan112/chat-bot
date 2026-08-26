@@ -484,19 +484,23 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         sort: { value: 'priorityscore' },
         ah: { value: true },
         isForRent: { value: true },
+        isForSale: { value: false },
         isForSaleByAgent: { value: false },
         isForSaleByOwner: { value: false },
         isNewConstruction: { value: false },
         isForSaleForeclosure: { value: false },
         isComingSoon: { value: false },
         isAuction: { value: false },
-        isForSale: { value: false },
         isRecentlySold: { value: false }
       }
     : {
         sort: { value: 'days' },
         ah: { value: true },
         isForSale: { value: true },
+        isForSaleByAgent: { value: true },
+        isForSaleByOwner: { value: true },
+        isNewConstruction: { value: true },
+        isComingSoon: { value: true },
         isForRent: { value: false },
         isRecentlySold: { value: false }
       };
@@ -946,16 +950,39 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0) || 0;
   const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
+  function isPropertyRental(p) {
+    if (!p) return false;
+    // 1. Zillow explicit boolean flags
+    if (p.isForRent === true || p.is_for_rent === true) return true;
+    if (p.isForSale === true || p.is_for_sale === true) return false;
+
+    // 2. Status Type & Home Status from Zillow HDP data
+    const statusType = String(p.statusType || p.hdpData?.homeInfo?.homeStatus || p.homeStatus || '').toUpperCase();
+    if (statusType.includes('RENT')) return true;
+    if (statusType.includes('SALE') || statusType.includes('FOR_SALE') || statusType.includes('PENDING') || statusType.includes('ACTIVE')) return false;
+
+    // 3. Status Text / Badge
+    const statusText = String(p.statusText || p.listing_status || p.status || '').toLowerCase();
+    if (statusText.includes('rent') || statusText.includes('/mo') || statusText.includes('per month') || statusText.includes('lease')) return true;
+    if (statusText.includes('sale') || statusText.includes('for sale') || statusText.includes('sold')) return false;
+
+    // 4. Price string formatting
+    const priceStr = String(p.price || p.priceDisplay || p.listingPrice?.formatted || '').toLowerCase();
+    if (priceStr.includes('/mo') || priceStr.includes('per month') || priceStr.includes('/month') || priceStr.includes('rent:')) return true;
+
+    // 5. Rent price field presence
+    if (p.rentPrice && !p.price && !p.listingPrice?.value) return true;
+
+    return false;
+  }
+
   // ── Filter by Intent (Buy vs Rent): Never mix rental listings into Buy results or vice-versa ──
   const intentFiltered = properties.filter(p => {
-    const price = getPrice(p);
-    const status = String(p.listing_status || p.status || '').toLowerCase();
-    const priceStr = String(p.price || p.priceDisplay || '').toLowerCase();
-    const isRental = priceStr.includes('/mo') || priceStr.includes('per month') || status.includes('rent') || (price > 0 && price < 25000);
+    const isRental = isPropertyRental(p);
     if (isRent) {
       return isRental; // Rent intent: only rental listings
     } else {
-      return !isRental; // Buy intent: reject rentals (< 25k, /mo, rent status)
+      return !isRental; // Buy intent: only for-sale listings
     }
   });
 
