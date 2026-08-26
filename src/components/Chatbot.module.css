@@ -59,15 +59,15 @@
 
 /* ══════════════════════════════════════════════
    CHAT WINDOW — DESKTOP default
-   (bottom-right corner popup, 380×650)
+   (bottom-right corner popup, 380×700)
 ══════════════════════════════════════════════ */
 .chatWindow {
   position: absolute;
   bottom: 0;
   right: 0;
   width: 370px;
-  height: 650px;
-  max-height: calc(100vh - 36px);
+  height: 700px;
+  max-height: calc(100vh - 30px);
   background-color: #FFFFFF;
   border-radius: 22px;
   box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 4px 20px rgba(0,0,0,0.1);
@@ -81,8 +81,8 @@
 
 .globalChatWindow {
   width: 400px;
-  height: 660px;
-  max-height: calc(100vh - 36px);
+  height: 710px;
+  max-height: calc(100vh - 30px);
 }
 
 @keyframes slideUp {
