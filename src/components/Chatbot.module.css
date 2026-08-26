@@ -462,10 +462,10 @@
 
 
 /* ══════════════════════════════════════════════
-   MOBILE  (≤ 600px)
-   Full-screen overlay sliding up from bottom
+   MOBILE  (≤ 768px)
+   Tall, spacious floating panel on mobile
 ══════════════════════════════════════════════ */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   /* Container: floating button stays bottom-right */
   .chatbotContainer:not(.forceDesktop) {
     bottom: 16px;
@@ -474,8 +474,7 @@
     width: auto;
   }
 
-  /* Chat window: full-screen from the very bottom */
-  /* Chat window: fills the floating widget iframe on mobile */
+  /* Chat window inside embed iframe: fills 100% of iframe */
   .chatbotContainer:not(.forceDesktop) .chatWindow {
     position: fixed !important;
     top: 0 !important;
@@ -490,17 +489,18 @@
     animation: mobileSlideUp 0.38s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
-  /* Global chatbot exactly matches the iframe style on mobile: 
-     Floating, rounded corners, leaving safe areas */
+  /* Global chatbot on website: 92vh / 92dvh tall, rounded card */
   .chatbotContainer:not(.forceDesktop) .globalChatWindow {
     position: fixed !important;
     top: auto !important;
-    bottom: 1.5vh !important;
-    left: 3vw !important;
+    bottom: 10px !important;
+    left: 3% !important;
     right: auto !important;
-    width: 94vw !important;
-    height: 90vh !important;
-    max-height: 90vh !important;
+    width: 94% !important;
+    height: 92vh !important;
+    height: 92dvh !important;
+    max-height: 92vh !important;
+    max-height: 92dvh !important;
     border-radius: 22px !important;
     overflow: hidden !important;
     border: 1px solid rgba(0,0,0,0.1) !important;
@@ -515,8 +515,8 @@
 
   /* Larger avatar + title in header on mobile */
   .header {
-    padding: 18px 16px 14px;
-    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    padding: 16px 16px 14px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
   }
 
   .avatar {
@@ -553,61 +553,61 @@
     line-height: 1.65;
   }
 
-  /* Buttons: comfortable, finger-friendly size on mobile */
+  /* Buttons: comfortable, large touch-friendly size on mobile */
   .quickReplies {
-    padding: 8px 14px 14px;
+    padding: 10px 14px 16px;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
   }
 
   .qrBtn {
-    font-size: 15px;
-    padding: 11px 18px;
-    border-radius: 24px;
+    font-size: 15.5px;
+    padding: 12px 20px;
+    border-radius: 26px;
     white-space: normal;
     text-align: center;
     line-height: 1.35;
     font-weight: 600;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
 
   .multiBtn {
-    font-size: 14.5px;
-    padding: 10px 18px;
-    border-radius: 22px;
+    font-size: 15px;
+    padding: 11px 20px;
+    border-radius: 24px;
     width: auto;
     text-align: center;
     line-height: 1.35;
     font-weight: 600;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
 
   .multiSubmitBtn {
-    padding: 11px 24px;
-    font-size: 15px;
-    border-radius: 24px;
-    margin-top: 8px;
+    padding: 12px 26px;
+    font-size: 15.5px;
+    border-radius: 26px;
+    margin-top: 10px;
     font-weight: 700;
   }
 
   /* Input area with safe-area support for iPhone home bar */
   .inputArea {
-    padding: 10px 14px;
+    padding: 12px 14px;
     padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
   }
 
   .input {
     font-size: 16px; /* prevents iOS auto-zoom */
-    padding: 12px 16px;
-    border-radius: 26px;
+    padding: 13px 18px;
+    border-radius: 28px;
   }
 
   .sendBtn {
-    height: 46px;
-    padding: 0 20px;
+    height: 48px;
+    padding: 0 22px;
     font-size: 15px;
-    border-radius: 26px;
+    border-radius: 28px;
   }
 }
