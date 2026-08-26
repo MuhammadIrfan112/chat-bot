@@ -1911,12 +1911,45 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       return;
     }
 
+const CITY_PROVINCE_MAP = {
+  // Canada
+  milton: 'ON', toronto: 'ON', mississauga: 'ON', brampton: 'ON', oakville: 'ON',
+  burlington: 'ON', hamilton: 'ON', ottawa: 'ON', markham: 'ON', vaughan: 'ON',
+  richmond: 'BC', vancouver: 'BC', burnaby: 'BC', surrey: 'BC', victoria: 'BC',
+  calgary: 'AB', edmonton: 'AB', montreal: 'QC', winnipeg: 'MB', halifax: 'NS',
+  london: 'ON', kitchener: 'ON', waterloo: 'ON', windsor: 'ON', barrie: 'ON',
+  guelph: 'ON', oshawa: 'ON', whitby: 'ON', ajax: 'ON', pickering: 'ON',
+  // US
+  chicago: 'IL', 'morton grove': 'IL', skokie: 'IL', evanston: 'IL', aurora: 'IL',
+  naperville: 'IL', springfield: 'IL', 'new york': 'NY', 'los angeles': 'CA',
+  miami: 'FL', dallas: 'TX', houston: 'TX', austin: 'TX', seattle: 'WA'
+};
+
+function formatCityDisplay(msg) {
+  if (!msg) return msg;
+  const trimmed = msg.trim();
+  if (trimmed.includes(',')) {
+    const parts = trimmed.split(',');
+    const c = parts[0].trim().replace(/\b\w/g, l => l.toUpperCase());
+    const s = parts[1].trim().toUpperCase();
+    return `${c}, ${s}`;
+  }
+  const clean = trimmed.toLowerCase();
+  const state = CITY_PROVINCE_MAP[clean];
+  const capitalized = trimmed.replace(/\b\w/g, l => l.toUpperCase());
+  if (state) {
+    return `${capitalized}, ${state}`;
+  }
+  return capitalized;
+}
+
     if (buyHomeStep === 'city') {
-      setBuyHomeData(prev => ({ ...prev, city: msg }));
+      const formattedCity = formatCityDisplay(msg);
+      setBuyHomeData(prev => ({ ...prev, city: formattedCity }));
       setBuyHomeStep('type');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `what type of home are you looking for? You can select multiple options!` }]
+        parts: [{ text: `${formattedCity} is a fantastic area! It has great communities and strong property values.\n\nwhat type of home are you looking for? You can select multiple options!` }]
       }]);
       setMultiSelectOptions(['🏢 Condo', '🏘️ Townhouse', 'Detached', 'Semi Detached', '🏡 Duplex / Multi-family home', '🌳 Villa / Luxury home', '🤷 Other']);
       return;
@@ -1927,7 +1960,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setBuyHomeStep('bedrooms');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `${buyHomeData.city || 'That city'} is a fantastic area! It has great communities and strong property values.\n\nHow many bedrooms are you looking for?` }]
+        parts: [{ text: `How many bedrooms are you looking for?` }]
       }]);
       return;
     }
@@ -3601,25 +3634,6 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
                 >
                   {isUploading ? 'Uploading...' : '📎 Upload Letter'}
                 </label>
-                <button
-                  type="button"
-                  onClick={() => handleSkipUpload()}
-                  disabled={isUploading}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: 'var(--bg-hover, #f1f5f9)',
-                    color: 'var(--text-primary, #334155)',
-                    border: '1px solid var(--border, #cbd5e1)',
-                    borderRadius: '24px',
-                    cursor: 'pointer',
-                    fontWeight: '600',
-                    fontSize: '13px',
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  ⏩ Provide Later
-                </button>
               </div>
             ) : (
               <input
