@@ -1038,10 +1038,10 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const workingList = typeFiltered;
   console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props`);
 
-  // ── Budget tolerance: ±$1,000 incremental search (NOT ±10%) ──
-  // Strategy: try exact budget first, then widen by $1,000 steps up to $50,000 total range
+  // ── Budget tolerance: ±$1,000 incremental search (max ±$2,000 total) ──
+  // Strategy: try exact budget first, then widen by $1,000 steps up to $2,000 max
   const BUDGET_STEP = 1000; // ±$1,000 per step
-  const MAX_BUDGET_EXPAND = 50000; // max total range to search (stops at ±$50k if still empty)
+  const MAX_BUDGET_EXPAND = 2000; // max ±$2,000 total range
 
   // Helper: get all properties in the workingList sorted by how close to budget + bed/bath match
   const sortByClosest = (list) => [...list].sort((a, b) => {
