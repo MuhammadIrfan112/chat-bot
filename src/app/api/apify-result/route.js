@@ -390,9 +390,50 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
+    // 🏷️ Strict Property Type Matcher (Townhouse, Semi-Detached, Detached, Condo)
+    function propTypeMatches(p, requestedType) {
+      if (!requestedType || !p) return true;
+      const req = String(requestedType).toLowerCase().replace(/[^\w\s]/g, '').trim();
+      const rawType = String(
+        p.propertyType || p.property_type || p.homeType || p.type || p.hdpData?.homeInfo?.homeType || ''
+      ).toLowerCase().replace(/[^\w\s]/g, '').trim();
+      const rawDesc = String(p.description || p.remarks || '').toLowerCase();
+
+      // 1. Townhouse / Row House
+      if (req.includes('townhouse') || req.includes('town house') || req.includes('row')) {
+        if (rawType.includes('townhouse') || rawType.includes('town house') || rawType.includes('row') || rawType.includes('attached')) return true;
+        if (rawDesc.includes('townhouse') || rawDesc.includes('town house') || rawDesc.includes('row house')) return true;
+        return false;
+      }
+
+      // 2. Semi-Detached
+      if (req.includes('semi') || req.includes('semidetached') || req.includes('duplex') || req.includes('triplex') || req.includes('multifamily') || req.includes('multi family')) {
+        if (rawType.includes('semi') || rawType.includes('duplex') || rawType.includes('triplex') || rawType.includes('multi family') || rawType.includes('multifamily')) return true;
+        if (rawDesc.includes('semi-detached') || rawDesc.includes('semidetached') || rawDesc.includes('semi detached') || rawDesc.includes('duplex')) return true;
+        return false;
+      }
+
+      // 3. Detached / Single Family
+      if (req.includes('detached') || req.includes('single family') || req.includes('house')) {
+        if (rawType.includes('semi')) return false;
+        if (rawType.includes('single') || rawType.includes('detached') || rawType.includes('house')) return true;
+        if (rawDesc.includes('detached') && !rawDesc.includes('semi-detached')) return true;
+        return false;
+      }
+
+      // 4. Condo / Apartment
+      if (req.includes('condo') || req.includes('apartment') || req.includes('unit')) {
+        if (rawType.includes('condo') || rawType.includes('apartment') || rawType.includes('coop')) return true;
+        if (rawDesc.includes('condo') || rawDesc.includes('apartment')) return true;
+        return false;
+      }
+
+      return rawType.includes(req) || req.includes(rawType);
+    }
+
     // ── Apply recommendation rules: Cards 1 & 2 (budget match), Cards 3 & 4 (exact bed/bath match) ──
     function selectRecommendedProperties(propsList, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
-      if (!Array.isArray(propsList) || propsList.length === 0) return [];
+      if (!Array.isArray(propsList) || propsList.length === 0) return { results: [], matchTier: 'none' };
       const totalTarget = budgetCountNeeded + bedCountNeeded;
 
       const usedKeys = new Set();
@@ -456,12 +497,17 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       });
 
-      // Filter by requested property type — if 0 match, fall back to all intent-filtered (never dead-end)
-      const typeFiltered = targetType
+      // ── Type filtered list (strict) ──
+      const typeFilteredApify = targetType
         ? intentFiltered.filter(p => propTypeMatches(p, targetType))
         : intentFiltered;
-      const workingList = (targetType && typeFiltered.length === 0) ? intentFiltered : typeFiltered;
-      console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFiltered.length} (workingList: ${workingList.length})`);
+      const typeHasResultsApify = typeFilteredApify.length > 0;
+      const strictListApify = typeHasResultsApify ? typeFilteredApify : [];
+      const relaxedTypeListApify = intentFiltered;
+
+      console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFilteredApify.length} strict type props`);
+
+      const BUDGET_FLEX = 30000;
 
       // ── Helper: Sort with user's MAXIMUM budget as highest priority ──
       const sortBudgetFirst = (list) => [...list].sort((a, b) => {
@@ -470,13 +516,9 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (targetBudget > 0 && aPrice > 0 && bPrice > 0) {
           const aInBudget = aPrice <= targetBudget;
           const bInBudget = bPrice <= targetBudget;
-
-          if (aInBudget && bInBudget) {
-            return Math.abs(aPrice - targetBudget) - Math.abs(bPrice - targetBudget);
-          }
+          if (aInBudget && bInBudget) return Math.abs(aPrice - targetBudget) - Math.abs(bPrice - targetBudget);
           if (aInBudget && !bInBudget) return -1;
           if (!aInBudget && bInBudget) return 1;
-
           return aPrice - bPrice;
         }
         if (targetBeds > 0) {
@@ -487,59 +529,82 @@ const SUPPLEMENT_PHOTO_SETS = [
         return (aPrice || 0) - (bPrice || 0);
       });
 
-      // ── POOL 1: Exact beds + exact baths within user budget (or ±$2k) ──
-      const exactBedBathInBudget = workingList.filter(p => {
+      let apifyMatchTier = 'exact';
+
+      // ── POOL 1: Exact type + Exact beds + Exact baths + Within budget (±$2k) ──
+      const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
         const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
         return inBudget && matchBed && matchBath;
       });
-
-      for (const p of sortBudgetFirst(exactBedBathInBudget)) {
+      for (const p of sortBudgetFirst(pool1Apify)) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      // ── POOL 2: Within user budget (all available properties within budget, bed/bath restriction relaxed) ──
-      // User sees what they can actually afford within budget first!
+      // ── POOL 2: Exact type + Exact beds + Exact baths + Budget ±$30k ──
       if (selected.length < totalTarget) {
-        const allInBudget = workingList.filter(p => {
+        const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
+        const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+        const pool2Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          return targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
+          const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+          const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+          const withinRange = priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
+          return matchBed && matchBath && withinRange;
         });
-
-        for (const p of sortBudgetFirst(allInBudget)) {
+        const prevCount = selected.length;
+        for (const p of sortBudgetFirst(pool2Apify)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
+        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_flex';
       }
 
-      // ── POOL 3: If in-budget exhausted — Remove budget filter, keep EXACT beds + EXACT baths (lowest market price first) ──
+      // ── POOL 3: Exact type + Budget ±$30k, beds/baths relaxed ──
       if (selected.length < totalTarget) {
-        const exactBedBathAbove = workingList.filter(p => {
+        const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
+        const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+        const pool3Apify = strictListApify.filter(p => {
+          const price = getPrice(p);
+          return priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
+        });
+        const prevCount = selected.length;
+        for (const p of sortBudgetFirst(pool3Apify)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
+      }
+
+      // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (lowest price first) ──
+      if (selected.length < totalTarget) {
+        const pool4Apify = strictListApify.filter(p => {
           const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
           const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
           return matchBed && matchBath;
         });
-
-        for (const p of sortBudgetFirst(exactBedBathAbove)) {
+        const prevCount = selected.length;
+        for (const p of sortBudgetFirst(pool4Apify)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
+        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'exact_bedbath_over_budget';
       }
 
-      // ── POOL 4: Backfill from workingList (budget-first order) ──
-      for (const p of sortBudgetFirst(workingList)) {
+      // ── Last resort backfill — type ALWAYS strict, never relaxed ──
+      for (const p of sortBudgetFirst(strictListApify)) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      const remaining = workingList.filter(p => !usedKeys.has(getPropKey(p)));
-      return [...selected, ...remaining];
+      const remaining = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
+      return { results: [...selected, ...remaining], matchTier: apifyMatchTier };
     }
 
-    const orderedProperties = selectRecommendedProperties(
+    const recommended = selectRecommendedProperties(
       finalProperties,
       propBudget,
       propBeds,
@@ -549,6 +614,8 @@ const SUPPLEMENT_PHOTO_SETS = [
       2,
       rawType
     );
+    const orderedProperties = recommended.results || recommended;
+    const matchTier = recommended.matchTier || 'exact';
 
     if (savedCity && savedCity !== 'unknown') {
       try {
@@ -564,28 +631,22 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // Compute contextual intro message based on search match tier
+    // Compute contextual intro message based on match tier
     const formatPriceNum = (num) => num ? `$${Number(num).toLocaleString()}` : '';
-    let introMessage = intent === 'rent'
-      ? `Here are live rental properties in **${savedCity}** that match your criteria:`
-      : `Here are live properties in **${savedCity}** that match your criteria:`;
-
-    if (propBudget > 0 && orderedProperties.length > 0) {
-      const p1Price = parseBudget(String(orderedProperties[0].price || ''));
-      const p1Beds = parseInt(orderedProperties[0].bedrooms || 0, 10);
-      const p1Baths = parseInt(orderedProperties[0].bathrooms || 0, 10);
-      const isP1InBudget = p1Price > 0 && p1Price <= propBudget + 2000;
-      const isP1ExactBedBath = (propBeds === 0 || p1Beds === propBeds) && (propBaths === 0 || p1Baths === propBaths);
-
-      if (isP1InBudget && isP1ExactBedBath) {
-        introMessage = `Here are properties in **${savedCity}** matching your exact criteria around ${formatPriceNum(propBudget)}! 🏡`;
-      } else if (!isP1InBudget && isP1ExactBedBath) {
-        introMessage = `While there were no active listings within your exact ${formatPriceNum(propBudget)} budget in **${savedCity}**, here are available properties matching your exact ${propBeds} bed, ${propBaths} bath requirements (starting from the lowest available market price): 🏡`;
-      } else if (isP1InBudget && !isP1ExactBedBath) {
-        introMessage = `Here are properties in **${savedCity}** available within your budget of ${formatPriceNum(propBudget)} with similar bedroom and bathroom options: 🏡`;
-      } else {
-        introMessage = `Here are the closest available properties in **${savedCity}** matching your preferences: 🏡`;
-      }
+    const typeName = rawType ? rawType.replace(/[🏘️🏠🏡🏗️]/gu, '').trim() : '';
+    let introMessage;
+    if (matchTier === 'exact') {
+      introMessage = `Here are live ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your exact criteria${propBudget > 0 ? ` around ${formatPriceNum(propBudget)}` : ''}! 🏡`;
+    } else if (matchTier === 'budget_flex') {
+      introMessage = `Here are ${orderedProperties.length} ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} criteria within ±$30,000 of your budget: 🏡`;
+    } else if (matchTier === 'budget_only') {
+      introMessage = `Exact ${propBeds > 0 ? propBeds + '-bed' : ''} ${propBaths > 0 ? propBaths + '-bath' : ''} ${typeName} listings weren't available at your exact budget in **${savedCity}**. Here are ${typeName} properties within ±$30,000 of your budget (${formatPriceNum(propBudget)}): 🏡`;
+    } else if (matchTier === 'exact_bedbath_over_budget') {
+      introMessage = `While there were no active ${typeName} listings within your exact ${formatPriceNum(propBudget)} budget in **${savedCity}**, here are available ${typeName} properties matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} requirements (starting from the lowest available market price): 🏡`;
+    } else {
+      introMessage = intent === 'rent'
+        ? `Here are live rental properties in **${savedCity}** that match your criteria:`
+        : `Here are available ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your preferences: 🏡`;
     }
 
     return Response.json({ 

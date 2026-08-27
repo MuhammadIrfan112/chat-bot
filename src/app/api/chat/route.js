@@ -965,14 +965,57 @@ function parseBudget(text) {
   return 0;
 }
 
-// 🏡 Smart 4-Property Recommendation Algorithm:
-// ─── Smart Property Recommendation Algorithm ──────────────────────────────
-// User requirement:
-// 1. Initial Search: First 2 properties match user's budget (highest beds/baths in budget), Next 2 match exact/closest bed/bath count (regardless of price). (Total: 4 properties)
-// 2. See More: 1 property matches user's budget (highest beds/baths in budget), 1 matches exact/closest bed/bath count. (Total: 2 properties)
+// 🏷️ Strict Property Type Matcher (Townhouse, Semi-Detached, Detached, Condo)
+function propTypeMatches(p, requestedType) {
+  if (!requestedType || !p) return true;
+  const req = String(requestedType).toLowerCase().replace(/[^\w\s]/g, '').trim();
+  const rawType = String(
+    p.propertyType || p.property_type || p.homeType || p.type || p.hdpData?.homeInfo?.homeType || ''
+  ).toLowerCase().replace(/[^\w\s]/g, '').trim();
+  const rawDesc = String(p.description || p.remarks || '').toLowerCase();
+
+  // 1. Townhouse / Row House
+  if (req.includes('townhouse') || req.includes('town house') || req.includes('row')) {
+    if (rawType.includes('townhouse') || rawType.includes('town house') || rawType.includes('row') || rawType.includes('attached')) return true;
+    if (rawDesc.includes('townhouse') || rawDesc.includes('town house') || rawDesc.includes('row house')) return true;
+    return false;
+  }
+
+  // 2. Semi-Detached
+  if (req.includes('semi') || req.includes('semidetached') || req.includes('duplex') || req.includes('triplex') || req.includes('multifamily') || req.includes('multi family')) {
+    if (rawType.includes('semi') || rawType.includes('duplex') || rawType.includes('triplex') || rawType.includes('multi family') || rawType.includes('multifamily')) return true;
+    if (rawDesc.includes('semi-detached') || rawDesc.includes('semidetached') || rawDesc.includes('semi detached') || rawDesc.includes('duplex')) return true;
+    return false;
+  }
+
+  // 3. Detached / Single Family
+  if (req.includes('detached') || req.includes('single family') || req.includes('house')) {
+    if (rawType.includes('semi')) return false;
+    if (rawType.includes('single') || rawType.includes('detached') || rawType.includes('house')) return true;
+    if (rawDesc.includes('detached') && !rawDesc.includes('semi-detached')) return true;
+    return false;
+  }
+
+  // 4. Condo / Apartment
+  if (req.includes('condo') || req.includes('apartment') || req.includes('unit')) {
+    if (rawType.includes('condo') || rawType.includes('apartment') || rawType.includes('coop')) return true;
+    if (rawDesc.includes('condo') || rawDesc.includes('apartment')) return true;
+    return false;
+  }
+
+  return rawType.includes(req) || req.includes(rawType);
+}
+
+// 🏡 Smart 4-Pool Recommendation Algorithm (Type-Strict with Smart Budget Fallback)
+// Pool 1: Exact type + Exact beds + Exact baths + Budget (±$2k)
+// Pool 2: Exact type + Exact beds + Exact baths + Budget ±$30k (e.g. $345k → $315k-$375k)
+// Pool 3: Exact type + Budget ±$30k (beds/baths relaxed, e.g. $345k → $315k-$375k)
+// Pool 4: Exact type + Exact beds + Exact baths + Budget removed (lowest market price first)
+// Returns { results, matchTier } so callers can craft explanatory messages
 function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
-  if (!Array.isArray(properties) || properties.length === 0) return [];
+  if (!Array.isArray(properties) || properties.length === 0) return { results: [], matchTier: 'none' };
   const totalTarget = budgetCountNeeded + bedCountNeeded;
+  const BUDGET_FLEX = 30000; // ±$30k allowed in fallback pools
 
   const usedKeys = new Set();
   const selected = [];
@@ -998,76 +1041,53 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   function isPropertyRental(p) {
     if (!p) return false;
-    // 1. Price threshold: Monthly rentals in USA/Canada are $500 - $25,000. Homes for sale are $50k - $20M+.
     const numPrice = getPrice(p);
-    if (numPrice > 0 && numPrice < 35000) return true; // Definitely a monthly rental!
-    if (numPrice >= 35000) return false; // Definitely a for-sale property!
-
-    // 2. Zillow explicit boolean flags
+    if (numPrice > 0 && numPrice < 35000) return true;
+    if (numPrice >= 35000) return false;
     if (p.isForRent === true || p.is_for_rent === true) return true;
     if (p.isForSale === true || p.is_for_sale === true) return false;
-
-    // 2. Status Type & Home Status from Zillow HDP data
     const statusType = String(p.statusType || p.hdpData?.homeInfo?.homeStatus || p.homeStatus || '').toUpperCase();
     if (statusType.includes('RENT')) return true;
     if (statusType.includes('SALE') || statusType.includes('FOR_SALE') || statusType.includes('PENDING') || statusType.includes('ACTIVE')) return false;
-
-    // 3. Status Text / Badge
     const statusText = String(p.statusText || p.listing_status || p.status || '').toLowerCase();
     if (statusText.includes('rent') || statusText.includes('/mo') || statusText.includes('per month') || statusText.includes('lease')) return true;
     if (statusText.includes('sale') || statusText.includes('for sale') || statusText.includes('sold')) return false;
-
-    // 4. Price string formatting
     const priceStr = String(p.price || p.priceDisplay || p.listingPrice?.formatted || '').toLowerCase();
     if (priceStr.includes('/mo') || priceStr.includes('per month') || priceStr.includes('/month') || priceStr.includes('rent:')) return true;
-
-    // 5. Rent price field presence
     if (p.rentPrice && !p.price && !p.listingPrice?.value) return true;
-
     return false;
   }
 
-  // ── Filter by Intent (Buy vs Rent): Never mix rental listings into Buy results or vice-versa ──
+  // ── Filter by Intent (Buy vs Rent) ──
   const intentFiltered = properties.filter(p => {
     const isRental = isPropertyRental(p);
-    if (isRent) {
-      return isRental; // Rent intent: only rental listings
-    } else {
-      return !isRental; // Buy intent: only for-sale listings
-    }
+    return isRent ? isRental : !isRental;
   });
 
-  // ── Apply property type filter (with graceful fallback if no type match found) ──
+  // ── Type filtered list (strict) ──
   const typeFiltered = targetType
     ? intentFiltered.filter(p => propTypeMatches(p, targetType))
     : intentFiltered;
-  // If type-specific results are empty, fall back to ALL intent-filtered properties
-  // (e.g. Realtor.ca may not have Semi-Detached labelled as such — show closest match)
-  const workingList = (targetType && typeFiltered.length === 0) ? intentFiltered : typeFiltered;
-  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} props (workingList: ${workingList.length})`);
+  const typeHasResults = typeFiltered.length > 0;
 
-  // ── Helper: Sort with user's MAXIMUM budget as highest priority ──
-  // Properties within budget (price <= targetBudget) ALWAYS come first, closest to budget!
-  // Properties above budget come next, sorted lowest price first!
+  // workingList = type-strict if available, otherwise fall to all intent-filtered (last resort)
+  const strictList = typeHasResults ? typeFiltered : [];
+  const relaxedTypeList = intentFiltered; // fallback with no type constraint
+
+  console.log(`[selectRecommended] Type filter "${targetType}": ${properties.length} → ${typeFiltered.length} strict type props`);
+
+  // ── Sort helper: within budget closest to budget first, above budget lowest price first ──
   const sortBudgetFirst = (list) => [...list].sort((a, b) => {
     const aPrice = getPrice(a);
     const bPrice = getPrice(b);
     if (targetBudget > 0 && aPrice > 0 && bPrice > 0) {
       const aInBudget = aPrice <= targetBudget;
       const bInBudget = bPrice <= targetBudget;
-
-      // Both within budget: closest to targetBudget first (e.g. $525k before $400k)
-      if (aInBudget && bInBudget) {
-        return Math.abs(aPrice - targetBudget) - Math.abs(bPrice - targetBudget);
-      }
-      // One within budget, one above: within budget ALWAYS comes first!
+      if (aInBudget && bInBudget) return Math.abs(aPrice - targetBudget) - Math.abs(bPrice - targetBudget);
       if (aInBudget && !bInBudget) return -1;
       if (!aInBudget && bInBudget) return 1;
-
-      // Both above budget: lowest price first (e.g. $599k before $799k)
       return aPrice - bPrice;
     }
-    // Fallback: bed match priority
     if (targetBeds > 0) {
       const aBedDiff = Math.abs(getBeds(a) - targetBeds);
       const bBedDiff = Math.abs(getBeds(b) - targetBeds);
@@ -1076,58 +1096,87 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     return (aPrice || 0) - (bPrice || 0);
   });
 
-  // ── POOL 1: Exact beds + exact baths within user budget (or ±$2k) ──
-  const exactBedBathInBudget = workingList.filter(p => {
+  let matchTier = 'exact'; // tracks which pool produced results
+
+  // ── POOL 1: Exact type + Exact beds + Exact baths + Within budget (±$2k) ──
+  const pool1 = strictList.filter(p => {
     const price = getPrice(p);
     const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
     const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
     const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
     return inBudget && matchBed && matchBath;
   });
-
-  for (const p of sortBudgetFirst(exactBedBathInBudget)) {
+  for (const p of sortBudgetFirst(pool1)) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
 
-  // ── POOL 2: Within user budget (all available properties within budget, bed/bath restriction relaxed) ──
-  // User sees what they can actually afford within budget first!
+  // ── POOL 2: Exact type + Exact beds + Exact baths + Budget ±$30k (catches ±$30k range from user budget) ──
+  // Catches near-budget matches e.g. user budget 345k → shows 315k–375k range
   if (selected.length < totalTarget) {
-    const allInBudget = workingList.filter(p => {
+    const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
+    const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+    const pool2 = strictList.filter(p => {
       const price = getPrice(p);
-      return targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
+      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+      const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+      const withinRange = priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
+      return matchBed && matchBath && withinRange;
     });
-
-    for (const p of sortBudgetFirst(allInBudget)) {
+    const prevCount = selected.length;
+    for (const p of sortBudgetFirst(pool2)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
+    if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_flex';
   }
 
-  // ── POOL 3: If in-budget exhausted — Remove budget filter, keep EXACT beds + EXACT baths (lowest market price first) ──
+  // ── POOL 3: Exact type + Budget ±$30k, beds/baths relaxed ──
+  // If exact beds/baths not found even with ±$30k budget, relax beds/baths but keep type strict and budget ±$30k
   if (selected.length < totalTarget) {
-    const exactBedBathAbove = workingList.filter(p => {
+    const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
+    const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+    const pool3 = strictList.filter(p => {
+      const price = getPrice(p);
+      const withinRange = priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
+      return withinRange;
+    });
+    const prevCount = selected.length;
+    for (const p of sortBudgetFirst(pool3)) {
+      if (selected.length >= totalTarget) break;
+      addProp(p);
+    }
+    if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
+  }
+
+  // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (lowest price first) ──
+  // Last resort: budget is removed, show any price but keep exact type, beds, and baths
+  if (selected.length < totalTarget) {
+    const pool4 = strictList.filter(p => {
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
       const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
       return matchBed && matchBath;
     });
-
-    for (const p of sortBudgetFirst(exactBedBathAbove)) {
+    const prevCount = selected.length;
+    for (const p of sortBudgetFirst(pool4)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
+    if (selected.length > prevCount && pool1.length === 0) matchTier = 'exact_bedbath_over_budget';
   }
 
-  // ── POOL 4: Backfill any remaining from workingList (budget-first order) ──
-  for (const p of sortBudgetFirst(workingList)) {
+  // ── Last resort backfill — type ALWAYS strict, never relaxed ──
+  for (const p of sortBudgetFirst(strictList)) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
+  if (selected.length > 0 && matchTier === 'exact' && pool1.length === 0) matchTier = 'closest';
 
   // Remaining for "Show more"
-  const remaining = workingList.filter(p => !usedKeys.has(getPropKey(p)));
-  return [...selected, ...remaining];
+  const remaining = strictList.filter(p => !usedKeys.has(getPropKey(p)));
+  return { results: [...selected, ...remaining], matchTier };
 }
+
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
 async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '', propType = null, targetState = null) {
@@ -1238,14 +1287,14 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       }
     }
 
-    // ── PROPERTY TYPE: filter; if 0 match, show ALL (don't dead-end user) ──
+    // ── PROPERTY TYPE GUARD: If user wants a specific type and 0 DB properties match → live Apify scrape ──
     if (propType) {
       const typeMatches = filteredData.filter(item => propTypeMatches(item, propType));
       if (typeMatches.length > 0) {
         filteredData = typeMatches;
       } else {
-        console.log(`fetchCityPropertyData: 0 DB properties matched type="${propType}" — showing closest available properties.`);
-        // Don't return [] — continue with all filteredData so user sees something
+        console.log(`fetchCityPropertyData: 0 DB properties matched type="${propType}" for city="${cleanCity}" — falling back to live Apify scrape.`);
+        return { text: '', rawProperties: [] };
       }
     }
 
@@ -2121,7 +2170,9 @@ CRITICAL INSTRUCTIONS:
               console.log(`[Route] User asked for Show More but all DB properties were already shown — falling through to live Apify scrape for fresh properties!`);
             } else {
               // Filter & sort by recommended criteria (budget, beds/baths, property type)
-              const recommendedRaw = selectRecommendedProperties(poolToUse, propBudget, propBeds, propBaths, propIntent === 'rent', budgetNeeded, bedNeeded, propType);
+              const recommended = selectRecommendedProperties(poolToUse, propBudget, propBeds, propBaths, propIntent === 'rent', budgetNeeded, bedNeeded, propType);
+              const recommendedRaw = recommended.results || recommended; // backward compat
+              const matchTier = recommended.matchTier || 'exact';
 
               if (recommendedRaw.length > 0) {
                 // ✅ DIRECT RETURN: matching unique properties found in CRM/DB
@@ -2175,26 +2226,21 @@ CRITICAL INSTRUCTIONS:
                 ] : [];
 
                 const formatPriceNum = (num) => num ? `$${Number(num).toLocaleString()}` : '';
-                let matchIntro = isShowMoreRequest
-                  ? `Here are ${structuredProps.length} more properties in **${detectedCity}** that match your criteria! 🏡`
-                  : `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`;
+                const typeName = propType ? propType.replace(/[🏘️🏠🏡🏗️]/gu, '').trim() : '';
 
-                if (!isShowMoreRequest && propBudget > 0 && structuredProps.length > 0) {
-                  const p1Price = parseBudget(String(structuredProps[0].price || ''));
-                  const p1Beds = parseInt(structuredProps[0].bedrooms || 0, 10);
-                  const p1Baths = parseInt(structuredProps[0].bathrooms || 0, 10);
-                  const isP1InBudget = p1Price > 0 && p1Price <= propBudget + 2000;
-                  const isP1ExactBedBath = (propBeds === 0 || p1Beds === propBeds) && (propBaths === 0 || p1Baths === propBaths);
-
-                  if (isP1InBudget && isP1ExactBedBath) {
-                    matchIntro = `Here are ${structuredProps.length} properties in **${detectedCity}** matching your exact criteria around ${formatPriceNum(propBudget)}! 🏡`;
-                  } else if (!isP1InBudget && isP1ExactBedBath) {
-                    matchIntro = `While there were no active listings within your exact ${formatPriceNum(propBudget)} budget in **${detectedCity}**, here are available properties matching your exact ${propBeds} bed, ${propBaths} bath requirements (starting from the lowest available market price): 🏡`;
-                  } else if (isP1InBudget && !isP1ExactBedBath) {
-                    matchIntro = `Here are properties in **${detectedCity}** available within your budget of ${formatPriceNum(propBudget)} with similar bedroom and bathroom options: 🏡`;
-                  } else {
-                    matchIntro = `Here are the closest available properties in **${detectedCity}** matching your preferences: 🏡`;
-                  }
+                let matchIntro;
+                if (isShowMoreRequest) {
+                  matchIntro = `Here are ${structuredProps.length} more properties in **${detectedCity}** that match your criteria! 🏡`;
+                } else if (matchTier === 'exact') {
+                  matchIntro = `Here are ${structuredProps.length} ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your exact criteria${propBudget > 0 ? ` around ${formatPriceNum(propBudget)}` : ''}! 🏡`;
+                } else if (matchTier === 'budget_flex') {
+                  matchIntro = `Here are ${structuredProps.length} ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} criteria within ±$30,000 of your budget: 🏡`;
+                } else if (matchTier === 'budget_only') {
+                  matchIntro = `Exact ${propBeds > 0 ? propBeds + '-bed' : ''} ${propBaths > 0 ? propBaths + '-bath' : ''} ${typeName} listings weren't available at your exact budget in **${detectedCity}**. Here are ${typeName} properties within ±$30,000 of your budget (${formatPriceNum(propBudget)}): 🏡`;
+                } else if (matchTier === 'exact_bedbath_over_budget') {
+                  matchIntro = `While there were no active ${typeName} listings within your exact ${formatPriceNum(propBudget)} budget in **${detectedCity}**, here are available ${typeName} properties matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} requirements (starting from the lowest available market price): 🏡`;
+                } else {
+                  matchIntro = `Here are available ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your preferences: 🏡`;
                 }
 
                 const introText = matchIntro + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
