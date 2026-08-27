@@ -1131,9 +1131,18 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   }
   if (selected.length > 0 && matchTier === 'exact' && pool1.length === 0) matchTier = 'closest';
 
-  // Remaining for "Show more"
-  const remaining = strictList.filter(p => !usedKeys.has(getPropKey(p)));
-  return { results: [...selected, ...remaining], matchTier };
+  // Remaining for "Show more" — prioritize Exact Beds + Exact Baths (budget removed, lowest price first)
+  const remainingStrict = strictList.filter(p => !usedKeys.has(getPropKey(p)));
+  const remainingExactBedBath = remainingStrict.filter(p => {
+    const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+    const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+    return matchBed && matchBath;
+  }).sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+
+  const remainingOther = remainingStrict.filter(p => !remainingExactBedBath.includes(p))
+    .sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+
+  return { results: [...selected, ...remainingExactBedBath, ...remainingOther], matchTier };
 }
 
 

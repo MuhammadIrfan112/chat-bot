@@ -559,8 +559,18 @@ const SUPPLEMENT_PHOTO_SETS = [
         addProp(p);
       }
 
-      const remaining = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-      return { results: [...selected, ...remaining], matchTier: apifyMatchTier };
+      // Remaining for "Show more" — prioritize Exact Beds + Exact Baths (budget removed, lowest price first)
+      const remainingStrict = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
+      const remainingExactBedBath = remainingStrict.filter(p => {
+        const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+        const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+        return matchBed && matchBath;
+      }).sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+
+      const remainingOther = remainingStrict.filter(p => !remainingExactBedBath.includes(p))
+        .sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+
+      return { results: [...selected, ...remainingExactBedBath, ...remainingOther], matchTier: apifyMatchTier };
     }
 
     const recommended = selectRecommendedProperties(

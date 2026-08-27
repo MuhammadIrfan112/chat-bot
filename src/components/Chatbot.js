@@ -1400,17 +1400,17 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             return ![...seenAddrs].some(sa => sa && (a.includes(sa) || sa.includes(a.slice(0, 15))));
           });
 
-          let props = unseenProps.length > 0 ? unseenProps : rawProps;
+          let props = unseenProps;
 
           const cityName = data.city && data.city !== 'unknown'
             ? data.city.charAt(0).toUpperCase() + data.city.slice(1)
             : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton');
 
           if (props.length === 0) {
-            // No real properties found — show honest message, NEVER fake data
+            // All properties already shown or no properties found — honest message, NEVER duplicate or fake data
             setMessages(prev => [...prev, {
               role: 'model',
-              parts: [{ text: `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now. Here's what I suggest:\n\n• Try adjusting your budget or bedroom count\n• Ask me about nearby areas with more inventory\n• 📞 Connect directly with the agent for off-market or upcoming listings\n\nWould you like to adjust your search or speak with the agent?` }]
+              parts: [{ text: `You've viewed all available live listings matching your search in **${cityName}** right now. Here's what I suggest:\n\n• Try adjusting your budget or bedroom count\n• Ask me about nearby areas with more inventory\n• 📞 Connect directly with the agent for off-market or upcoming listings\n\nWould you like to adjust your search or speak with the agent?` }]
             }]);
             return;
           }
