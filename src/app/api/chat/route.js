@@ -1090,23 +1090,21 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     addProp(p);
   }
 
-  // ── POOL 2: Within user budget with close beds/baths (±1 bed, ±1 bath) ──
+  // ── POOL 2: Within user budget (all available properties within budget, bed/bath restriction relaxed) ──
+  // User sees what they can actually afford within budget first!
   if (selected.length < totalTarget) {
-    const closeBedBathInBudget = workingList.filter(p => {
+    const allInBudget = workingList.filter(p => {
       const price = getPrice(p);
-      const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
-      const matchBed = targetBeds > 0 ? Math.abs(getBeds(p) - targetBeds) <= 1 : true;
-      const matchBath = targetBaths > 0 ? Math.abs(getBaths(p) - targetBaths) <= 1 : true;
-      return inBudget && matchBed && matchBath;
+      return targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
     });
 
-    for (const p of sortBudgetFirst(closeBedBathInBudget)) {
+    for (const p of sortBudgetFirst(allInBudget)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
   }
 
-  // ── POOL 3: Exact beds + exact baths above budget (lowest price first) ──
+  // ── POOL 3: If in-budget exhausted — Remove budget filter, keep EXACT beds + EXACT baths (lowest market price first) ──
   if (selected.length < totalTarget) {
     const exactBedBathAbove = workingList.filter(p => {
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
