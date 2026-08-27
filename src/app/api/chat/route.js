@@ -2125,16 +2125,12 @@ CRITICAL INSTRUCTIONS:
 
             const poolToUse = isShowMoreRequest ? unseenProperties : allRawProperties;
 
-            // If it's a show more request and we have no more unseen properties in DB matching criteria:
-            if (isShowMoreRequest && unseenProperties.length === 0) {
-              console.log(`[Route] User asked for Show More but all DB properties were already shown — falling through to live Apify scrape for fresh properties!`);
-            } else {
-              // Filter & sort by recommended criteria (budget, beds/baths, property type)
-              const recommended = selectRecommendedProperties(poolToUse, propBudget, propBeds, propBaths, propIntent === 'rent', budgetNeeded, bedNeeded, propType);
-              const recommendedRaw = recommended.results || recommended; // backward compat
-              const matchTier = recommended.matchTier || 'exact';
+            // Filter & sort by recommended criteria (budget, beds/baths, property type)
+            const recommended = selectRecommendedProperties(poolToUse, propBudget, propBeds, propBaths, propIntent === 'rent', budgetNeeded, bedNeeded, propType);
+            const recommendedRaw = recommended.results || recommended; // backward compat
+            const matchTier = recommended.matchTier || 'exact';
 
-              if (recommendedRaw.length > 0) {
+            if (recommendedRaw.length > 0) {
                 // ✅ DIRECT RETURN: matching unique properties found in CRM/DB
                 const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
                 const structuredProps = recommendedRaw.slice(0, cardsLimit).map((l, i) => {
@@ -2214,12 +2210,42 @@ CRITICAL INSTRUCTIONS:
                   city: detectedCity
                 });
               } else {
-                console.log(`[Route] 0 CRM/DB properties matched criteria (budget=${propBudget}, type=${propType}, beds=${propBeds}) — falling through to live Apify search!`);
+                console.log(`[Route] 0 DB properties available/unseen (isShowMore=${isShowMoreRequest}) — starting live Apify search for City=${detectedCity} Budget=${propBudget} Type=${propType}!`);
+                const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
+                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType);
+
+                if (apifyRunId) {
+                  const cityBtns = isShowMoreRequest ? '' : [
+                    '[CITY_BTN: 🏫 Schools]',
+                    '[CITY_BTN: 🌳 Parks]',
+                    '[CITY_BTN: 🚇 Transportation]',
+                    '[CITY_BTN: 🛒 Shopping & Dining]',
+                    '[CITY_BTN: 🏥 Healthcare]',
+                    '[CITY_BTN: 🏡 Neighborhood]',
+                    '[CITY_BTN: 🏘️ Housing Market]',
+                    '[CITY_BTN: 👥 Community]',
+                    '[CITY_BTN: 💡 Buyer Tips]'
+                  ].join(' ');
+
+                  const replyText = isShowMoreRequest
+                    ? `🔍 Searching for more properties in **${detectedCity}**... This will take about 30 seconds.`
+                    : `🔍 Searching for live ${propIntent === 'rent' ? 'rental' : ''} properties in **${detectedCity}**... This will take about 30 seconds. While you wait, explore what makes **${detectedCity}** a great place to live! 🏙️\n\n${cityBtns}`;
+
+                  return Response.json({
+                    reply: replyText,
+                    apifyRunId,
+                    intent: propIntent,
+                    city: detectedCity,
+                    budget: propBudget,
+                    beds: propBeds,
+                    baths: propBaths,
+                    type: propType
+                  });
+                }
               }
-            }
-          } else if (hasCRM || hasCache) {
-            propertyContext = (hasCRM ? crmPropertyContext : '') + (hasCRM && hasCache ? "\n\nADDITIONAL AREA LISTINGS:\n" : '') + (hasCache ? cachedCityContext : '');
-          } else {
+            } else if ((hasCRM || hasCache) && !/(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg)) {
+              propertyContext = (hasCRM ? crmPropertyContext : '') + (hasCRM && hasCache ? "\n\nADDITIONAL AREA LISTINGS:\n" : '') + (hasCache ? cachedCityContext : '');
+            } else {
             // ============================================================
             // PRIORITY 3: Live Apify search (Zillow)
             // ============================================================
