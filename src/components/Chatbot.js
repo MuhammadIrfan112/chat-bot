@@ -1031,6 +1031,36 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
             🏷️ {displayType}
           </span>
         </div>
+
+        {/* View Full Details Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onOpenDetails) onOpenDetails({ property: prop, images: cardImages, activeIdx: safeIdx, index });
+          }}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            marginTop: '8px',
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
+            color: 'white',
+            fontSize: '12.5px',
+            fontWeight: '700',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            boxShadow: '0 2px 6px rgba(79,70,229,0.25)',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(79,70,229,0.35)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(79,70,229,0.25)'; }}
+        >
+          <span>📋</span> Show More Details
+        </button>
       </div>
 
       <div style={{ padding: '6px 10px 10px', marginTop: '0' }}>
@@ -1348,9 +1378,29 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setActiveApifyRunId(null);
           setIsLoading(false);
 
-          let props = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
+          let rawProps = (data.properties && Array.isArray(data.properties) && data.properties.length > 0)
             ? data.properties
             : [];
+
+          // Extract already-seen property identifiers from previous messages
+          const seenAddrs = new Set();
+          messages.forEach(m => {
+            if (Array.isArray(m.properties)) {
+              m.properties.forEach(p => {
+                const a = (p.address || p.url || p.mls_number || '').toLowerCase().trim();
+                if (a) seenAddrs.add(a);
+              });
+            }
+          });
+
+          // Filter out already shown properties so Show More never repeats the same cards
+          const unseenProps = rawProps.filter(p => {
+            const a = (p.address || p.url || p.mls_number || '').toLowerCase().trim();
+            if (!a) return true;
+            return ![...seenAddrs].some(sa => sa && (a.includes(sa) || sa.includes(a.slice(0, 15))));
+          });
+
+          let props = unseenProps.length > 0 ? unseenProps : rawProps;
 
           const cityName = data.city && data.city !== 'unknown'
             ? data.city.charAt(0).toUpperCase() + data.city.slice(1)
@@ -1372,7 +1422,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           const newModelMsg = {
             role: 'model',
             parts: [{ text: intro }],
-            properties: props
+            properties: props.slice(0, 4)
           };
           setMessages(prev => [...prev, newModelMsg]);
         } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
