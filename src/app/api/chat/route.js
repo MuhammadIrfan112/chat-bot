@@ -1149,7 +1149,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
   }
 
-  // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (lowest price first) ──
+  // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (strictly lowest market price first) ──
   // Last resort: budget is removed, show any price but keep exact type, beds, and baths
   if (selected.length < totalTarget) {
     const pool4 = strictList.filter(p => {
@@ -1158,7 +1158,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
       return matchBed && matchBath;
     });
     const prevCount = selected.length;
-    for (const p of sortBudgetFirst(pool4)) {
+    for (const p of [...pool4].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }

@@ -579,7 +579,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (lowest price first) ──
+      // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (strictly lowest market price first) ──
       if (selected.length < totalTarget) {
         const pool4Apify = strictListApify.filter(p => {
           const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
@@ -587,7 +587,7 @@ const SUPPLEMENT_PHOTO_SETS = [
           return matchBed && matchBath;
         });
         const prevCount = selected.length;
-        for (const p of sortBudgetFirst(pool4Apify)) {
+        for (const p of [...pool4Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
