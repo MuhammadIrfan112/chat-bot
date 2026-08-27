@@ -2176,10 +2176,30 @@ CRITICAL INSTRUCTIONS:
                   '🏥 Healthcare', '🏡 Neighborhood', '🏘️ Housing Market', '👥 Community', '💡 Buyer Tips'
                 ] : [];
 
-                const introText = isShowMoreRequest
+                const formatPriceNum = (num) => num ? `$${Number(num).toLocaleString()}` : '';
+                let matchIntro = isShowMoreRequest
                   ? `Here are ${structuredProps.length} more properties in **${detectedCity}** that match your criteria! 🏡`
-                  : `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`
-                    + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
+                  : `Here are ${structuredProps.length} properties in **${detectedCity}** that match your criteria! 🏡`;
+
+                if (!isShowMoreRequest && propBudget > 0 && structuredProps.length > 0) {
+                  const p1Price = parseBudget(String(structuredProps[0].price || ''));
+                  const p1Beds = parseInt(structuredProps[0].bedrooms || 0, 10);
+                  const p1Baths = parseInt(structuredProps[0].bathrooms || 0, 10);
+                  const isP1InBudget = p1Price > 0 && p1Price <= propBudget + 2000;
+                  const isP1ExactBedBath = (propBeds === 0 || p1Beds === propBeds) && (propBaths === 0 || p1Baths === propBaths);
+
+                  if (isP1InBudget && isP1ExactBedBath) {
+                    matchIntro = `Here are ${structuredProps.length} properties in **${detectedCity}** matching your exact criteria around ${formatPriceNum(propBudget)}! 🏡`;
+                  } else if (!isP1InBudget && isP1ExactBedBath) {
+                    matchIntro = `While there were no active listings within your exact ${formatPriceNum(propBudget)} budget in **${detectedCity}**, here are available properties matching your exact ${propBeds} bed, ${propBaths} bath requirements (starting from the lowest available market price): 🏡`;
+                  } else if (isP1InBudget && !isP1ExactBedBath) {
+                    matchIntro = `Here are properties in **${detectedCity}** available within your budget of ${formatPriceNum(propBudget)} with similar bedroom and bathroom options: 🏡`;
+                  } else {
+                    matchIntro = `Here are the closest available properties in **${detectedCity}** matching your preferences: 🏡`;
+                  }
+                }
+
+                const introText = matchIntro + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');
 
                 console.log(`[Route] ✅ Returning ${structuredProps.length} matching unique properties directly from DB (isShowMore=${isShowMoreRequest})`);
                 return Response.json({

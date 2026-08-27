@@ -1031,36 +1031,6 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
             🏷️ {displayType}
           </span>
         </div>
-
-        {/* View Full Details Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onOpenDetails) onOpenDetails({ property: prop, images: cardImages, activeIdx: safeIdx, index });
-          }}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            marginTop: '8px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
-            color: 'white',
-            fontSize: '12.5px',
-            fontWeight: '700',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            boxShadow: '0 2px 6px rgba(79,70,229,0.25)',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(79,70,229,0.35)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(79,70,229,0.25)'; }}
-        >
-          <span>📋</span> Show More Details
-        </button>
       </div>
 
       <div style={{ padding: '6px 10px 10px', marginTop: '0' }}>
@@ -1395,9 +1365,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             return;
           }
 
-          const intro = activeApifyIntent === 'rent'
+          const intro = data.introMessage || (activeApifyIntent === 'rent'
             ? `Here are live rental properties in **${cityName}** that match your criteria:`
-            : `Here are live properties in **${cityName}** that match your criteria:`;
+            : `Here are live properties in **${cityName}** that match your criteria:`);
 
           const newModelMsg = {
             role: 'model',

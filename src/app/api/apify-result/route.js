@@ -566,10 +566,35 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
+    // Compute contextual intro message based on search match tier
+    const formatPriceNum = (num) => num ? `$${Number(num).toLocaleString()}` : '';
+    let introMessage = intent === 'rent'
+      ? `Here are live rental properties in **${savedCity}** that match your criteria:`
+      : `Here are live properties in **${savedCity}** that match your criteria:`;
+
+    if (propBudget > 0 && orderedProperties.length > 0) {
+      const p1Price = parseBudget(String(orderedProperties[0].price || ''));
+      const p1Beds = parseInt(orderedProperties[0].bedrooms || 0, 10);
+      const p1Baths = parseInt(orderedProperties[0].bathrooms || 0, 10);
+      const isP1InBudget = p1Price > 0 && p1Price <= propBudget + 2000;
+      const isP1ExactBedBath = (propBeds === 0 || p1Beds === propBeds) && (propBaths === 0 || p1Baths === propBaths);
+
+      if (isP1InBudget && isP1ExactBedBath) {
+        introMessage = `Here are properties in **${savedCity}** matching your exact criteria around ${formatPriceNum(propBudget)}! 🏡`;
+      } else if (!isP1InBudget && isP1ExactBedBath) {
+        introMessage = `While there were no active listings within your exact ${formatPriceNum(propBudget)} budget in **${savedCity}**, here are available properties matching your exact ${propBeds} bed, ${propBaths} bath requirements (starting from the lowest available market price): 🏡`;
+      } else if (isP1InBudget && !isP1ExactBedBath) {
+        introMessage = `Here are properties in **${savedCity}** available within your budget of ${formatPriceNum(propBudget)} with similar bedroom and bathroom options: 🏡`;
+      } else {
+        introMessage = `Here are the closest available properties in **${savedCity}** matching your preferences: 🏡`;
+      }
+    }
+
     return Response.json({ 
       status: 'done', 
       city: savedCity, 
-      properties: orderedProperties.slice(0, 16) 
+      properties: orderedProperties.slice(0, 16),
+      introMessage
     });
 
   } catch (e) {
