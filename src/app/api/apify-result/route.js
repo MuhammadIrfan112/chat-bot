@@ -390,47 +390,6 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // 🏷️ Strict Property Type Matcher (Townhouse, Semi-Detached, Detached, Condo)
-    function propTypeMatches(p, requestedType) {
-      if (!requestedType || !p) return true;
-      const req = String(requestedType).toLowerCase().replace(/[^\w\s]/g, '').trim();
-      const rawType = String(
-        p.propertyType || p.property_type || p.homeType || p.type || p.hdpData?.homeInfo?.homeType || ''
-      ).toLowerCase().replace(/[^\w\s]/g, '').trim();
-      const rawDesc = String(p.description || p.remarks || '').toLowerCase();
-
-      // 1. Townhouse / Row House
-      if (req.includes('townhouse') || req.includes('town house') || req.includes('row')) {
-        if (rawType.includes('townhouse') || rawType.includes('town house') || rawType.includes('row') || rawType.includes('attached')) return true;
-        if (rawDesc.includes('townhouse') || rawDesc.includes('town house') || rawDesc.includes('row house')) return true;
-        return false;
-      }
-
-      // 2. Semi-Detached
-      if (req.includes('semi') || req.includes('semidetached') || req.includes('duplex') || req.includes('triplex') || req.includes('multifamily') || req.includes('multi family')) {
-        if (rawType.includes('semi') || rawType.includes('duplex') || rawType.includes('triplex') || rawType.includes('multi family') || rawType.includes('multifamily')) return true;
-        if (rawDesc.includes('semi-detached') || rawDesc.includes('semidetached') || rawDesc.includes('semi detached') || rawDesc.includes('duplex')) return true;
-        return false;
-      }
-
-      // 3. Detached / Single Family
-      if (req.includes('detached') || req.includes('single family') || req.includes('house')) {
-        if (rawType.includes('semi')) return false;
-        if (rawType.includes('single') || rawType.includes('detached') || rawType.includes('house')) return true;
-        if (rawDesc.includes('detached') && !rawDesc.includes('semi-detached')) return true;
-        return false;
-      }
-
-      // 4. Condo / Apartment
-      if (req.includes('condo') || req.includes('apartment') || req.includes('unit')) {
-        if (rawType.includes('condo') || rawType.includes('apartment') || rawType.includes('coop')) return true;
-        if (rawDesc.includes('condo') || rawDesc.includes('apartment')) return true;
-        return false;
-      }
-
-      return rawType.includes(req) || req.includes(rawType);
-    }
-
     // ── Apply recommendation rules: Cards 1 & 2 (budget match), Cards 3 & 4 (exact bed/bath match) ──
     function selectRecommendedProperties(propsList, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
       if (!Array.isArray(propsList) || propsList.length === 0) return { results: [], matchTier: 'none' };
