@@ -2004,7 +2004,7 @@ function formatCityDisplay(msg) {
           role: 'model',
           parts: [{ text: `${confirmedCity} is a fantastic area! It has great communities and strong property values.\n\nwhat type of home are you looking for? You can select multiple options!` }]
         }]);
-        setMultiSelectOptions(['🏢 Condo', '🏘️ Townhouse', 'Detached', 'Semi Detached', '🏡 Duplex / Multi-family home', '🌳 Villa / Luxury home', '🤷 Other']);
+        setMultiSelectOptions(['🏠 Detached House', '🏡 Semi-Detached', '🏘️ Townhouse', '🏢 Condo', '🏢 Multi-Family / Duplex', '🌳 Land / Lot', '🤷 Other']);
       } else {
         setBuyHomeStep('city');
         setMessages(prev => [...prev, {
@@ -3151,7 +3151,7 @@ function formatCityDisplay(msg) {
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: `Please select your preferred **house type**:` }],
-        quickReplies: ['🏡 Townhouse', '🏠 Detached', '🏘️ Semi-Detached', '🏢 Condo', '🏗️ Pre-Construction']
+        quickReplies: ['🏠 Detached House', '🏡 Semi-Detached', '🏘️ Townhouse', '🏢 Condo', '🏢 Multi-Family / Duplex', '🌳 Land / Lot']
       }]);
       return;
     }
