@@ -269,6 +269,72 @@ function resolveStateOrProvince(city, detectedState) {
   return CITY_STATE_MAP[key] || '';
 }
 
+// ── AI-Powered City Resolver & Autocorrect using OpenAI ──
+const AI_CITY_CACHE = new Map();
+
+async function autocorrectCityWithAI(rawCity, stateHint = '') {
+  if (!rawCity || typeof rawCity !== 'string') return null;
+  const clean = rawCity.trim();
+  if (clean.length < 2) return null;
+
+  const cacheKey = `${clean.toLowerCase()}_${(stateHint || '').toLowerCase()}`;
+  if (AI_CITY_CACHE.has(cacheKey)) {
+    return AI_CITY_CACHE.get(cacheKey);
+  }
+
+  // Check direct known dictionary first
+  const norm = normalizeCityName(clean);
+  const knownState = CITY_STATE_MAP[norm.toLowerCase()];
+  if (knownState) {
+    const result = { city: norm, state: stateHint || knownState, country: knownState === 'ON' || knownState === 'BC' || knownState === 'AB' ? 'Canada' : 'USA' };
+    AI_CITY_CACHE.set(cacheKey, result);
+    return result;
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) {
+    const result = { city: norm, state: stateHint || resolveStateOrProvince(norm, stateHint) };
+    AI_CITY_CACHE.set(cacheKey, result);
+    return result;
+  }
+
+  try {
+    const openai = new OpenAI({ apiKey });
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0,
+      max_tokens: 60,
+      messages: [
+        {
+          role: "system",
+          content: "You are a real estate geographic entity resolver for North America (USA & Canada). Given any user query with a city name (which may contain typos, misspellings, or slang), resolve it to the exact official City Name and 2-letter state/province code. Return ONLY valid JSON: {\"city\": \"Exact City Name\", \"state\": \"2-letter state/province code\", \"country\": \"USA\" or \"Canada\"}. Example: \"morten grov\" -> {\"city\": \"Morton Grove\", \"state\": \"IL\", \"country\": \"USA\"}. Example: \"miltn\" -> {\"city\": \"Milton\", \"state\": \"ON\", \"country\": \"Canada\"}. Return JSON only."
+        },
+        {
+          role: "user",
+          content: `Input: "${clean}" ${stateHint ? `(Hint: ${stateHint})` : ''}`
+        }
+      ]
+    });
+
+    const text = response.choices[0]?.message?.content?.trim();
+    if (text) {
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      if (parsed?.city) {
+        console.log(`[OpenAI City Resolver] Autocorrected "${clean}" -> "${parsed.city}, ${parsed.state || ''}"`);
+        const result = { city: parsed.city, state: parsed.state || stateHint || '', country: parsed.country || '' };
+        AI_CITY_CACHE.set(cacheKey, result);
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn('[OpenAI City Resolver] Failed to autocorrect city with AI:', err.message);
+  }
+
+  const fallback = { city: norm, state: stateHint || resolveStateOrProvince(norm, stateHint) };
+  AI_CITY_CACHE.set(cacheKey, fallback);
+  return fallback;
+}
+
 
 function getRelevantFaqs(userQuery) {
   if (!faqsData || !Array.isArray(faqsData) || faqsData.length === 0) return '';
@@ -1906,9 +1972,15 @@ ${areasNotServed.length ? `
       }
 
       if (detectedCity) {
-        detectedCity = normalizeCityName(detectedCity);
-        if (!detectedState) {
-          detectedState = resolveStateOrProvince(detectedCity, detectedState);
+        const aiCorrection = await autocorrectCityWithAI(detectedCity, detectedState);
+        if (aiCorrection?.city) {
+          detectedCity = aiCorrection.city;
+          if (aiCorrection.state) detectedState = aiCorrection.state;
+        } else {
+          detectedCity = normalizeCityName(detectedCity);
+          if (!detectedState) {
+            detectedState = resolveStateOrProvince(detectedCity, detectedState);
+          }
         }
       }
 

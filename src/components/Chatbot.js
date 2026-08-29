@@ -1974,7 +1974,17 @@ function formatCityDisplay(msg) {
 }
 
     if (buyHomeStep === 'city') {
-      const formattedCity = formatCityDisplay(msg);
+      let formattedCity = formatCityDisplay(msg);
+      try {
+        const res = await fetch('/api/resolve-city', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: msg })
+        });
+        const d = await res.json();
+        if (d?.formatted) formattedCity = d.formatted;
+      } catch {}
+
       setBuyHomeData(prev => ({ ...prev, city: formattedCity }));
       setBuyHomeStep('city_confirm');
       setMessages(prev => [...prev, {
@@ -2323,7 +2333,17 @@ function formatCityDisplay(msg) {
     }
 
     if (rentStep === 'city') {
-      const formattedCity = formatCityDisplay(msg);
+      let formattedCity = formatCityDisplay(msg);
+      try {
+        const res = await fetch('/api/resolve-city', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: msg })
+        });
+        const d = await res.json();
+        if (d?.formatted) formattedCity = d.formatted;
+      } catch {}
+
       setRentData(prev => ({ ...prev, city: formattedCity }));
       setRentStep('city_confirm');
       setMessages(prev => [...prev, {
