@@ -55,26 +55,30 @@ export async function GET(req) {
     function propTypeMatches(p, requestedType) {
       if (!requestedType) return true;
       const req = requestedType.toLowerCase().trim();
-      const pType = normalizeHomeType(
-        p.property_type || p.propertyType || p.homeType || p.home_type || p.type || ''
-      );
-      // 1. Semi-Detached / Multi-Family / Duplex (MUST check before detached!)
-      if (req.includes('semi') || req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-        return pType === 'semi-detached';
+      const rawPropType = String(p.property_type || p.propertyType || p.homeType || p.home_type || p.type || '').toLowerCase();
+      const pType = normalizeHomeType(rawPropType);
+
+      // 1. Semi-Detached / Link Home (on Zillow/MLS, semi-detached are categorized under house/single-family or townhouse)
+      if (req.includes('semi') || req.includes('link')) {
+        return pType === 'semi-detached' || pType === 'detached' || pType === 'townhouse';
       }
-      // 2. Townhouse
+      // 2. Multi-Family / Duplex
+      if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
+        return pType === 'semi-detached' || rawPropType.includes('multi') || rawPropType.includes('duplex');
+      }
+      // 3. Townhouse
       if (req.includes('town')) {
         return pType === 'townhouse';
       }
-      // 3. Condo / Apartment
+      // 4. Condo / Apartment
       if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata')) {
         return pType === 'condo';
       }
-      // 4. Villa / Luxury → same as Detached (luxury = high-price detached)
+      // 5. Villa / Luxury → same as Detached (luxury = high-price detached)
       if (req.includes('villa') || req.includes('luxury')) {
         return pType === 'detached';
       }
-      // 5. Detached / Single Family (strictly detached, NOT semi)
+      // 6. Detached / Single Family (strictly detached, NOT semi)
       if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
         return pType === 'detached';
       }

@@ -475,7 +475,10 @@ async function getCityBounds(city, state) {
 function mapPropTypeToZillow(propType) {
   if (!propType) return null;
   const t = propType.toLowerCase();
-  if (t.includes('semi') || t.includes('duplex') || t.includes('multi family') || t.includes('multi-family') || t.includes('triplex')) {
+  if (t.includes('semi') || t.includes('link')) {
+    return 'SEMI_DETACHED'; // searches both houses and townhouses
+  }
+  if (t.includes('duplex') || t.includes('multi family') || t.includes('multi-family') || t.includes('triplex')) {
     return 'MULTI_FAMILY';
   }
   if (t.includes('townhouse') || t.includes('town house') || t.includes('townhome')) {
@@ -515,27 +518,30 @@ function normalizeHomeType(val) {
 function propTypeMatches(p, requestedType) {
   if (!requestedType) return true; // no filter if not specified
   const req = requestedType.toLowerCase().trim();
-  const pType = normalizeHomeType(
-    p.homeType || p.property_type || p.propertyType || p.home_type || p.type || ''
-  );
+  const rawPropType = String(p.homeType || p.property_type || p.propertyType || p.home_type || p.type || '').toLowerCase();
+  const pType = normalizeHomeType(rawPropType);
 
-  // 1. Semi-Detached / Multi-Family / Duplex (MUST check before detached!)
-  if (req.includes('semi') || req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-    return pType === 'semi-detached';
+  // 1. Semi-Detached / Link Home (on Zillow/MLS, semi-detached are categorized under house/single-family or townhouse)
+  if (req.includes('semi') || req.includes('link')) {
+    return pType === 'semi-detached' || pType === 'detached' || pType === 'townhouse';
   }
-  // 2. Townhouse
+  // 2. Multi-Family / Duplex
+  if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
+    return pType === 'semi-detached' || rawPropType.includes('multi') || rawPropType.includes('duplex');
+  }
+  // 3. Townhouse
   if (req.includes('town')) {
     return pType === 'townhouse';
   }
-  // 3. Condo / Apartment
+  // 4. Condo / Apartment
   if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata')) {
     return pType === 'condo';
   }
-  // 4. Villa / Luxury → same as Detached on Zillow/Realtor.ca (luxury = detached with high price)
+  // 5. Villa / Luxury → same as Detached on Zillow/Realtor.ca (luxury = detached with high price)
   if (req.includes('villa') || req.includes('luxury')) {
     return pType === 'detached';
   }
-  // 5. Detached / Single Family (strictly detached, NOT semi)
+  // 6. Detached / Single Family (strictly detached, NOT condo)
   if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
     return pType === 'detached';
   }
@@ -599,6 +605,9 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     filterState.isApartment = { value: false };
     if (zillowType === 'SINGLE_FAMILY') {
       filterState.isSingleFamily = { value: true };
+    } else if (zillowType === 'SEMI_DETACHED') {
+      filterState.isSingleFamily = { value: true };
+      filterState.isTownhouse = { value: true };
     } else if (zillowType === 'TOWNHOUSE') {
       filterState.isTownhouse = { value: true };
     } else if (zillowType === 'CONDO') {
@@ -606,6 +615,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
       filterState.isApartment = { value: true };
     } else if (zillowType === 'MULTI_FAMILY') {
       filterState.isMultiFamily = { value: true };
+      filterState.isSingleFamily = { value: true };
     } else if (zillowType === 'LOT') {
       filterState.isLotLand = { value: true };
     }
