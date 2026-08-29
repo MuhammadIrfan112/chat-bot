@@ -1820,11 +1820,21 @@ ${areasNotServed.length ? `
         const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family|semi detached|detached)/i);
         propType = typeMatch ? typeMatch[1].toLowerCase() : null;
       }
+      // Latest user message property type takes precedence if user refined it
+      const latestTypeMatch = lastUserMsg.match(/(semi[- ]detached|detached|single[- ]family|townhouse|condo|apartment|duplex|multi[- ]family|villa)/i);
+      if (latestTypeMatch) {
+        propType = latestTypeMatch[1].toLowerCase().replace(/\s+/g, '-');
+      }
+
       const propFeatures = sumFeatures || 'Beautiful property with modern finishes';
 
       // Extract bedrooms (fallback from raw chat)
       const bedsMatch = fullText.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/);
       let propBeds = sumBeds > 0 ? sumBeds : (bedsMatch ? parseInt(bedsMatch[1]) : 0);
+      const latestBedsMatch = lastUserMsg.match(/(\d)\s*(?:bed(?:room)?s?|br\b)/i);
+      if (latestBedsMatch) {
+        propBeds = parseInt(latestBedsMatch[1]);
+      }
 
       // Extract bathrooms (fallback from raw chat)
       const bathsMatch = fullText.match(/(\d)\s*(?:bath(?:room)?s?|ba\b)/);
@@ -1848,6 +1858,12 @@ ${areasNotServed.length ? `
             if (parsed > 0) { propBudget = parsed; break; }
           }
         }
+      }
+
+      // If user provided a new budget in latest message (e.g. during Change Budget), it overrides previous budget
+      const latestBudget = parseBudget(lastUserMsg);
+      if (latestBudget > 0) {
+        propBudget = latestBudget;
       }
 
       // Ambiguity check: if buy intent and budget looks suspiciously small (< 1000), treat as ambiguous

@@ -3163,7 +3163,8 @@ function formatCityDisplay(msg) {
       setFilterEditStep(null);
       const cleanType = msg.replace(/[🏡🏠🏘️🏢🏗️]/gu, '').trim();
       setActiveApifyType(cleanType);
-      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Milton';
+      setBuyHomeData(prev => ({ ...prev, type: cleanType, propertyType: cleanType }));
+      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Morton Grove';
       const budget = activeApifyBudget || buyHomeData?.budget || rentData?.budget || 0;
       const beds = activeApifyBeds || buyHomeData?.bedrooms || rentData?.bedrooms || 0;
       const budgetText = budget > 0 ? ` around $${Number(budget).toLocaleString()}` : '';
@@ -3171,18 +3172,24 @@ function formatCityDisplay(msg) {
       messageTextToSend = `Find ${cleanType} properties in ${city}${budgetText}${bedsText}`;
     } else if (filterEditStep === 'budget') {
       setFilterEditStep(null);
-      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Milton';
-      const type = activeApifyType || buyHomeData?.propertyType || rentData?.propertyType || 'Townhouse';
+      const cleanBudget = msg.trim();
+      setActiveApifyBudget(cleanBudget);
+      setBuyHomeData(prev => ({ ...prev, budget: cleanBudget }));
+      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Morton Grove';
+      const type = activeApifyType || buyHomeData?.type || buyHomeData?.propertyType || rentData?.propertyType || 'Semi-Detached';
       const beds = activeApifyBeds || buyHomeData?.bedrooms || rentData?.bedrooms || 0;
       const bedsText = beds > 0 ? ` with ${beds} bedrooms` : '';
-      messageTextToSend = `Find ${type} properties in ${city} for budget ${msg}${bedsText}`;
+      messageTextToSend = `Find ${type} properties in ${city} for budget ${cleanBudget}${bedsText}`;
     } else if (filterEditStep === 'bedrooms') {
       setFilterEditStep(null);
-      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Milton';
-      const type = activeApifyType || buyHomeData?.propertyType || rentData?.propertyType || 'Townhouse';
+      const cleanBeds = msg.replace(/[^0-9]/g, '').trim() || msg.trim();
+      setActiveApifyBeds(cleanBeds);
+      setBuyHomeData(prev => ({ ...prev, bedrooms: cleanBeds }));
+      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Morton Grove';
+      const type = activeApifyType || buyHomeData?.type || buyHomeData?.propertyType || rentData?.propertyType || 'Semi-Detached';
       const budget = activeApifyBudget || buyHomeData?.budget || rentData?.budget || 0;
       const budgetText = budget > 0 ? ` around $${Number(budget).toLocaleString()}` : '';
-      messageTextToSend = `Find ${type} properties in ${city} with ${msg}${budgetText}`;
+      messageTextToSend = `Find ${type} properties in ${city} with ${cleanBeds} bedrooms${budgetText}`;
     }
 
     // ── Interested in Property / Lead Capture Interception ────────
@@ -3241,7 +3248,7 @@ function formatCityDisplay(msg) {
 
         // Use messageTextToSend which includes preserved filter criteria if adjusted
         const updatedApiMessages = messageTextToSend !== msg
-          ? [...apiMessages.slice(0, -1), { role: 'user', content: messageTextToSend }]
+          ? [...apiMessages.slice(0, -1), { role: 'user', parts: [{ text: messageTextToSend }] }]
           : apiMessages;
 
         const payload = {
