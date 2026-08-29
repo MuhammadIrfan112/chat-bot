@@ -34,7 +34,10 @@ export default function ConditionalChatbot() {
     }
   }, [pathname]);
 
+  // Don't render chatbot on bot embed pages, superadmin, or login
   if (pathname?.startsWith('/bot/')) return null;
+  if (pathname?.startsWith('/superadmin')) return null;
+  if (pathname?.startsWith('/login')) return null;
 
   return <Chatbot isGlobal={true} initialConfig={clientConfig} key={clientConfig ? clientConfig.botId : 'global'} />;
 }
