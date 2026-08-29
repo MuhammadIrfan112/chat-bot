@@ -1171,42 +1171,15 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
   }
 
-  // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price ──
-  // ONLY used when budget is 0 (user gave no budget), or up to 1.5x budget max — NEVER show far-over-budget listings
-  if (selected.length < totalTarget) {
-    const hardCap = targetBudget > 0 ? targetBudget * 1.5 : 0;
-    const pool4 = strictList.filter(p => {
-      const price = getPrice(p);
-      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-      const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-      const withinHardCap = hardCap > 0 ? (price > 0 && price <= hardCap) : true;
-      return matchBed && matchBath && withinHardCap;
-    });
-    const prevCount = selected.length;
-    for (const p of [...pool4].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-    if (selected.length > prevCount && pool1.length === 0) matchTier = 'exact_bedbath_over_budget';
-  }
+  // ── Pool 4 REMOVED: If Pools 1-3 don't fill enough results, caller triggers live Apify scrape ──
 
-  // ── Last resort backfill — ONLY if no budget constraint set, otherwise skip ──
-  // When budget IS set, we should NOT show random expensive properties — let caller trigger live scrape instead
-  if (targetBudget === 0) {
-    for (const p of sortBudgetFirst(strictList)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-    if (selected.length > 0 && matchTier === 'exact' && pool1.length === 0) matchTier = 'closest';
-  }
-
-  // Remaining for "Show more" — prioritize Exact Beds + Exact Baths, respect hard cap (budget * 1.5)
-  const hardCapForRemaining = targetBudget > 0 ? targetBudget * 1.5 : 0;
+  // Remaining for "Show more" — within budget+10% only, exact beds/baths first
+  const priceMaxRemaining = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
   const remainingStrict = strictList.filter(p => {
     if (usedKeys.has(getPropKey(p))) return false;
-    if (hardCapForRemaining > 0) {
+    if (priceMaxRemaining > 0) {
       const price = getPrice(p);
-      return price > 0 && price <= hardCapForRemaining;
+      return price > 0 && price <= priceMaxRemaining;
     }
     return true;
   });
@@ -1221,7 +1194,6 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   return { results: [...selected, ...remainingExactBedBath, ...remainingOther], matchTier };
 }
-
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
 async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudget = 0, propBeds = 0, propBaths = 0, fullChatText = '', propType = null, targetState = null) {
@@ -1401,6 +1373,11 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const sourcePool = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
     const candidateList = Array.isArray(candidateObj) ? candidateObj : (candidateObj?.results || []);
+
+    if (candidateList.length < cardsLimit && !isShowMore) {
+      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB within budget for city="${cleanCity}" — falling back to live Apify scrape.`);
+      return { text: '', rawProperties: [] };
+    }
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
     let cards = [];

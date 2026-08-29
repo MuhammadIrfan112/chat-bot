@@ -544,39 +544,15 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price (with hard cap) ──
-      if (selected.length < totalTarget) {
-        const hardCap = targetBudget > 0 ? targetBudget * 1.5 : 0;
-        const pool4Apify = strictListApify.filter(p => {
-          const price = getPrice(p);
-          const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-          const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-          const withinHardCap = hardCap > 0 ? (price > 0 && price <= hardCap) : true;
-          return matchBed && matchBath && withinHardCap;
-        });
-        const prevCount = selected.length;
-        for (const p of [...pool4Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'exact_bedbath_over_budget';
-      }
+      // ── Pool 4 REMOVED: Only Pools 1 to 3 are used (Exact budget, +10% flex, relaxed bed/bath within +10%) ──
 
-      // ── Last resort backfill — ONLY if no budget set ──
-      if (targetBudget === 0) {
-        for (const p of sortBudgetFirst(strictListApify)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-      }
-
-      // Remaining for "Show more" — prioritize Exact Beds + Exact Baths, respect hard cap (budget * 1.5)
-      const hardCapForRemaining = targetBudget > 0 ? targetBudget * 1.5 : 0;
+      // Remaining for "Show more" — within budget+10% only, exact beds/baths first
+      const priceMaxRemaining = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
       const remainingStrict = strictListApify.filter(p => {
         if (usedKeys.has(getPropKey(p))) return false;
-        if (hardCapForRemaining > 0) {
+        if (priceMaxRemaining > 0) {
           const price = getPrice(p);
-          return price > 0 && price <= hardCapForRemaining;
+          return price > 0 && price <= priceMaxRemaining;
         }
         return true;
       });
