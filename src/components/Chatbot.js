@@ -3325,7 +3325,19 @@ function formatCityDisplay(msg) {
   if (!mounted) return null;
 
   return (
-    <div id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} className={`${styles.chatbotContainer} ${forceDesktopMode ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} style={{ '--primary': botConfig.primaryColor }}>
+    <div 
+      id={isGlobal ? 'realty-prop-global-bot' : 'realty-prop-embed-bot'} 
+      className={`${styles.chatbotContainer} ${forceDesktopMode ? styles.forceDesktop : ''} ${isMobile ? styles.mobileContainer : ''} ${isTablet ? styles.tabletContainer : ''}`} 
+      style={{ 
+        '--primary': botConfig.primaryColor,
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        left: 'auto',
+        top: 'auto',
+        zIndex: 99999
+      }}
+    >
       {isOpen ? (
         <div className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`}>
           <div className={styles.header}>
