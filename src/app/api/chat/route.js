@@ -1172,11 +1172,15 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   }
 
   // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price ──
+  // ONLY used when budget is 0 (user gave no budget), or up to 1.5x budget max — NEVER show far-over-budget listings
   if (selected.length < totalTarget) {
+    const hardCap = targetBudget > 0 ? targetBudget * 1.5 : 0;
     const pool4 = strictList.filter(p => {
+      const price = getPrice(p);
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
       const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-      return matchBed && matchBath;
+      const withinHardCap = hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+      return matchBed && matchBath && withinHardCap;
     });
     const prevCount = selected.length;
     for (const p of [...pool4].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
@@ -1186,15 +1190,26 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'exact_bedbath_over_budget';
   }
 
-  // ── Last resort backfill — type ALWAYS strict, never relaxed ──
-  for (const p of sortBudgetFirst(strictList)) {
-    if (selected.length >= totalTarget) break;
-    addProp(p);
+  // ── Last resort backfill — ONLY if no budget constraint set, otherwise skip ──
+  // When budget IS set, we should NOT show random expensive properties — let caller trigger live scrape instead
+  if (targetBudget === 0) {
+    for (const p of sortBudgetFirst(strictList)) {
+      if (selected.length >= totalTarget) break;
+      addProp(p);
+    }
+    if (selected.length > 0 && matchTier === 'exact' && pool1.length === 0) matchTier = 'closest';
   }
-  if (selected.length > 0 && matchTier === 'exact' && pool1.length === 0) matchTier = 'closest';
 
-  // Remaining for "Show more" — prioritize Exact Beds + Exact Baths (budget removed, lowest price first)
-  const remainingStrict = strictList.filter(p => !usedKeys.has(getPropKey(p)));
+  // Remaining for "Show more" — prioritize Exact Beds + Exact Baths, respect hard cap (budget * 1.5)
+  const hardCapForRemaining = targetBudget > 0 ? targetBudget * 1.5 : 0;
+  const remainingStrict = strictList.filter(p => {
+    if (usedKeys.has(getPropKey(p))) return false;
+    if (hardCapForRemaining > 0) {
+      const price = getPrice(p);
+      return price > 0 && price <= hardCapForRemaining;
+    }
+    return true;
+  });
   const remainingExactBedBath = remainingStrict.filter(p => {
     const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
     const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;

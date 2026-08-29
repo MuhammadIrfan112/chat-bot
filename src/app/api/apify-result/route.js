@@ -544,12 +544,15 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price ──
+      // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price (with hard cap) ──
       if (selected.length < totalTarget) {
+        const hardCap = targetBudget > 0 ? targetBudget * 1.5 : 0;
         const pool4Apify = strictListApify.filter(p => {
+          const price = getPrice(p);
           const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
           const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-          return matchBed && matchBath;
+          const withinHardCap = hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+          return matchBed && matchBath && withinHardCap;
         });
         const prevCount = selected.length;
         for (const p of [...pool4Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
@@ -559,14 +562,24 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'exact_bedbath_over_budget';
       }
 
-      // ── Last resort backfill — type ALWAYS strict, never relaxed ──
-      for (const p of sortBudgetFirst(strictListApify)) {
-        if (selected.length >= totalTarget) break;
-        addProp(p);
+      // ── Last resort backfill — ONLY if no budget set ──
+      if (targetBudget === 0) {
+        for (const p of sortBudgetFirst(strictListApify)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
       }
 
-      // Remaining for "Show more" — prioritize Exact Beds + Exact Baths (budget removed, lowest price first)
-      const remainingStrict = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
+      // Remaining for "Show more" — prioritize Exact Beds + Exact Baths, respect hard cap (budget * 1.5)
+      const hardCapForRemaining = targetBudget > 0 ? targetBudget * 1.5 : 0;
+      const remainingStrict = strictListApify.filter(p => {
+        if (usedKeys.has(getPropKey(p))) return false;
+        if (hardCapForRemaining > 0) {
+          const price = getPrice(p);
+          return price > 0 && price <= hardCapForRemaining;
+        }
+        return true;
+      });
       const remainingExactBedBath = remainingStrict.filter(p => {
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
