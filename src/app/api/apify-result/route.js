@@ -537,32 +537,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 3A: Great Deals under (budget - 100k) with Exact Bed (if targetBeds > 0) ──
-      if (selected.length < totalTarget && minBudgetWindow > 0 && targetBeds > 0) {
-        const pool3A = strictListApify.filter(p => {
-          const price = getPrice(p);
-          return price > 0 && price < minBudgetWindow && getBeds(p) === targetBeds;
-        });
-        for (const p of sortAscendingPrice(pool3A)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-      }
-
-      // ── POOL 3B: Great Deals under (budget - 100k) for that Property Type (any beds) ──
-      // Sorted in ASCENDING order
-      if (selected.length < totalTarget && minBudgetWindow > 0) {
-        const pool3Apify = strictListApify.filter(p => {
-          const price = getPrice(p);
-          return price > 0 && price < minBudgetWindow;
-        });
-        const prevCount = selected.length;
-        for (const p of sortAscendingPrice(pool3Apify)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
-      }
+      // Pool 3 REMOVED: Never show properties below (budget - 100k). Minimum price = budget - 100k.
 
       // ── POOL 4: Market Lowest Fallback (Fill remaining slots up to totalTarget with lowest available market prices) ──
       if (selected.length < totalTarget && strictListApify.length > 0) {
