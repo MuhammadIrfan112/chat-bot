@@ -43,12 +43,11 @@ export async function GET(req) {
       if (!val) return '';
       const v = String(val).toLowerCase().replace(/_/g, ' ');
       // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
-      if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'semi-detached';
-      if (v.includes('town')) return 'townhouse';
-      if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'condo';
-      // Villa / Luxury maps to 'detached'
+      if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex') || v.includes('link')) return 'semi-detached';
+      if (v.includes('town') || v.includes('row') || v.includes('terrace') || v.includes('attached')) return 'townhouse';
+      if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata') || v.includes('loft') || v.includes('co-op')) return 'condo';
       if (v.includes('villa') || v.includes('luxury')) return 'detached';
-      if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'detached';
+      if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential') || v.includes('bungalow') || v.includes('cottage')) return 'detached';
       if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'land';
       return v;
     }
@@ -366,19 +365,23 @@ const SUPPLEMENT_PHOTO_SETS = [
     let savedCity = requestedCity || 'unknown';
 
     if (requestedCity && properties.length > 0) {
+      const cityWordRegex = new RegExp(`\\b${requestedCity}\\b`, 'i');
       const cityMatches = properties.filter(p => {
-        const addr = String(p.address || '').toLowerCase();
-        const c = String(p.city || '').toLowerCase();
-        return addr.includes(requestedCity) || c.includes(requestedCity);
+        const addr = String(p.address || '');
+        const c = String(p.city || '');
+        return cityWordRegex.test(addr) || cityWordRegex.test(c);
       });
 
       if (cityMatches.length > 0) {
         console.log(`[apify-result] Filtered from ${properties.length} down to ${cityMatches.length} properties strictly in "${requestedCity}"`);
         finalProperties = cityMatches;
       } else {
-        // Fallback: If scraper returned properties from that city search URL, keep them rather than showing empty
-        console.log(`[apify-result] Strict city filter matched 0, keeping all ${properties.length} scraper results for "${requestedCity}".`);
-        finalProperties = properties;
+        console.log(`[apify-result] Strict city word match returned 0 for "${requestedCity}". Filtering out false substrings (e.g. Hamilton for Milton).`);
+        finalProperties = properties.filter(p => {
+          const addr = String(p.address || '').toLowerCase();
+          const c = String(p.city || '').toLowerCase();
+          return (addr.includes(requestedCity) || c.includes(requestedCity)) && !addr.includes('ha' + requestedCity);
+        });
       }
     } else if (properties.length > 0) {
       const firstValid = properties.find(p => p.city);

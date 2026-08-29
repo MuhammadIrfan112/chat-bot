@@ -436,12 +436,11 @@ function normalizeHomeType(val) {
   if (!val) return '';
   const v = String(val).toLowerCase().replace(/_/g, ' ');
   // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
-  if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'semi-detached';
-  if (v.includes('town')) return 'townhouse';
-  if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'condo';
-  // Villa / Luxury maps to 'detached' (same Zillow type, price differentiates luxury)
+  if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex') || v.includes('link')) return 'semi-detached';
+  if (v.includes('town') || v.includes('row') || v.includes('terrace') || v.includes('attached')) return 'townhouse';
+  if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata') || v.includes('loft') || v.includes('co-op')) return 'condo';
   if (v.includes('villa') || v.includes('luxury')) return 'detached';
-  if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'detached';
+  if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential') || v.includes('bungalow') || v.includes('cottage')) return 'detached';
   if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'land';
   return v;
 }
