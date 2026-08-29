@@ -1985,7 +1985,6 @@ ${areasNotServed.length ? `
       }
 
       // ── Change Search Criteria Flow (3 Buttons: 📍 City, 💰 Budget, 🛏️ Bedrooms & Bathrooms) ──
-      const lastUserMsg = userQuery.toLowerCase().trim();
       const prevModelMsg = [...messages].reverse().find(m => m.role === 'model')?.parts?.[0]?.text || '';
       const hasPriorSearch = messages.some(m =>
         m.role === 'model' && (
