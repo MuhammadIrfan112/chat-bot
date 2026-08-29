@@ -3529,7 +3529,7 @@ function formatCityDisplay(msg) {
                 </div>
               </div>
             </a>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {/* Close & Reset Button (✕): Closes widget AND starts fresh new chat session */}
               <button
                 title="Close and Start New Chat"
@@ -3538,40 +3538,71 @@ function formatCityDisplay(msg) {
                   setIsOpen(false);
                 }}
                 style={{
-                  background: 'rgba(255,255,255,0.15)',
-                  border: 'none',
-                  color: '#fff',
-                  width: '28px',
-                  height: '28px',
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  color: '#ffffff',
+                  width: '30px',
+                  height: '30px',
                   borderRadius: '50%',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  lineHeight: '1',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'background 0.2s'
+                  transition: 'all 0.2s ease',
+                  flexShrink: 0,
+                  padding: 0,
+                  outline: 'none',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-              >✕</button>
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
 
               {/* Minimize Button (⌄): Minimizes widget to launcher icon, preserves chat history */}
               <button 
                 title="Minimize" 
-                className={styles.closeBtn} 
                 onClick={() => setIsOpen(false)}
                 style={{
-                  fontSize: '16px',
-                  fontWeight: '700',
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  color: '#ffffff',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  lineHeight: '1',
-                  paddingBottom: '2px'
+                  transition: 'all 0.2s ease',
+                  flexShrink: 0,
+                  padding: 0,
+                  outline: 'none',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                 }}
-              >⌄</button>
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
             </div>
           </div>
 
