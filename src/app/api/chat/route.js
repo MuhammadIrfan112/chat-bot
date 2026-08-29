@@ -665,37 +665,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     }
 
     // ── Canada check: If Canadian city, search Realtor.ca first, fallback to Zillow Canada ──
-    const canadianProvinces = new Set(['ON', 'BC', 'AB', 'QC', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE', 'NT', 'YT', 'NU']);
-    const isCanada = canadianProvinces.has(String(state || '').toUpperCase().trim());
-
-    if (isCanada) {
-      console.log(`[Apify] 🇨🇦 Canadian city detected: ${normCity}, ${state}. Attempting Realtor.ca scraper run...`);
-      try {
-        const realtorPayload = {
-          location: `${normCity}, ${state || 'ON'}`.trim(),
-          maxItems: 50,
-          transactionType: intent === 'rent' ? 'For rent' : 'For sale'
-        };
-
-        const realtorRes = await fetch(
-          `https://api.apify.com/v2/acts/fatihtahta~realtor-canada-scraper/runs?maxItems=50&token=${APIFY_TOKEN}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(realtorPayload)
-          }
-        );
-        const realtorData = await realtorRes.json();
-        if (realtorData.data?.id) {
-          const runId = realtorData.data.id;
-          ACTIVE_APIFY_RUNS[runKey] = { runId, startedAt: Date.now(), intent, source: 'realtor_ca' };
-          console.log(`[Apify] 🇨🇦 Realtor.ca scraper run started: ${runId} for ${normCity}, ${state}`);
-          return runId;
-        }
-      } catch (err) {
-        console.warn('[Apify] Realtor.ca scraper start failed, falling back to Zillow Canada:', err.message);
-      }
-    }
+    // Use fast Zillow scraper (runs in ~7s with exact property type filters for Canada & US)
 
     const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths);
     console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
@@ -2316,9 +2286,15 @@ CRITICAL INSTRUCTIONS:
                     '[CITY_BTN: 💡 Buyer Tips]'
                   ].join(' ');
 
+                  const displayCityName = (() => {
+                    const c = detectedCity ? (detectedCity.charAt(0).toUpperCase() + detectedCity.slice(1)) : 'Milton';
+                    const st = resolvedState || detectedState;
+                    return st ? `${c}, ${st.toUpperCase()}` : c;
+                  })();
+                  const typeDisplay = propType ? propType.replace(/[🏘️🏠🏡🏗️]/gu, '').trim() + ' ' : '';
                   const replyText = isShowMoreRequest
-                    ? `🔍 Searching for more properties in **${detectedCity}**... This will take about 30 seconds.`
-                    : `🔍 Searching for live ${propIntent === 'rent' ? 'rental' : ''} properties in **${detectedCity}**... This will take about 30 seconds. While you wait, explore what makes **${detectedCity}** a great place to live! 🏙️\n\n${cityBtns}`;
+                    ? `🔍 Searching for more properties in **${displayCityName}**... This will take a few seconds.`
+                    : `🔍 Searching for live ${typeDisplay}${propIntent === 'rent' ? 'rental ' : ''}properties in **${displayCityName}**... This will take a few seconds. While you wait, explore what makes **${displayCityName}** a great place to live! 🏙️\n\n${cityBtns}`;
 
                   return Response.json({
                     reply: replyText,
@@ -2356,9 +2332,15 @@ CRITICAL INSTRUCTIONS:
                   '[CITY_BTN: 💡 Buyer Tips]'
                 ].join(' ');
 
+                const displayCityName = (() => {
+                  const c = detectedCity ? (detectedCity.charAt(0).toUpperCase() + detectedCity.slice(1)) : 'Milton';
+                  const st = resolvedState || detectedState;
+                  return st ? `${c}, ${st.toUpperCase()}` : c;
+                })();
+                const typeDisplay = propType ? propType.replace(/[🏘️🏠🏡🏗️]/gu, '').trim() + ' ' : '';
                 const replyText = isShowMoreRequest
-                  ? `🔍 Searching for more properties in ${detectedCity}... This will take about 30 seconds.`
-                  : `🔍 Searching for live ${propIntent === 'rent' ? 'rental' : ''} properties in ${detectedCity}... This will take about 30 seconds. While you wait, explore what makes ${detectedCity} a great place to live! 🏙️\n\n${cityBtns}`;
+                  ? `🔍 Searching for more properties in **${displayCityName}**... This will take a few seconds.`
+                  : `🔍 Searching for live ${typeDisplay}${propIntent === 'rent' ? 'rental ' : ''}properties in **${displayCityName}**... This will take a few seconds. While you wait, explore what makes **${displayCityName}** a great place to live! 🏙️\n\n${cityBtns}`;
 
                 return Response.json({
                   reply: replyText,
