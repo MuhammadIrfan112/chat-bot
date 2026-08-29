@@ -1939,7 +1939,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       lower.includes('want to buy') ||
       lower.includes('buy property') ||
       lower.includes('purchase a home') ||
-      lower.includes('buy home');
+      lower.includes('buy home') ||
+      /\b(buy|buying|purchase|purchasing)\s+(a\s+)?(home|house|property|condo|townhouse|place)\b/i.test(lower) ||
+      /\b(looking\s+(for|to)\s+(buy|purchase)|interested\s+in\s+buying)\b/i.test(lower);
 
     if (isBuyIntent && !buyHomeStep && botIndustry !== 'E-Commerce') {
       resetFlows();
@@ -2342,7 +2344,12 @@ function formatCityDisplay(msg) {
     }
 
     // ── Looking to Rent Flow ──────────────────────────────────────────
-    if ((msg.includes("looking to rent") || msg.includes("🔑 I'm looking to rent")) && !rentStep) {
+    const isRentIntent =
+      msg.includes("looking to rent") ||
+      msg.includes("🔑 I'm looking to rent") ||
+      /\b(looking\s+(for|to)\s+rent|want\s+to\s+rent|need\s+(a\s+)?rental|find\s+a\s+rental|rent\s+a\s+(home|house|condo|apartment|place|unit)|interested\s+in\s+renting|looking\s+to\s+lease)\b/i.test(lower);
+
+    if (isRentIntent && !rentStep) {
       resetFlows();
       setRentStep('prop_type');
       setMessages(prev => [...prev, {
@@ -2524,7 +2531,12 @@ function formatCityDisplay(msg) {
     }
 
     // ── Thinking About Selling Flow ─────────────────────────────────────
-    if ((msg.includes("thinking about selling") || msg.includes("🏠 I'm thinking about selling my home")) && !sellStep) {
+    const isSellIntent =
+      msg.includes("thinking about selling") ||
+      msg.includes("🏠 I'm thinking about selling my home") ||
+      /\b(want\s+to\s+sell|thinking\s+(of|about)\s+selling|sell\s+my\s+(home|house|property|condo)|list\s+my\s+(home|house|property)|selling\s+my\s+home)\b/i.test(lower);
+
+    if (isSellIntent && !sellStep) {
       resetFlows();
       setSellStep('address');
       setMessages(prev => [...prev, {
@@ -2604,7 +2616,13 @@ function formatCityDisplay(msg) {
     }
 
     // ── Rent Out My House Flow ──────────────────────────────────────
-    if ((msg.includes("rent out my house") || msg.includes("🏨 I'm looking to rent out my house")) && !rentOutStep) {
+    const isRentOutIntent =
+      msg.includes("rent out my house") ||
+      msg.includes("I'm looking to rent out my house") ||
+      msg.includes("🏨 I'm looking to rent out my house") ||
+      /\b(rent\s*out|renting\s*out|lease\s*out|rent\s+my\s+(house|home|property|condo|apartment)|landlord)\b/i.test(lower);
+
+    if (isRentOutIntent && !rentOutStep) {
       resetFlows();
       setRentOutStep('ownership');
       setMessages(prev => [...prev, {
@@ -2780,7 +2798,13 @@ function formatCityDisplay(msg) {
     }
 
     // ── Home Value Flow ────────────────────────────────────────────
-    if ((msg.includes("home's value") || msg.includes("💰 I want to know my home's value")) && !homeValueStep) {
+    const isHomeValueIntent =
+      msg.includes("home's value") ||
+      msg.includes("I want to know my home's value") ||
+      msg.includes("💰 I want to know my home's value") ||
+      /\b(home\s*('?s)?\s*value|what\s+is\s+my\s+home\s+worth|how\s+much\s+is\s+my\s+(home|house)\s+worth|property\s+valuation|home\s+worth|value\s+of\s+my\s+(home|house|property))\b/i.test(lower);
+
+    if (isHomeValueIntent && !homeValueStep) {
       resetFlows();
       setHomeValueStep('address');
       setMessages(prev => [...prev, {
@@ -3505,10 +3529,14 @@ function formatCityDisplay(msg) {
                 </div>
               </div>
             </a>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {/* Close & Reset Button (✕): Closes widget AND starts fresh new chat session */}
               <button
-                title="New Chat"
-                onClick={resetChat}
+                title="Close and Start New Chat"
+                onClick={() => {
+                  resetChat();
+                  setIsOpen(false);
+                }}
                 style={{
                   background: 'rgba(255,255,255,0.15)',
                   border: 'none',
@@ -3516,7 +3544,8 @@ function formatCityDisplay(msg) {
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
-                  fontSize: '18px',
+                  fontSize: '14px',
+                  fontWeight: '700',
                   lineHeight: '1',
                   cursor: 'pointer',
                   display: 'flex',
@@ -3526,8 +3555,23 @@ function formatCityDisplay(msg) {
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-              >+</button>
-              <button className={styles.closeBtn} onClick={() => setIsOpen(false)}>✕</button>
+              >✕</button>
+
+              {/* Minimize Button (⌄): Minimizes widget to launcher icon, preserves chat history */}
+              <button 
+                title="Minimize" 
+                className={styles.closeBtn} 
+                onClick={() => setIsOpen(false)}
+                style={{
+                  fontSize: '16px',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  lineHeight: '1',
+                  paddingBottom: '2px'
+                }}
+              >⌄</button>
             </div>
           </div>
 
