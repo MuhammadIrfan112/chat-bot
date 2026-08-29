@@ -539,33 +539,59 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       // Pool 3 REMOVED: Never show properties below (budget - 100k). Minimum price = budget - 100k.
 
-      // ── POOL 4: Market Lowest Fallback (Fill remaining slots up to totalTarget with lowest available market prices) ──
+      // ── POOL 4: Strict Type, Any Budget (Market Lowest for this type, starting from budget-100k floor) ──
       if (selected.length < totalTarget && strictListApify.length > 0) {
+        const pool4List = strictListApify.filter(p => {
+          const price = getPrice(p);
+          const aboveFloor = minBudgetWindow > 0 ? price >= minBudgetWindow : true;
+          return aboveFloor && !usedKeys.has(getPropKey(p));
+        });
         if (targetBeds > 0) {
-          const pool4A = strictListApify.filter(p => getBeds(p) === targetBeds && !usedKeys.has(getPropKey(p)));
-          for (const p of sortAscendingPrice(pool4A)) {
+          for (const p of sortAscendingPrice(pool4List.filter(p => getBeds(p) === targetBeds))) {
             if (selected.length >= totalTarget) break;
             addProp(p);
           }
         }
-        const pool4B = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-        for (const p of sortAscendingPrice(pool4B)) {
+        for (const p of sortAscendingPrice(pool4List)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
       }
 
-      // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
-      // If targetBeds > 0, prioritize matching bedrooms first, then others
-      const remainingStrict = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-      let remainingSorted;
-      if (targetBeds > 0) {
-        const matchingBedRem = remainingStrict.filter(p => getBeds(p) === targetBeds);
-        const otherRem = remainingStrict.filter(p => getBeds(p) !== targetBeds);
-        remainingSorted = [...sortAscendingPrice(matchingBedRem), ...sortAscendingPrice(otherRem)];
-      } else {
-        remainingSorted = sortAscendingPrice(remainingStrict);
+      // ── POOL 5 (Type-Relaxed Fallback): If strict type doesn't have enough listings in city ──
+      // Fill remaining slots with other available property types in city starting from budget-100k floor
+      if (selected.length < totalTarget && relaxedTypeListApify.length > 0) {
+        const pool5List = relaxedTypeListApify.filter(p => {
+          const price = getPrice(p);
+          const aboveFloor = minBudgetWindow > 0 ? price >= minBudgetWindow : true;
+          return aboveFloor && !usedKeys.has(getPropKey(p));
+        });
+        for (const p of sortAscendingPrice(pool5List)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+        // If still nothing above floor, include lowest priced in city
+        if (selected.length === 0) {
+          for (const p of sortAscendingPrice(relaxedTypeListApify.filter(p => !usedKeys.has(getPropKey(p))))) {
+            if (selected.length >= totalTarget) break;
+            addProp(p);
+          }
+        }
       }
+
+      // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
+      const allRem = (strictListApify.length > 0 ? [...strictListApify, ...relaxedTypeListApify] : relaxedTypeListApify)
+        .filter(p => !usedKeys.has(getPropKey(p)));
+      const seenRem = new Set();
+      const dedupedRem = [];
+      for (const p of allRem) {
+        const k = getPropKey(p);
+        if (!seenRem.has(k)) {
+          seenRem.add(k);
+          dedupedRem.push(p);
+        }
+      }
+      const remainingSorted = sortAscendingPrice(dedupedRem);
 
       return { results: [...selected, ...remainingSorted], matchTier: apifyMatchTier };
     }

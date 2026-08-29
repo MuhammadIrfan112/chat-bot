@@ -1404,35 +1404,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             ? data.city.charAt(0).toUpperCase() + data.city.slice(1)
             : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton');
 
-          if (props.length === 0 && unseenProps.length === 0 && rawProps.length > 0) {
-            // All returned props already shown — auto re-trigger Apify for a fresh batch
-            console.log('[ShowMore] All Apify props already seen, triggering fresh scrape...');
-            setIsLoading(true);
-            // Re-trigger the chat API which will launch a new Apify run
-            const reTriggerMsg = 'Show more properties';
-            fetch('/api/chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                messages: [...messages, { role: 'user', parts: [{ text: reTriggerMsg }] }],
-                botId: activeBotId,
-                sessionId,
-                isReTrigger: true
-              })
-            }).then(r => r.json()).then(result => {
-              if (result.apifyRunId) {
-                setActiveApifyRunId(result.apifyRunId);
-                setActiveApifyIntent(result.intent || activeApifyIntent);
-                setActiveApifyCity(result.city || activeApifyCity);
-                setActiveApifyBudget(result.budget || activeApifyBudget);
-                setActiveApifyBeds(result.beds || activeApifyBeds);
-                setActiveApifyBaths(result.baths || activeApifyBaths);
-                setActiveApifyType(result.propType || activeApifyType);
-              } else {
-                setIsLoading(false);
-              }
-            }).catch(() => setIsLoading(false));
-            return;
+          if (props.length === 0 && rawProps.length > 0) {
+            props = rawProps.slice(0, 4);
           }
 
           if (props.length === 0) {
