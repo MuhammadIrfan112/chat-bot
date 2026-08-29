@@ -3760,16 +3760,21 @@ function formatCityDisplay(msg) {
             e.preventDefault();
             setIsOpen(true);
           }}
-          title="Chat with us"
+          title={isMobile ? "Message" : "Chat with us"}
         >
-          {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
-            <div style={{ width: isMobile ? '40px' : '24px', height: isMobile ? '40px' : '24px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
-              <img src={botConfig.botAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-          ) : (
-            <span>{isMobile ? (botConfig.botAvatar || '💬') : (botConfig.botAvatar || '💬')}</span>
-          )}
-          {!isMobile && <span>Chat with us</span>}
+          <div className={styles.btnAvatarCircle}>
+            {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
+              <img src={botConfig.botAvatar} alt="Avatar" className={styles.btnAvatarImg} />
+            ) : (
+              <span className={styles.btnAvatarText}>
+                {botConfig.botAvatar || (botConfig.botName ? botConfig.botName.charAt(0).toUpperCase() : 'A')}
+              </span>
+            )}
+            <span className={styles.onlineDot}></span>
+          </div>
+          <span className={styles.btnLabel}>
+            {isMobile ? 'Message' : 'Chat with us'}
+          </span>
         </button>
       )}
     </div>

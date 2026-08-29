@@ -42,7 +42,7 @@
   var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 375px; height: 700px; max-height: calc(100vh - 30px); border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
   
   if (isMobile) {
-    closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
+    closedStyle = "position: fixed; bottom: 16px; right: 16px; width: 175px; height: 68px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;";
     openStyle = "position: fixed; bottom: 10px; left: 3%; width: 94%; height: 92vh; height: 92dvh; max-height: 92dvh; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden; border-radius: 22px; box-sizing: border-box;";
   }
 

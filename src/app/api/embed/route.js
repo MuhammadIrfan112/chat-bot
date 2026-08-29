@@ -43,9 +43,9 @@ export async function GET(req) {
   var iframeUrl = baseUrl + '/bot/' + config.botId + '?position=' + position + (isMobile ? '&device=mobile' : '&desktop=true') + planParams + '&v=' + timestamp;
   iframe.src = iframeUrl;
   
-  // Closed: desktop pill button area | mobile: circular button area
+  // Closed: desktop pill button area | mobile: pill button area
   var closedStyle = isMobile
-    ? "position: fixed; bottom: 16px; " + position + ": 16px; width: 80px; height: 80px; border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
+    ? "position: fixed; bottom: 16px; " + position + ": 16px; width: 175px; height: 68px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
     : "position: fixed; bottom: 16px; " + position + ": 16px; width: 200px; height: 68px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
 
   // Open: desktop floating card with rounded corners, tablet same
