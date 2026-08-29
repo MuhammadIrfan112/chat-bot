@@ -3749,7 +3749,7 @@ function formatCityDisplay(msg) {
           className={`${styles.floatingBtn} ${isMobile ? styles.floatingBtnMobile : ''}`}
           style={{
             position: 'fixed',
-            bottom: isMobile ? '16px' : '24px',
+            bottom: isMobile ? '80px' : '24px',
             right: isMobile ? '16px' : '24px',
             left: 'auto',
             top: 'auto',

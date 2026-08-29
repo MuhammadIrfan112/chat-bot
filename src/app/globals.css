@@ -451,6 +451,12 @@ button {
 }
 
 @media (max-width: 768px) {
+  /* Move mobile floating button up so browser nav bar doesn't hide it */
+  #realty-prop-global-bot [class*="floatingBtn"] {
+    bottom: 80px !important;
+    right: 16px !important;
+  }
+
   #realty-prop-global-bot [class*="chatWindow"] {
     position: fixed !important;
     bottom: 8px !important;
