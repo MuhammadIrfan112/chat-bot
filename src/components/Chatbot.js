@@ -1233,20 +1233,24 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     }
 
     const checkDevice = () => {
-      let w = window.innerWidth;
-      try {
-        if (window.parent !== window && window.parent.innerWidth) {
-          w = window.parent.innerWidth;
+      let screenW = typeof window !== 'undefined' ? (window.screen?.width || window.innerWidth) : 1024;
+      let windowW = typeof window !== 'undefined' ? window.innerWidth : 1024;
+      
+      let w = windowW;
+      if (typeof window !== 'undefined' && window.parent !== window) {
+        try {
+          if (window.parent.innerWidth) w = window.parent.innerWidth;
+        } catch (e) {
+          w = screenW;
         }
-      } catch (e) {
-        // Cross-origin iframe: if not explicitly marked mobile, check screen width
-        if (typeof window !== 'undefined' && window.screen && window.screen.width > 768) {
-          w = window.screen.width;
-        }
+      } else {
+        w = windowW;
       }
+      
       const mobile = w <= 768;
       setIsMobile(mobile);
       if (!mobile) setForceDesktopMode(true);
+      else setForceDesktopMode(false);
       setIsTablet(false);
     };
     checkDevice();
@@ -3348,6 +3352,7 @@ function formatCityDisplay(msg) {
             left: isMobile ? '3%' : 'auto',
             top: 'auto',
             width: isMobile ? '94%' : '375px',
+            maxWidth: isMobile ? '94%' : '375px',
             height: isMobile ? '94vh' : '700px',
             maxHeight: isMobile ? '94vh' : 'calc(100vh - 30px)',
             borderRadius: '22px',
