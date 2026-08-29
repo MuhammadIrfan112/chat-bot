@@ -17,6 +17,11 @@
    FLOATING BUTTON (closed state)
 ══════════════════════════════════════════════ */
 .floatingBtn {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  top: auto !important;
   background: var(--primary, #1E6FD9);
   color: #ffffff;
   border: none;

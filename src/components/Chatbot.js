@@ -3339,7 +3339,17 @@ function formatCityDisplay(msg) {
       }}
     >
       {isOpen ? (
-        <div className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`}>
+        <div 
+          className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`}
+          style={{
+            position: 'fixed',
+            bottom: isMobile ? '8px' : '24px',
+            right: isMobile ? 'auto' : '24px',
+            left: isMobile ? '3%' : 'auto',
+            top: 'auto',
+            zIndex: 999999
+          }}
+        >
           <div className={styles.header}>
             <a 
               href={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/login`} 
@@ -3743,6 +3753,14 @@ function formatCityDisplay(msg) {
       ) : (
         <button
           className={`${styles.floatingBtn} ${isMobile ? styles.floatingBtnMobile : ''}`}
+          style={{
+            position: 'fixed',
+            bottom: isMobile ? '16px' : '24px',
+            right: isMobile ? '16px' : '24px',
+            left: 'auto',
+            top: 'auto',
+            zIndex: 999999
+          }}
           onClick={() => setIsOpen(true)}
           onTouchEnd={(e) => {
             e.preventDefault();
