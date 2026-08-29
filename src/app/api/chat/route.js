@@ -1591,6 +1591,7 @@ export async function POST(req) {
     // Extract user query and full chat history
     const lastUserMessage = messages.filter(m => m.role === 'user').pop();
     const userQuery = lastUserMessage?.parts?.[0]?.text || '';
+    const lastUserMsg = userQuery;
     const fullChatText = messages.map(m => m.parts?.[0]?.text || '').join(' ');
 
     if (bot_id) {
