@@ -586,11 +586,8 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isRecentlySold: { value: false }
       };
 
-  // Beds filter on scraper: broad enough to fetch full inventory for exact & close bed counts
-  if (propBeds > 0) {
-    filterState.beds = { min: Math.max(1, propBeds - 1) };
-  }
-  // DO NOT add rigid baths filter to scraper URL, because Zillow's bath filter drops properties with half-baths or unlisted bath counts
+  // DO NOT add beds or baths filter to scraper URL, so we fetch the complete inventory for this property type
+  // and sort all listings in pure ascending price order on our backend
 
   // ── Apply property type filter on Zillow URL (use proper Zillow boolean flags) ──
   const zillowType = mapPropTypeToZillow(propType);
@@ -1189,23 +1186,20 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
   }
 
-  // ── POOL 4 (Market Lowest Fallback): If city market starts slightly above budget + 10%, max 1.35x cap ──
-  // Sorted in ASCENDING order (lowest available market price first)
-  if (selected.length === 0 && strictList.length > 0) {
-    const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
-    const pool4 = strictList.filter(p => {
-      const price = getPrice(p);
-      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-      return hardCap > 0 ? (price > 0 && price <= hardCap && matchBed) : matchBed;
-    });
-    for (const p of sortAscendingPrice(pool4.length > 0 ? pool4 : strictList.filter(p => {
-      const price = getPrice(p);
-      return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
-    }))) {
+  // ── POOL 4: Market Lowest Fallback (Fill remaining slots up to totalTarget with lowest available market prices) ──
+  if (selected.length < totalTarget && strictList.length > 0) {
+    if (targetBeds > 0) {
+      const pool4A = strictList.filter(p => getBeds(p) === targetBeds && !usedKeys.has(getPropKey(p)));
+      for (const p of sortAscendingPrice(pool4A)) {
+        if (selected.length >= totalTarget) break;
+        addProp(p);
+      }
+    }
+    const pool4B = strictList.filter(p => !usedKeys.has(getPropKey(p)));
+    for (const p of sortAscendingPrice(pool4B)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
-    if (selected.length > 0) matchTier = 'exact_bedbath_over_budget';
   }
 
   // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
@@ -2299,17 +2293,9 @@ CRITICAL INSTRUCTIONS:
 
                 let matchIntro;
                 if (isShowMoreRequest) {
-                  matchIntro = `Here are ${structuredProps.length} more properties in **${detectedCity}** that match your criteria! 🏡`;
-                } else if (matchTier === 'exact') {
-                  matchIntro = `Here are ${structuredProps.length} ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your exact criteria${propBudget > 0 ? ` around ${formatPriceNum(propBudget)}` : ''}! 🏡`;
-                } else if (matchTier === 'budget_flex') {
-                  matchIntro = `Here are ${structuredProps.length} ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} criteria within ±$30,000 of your budget: 🏡`;
-                } else if (matchTier === 'budget_only') {
-                  matchIntro = `Exact ${propBeds > 0 ? propBeds + '-bed' : ''} ${propBaths > 0 ? propBaths + '-bath' : ''} ${typeName} listings weren't available at your exact budget in **${detectedCity}**. Here are ${typeName} properties within ±$30,000 of your budget (${formatPriceNum(propBudget)}): 🏡`;
-                } else if (matchTier === 'exact_bedbath_over_budget') {
-                  matchIntro = `While there were no active ${typeName} listings within your exact ${formatPriceNum(propBudget)} budget in **${detectedCity}**, here are available ${typeName} properties matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} requirements (starting from the lowest available market price): 🏡`;
+                  matchIntro = `Here are ${structuredProps.length} more ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** (lowest price first): 🏡`;
                 } else {
-                  matchIntro = `Here are available ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your preferences: 🏡`;
+                  matchIntro = `Here are live ${typeName ? typeName + ' ' : ''}properties in **${detectedCity}** matching your preferences (sorted by lowest price first): 🏡`;
                 }
 
                 const introText = matchIntro + (cityBtnsList.length > 0 ? `\n\n${cityBtnsList.map(b => `[CITY_BTN: ${b}]`).join(' ')}` : '');

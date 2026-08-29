@@ -559,23 +559,20 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 4 (Market Lowest Fallback): If city market starts slightly above budget + 10%, max 1.35x cap ──
-      // Sorted in ASCENDING order (lowest available market price first)
-      if (selected.length === 0 && strictListApify.length > 0) {
-        const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
-        const pool4Apify = strictListApify.filter(p => {
-          const price = getPrice(p);
-          const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-          return hardCap > 0 ? (price > 0 && price <= hardCap && matchBed) : matchBed;
-        });
-        for (const p of sortAscendingPrice(pool4Apify.length > 0 ? pool4Apify : strictListApify.filter(p => {
-          const price = getPrice(p);
-          return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
-        }))) {
+      // ── POOL 4: Market Lowest Fallback (Fill remaining slots up to totalTarget with lowest available market prices) ──
+      if (selected.length < totalTarget && strictListApify.length > 0) {
+        if (targetBeds > 0) {
+          const pool4A = strictListApify.filter(p => getBeds(p) === targetBeds && !usedKeys.has(getPropKey(p)));
+          for (const p of sortAscendingPrice(pool4A)) {
+            if (selected.length >= totalTarget) break;
+            addProp(p);
+          }
+        }
+        const pool4B = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
+        for (const p of sortAscendingPrice(pool4B)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
-        if (selected.length > 0) apifyMatchTier = 'exact_bedbath_over_budget';
       }
 
       // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
@@ -632,23 +629,11 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // Compute contextual intro message based on match tier
-    const formatPriceNum = (num) => num ? `$${Number(num).toLocaleString()}` : '';
+    // Compute clean, positive contextual intro message (lowest price first)
     const typeName = rawType ? rawType.replace(/[🏘️🏠🏡🏗️]/gu, '').trim() : '';
-    let introMessage;
-    if (matchTier === 'exact') {
-      introMessage = `Here are live ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your exact criteria${propBudget > 0 ? ` around ${formatPriceNum(propBudget)}` : ''}! 🏡`;
-    } else if (matchTier === 'budget_flex') {
-      introMessage = `Here are ${orderedProperties.length} ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} criteria within ±$30,000 of your budget: 🏡`;
-    } else if (matchTier === 'budget_only') {
-      introMessage = `Exact ${propBeds > 0 ? propBeds + '-bed' : ''} ${propBaths > 0 ? propBaths + '-bath' : ''} ${typeName} listings weren't available at your exact budget in **${savedCity}**. Here are ${typeName} properties within ±$30,000 of your budget (${formatPriceNum(propBudget)}): 🏡`;
-    } else if (matchTier === 'exact_bedbath_over_budget') {
-      introMessage = `While there were no active ${typeName} listings within your exact ${formatPriceNum(propBudget)} budget in **${savedCity}**, here are available ${typeName} properties matching your exact ${propBeds > 0 ? propBeds + ' bed' : ''}${propBaths > 0 ? ', ' + propBaths + ' bath' : ''} requirements (starting from the lowest available market price): 🏡`;
-    } else {
-      introMessage = intent === 'rent'
-        ? `Here are live rental properties in **${savedCity}** that match your criteria:`
-        : `Here are available ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your preferences: 🏡`;
-    }
+    const introMessage = intent === 'rent'
+      ? `Here are live rental ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** (sorted by lowest price first): 🏡`
+      : `Here are live ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your preferences (sorted by lowest price first): 🏡`;
 
     return Response.json({ 
       status: 'done', 
