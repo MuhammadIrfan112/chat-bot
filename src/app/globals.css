@@ -422,5 +422,14 @@ button {
   }
 }
 
-
-
+/* ── Global Chatbot Widget Fixed Position Anchor (Root Level) ── */
+#realty-prop-global-bot {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 99999 !important;
+  margin: 0 !important;
+  transform: none !important;
+}
