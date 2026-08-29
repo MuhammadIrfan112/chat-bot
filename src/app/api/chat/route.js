@@ -480,7 +480,7 @@ function propTypeMatches(p, requestedType) {
   return pType.includes(req);
 }
 
-async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null) {
+async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null, propBeds = 0, propBaths = 0) {
   const isRent = intent === 'rent';
   const normCity = normalizeCityName(city);
   const normState = state || resolveStateOrProvince(normCity, state);
@@ -515,25 +515,18 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isRecentlySold: { value: false }
       };
 
-  // ── Apply budget filter ──
-  if (fullChatText) {
-    const maxBudget = parseBudget(fullChatText);
-    if (maxBudget > 0) {
-      if (isRent) {
-        filterState.monthlyPayment = { max: Math.round(maxBudget * 1.15) };
-        filterState.price = { max: Math.round(maxBudget * 1.15) };
-      } else {
-        filterState.price = { max: Math.round(maxBudget * 1.15) };
-      }
-    }
+  // Beds & Baths filters on scraper (without tight budget cap so all matching listings are fetched)
+  if (propBeds > 0) {
+    filterState.beds = { min: propBeds };
+  }
+  if (propBaths > 0) {
+    filterState.baths = { min: propBaths };
   }
 
   // ── Apply property type filter on Zillow URL (use proper Zillow boolean flags) ──
   const zillowType = mapPropTypeToZillow(propType);
   if (zillowType) {
     console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
-    // Zillow uses individual boolean flags, not a generic homeType object
-    // Default all types to false, then enable only the requested type
     filterState.isSingleFamily = { value: false };
     filterState.isTownhouse = { value: false };
     filterState.isCondo = { value: false };
@@ -547,7 +540,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
       filterState.isTownhouse = { value: true };
     } else if (zillowType === 'CONDO') {
       filterState.isCondo = { value: true };
-      filterState.isApartment = { value: true }; // include apartments with condos
+      filterState.isApartment = { value: true };
     } else if (zillowType === 'MULTI_FAMILY') {
       filterState.isMultiFamily = { value: true };
     } else if (zillowType === 'LOT') {
@@ -583,7 +576,7 @@ function getBudgetBucket(budget) {
 
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
 // If another user already started the same city+budget+intent run recently, reuse it
-async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null) {
+async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null, propBeds = 0, propBaths = 0) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
     if (!APIFY_TOKEN) {
@@ -591,11 +584,12 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       return null;
     }
 
-    // ── Check for an active shared run (same city + budget bucket + intent + type) ──
+    // ── Check for an active shared run (same city + budget bucket + intent + type + beds) ──
     const normCity = normalizeCityName(city);
     const budgetBucket = getBudgetBucket(propBudget);
     const typeSlug = propType ? propType.toLowerCase().replace(/\s+/g, '_') : 'any';
-    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}`;
+    const bedSlug = propBeds > 0 ? `${propBeds}b` : 'any';
+    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}_${bedSlug}`;
     const existing = ACTIVE_APIFY_RUNS[runKey];
     if (existing && (Date.now() - existing.startedAt) < APIFY_RUN_TTL_MS) {
       console.log(`[Apify] ♻️ Reusing active run ${existing.runId} for key="${runKey}" (started ${Math.round((Date.now()-existing.startedAt)/1000)}s ago)`);
@@ -609,16 +603,19 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     if (isCanada) {
       console.log(`[Apify] 🇨🇦 Canadian city detected: ${normCity}, ${state}. Attempting Realtor.ca scraper run...`);
       try {
+        const realtorPayload = {
+          search: `${normCity}, ${state || 'ON'}`.trim(),
+          maxItems: 25,
+          transactionType: intent === 'rent' ? 'For rent' : 'For sale'
+        };
+        if (propBeds > 0) realtorPayload.bedrooms = `${propBeds}`;
+
         const realtorRes = await fetch(
           `https://api.apify.com/v2/acts/fatihtahta~realtor-canada-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              search: `${normCity}, ${state || 'ON'}`.trim(),
-              maxItems: 25,
-              transactionType: intent === 'rent' ? 'For rent' : 'For sale'
-            })
+            body: JSON.stringify(realtorPayload)
           }
         );
         const realtorData = await realtorRes.json();
@@ -633,8 +630,8 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       }
     }
 
-    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType);
-    console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
+    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths);
+    console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runRes = await fetch(
       `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
@@ -1058,47 +1055,47 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   let matchTier = 'exact'; // tracks which pool produced results
 
-  // ── POOL 1: Exact type + Exact beds + Exact baths + Within budget (±$2k) ──
+  // ── POOL 1: Exact type + Exact beds + Exact baths + User Budget or Lower Price (Best Deals & Exact Budget) ──
   const pool1 = strictList.filter(p => {
     const price = getPrice(p);
-    const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
+    const inOrUnderBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget) : true;
     const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
     const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-    return inBudget && matchBed && matchBath;
+    return inOrUnderBudget && matchBed && matchBath;
   });
   for (const p of sortBudgetFirst(pool1)) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
 
-  // ── POOL 2: Exact type + Exact beds + Exact baths + Budget ±$30k (catches ±$30k range from user budget) ──
-  // Catches near-budget matches e.g. user budget 345k → shows 315k–375k range
+  // ── POOL 2: Exact type + Exact beds + Exact baths + Up to +10% Over Budget ──
+  // If exact / lower budget properties are scarce, check up to +10% over user budget (e.g. 700k -> 770k)
   if (selected.length < totalTarget) {
-    const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
-    const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+    const priceMax10Percent = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
     const pool2 = strictList.filter(p => {
       const price = getPrice(p);
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
       const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-      const withinRange = priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
-      return matchBed && matchBath && withinRange;
+      const within10Percent = (targetBudget > 0 && priceMax10Percent > 0)
+        ? (price > targetBudget && price <= priceMax10Percent)
+        : true;
+      return matchBed && matchBath && within10Percent;
     });
     const prevCount = selected.length;
-    for (const p of sortBudgetFirst(pool2)) {
+    // Lowest price above budget first (closest to user budget)
+    for (const p of [...pool2].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_flex';
   }
 
-  // ── POOL 3: Exact type + Budget ±$30k, beds/baths relaxed ──
-  // If exact beds/baths not found even with ±$30k budget, relax beds/baths but keep type strict and budget ±$30k
+  // ── POOL 3: Exact type + Relaxed beds/baths + Price <= Budget * 1.10 ──
   if (selected.length < totalTarget) {
-    const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
-    const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+    const priceMax = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
     const pool3 = strictList.filter(p => {
       const price = getPrice(p);
-      const withinRange = priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
+      const withinRange = priceMax > 0 ? (price > 0 && price <= priceMax) : true;
       return withinRange;
     });
     const prevCount = selected.length;
@@ -1109,8 +1106,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
   }
 
-  // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (strictly lowest market price first) ──
-  // Last resort: budget is removed, show any price but keep exact type, beds, and baths
+  // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price ──
   if (selected.length < totalTarget) {
     const pool4 = strictList.filter(p => {
       const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
@@ -2226,7 +2222,7 @@ CRITICAL INSTRUCTIONS:
               } else {
                 console.log(`[Route] 0 DB properties available/unseen (isShowMore=${isShowMoreRequest}) — starting live Apify search for City=${detectedCity} Budget=${propBudget} Type=${propType}!`);
                 const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
-                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType);
+                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType, propBeds, propBaths);
 
                 if (apifyRunId) {
                   const cityBtns = isShowMoreRequest ? '' : [
@@ -2265,7 +2261,7 @@ CRITICAL INSTRUCTIONS:
             // ============================================================
               const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
               console.log(`[Route] PRIORITY 3: No local data — starting live Apify run for City=${detectedCity} State=${resolvedState} Budget=${propBudget} Type=${propType}...`);
-              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType);
+              apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType, propBeds, propBaths);
 
               if (apifyRunId) {
                 const isShowMoreRequest = /(show\s*more|more\s*prop|see\s*more|next\s*prop)/i.test(lastUserMsg);

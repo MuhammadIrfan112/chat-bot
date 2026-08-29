@@ -491,45 +491,47 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       let apifyMatchTier = 'exact';
 
-      // ── POOL 1: Exact type + Exact beds + Exact baths + Within budget (±$2k) ──
+      // ── POOL 1: Exact type + Exact beds + Exact baths + User Budget or Lower Price (Best Deals & Exact Budget) ──
       const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
-        const inBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget + 2000) : true;
+        const inOrUnderBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget) : true;
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-        return inBudget && matchBed && matchBath;
+        return inOrUnderBudget && matchBed && matchBath;
       });
       for (const p of sortBudgetFirst(pool1Apify)) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      // ── POOL 2: Exact type + Exact beds + Exact baths + Budget ±$30k ──
+      // ── POOL 2: Exact type + Exact beds + Exact baths + Up to +10% Over Budget ──
+      // If exact / lower budget properties are scarce, check up to +10% over user budget (e.g. 700k -> 770k)
       if (selected.length < totalTarget) {
-        const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
-        const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+        const priceMax10Percent = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
         const pool2Apify = strictListApify.filter(p => {
           const price = getPrice(p);
           const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
           const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-          const withinRange = priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
-          return matchBed && matchBath && withinRange;
+          const within10Percent = (targetBudget > 0 && priceMax10Percent > 0)
+            ? (price > targetBudget && price <= priceMax10Percent)
+            : true;
+          return matchBed && matchBath && within10Percent;
         });
         const prevCount = selected.length;
-        for (const p of sortBudgetFirst(pool2Apify)) {
+        // Lowest price above budget first (closest to user budget)
+        for (const p of [...pool2Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_flex';
       }
 
-      // ── POOL 3: Exact type + Budget ±$30k, beds/baths relaxed ──
+      // ── POOL 3: Exact type + Relaxed beds/baths + Price <= Budget * 1.10 ──
       if (selected.length < totalTarget) {
-        const priceMin = targetBudget > 0 ? Math.max(0, targetBudget - BUDGET_FLEX) : 0;
-        const priceMax = targetBudget > 0 ? targetBudget + BUDGET_FLEX : 0;
+        const priceMax = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
         const pool3Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          return priceMax > 0 ? (price > 0 && price >= priceMin && price <= priceMax) : true;
+          return priceMax > 0 ? (price > 0 && price <= priceMax) : true;
         });
         const prevCount = selected.length;
         for (const p of sortBudgetFirst(pool3Apify)) {
@@ -539,7 +541,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 4: Exact type + Exact beds + Exact baths, budget removed (strictly lowest market price first) ──
+      // ── POOL 4: Exact type + Exact beds + Exact baths, lowest market price ──
       if (selected.length < totalTarget) {
         const pool4Apify = strictListApify.filter(p => {
           const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
