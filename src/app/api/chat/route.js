@@ -1177,6 +1177,14 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
+    // If budget is lower than all available listings in market, fill with lowest available market prices
+    if (selected.length < totalTarget) {
+      const unselected = strictList.filter(p => !usedKeys.has(getPropKey(p)));
+      for (const p of sortAscendingPrice(unselected)) {
+        if (selected.length >= totalTarget) break;
+        addProp(p);
+      }
+    }
   }
 
   // Remaining for "Show more" — strictly ONLY matching property type, sorted in ASCENDING order
