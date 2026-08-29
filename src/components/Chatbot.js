@@ -3347,6 +3347,11 @@ function formatCityDisplay(msg) {
             right: isMobile ? 'auto' : '24px',
             left: isMobile ? '3%' : 'auto',
             top: 'auto',
+            width: isMobile ? '94%' : '375px',
+            height: isMobile ? '94vh' : '700px',
+            maxHeight: isMobile ? '94vh' : 'calc(100vh - 30px)',
+            borderRadius: '22px',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
             zIndex: 999999
           }}
         >

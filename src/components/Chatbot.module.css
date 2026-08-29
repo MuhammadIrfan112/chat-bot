@@ -506,8 +506,7 @@
 
   /* Chat window on mobile: Tall 94vh / 94dvh rounded card */
   .chatbotContainer:not(.forceDesktop) .chatWindow,
-  .chatbotContainer:not(.forceDesktop) .globalChatWindow,
-  .chatWindow {
+  .chatbotContainer:not(.forceDesktop) .globalChatWindow {
     position: fixed !important;
     top: auto !important;
     bottom: 8px !important;
