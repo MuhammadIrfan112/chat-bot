@@ -920,9 +920,9 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
 
   return (
     <div
-      onClick={() => cardImages.length > 0 && onOpenGallery({ property: prop, images: cardImages, activeIdx: safeIdx })}
+      onClick={() => onOpenDetails && onOpenDetails({ property: prop, images: cardImages, activeIdx: safeIdx, index })}
       style={{
-        cursor: cardImages.length > 0 ? 'pointer' : 'default',
+        cursor: 'pointer',
         borderRadius: '12px',
         overflow: 'hidden',
         backgroundColor: 'white',
@@ -1017,22 +1017,15 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
         )}
       </div>
 
-      <div style={{ padding: '8px 10px 10px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ fontWeight: '800', fontSize: '14px', color: '#059669', marginBottom: '3px' }}>
+      <div style={{ padding: '10px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontWeight: '800', fontSize: '15px', color: '#059669', marginBottom: '3px' }}>
           {displayPrice}
         </div>
-        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: '11.5px', color: '#6b7280', marginBottom: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {displayAddress}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: '#374151', borderTop: '1px solid #f3f4f6', paddingTop: '6px', marginTop: 'auto' }}>
-          <span>🛏️ {displayBeds}</span>
-          <span>🛁 {displayBaths}</span>
-          <span style={{ marginLeft: 'auto', background: '#EEF2FF', color: '#4338CA', padding: '2px 7px', borderRadius: '5px', fontSize: '10px', fontWeight: '700', textTransform: 'capitalize', border: '1px solid #E0E7FF' }}>
-            🏷️ {displayType}
-          </span>
-        </div>
 
-        {/* View Full Details Button */}
+        {/* Show More Details Button */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -1040,8 +1033,8 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
           }}
           style={{
             width: '100%',
-            padding: '8px 12px',
-            marginTop: '8px',
+            padding: '9px 12px',
+            marginTop: 'auto',
             borderRadius: '8px',
             background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
             color: 'white',
