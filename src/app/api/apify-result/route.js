@@ -489,7 +489,7 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       let apifyMatchTier = 'exact';
 
-      // ── POOL 1: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Exact Bed & Bath ──
+      // ── POOL 1: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Exact Bed (if given) ──
       // Sorted in ASCENDING order (e.g. $700k -> $750k -> $800k)
       const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
@@ -503,7 +503,20 @@ const SUPPLEMENT_PHOTO_SETS = [
         addProp(p);
       }
 
-      // ── POOL 2: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
+      // ── POOL 2A: Strict Type + In Budget Window + Exact Bed (if targetBeds specified but bath relaxed) ──
+      if (selected.length < totalTarget && targetBeds > 0) {
+        const pool2A = strictListApify.filter(p => {
+          const price = getPrice(p);
+          const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
+          return inWindow && getBeds(p) === targetBeds;
+        });
+        for (const p of sortAscendingPrice(pool2A)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+      }
+
+      // ── POOL 2B: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
       // Sorted in ASCENDING order (lowest price first)
       if (selected.length < totalTarget) {
         const pool2Apify = strictListApify.filter(p => {
@@ -519,7 +532,19 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 3: Great Deals under (budget - 100k) for that Property Type ──
+      // ── POOL 3A: Great Deals under (budget - 100k) with Exact Bed (if targetBeds > 0) ──
+      if (selected.length < totalTarget && minBudgetWindow > 0 && targetBeds > 0) {
+        const pool3A = strictListApify.filter(p => {
+          const price = getPrice(p);
+          return price > 0 && price < minBudgetWindow && getBeds(p) === targetBeds;
+        });
+        for (const p of sortAscendingPrice(pool3A)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+      }
+
+      // ── POOL 3B: Great Deals under (budget - 100k) for that Property Type (any beds) ──
       // Sorted in ASCENDING order
       if (selected.length < totalTarget && minBudgetWindow > 0) {
         const pool3Apify = strictListApify.filter(p => {
@@ -540,9 +565,13 @@ const SUPPLEMENT_PHOTO_SETS = [
         const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
         const pool4Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+          const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+          return hardCap > 0 ? (price > 0 && price <= hardCap && matchBed) : matchBed;
         });
-        for (const p of sortAscendingPrice(pool4Apify)) {
+        for (const p of sortAscendingPrice(pool4Apify.length > 0 ? pool4Apify : strictListApify.filter(p => {
+          const price = getPrice(p);
+          return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+        }))) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
@@ -550,8 +579,16 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
 
       // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
+      // If targetBeds > 0, prioritize matching bedrooms first, then others
       const remainingStrict = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-      const remainingSorted = sortAscendingPrice(remainingStrict);
+      let remainingSorted;
+      if (targetBeds > 0) {
+        const matchingBedRem = remainingStrict.filter(p => getBeds(p) === targetBeds);
+        const otherRem = remainingStrict.filter(p => getBeds(p) !== targetBeds);
+        remainingSorted = [...sortAscendingPrice(matchingBedRem), ...sortAscendingPrice(otherRem)];
+      } else {
+        remainingSorted = sortAscendingPrice(remainingStrict);
+      }
 
       return { results: [...selected, ...remainingSorted], matchTier: apifyMatchTier };
     }

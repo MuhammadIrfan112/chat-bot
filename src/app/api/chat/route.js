@@ -1119,7 +1119,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   let matchTier = 'exact';
 
-  // ── POOL 1: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Exact Bed & Bath ──
+  // ── POOL 1: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Exact Bed (if given) ──
   // Sorted in ASCENDING order (e.g. $700k -> $750k -> $800k)
   const pool1 = strictList.filter(p => {
     const price = getPrice(p);
@@ -1133,7 +1133,20 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     addProp(p);
   }
 
-  // ── POOL 2: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
+  // ── POOL 2A: Strict Type + In Budget Window + Exact Bed (if targetBeds specified but bath relaxed) ──
+  if (selected.length < totalTarget && targetBeds > 0) {
+    const pool2A = strictList.filter(p => {
+      const price = getPrice(p);
+      const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
+      return inWindow && getBeds(p) === targetBeds;
+    });
+    for (const p of sortAscendingPrice(pool2A)) {
+      if (selected.length >= totalTarget) break;
+      addProp(p);
+    }
+  }
+
+  // ── POOL 2B: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
   // Sorted in ASCENDING order (lowest price first)
   if (selected.length < totalTarget) {
     const pool2 = strictList.filter(p => {
@@ -1149,7 +1162,19 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
   }
 
-  // ── POOL 3: Great Deals under (budget - 100k) for that Property Type ──
+  // ── POOL 3A: Great Deals under (budget - 100k) with Exact Bed (if targetBeds > 0) ──
+  if (selected.length < totalTarget && minBudgetWindow > 0 && targetBeds > 0) {
+    const pool3A = strictList.filter(p => {
+      const price = getPrice(p);
+      return price > 0 && price < minBudgetWindow && getBeds(p) === targetBeds;
+    });
+    for (const p of sortAscendingPrice(pool3A)) {
+      if (selected.length >= totalTarget) break;
+      addProp(p);
+    }
+  }
+
+  // ── POOL 3B: Great Deals under (budget - 100k) for that Property Type (any beds) ──
   // Sorted in ASCENDING order
   if (selected.length < totalTarget && minBudgetWindow > 0) {
     const pool3 = strictList.filter(p => {
@@ -1170,9 +1195,13 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
     const pool4 = strictList.filter(p => {
       const price = getPrice(p);
-      return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+      return hardCap > 0 ? (price > 0 && price <= hardCap && matchBed) : matchBed;
     });
-    for (const p of sortAscendingPrice(pool4)) {
+    for (const p of sortAscendingPrice(pool4.length > 0 ? pool4 : strictList.filter(p => {
+      const price = getPrice(p);
+      return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+    }))) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
@@ -1180,8 +1209,16 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   }
 
   // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
+  // If targetBeds > 0, prioritize matching bedrooms first, then others
   const remainingStrict = strictList.filter(p => !usedKeys.has(getPropKey(p)));
-  const remainingSorted = sortAscendingPrice(remainingStrict);
+  let remainingSorted;
+  if (targetBeds > 0) {
+    const matchingBedRem = remainingStrict.filter(p => getBeds(p) === targetBeds);
+    const otherRem = remainingStrict.filter(p => getBeds(p) !== targetBeds);
+    remainingSorted = [...sortAscendingPrice(matchingBedRem), ...sortAscendingPrice(otherRem)];
+  } else {
+    remainingSorted = sortAscendingPrice(remainingStrict);
+  }
 
   return { results: [...selected, ...remainingSorted], matchTier };
 }
@@ -1349,17 +1386,17 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
 
     console.log(`fetchCityPropertyData: Total=${filteredData.length}, Unseen=${unseenData.length}, Seen=${seenData.length}, isShowMore=${isShowMore}`);
 
-    // If user asked for Show More and all properties were already shown:
+    // If user asked for Show More and all unseen properties are exhausted — trigger a fresh live Apify scrape
+    // NEVER show a hard stop message; always attempt to fetch fresh listings from Zillow/Realtor
     if (isShowMore && unseenData.length === 0) {
-      return `\n\nNO_MORE_PROPERTIES: The user has already seen all available ${filteredData.length} matching properties in ${cleanCity} within their budget. CRITICAL INSTRUCTION: Politely inform the user: "You've seen all current listings matching your budget in ${cleanCity}! Would you like me to broaden the search to nearby areas, adjust the price range, or connect you with an agent who can access exclusive off-market listings?"`;
+      console.log(`fetchCityPropertyData: All ${filteredData.length} DB properties already shown for city="${cleanCity}" — triggering fresh live Apify scrape for more.`);
+      return { text: '', rawProperties: [] }; // Empty = triggers live Apify scrape in the caller
     }
 
-    // Determine batch counts:
-    // Initial search: 4 cards (2 budget matches + 2 bed/bath matches)
-    // See more search: 2 cards (1 budget match + 1 bed/bath match) from unseen properties
-    const budgetNeeded = isShowMore ? 1 : 2;
-    const bedNeeded = isShowMore ? 1 : 2;
-    const cardsLimit = isShowMore ? 2 : 4;
+    // All batches: 4 cards per Show More click (ascending price, any beds/baths)
+    const budgetNeeded = 2;
+    const bedNeeded = 2;
+    const cardsLimit = 4;
 
     const sourcePool = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
@@ -1967,7 +2004,7 @@ ${areasNotServed.length ? `
         }
       }
 
-      // ── Change Search Criteria Flow (3 Buttons: 📍 City, 💰 Budget, 🛏️ Bedrooms & Bathrooms) ──
+      // ── Change Search Criteria Flow (3 Buttons: 📍 City, 💰 Budget, 🛏️ Bedrooms) ──
       const prevModelMsg = [...messages].reverse().find(m => m.role === 'model')?.parts?.[0]?.text || '';
       const hasPriorSearch = messages.some(m =>
         m.role === 'model' && (
@@ -1982,7 +2019,7 @@ ${areasNotServed.length ? `
       const isChangeCriteriaRequest = /(change\s*search\s*criteria|change\s*criteria|update\s*criteria|modify\s*search)/i.test(lastUserMsg);
       if (isChangeCriteriaRequest) {
         return Response.json({
-          reply: "What information would you like to update in your search criteria?\n\n[BUTTON: 📍 City] [BUTTON: 💰 Budget] [BUTTON: 🛏️ Bedrooms & Bathrooms]",
+          reply: "What information would you like to update in your search criteria?\n\n[BUTTON: 📍 City] [BUTTON: 💰 Budget] [BUTTON: 🛏️ Bedrooms]",
           intent: propIntent,
           city: detectedCity
         });
@@ -2007,10 +2044,10 @@ ${areasNotServed.length ? `
         });
       }
 
-      const isChangeBedsChoice = /^(🛏️\s*bedrooms?\s*&?\s*bathrooms?|bedrooms?\s*&?\s*bathrooms?|bedrooms?|bathrooms?|beds?|baths?|change\s*beds?)$/i.test(lastUserMsg);
+      const isChangeBedsChoice = /^(🛏️\s*bedrooms?|bedrooms?|beds?|change\s*beds?|🛏️\s*bedrooms?\s*&?\s*bathrooms?|bedrooms?\s*&?\s*bathrooms?|bathrooms?|baths?)$/i.test(lastUserMsg);
       if (isChangeBedsChoice && hasPriorSearch) {
         return Response.json({
-          reply: "How many bedrooms and bathrooms are you looking for?",
+          reply: "How many bedrooms are you looking for?",
           intent: propIntent,
           city: detectedCity
         });
@@ -2036,7 +2073,7 @@ ${areasNotServed.length ? `
           criteriaChangedType = 'budget';
           console.log(`[CriteriaUpdate] User updated budget to: $${propBudget}`);
         }
-      } else if (prevModelMsg.includes('How many bedrooms and bathrooms are you looking for?')) {
+      } else if (prevModelMsg.includes('How many bedrooms are you looking for?') || prevModelMsg.includes('How many bedrooms and bathrooms are you looking for?')) {
         const bMatch = userQuery.match(/(\d+)\s*(?:bed|br)/i) || userQuery.match(/^(\d+)/);
         if (bMatch) propBeds = parseInt(bMatch[1], 10);
         const baMatch = userQuery.match(/(\d+)\s*(?:bath|ba)/i);
@@ -2194,10 +2231,10 @@ CRITICAL INSTRUCTIONS:
               return !shownAddresses.some(sa => sa && (addr.includes(sa) || sa.includes(addr.slice(0, 15))));
             });
 
-            // Card limits: 2 for Show More (1 budget + 1 bed/bath), 4 for initial search (2 budget + 2 bed/bath)
-            const cardsLimit = isShowMoreRequest ? 2 : 4;
-            const budgetNeeded = isShowMoreRequest ? 1 : 2;
-            const bedNeeded = isShowMoreRequest ? 1 : 2;
+            // Card limits: 4 cards per Show More / initial search
+            const cardsLimit = 4;
+            const budgetNeeded = 2;
+            const bedNeeded = 2;
 
             const poolToUse = isShowMoreRequest ? unseenProperties : allRawProperties;
 
