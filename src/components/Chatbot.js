@@ -3641,7 +3641,7 @@ function formatCityDisplay(msg) {
             </div>
           )}
 
-          {activeQuickReplies.length > 0 && (
+          {activeQuickReplies.length > 0 && buyHomeStep !== 'mortgage_upload' && (
             <div className={styles.quickReplies}>
               {activeQuickReplies.map((reply, idx) => (
                 <button key={idx} onClick={() => handleSend(reply)} className={styles.qrBtn}>{reply}</button>
@@ -3689,7 +3689,7 @@ function formatCityDisplay(msg) {
 
           <div className={styles.inputArea}>
             {buyHomeStep === 'mortgage_upload' ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                 <input
                   type="file"
                   id="letter-upload"
@@ -3697,28 +3697,56 @@ function formatCityDisplay(msg) {
                   onChange={handleFileUpload}
                   style={{ display: 'none' }}
                 />
-                <label 
-                  htmlFor="letter-upload" 
+                {/* I'll provide later — left side, same style as quickReply */}
+                <button
+                  onClick={() => { handleSkipUpload(); setActiveQuickReplies([]); }}
+                  disabled={isUploading}
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    backgroundColor: 'transparent',
+                    color: botConfig.primaryColor || '#1E6FD9',
+                    border: `2px solid ${botConfig.primaryColor || '#1E6FD9'}`,
+                    borderRadius: '24px',
+                    cursor: isUploading ? 'not-allowed' : 'pointer',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    transition: 'all 0.2s',
+                    opacity: isUploading ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  ⏭ I'll provide later
+                </button>
+                {/* Upload Document — right side, same style as quickReply filled */}
+                <label
+                  htmlFor="letter-upload"
                   style={{
                     flex: 1,
                     textAlign: 'center',
-                    padding: '12px 18px',
+                    padding: '12px 14px',
                     backgroundColor: botConfig.primaryColor || '#1E6FD9',
                     color: 'white',
                     borderRadius: '24px',
-                    cursor: 'pointer',
+                    cursor: isUploading ? 'not-allowed' : 'pointer',
                     fontWeight: '700',
-                    fontSize: '14px',
+                    fontSize: '13px',
                     transition: 'all 0.2s',
                     opacity: isUploading ? 0.7 : 1,
                     pointerEvents: isUploading ? 'none' : 'auto',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px'
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    border: '2px solid transparent'
                   }}
                 >
-                  {isUploading ? 'Uploading...' : '📎 Upload Letter'}
+                  {isUploading ? 'Uploading...' : '📎 Upload Document'}
                 </label>
               </div>
             ) : (
