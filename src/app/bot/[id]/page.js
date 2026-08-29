@@ -53,7 +53,7 @@ export default async function BotEmbedPage({ params, searchParams }) {
       <script dangerouslySetInnerHTML={{ __html: scriptContent }} />
       <Chatbot isDesktopEmbed={isDesktopEmbed} initialConfig={initialConfig} />
       
-      {/* Force transparent background on all wrapper elements */}
+      {/* Force transparent background and seamless button alignment inside iframe */}
       <style dangerouslySetInnerHTML={{ __html: `
         /* Hide the global chatbot (from root layout) if it accidentally renders inside iframe */
         #realty-prop-global-bot { display: none !important; }
@@ -67,6 +67,41 @@ export default async function BotEmbedPage({ params, searchParams }) {
           width: 100% !important;
           overflow: hidden !important;
           color-scheme: light !important;
+        }
+
+        #realty-prop-embed-bot {
+          position: absolute !important;
+          bottom: 0 !important;
+          right: 0 !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+          display: flex !important;
+          align-items: flex-end !important;
+          justify-content: flex-end !important;
+        }
+
+        #realty-prop-embed-bot [class*="floatingBtn"] {
+          position: relative !important;
+          bottom: auto !important;
+          right: auto !important;
+          left: auto !important;
+          top: auto !important;
+          margin: 0 !important;
+        }
+
+        #realty-prop-embed-bot [class*="chatWindow"] {
+          position: fixed !important;
+          bottom: 0 !important;
+          right: 0 !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: 100% !important;
+          max-height: 100% !important;
+          border-radius: 22px !important;
         }
       `}} />
     </div>

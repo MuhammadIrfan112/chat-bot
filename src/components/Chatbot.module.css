@@ -14,55 +14,52 @@
 }
 
 /* ══════════════════════════════════════════════
-   FLOATING BUTTON (closed state)
+   FLOATING BUTTON (closed state) — Dark Modern Pill
 ══════════════════════════════════════════════ */
 .floatingBtn {
-  position: fixed !important;
-  bottom: 24px !important;
-  right: 24px !important;
-  left: auto !important;
-  top: auto !important;
-  background: var(--primary, #1E6FD9);
-  color: #ffffff;
-  border: none;
+  background: #18181B;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   outline: none;
-  padding: 8px 22px 8px 8px;
+  padding: 6px 18px 6px 6px;
   border-radius: 50px;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   z-index: 99999;
+  box-sizing: border-box;
+  height: 52px;
 }
 
 .floatingBtn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .floatingBtn:active {
   transform: scale(0.97);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
 }
 
 .btnAvatarCircle {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: #FFFFFF;
-  color: var(--primary, #1E6FD9);
+  background: #FFE4E6;
+  color: #E11D48;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
@@ -73,49 +70,45 @@
 }
 
 .btnAvatarText {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
+  font-family: system-ui, -apple-system, sans-serif;
 }
 
 .onlineDot {
   position: absolute;
-  bottom: 1px;
-  right: 1px;
+  bottom: 2px;
+  right: 2px;
   width: 8px;
   height: 8px;
   background-color: #10B981;
   border-radius: 50%;
-  border: 1.5px solid white;
+  border: 1.5px solid #18181B;
 }
 
 .btnLabel {
   font-size: 15px;
   font-weight: 700;
+  color: #FFFFFF;
   letter-spacing: -0.01em;
+  padding-right: 4px;
 }
 
-/* Mobile pill button — prominent, comfortable touch target matching screenshot */
+/* Mobile pill button — prominent, comfortable touch target */
 .floatingBtnMobile {
-  padding: 8px 22px 8px 8px !important;
+  padding: 6px 20px 6px 6px !important;
   height: 52px !important;
   border-radius: 50px !important;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.35) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
 .floatingBtnMobile .btnAvatarCircle {
   width: 38px !important;
   height: 38px !important;
-  background: #FFE4E6 !important;
-  color: #E11D48 !important;
-}
-
-.floatingBtnMobile .btnAvatarText {
-  font-size: 18px !important;
-  font-weight: 900 !important;
 }
 
 .floatingBtnMobile .btnLabel {
-  font-size: 16px !important;
+  font-size: 15.5px !important;
   font-weight: 700 !important;
 }
 
