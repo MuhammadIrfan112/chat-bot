@@ -1120,6 +1120,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [activeApifyBaths, setActiveApifyBaths] = useState(0);
   const [activeApifyType, setActiveApifyType] = useState('');
   const [expandedCityPanel, setExpandedCityPanel] = useState(null); // which city btn is open
+  const [filterEditStep, setFilterEditStep] = useState(null); // 'house_type' | 'budget' | 'bedrooms' | null
 
   // ── Closing flow state ─────────────────────────────────────────
   // Tracks which step of the closing conversation we're in
@@ -1411,10 +1412,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton');
 
           if (props.length === 0) {
-            // All properties already shown or no properties found — honest message, NEVER duplicate or fake data
+            // All properties already shown or no properties found — honest message with refinement buttons
             setMessages(prev => [...prev, {
               role: 'model',
-              parts: [{ text: `You've viewed all available live listings matching your search in **${cityName}** right now. Here's what I suggest:\n\n• Try adjusting your budget or bedroom count\n• Ask me about nearby areas with more inventory\n• 📞 Connect directly with the agent for off-market or upcoming listings\n\nWould you like to adjust your search or speak with the agent?` }]
+              parts: [{ text: `I couldn't find live listings matching those exact criteria in **${cityName}** right now.\n\nYou can refine your search with the options below:` }],
+              quickReplies: ['🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms']
             }]);
             return;
           }
@@ -1426,7 +1428,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           const newModelMsg = {
             role: 'model',
             parts: [{ text: intro }],
-            properties: props.slice(0, 4)
+            properties: props.slice(0, 4),
+            quickReplies: ['Show more properties', '🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms']
           };
           setMessages(prev => [...prev, newModelMsg]);
         } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
@@ -1435,10 +1438,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setIsLoading(false);
 
           const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the requested area';
-          // Live search failed or returned no results — NEVER show fake properties
           setMessages(prev => [...prev, {
             role: 'model',
-            parts: [{ text: `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now. Here's what I suggest:\n\n• Try adjusting your budget or bedroom count\n• Ask me about nearby areas with more inventory\n• 📞 Connect directly with the agent for off-market or upcoming listings\n\nWould you like to adjust your search or speak with the agent?` }]
+            parts: [{ text: `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now.\n\nWould you like to adjust your search?` }],
+            quickReplies: ['🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms']
           }]);
         }
       } catch (e) {
@@ -3127,8 +3130,69 @@ function formatCityDisplay(msg) {
       }]);
       return;
     }
-    // ── Interested in Property / Lead Capture Interception ────────
+    // ── Smart Filter Refinement Interception ──────────────────────
     const lowerMsg = (msg || '').toLowerCase();
+
+    if (lowerMsg.includes('change house type') || lowerMsg.includes('change type') || lowerMsg === 'house type') {
+      setFilterEditStep('house_type');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Please select your preferred **house type**:` }],
+        quickReplies: ['🏡 Townhouse', '🏠 Detached', '🏘️ Semi-Detached', '🏢 Condo', '🏗️ Pre-Construction']
+      }]);
+      return;
+    }
+
+    if (lowerMsg.includes('change budget') || lowerMsg.includes('adjust budget') || lowerMsg === 'budget') {
+      setFilterEditStep('budget');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What is your new preferred **budget**? (Select an option or type your exact amount):` }],
+        quickReplies: ['Under $600k', '$600k - $750k', '$750k - $900k', '$900k - $1.2M', '$1.2M+']
+      }]);
+      return;
+    }
+
+    if (lowerMsg.includes('change bedrooms') || lowerMsg.includes('change bed') || lowerMsg.includes('adjust bedrooms') || lowerMsg === 'bedrooms') {
+      setFilterEditStep('bedrooms');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How many **bedrooms** would you like?` }],
+        quickReplies: ['1 Bedroom', '2 Bedrooms', '3 Bedrooms', '4 Bedrooms', '5+ Bedrooms']
+      }]);
+      return;
+    }
+
+    // Apply preserved filter modifications if in filterEditStep
+    let messageTextToSend = msg;
+
+    if (filterEditStep === 'house_type') {
+      setFilterEditStep(null);
+      const cleanType = msg.replace(/[🏡🏠🏘️🏢🏗️]/gu, '').trim();
+      setActiveApifyType(cleanType);
+      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Milton';
+      const budget = activeApifyBudget || buyHomeData?.budget || rentData?.budget || 0;
+      const beds = activeApifyBeds || buyHomeData?.bedrooms || rentData?.bedrooms || 0;
+      const budgetText = budget > 0 ? ` around $${Number(budget).toLocaleString()}` : '';
+      const bedsText = beds > 0 ? ` with ${beds} bedrooms` : '';
+      messageTextToSend = `Find ${cleanType} properties in ${city}${budgetText}${bedsText}`;
+    } else if (filterEditStep === 'budget') {
+      setFilterEditStep(null);
+      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Milton';
+      const type = activeApifyType || buyHomeData?.propertyType || rentData?.propertyType || 'Townhouse';
+      const beds = activeApifyBeds || buyHomeData?.bedrooms || rentData?.bedrooms || 0;
+      const bedsText = beds > 0 ? ` with ${beds} bedrooms` : '';
+      messageTextToSend = `Find ${type} properties in ${city} for budget ${msg}${bedsText}`;
+    } else if (filterEditStep === 'bedrooms') {
+      setFilterEditStep(null);
+      const city = activeApifyCity || buyHomeData?.city || rentData?.city || 'Milton';
+      const type = activeApifyType || buyHomeData?.propertyType || rentData?.propertyType || 'Townhouse';
+      const budget = activeApifyBudget || buyHomeData?.budget || rentData?.budget || 0;
+      const budgetText = budget > 0 ? ` around $${Number(budget).toLocaleString()}` : '';
+      messageTextToSend = `Find ${type} properties in ${city} with ${msg}${budgetText}`;
+    }
+
+    // ── Interested in Property / Lead Capture Interception ────────
     if (
       lowerMsg.includes('like one of these') ||
       lowerMsg.includes('interested in a property') ||
@@ -3180,12 +3244,15 @@ function formatCityDisplay(msg) {
     messageCount.current += 1;
 
     try {
-        // is_demo should ONLY be true for the specific Luxe Realty demo bot.
-        // Real client bots (including those tested on vercel.app/localhost) must get real Apify properties.
         const isDemoBot = botConfig.botId === 'demo-real-estate';
 
+        // Use messageTextToSend which includes preserved filter criteria if adjusted
+        const updatedApiMessages = messageTextToSend !== msg
+          ? [...apiMessages.slice(0, -1), { role: 'user', content: messageTextToSend }]
+          : apiMessages;
+
         const payload = {
-          messages: apiMessages,
+          messages: updatedApiMessages,
           session_id: sessionId,
           bot_id: botConfig.botId,
           plan: embedPlan || 'premium',
@@ -3208,11 +3275,25 @@ function formatCityDisplay(msg) {
       } else if (data.reply) {
         const { msg: newModelMsg, startLead, requestPreapproval, multiButtons } = parseModelReply(data.reply, data.properties || []);
         if (data.city) newModelMsg.city = data.city;
+
+        // When properties are returned directly, attach quick replies for refinement & show more
+        if (data.properties && Array.isArray(data.properties) && data.properties.length > 0) {
+          newModelMsg.quickReplies = ['Show more properties', '🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms'];
+        }
+
         setMessages(prev => [...prev, newModelMsg]);
 
         if (requestPreapproval) {
           setBuyHomeStep('mortgage_upload');
         }
+
+        // Save active search criteria across all searches (both DB and Apify)
+        if (data.city) setActiveApifyCity(data.city);
+        if (data.budget) setActiveApifyBudget(data.budget);
+        if (data.beds) setActiveApifyBeds(data.beds);
+        if (data.baths) setActiveApifyBaths(data.baths);
+        if (data.type) setActiveApifyType(data.type);
+        if (data.intent) setActiveApifyIntent(data.intent);
 
         if (data.apifyRunId) {
           setActiveApifyRunId(data.apifyRunId);
@@ -3536,11 +3617,23 @@ function formatCityDisplay(msg) {
                 </div>
               </ChatErrorBoundary>
             ))}
-            {isLoading && (
+            {activeApifyRunId ? (
+              <div className={styles.scraperLoadingCard}>
+                <span className={styles.spinningGear}>⚙️</span>
+                <div>
+                  <div className={styles.scraperText}>
+                    Scanning live MLS, Realtor & Zillow listings in <strong>{activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the area'}</strong>...
+                  </div>
+                  <div className={styles.scraperSubtext}>
+                    Matching properties within your budget & criteria
+                  </div>
+                </div>
+              </div>
+            ) : isLoading ? (
               <div className={`${styles.message} ${styles.modelMsg} ${styles.typing}`}>
                 <div className={styles.dot}></div><div className={styles.dot}></div><div className={styles.dot}></div>
               </div>
-            )}
+            ) : null}
             <div ref={messagesEndRef} />
           </div>
 

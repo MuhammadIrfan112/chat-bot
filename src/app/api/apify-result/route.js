@@ -466,7 +466,8 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFilteredApify.length} strict type props`);
 
-      const BUDGET_FLEX = 30000;
+      // Dynamic +10% budget buffer (minimum $30,000) so e.g. $700k checks up to $770k
+      const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
 
       // ── Helper: Sort with user's MAXIMUM budget as highest priority ──
       const sortBudgetFirst = (list) => [...list].sort((a, b) => {

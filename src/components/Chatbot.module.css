@@ -680,3 +680,45 @@
     border-radius: 28px;
   }
 }
+
+/* ══════════════════════════════════════════════
+   SPINNING GEAR / SCRAPER STATUS LOADER
+══════════════════════════════════════════════ */
+.scraperLoadingCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #18181B 0%, #27272A 100%);
+  color: #F4F4F5;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  margin: 8px 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.spinningGear {
+  font-size: 24px;
+  display: inline-block;
+  animation: gearSpin 2s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes gearSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.scraperText {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #E4E4E7;
+}
+
+.scraperSubtext {
+  font-size: 11px;
+  color: #A1A1AA;
+  margin-top: 2px;
+}

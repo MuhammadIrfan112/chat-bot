@@ -974,7 +974,8 @@ function parseBudget(text) {
 function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
   if (!Array.isArray(properties) || properties.length === 0) return { results: [], matchTier: 'none' };
   const totalTarget = budgetCountNeeded + bedCountNeeded;
-  const BUDGET_FLEX = 30000; // ±$30k allowed in fallback pools
+  // Dynamic +10% budget buffer (minimum $30,000) so e.g. $700k checks up to $770k
+  const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
 
   const usedKeys = new Set();
   const selected = [];
@@ -2216,7 +2217,11 @@ CRITICAL INSTRUCTIONS:
                   properties: structuredProps,
                   apifyRunId: null,
                   intent: propIntent,
-                  city: detectedCity
+                  city: detectedCity,
+                  budget: propBudget,
+                  beds: propBeds,
+                  baths: propBaths,
+                  type: propType
                 });
               } else {
                 console.log(`[Route] 0 DB properties available/unseen (isShowMore=${isShowMoreRequest}) — starting live Apify search for City=${detectedCity} Budget=${propBudget} Type=${propType}!`);
