@@ -433,3 +433,34 @@ button {
   margin: 0 !important;
   transform: none !important;
 }
+
+#realty-prop-global-bot [class*="chatWindow"] {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  top: auto !important;
+  width: 375px !important;
+  max-width: 375px !important;
+  height: 700px !important;
+  max-height: calc(100vh - 30px) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22) !important;
+  overflow: hidden !important;
+  z-index: 999999 !important;
+}
+
+@media (max-width: 768px) {
+  #realty-prop-global-bot [class*="chatWindow"] {
+    position: fixed !important;
+    bottom: 8px !important;
+    left: 3% !important;
+    right: auto !important;
+    top: auto !important;
+    width: 94% !important;
+    max-width: 94% !important;
+    height: 94vh !important;
+    max-height: 94vh !important;
+    border-radius: 22px !important;
+  }
+}

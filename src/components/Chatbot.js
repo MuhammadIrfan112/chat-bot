@@ -1089,7 +1089,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [forceDesktopMode, setForceDesktopMode] = useState(isDesktopEmbed);
+  const [forceDesktopMode, setForceDesktopMode] = useState(isDesktopEmbed || isGlobal);
   const [embedPlan, setEmbedPlan] = useState(null);
   const [embedPosition, setEmbedPosition] = useState('right');
 
