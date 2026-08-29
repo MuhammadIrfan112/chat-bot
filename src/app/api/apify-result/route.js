@@ -113,7 +113,7 @@ export async function GET(req) {
       if (datasetId) {
         try {
           const itemsRes = await fetch(
-            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=35`
+            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=100`
           );
           if (itemsRes.ok) {
             items = await itemsRes.json();
@@ -215,7 +215,10 @@ const SUPPLEMENT_PHOTO_SETS = [
       .map((p, i) => {
         // All photos — collect from Realtor.ca, Zillow, or Apify photo fields
         const allPhotos = (() => {
-          // Realtor.ca format
+          // Realtor.ca format (media.images with high_res_url or Property.Photo)
+          if (Array.isArray(p.media?.images) && p.media.images.length > 0) {
+            return p.media.images.map(img => (typeof img === 'string' ? img : (img.high_res_url || img.medium_res_url || img.low_res_url))).filter(Boolean);
+          }
           if (Array.isArray(p.Property?.Photo) && p.Property.Photo.length > 0) {
             return p.Property.Photo.map(ph => (typeof ph === 'string' ? ph : (ph.HighResPath || ph.MedResPath || ph.LowResPath || ph.url))).filter(Boolean);
           }
@@ -257,6 +260,7 @@ const SUPPLEMENT_PHOTO_SETS = [
 
         // URL — build from Realtor.ca or Zillow fields
         const url =
+          (p.attributes?.realtor_ca?.source_details?.relative_url_en ? `https://www.realtor.ca${p.attributes.realtor_ca.source_details.relative_url_en}` : null) ||
           (p.RelativeDetailsURL ? `https://www.realtor.ca${p.RelativeDetailsURL}` : null) ||
           p.propertyUrl ||
           p.detailUrl ||
@@ -267,7 +271,9 @@ const SUPPLEMENT_PHOTO_SETS = [
 
         // Address — try Realtor.ca and all known Zillow field combinations
         let address = 'Address not available';
-        if (p.Property?.Address?.AddressText) {
+        if (p.location?.address && typeof p.location.address === 'string') {
+          address = p.location.address;
+        } else if (p.Property?.Address?.AddressText) {
           address = p.Property.Address.AddressText.replace(/\|/g, ', ');
         } else if (typeof p.address === 'string' && p.address.trim()) {
           address = p.address;
@@ -277,7 +283,7 @@ const SUPPLEMENT_PHOTO_SETS = [
           address = p.address.full;
         } else if (p.streetAddress) {
           address = `${p.streetAddress}${p.city ? ', ' + p.city : ''}`;
-        } else if (p.location) {
+        } else if (typeof p.location === 'string') {
           address = p.location;
         } else if (p.listingAddress?.full) {
           address = p.listingAddress.full;
@@ -286,34 +292,33 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
 
         // Price — resolve accurately and never return $0
-        const price = p.Property?.Price || resolveAndFormatPrice(p, intent === 'rent');
+        const price = p.pricing?.display_price || (p.pricing?.amount ? `$${Number(p.pricing.amount).toLocaleString()}` : null) || p.Property?.Price || resolveAndFormatPrice(p, intent === 'rent');
 
         // Beds, baths, type, city (support Realtor.ca + Zillow)
         const beds = parseInt(
-          p.Building?.Bedrooms || p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0,
+          p.property?.building?.bedrooms || p.Building?.Bedrooms || p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0,
           10
         ) || 3;
         const baths = parseFloat(
-          p.Building?.BathroomTotal || p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0
+          p.property?.building?.bathroom_total || p.Building?.BathroomTotal || p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0
         ) || 2;
-        const rawType = p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
+        const rawType = p.property?.building?.type || p.property?.property_type || p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
 
         // ── Normalize raw type to a clean display label ──────────────────────
         const normalizeTypeLabel = (val) => {
           if (!val) return 'Detached';
           const v = String(val).toLowerCase().replace(/_/g, ' ').trim();
-          if (v.includes('semi') || v.includes('duplex') || v.includes('triplex') || v.includes('multi')) return 'Semi-Detached';
-          if (v.includes('town')) return 'Townhouse';
+          if (v.includes('semi') || v.includes('duplex') || v.includes('triplex') || v.includes('multi') || v.includes('link')) return 'Semi-Detached';
+          if (v.includes('town') || v.includes('row')) return 'Townhouse';
           if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'Condo';
           if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'Detached';
           if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'Land';
           if (v.includes('mobile') || v.includes('manufactured')) return 'Mobile Home';
-          // Title-case anything else
           return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         };
 
         const type = normalizeTypeLabel(rawType);
-        const city = p.Property?.Address?.AddressText?.split('|')[1]?.trim() || p.city || p.addressCity || p.hdpData?.homeInfo?.city || (typeof address === 'string' && address.includes(',') ? address.split(',')[1]?.trim() : '') || requestedCity || '';
+        const city = (typeof p.location?.address === 'string' && p.location.address.includes(',') ? p.location.address.split(',')[1]?.replace(/\(.*?\)/g, '').trim() : '') || p.Property?.Address?.AddressText?.split('|')[1]?.trim() || p.city || p.addressCity || p.hdpData?.homeInfo?.city || (typeof address === 'string' && address.includes(',') ? address.split(',')[1]?.replace(/\(.*?\)/g, '').trim() : '') || requestedCity || '';
 
 
         // Rich Facts & Features

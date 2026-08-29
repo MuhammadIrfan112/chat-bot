@@ -654,12 +654,10 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       return null;
     }
 
-    // ── Check for an active shared run (same city + budget bucket + intent + type + beds) ──
     const normCity = normalizeCityName(city);
     const budgetBucket = getBudgetBucket(propBudget);
     const typeSlug = propType ? propType.toLowerCase().replace(/\s+/g, '_') : 'any';
-    const bedSlug = propBeds > 0 ? `${propBeds}b` : 'any';
-    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}_${bedSlug}`;
+    const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}`;
     const existing = ACTIVE_APIFY_RUNS[runKey];
     if (existing && (Date.now() - existing.startedAt) < APIFY_RUN_TTL_MS) {
       console.log(`[Apify] ♻️ Reusing active run ${existing.runId} for key="${runKey}" (started ${Math.round((Date.now()-existing.startedAt)/1000)}s ago)`);
@@ -674,14 +672,13 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       console.log(`[Apify] 🇨🇦 Canadian city detected: ${normCity}, ${state}. Attempting Realtor.ca scraper run...`);
       try {
         const realtorPayload = {
-          search: `${normCity}, ${state || 'ON'}`.trim(),
-          maxItems: 25,
+          location: `${normCity}, ${state || 'ON'}`.trim(),
+          maxItems: 50,
           transactionType: intent === 'rent' ? 'For rent' : 'For sale'
         };
-        if (propBeds > 0) realtorPayload.bedrooms = `${propBeds}`;
 
         const realtorRes = await fetch(
-          `https://api.apify.com/v2/acts/fatihtahta~realtor-canada-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
+          `https://api.apify.com/v2/acts/fatihtahta~realtor-canada-scraper/runs?maxItems=50&token=${APIFY_TOKEN}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -704,7 +701,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=25&token=${APIFY_TOKEN}`,
+      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=50&token=${APIFY_TOKEN}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
