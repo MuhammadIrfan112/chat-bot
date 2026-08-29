@@ -476,113 +476,84 @@ const SUPPLEMENT_PHOTO_SETS = [
       // Dynamic +10% budget buffer (minimum $30,000) so e.g. $700k checks up to $770k
       const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
 
-      // ── Helper: Sort with user's MAXIMUM budget as highest priority ──
-      const sortBudgetFirst = (list) => [...list].sort((a, b) => {
-        const aPrice = getPrice(a);
-        const bPrice = getPrice(b);
-        if (targetBudget > 0 && aPrice > 0 && bPrice > 0) {
-          const aInBudget = aPrice <= targetBudget;
-          const bInBudget = bPrice <= targetBudget;
-          if (aInBudget && bInBudget) return Math.abs(aPrice - targetBudget) - Math.abs(bPrice - targetBudget);
-          if (aInBudget && !bInBudget) return -1;
-          if (!aInBudget && bInBudget) return 1;
-          return aPrice - bPrice;
-        }
-        if (targetBeds > 0) {
-          const aBedDiff = Math.abs(getBeds(a) - targetBeds);
-          const bBedDiff = Math.abs(getBeds(b) - targetBeds);
-          if (aBedDiff !== bBedDiff) return aBedDiff - bBedDiff;
-        }
-        return (aPrice || 0) - (bPrice || 0);
+      // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──
+      const sortAscendingPrice = (list) => [...list].sort((a, b) => {
+        const aPrice = getPrice(a) || 0;
+        const bPrice = getPrice(b) || 0;
+        return aPrice - bPrice;
       });
+
+      // Calculate budget window: (budget - 100k) up to (budget + 10%)
+      const minBudgetWindow = targetBudget > 100000 ? (targetBudget - 100000) : 0;
+      const maxBudgetWindow = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
 
       let apifyMatchTier = 'exact';
 
-      // ── POOL 1: Exact type + Exact beds + Exact baths + User Budget or Lower Price (Best Deals & Exact Budget) ──
+      // ── POOL 1: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Exact Bed & Bath ──
+      // Sorted in ASCENDING order (e.g. $700k -> $750k -> $800k)
       const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
-        const inOrUnderBudget = targetBudget > 0 ? (price > 0 && price <= targetBudget) : true;
+        const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-        return inOrUnderBudget && matchBed && matchBath;
+        return inWindow && matchBed && matchBath;
       });
-      for (const p of sortBudgetFirst(pool1Apify)) {
+      for (const p of sortAscendingPrice(pool1Apify)) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      // ── POOL 2: Exact type + Exact beds + Exact baths + Up to +10% Over Budget ──
-      // If exact / lower budget properties are scarce, check up to +10% over user budget (e.g. 700k -> 770k)
+      // ── POOL 2: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
+      // Sorted in ASCENDING order (lowest price first)
       if (selected.length < totalTarget) {
-        const priceMax10Percent = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
         const pool2Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-          const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-          const within10Percent = (targetBudget > 0 && priceMax10Percent > 0)
-            ? (price > targetBudget && price <= priceMax10Percent)
-            : true;
-          return matchBed && matchBath && within10Percent;
+          const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
+          return inWindow;
         });
         const prevCount = selected.length;
-        // Lowest price above budget first (closest to user budget)
-        for (const p of [...pool2Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_flex';
-      }
-
-      // ── POOL 3: Exact type + Relaxed beds/baths + Price <= Budget * 1.10 ──
-      if (selected.length < totalTarget) {
-        const priceMax = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
-        const pool3Apify = strictListApify.filter(p => {
-          const price = getPrice(p);
-          return priceMax > 0 ? (price > 0 && price <= priceMax) : true;
-        });
-        const prevCount = selected.length;
-        for (const p of sortBudgetFirst(pool3Apify)) {
+        for (const p of sortAscendingPrice(pool2Apify)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── POOL 4 (Market Lowest Fallback): If city market starts slightly above user budget, show lowest available market homes (sorted lowest price first, max 1.35x budget) ──
+      // ── POOL 3: Great Deals under (budget - 100k) for that Property Type ──
+      // Sorted in ASCENDING order
+      if (selected.length < totalTarget && minBudgetWindow > 0) {
+        const pool3Apify = strictListApify.filter(p => {
+          const price = getPrice(p);
+          return price > 0 && price < minBudgetWindow;
+        });
+        const prevCount = selected.length;
+        for (const p of sortAscendingPrice(pool3Apify)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
+      }
+
+      // ── POOL 4 (Market Lowest Fallback): If city market starts slightly above budget + 10%, max 1.35x cap ──
+      // Sorted in ASCENDING order (lowest available market price first)
       if (selected.length === 0 && strictListApify.length > 0) {
         const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
         const pool4Apify = strictListApify.filter(p => {
           const price = getPrice(p);
           return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
         });
-        const sortedLowest = [...pool4Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
-        for (const p of sortedLowest) {
+        for (const p of sortAscendingPrice(pool4Apify)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
         if (selected.length > 0) apifyMatchTier = 'exact_bedbath_over_budget';
       }
 
-      // Remaining for "Show more" — prioritize closest beds/baths within 1.35x budget cap
-      const priceMaxRemaining = targetBudget > 0 ? targetBudget * 1.35 : 0;
-      const remainingStrict = strictListApify.filter(p => {
-        if (usedKeys.has(getPropKey(p))) return false;
-        if (priceMaxRemaining > 0) {
-          const price = getPrice(p);
-          return price > 0 && price <= priceMaxRemaining;
-        }
-        return true;
-      });
-      const remainingExactBedBath = remainingStrict.filter(p => {
-        const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-        const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-        return matchBed && matchBath;
-      }).sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+      // Remaining for "Show more" — strictly sorted in ASCENDING order (lowest price first)
+      const remainingStrict = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
+      const remainingSorted = sortAscendingPrice(remainingStrict);
 
-      const remainingOther = remainingStrict.filter(p => !remainingExactBedBath.includes(p))
-        .sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
-
-      return { results: [...selected, ...remainingExactBedBath, ...remainingOther], matchTier: apifyMatchTier };
+      return { results: [...selected, ...remainingSorted], matchTier: apifyMatchTier };
     }
 
     const recommended = selectRecommendedProperties(
