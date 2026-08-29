@@ -521,9 +521,12 @@ function propTypeMatches(p, requestedType) {
   const rawPropType = String(p.homeType || p.property_type || p.propertyType || p.home_type || p.type || '').toLowerCase();
   const pType = normalizeHomeType(rawPropType);
 
-  // 1. Semi-Detached / Link Home (on Zillow/MLS, semi-detached are categorized under house/single-family or townhouse)
+  // 1. Semi-Detached / Link Home
+  // NOTE: Zillow Canada does NOT have a dedicated Semi-Detached type.
+  // Semi-Detached homes in Ontario are listed as TOWNHOUSE on Zillow.
+  // So we match both 'semi-detached' and 'townhouse' when user picks Semi-Detached.
   if (req.includes('semi') || req.includes('link')) {
-    return pType === 'semi-detached' || pType === 'detached' || pType === 'townhouse';
+    return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
   }
   // 2. Multi-Family / Duplex
   if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
@@ -1157,18 +1160,10 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // Remaining for "Show more" — strictly ONLY matching property type, sorted in ASCENDING order
-  const remainingStrict = strictList.filter(p => !usedKeys.has(getPropKey(p)));
-  let remainingSorted;
-  if (targetBeds > 0) {
-    const matchingBedRem = remainingStrict.filter(p => getBeds(p) === targetBeds);
-    const otherRem = remainingStrict.filter(p => getBeds(p) !== targetBeds);
-    remainingSorted = [...sortAscendingPrice(matchingBedRem), ...sortAscendingPrice(otherRem)];
-  } else {
-    remainingSorted = sortAscendingPrice(remainingStrict);
-  }
-
-  return { results: [...selected, ...remainingSorted], matchTier };
+  // Strictly sort ALL returned properties in pure ASCENDING price order ($Low ➔ $High)
+  // so no batch ever has price dips
+  const finalOrdered = sortAscendingPrice([...selected, ...strictList.filter(p => !usedKeys.has(getPropKey(p)))]);
+  return { results: finalOrdered, matchTier };
 }
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
@@ -2207,8 +2202,15 @@ CRITICAL INSTRUCTIONS:
                     const supplement = SUPPLEMENT_PHOTO_SETS_LOCAL[i % SUPPLEMENT_PHOTO_SETS_LOCAL.length];
                     imgArr = imgArr.length > 0 ? [imgArr[0], ...supplement] : supplement;
                   }
+                  const rawAddr = (l.address || '').trim();
+                  const propCity = l.city || detectedCity || '';
+                  const propProv = l.province || l.state || '';
+                  const cleanAddr = rawAddr && propCity && rawAddr.toLowerCase().includes(propCity.toLowerCase())
+                    ? rawAddr
+                    : `${rawAddr}${propCity ? ', ' + propCity : ''}${propProv ? ', ' + propProv : ''}`.replace(/^, | , |, $/g, '').trim();
+
                   return {
-                    address: `${l.address || ''}, ${l.city || ''}, ${l.province || l.state || ''}`.replace(/^, | , |, $/g, '').trim(),
+                    address: cleanAddr,
                     price: l.price ? (typeof l.price === 'number' ? `$${l.price.toLocaleString()}` : l.price) : (l.priceDisplay || 'Contact for Price'),
                     bedrooms: String(l.bedrooms || l.beds || ''),
                     bathrooms: String(l.bathrooms || l.baths || ''),

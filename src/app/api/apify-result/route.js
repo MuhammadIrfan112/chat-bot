@@ -58,9 +58,12 @@ export async function GET(req) {
       const rawPropType = String(p.property_type || p.propertyType || p.homeType || p.home_type || p.type || '').toLowerCase();
       const pType = normalizeHomeType(rawPropType);
 
-      // 1. Semi-Detached / Link Home (on Zillow/MLS, semi-detached are categorized under house/single-family or townhouse)
+      // 1. Semi-Detached / Link Home
+      // NOTE: Zillow Canada does NOT have a dedicated Semi-Detached type.
+      // Semi-Detached homes in Ontario are listed as TOWNHOUSE on Zillow.
+      // So we match both 'semi-detached' and 'townhouse' when user picks Semi-Detached.
       if (req.includes('semi') || req.includes('link')) {
-        return pType === 'semi-detached' || pType === 'detached' || pType === 'townhouse';
+        return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
       }
       // 2. Multi-Family / Duplex
       if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
@@ -566,18 +569,9 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // Remaining for "Show more" — strictly ONLY matching property type, sorted in ASCENDING order
-      const remainingStrict = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-      let remainingSorted;
-      if (targetBeds > 0) {
-        const matchingBedRem = remainingStrict.filter(p => getBeds(p) === targetBeds);
-        const otherRem = remainingStrict.filter(p => getBeds(p) !== targetBeds);
-        remainingSorted = [...sortAscendingPrice(matchingBedRem), ...sortAscendingPrice(otherRem)];
-      } else {
-        remainingSorted = sortAscendingPrice(remainingStrict);
-      }
-
-      return { results: [...selected, ...remainingSorted], matchTier: apifyMatchTier };
+      // Strictly sort ALL returned properties in pure ASCENDING price order ($Low → $High)
+      const finalOrdered = sortAscendingPrice([...selected, ...strictListApify.filter(p => !usedKeys.has(getPropKey(p)))]);
+      return { results: finalOrdered, matchTier: apifyMatchTier };
     }
 
     const recommended = selectRecommendedProperties(
