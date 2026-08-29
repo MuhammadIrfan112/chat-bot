@@ -40,7 +40,8 @@ export async function GET(req) {
   var isTablet = false;
   var timestamp = new Date().getTime();
   var planParams = config.plan ? '&plan=' + encodeURIComponent(config.plan) : '';
-  var iframeUrl = baseUrl + '/bot/' + config.botId + '?position=' + position + (isMobile ? '&device=mobile' : '&desktop=true') + planParams + '&v=' + timestamp;
+  var autoOpenParam = config.autoOpen ? '&autoOpen=true' : '';
+  var iframeUrl = baseUrl + '/bot/' + config.botId + '?position=' + position + (isMobile ? '&device=mobile' : '&desktop=true') + planParams + autoOpenParam + '&v=' + timestamp;
   iframe.src = iframeUrl;
   
   // Closed: desktop pill button area | mobile: pill button area
