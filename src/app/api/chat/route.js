@@ -1158,7 +1158,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   // Pool 3 REMOVED: Never show properties below (budget - 100k). Minimum price = budget - 100k.
 
-  // ── POOL 4: Strict Type, Any Budget (Market Lowest for this type, starting from budget-100k floor) ──
+  // ── POOL 4: Strict Type, Above Budget (Market Lowest for this EXACT type, starting from budget-100k floor) ──
   if (selected.length < totalTarget && strictList.length > 0) {
     const pool4List = strictList.filter(p => {
       const price = getPrice(p);
@@ -1179,37 +1179,15 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // ── POOL 5 (Type-Relaxed Fallback): When strict type has NO results in city ──
-  // Show ANY available property in city starting from budget-100k floor in ascending order
-  if (selected.length === 0 && relaxedTypeList.length > 0) {
-    matchTier = 'type_relaxed';
-    const pool5List = relaxedTypeList.filter(p => {
-      const price = getPrice(p);
-      const aboveFloor = minBudgetWindow > 0 ? price >= minBudgetWindow : true;
-      return aboveFloor && !usedKeys.has(getPropKey(p));
-    });
-    for (const p of sortAscendingPrice(pool5List)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-    // If still nothing above floor, show cheapest available in city
-    if (selected.length === 0) {
-      for (const p of sortAscendingPrice(relaxedTypeList.filter(p => !usedKeys.has(getPropKey(p))))) {
-        if (selected.length >= totalTarget) break;
-        addProp(p);
-      }
-    }
-  }
-
-  // Remaining for "Show more" — prioritize same type, then others, all ascending price
-  const allRemaining = (strictList.length > 0 ? strictList : relaxedTypeList).filter(p => !usedKeys.has(getPropKey(p)));
+  // Remaining for "Show more" — strictly ONLY matching property type, sorted in ASCENDING order
+  const remainingStrict = strictList.filter(p => !usedKeys.has(getPropKey(p)));
   let remainingSorted;
   if (targetBeds > 0) {
-    const matchingBedRem = allRemaining.filter(p => getBeds(p) === targetBeds);
-    const otherRem = allRemaining.filter(p => getBeds(p) !== targetBeds);
+    const matchingBedRem = remainingStrict.filter(p => getBeds(p) === targetBeds);
+    const otherRem = remainingStrict.filter(p => getBeds(p) !== targetBeds);
     remainingSorted = [...sortAscendingPrice(matchingBedRem), ...sortAscendingPrice(otherRem)];
   } else {
-    remainingSorted = sortAscendingPrice(allRemaining);
+    remainingSorted = sortAscendingPrice(remainingStrict);
   }
 
   return { results: [...selected, ...remainingSorted], matchTier };
