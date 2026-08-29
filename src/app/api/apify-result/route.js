@@ -548,10 +548,23 @@ const SUPPLEMENT_PHOTO_SETS = [
         if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // ── Pool 4 REMOVED: Only Pools 1 to 3 are used (Exact budget, +10% flex, relaxed bed/bath within +10%) ──
+      // ── POOL 4 (Market Lowest Fallback): If city market starts slightly above user budget, show lowest available market homes (sorted lowest price first, max 1.35x budget) ──
+      if (selected.length === 0 && strictListApify.length > 0) {
+        const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
+        const pool4Apify = strictListApify.filter(p => {
+          const price = getPrice(p);
+          return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+        });
+        const sortedLowest = [...pool4Apify].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+        for (const p of sortedLowest) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+        if (selected.length > 0) apifyMatchTier = 'exact_bedbath_over_budget';
+      }
 
-      // Remaining for "Show more" — within budget+10% only, exact beds/baths first
-      const priceMaxRemaining = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
+      // Remaining for "Show more" — prioritize closest beds/baths within 1.35x budget cap
+      const priceMaxRemaining = targetBudget > 0 ? targetBudget * 1.35 : 0;
       const remainingStrict = strictListApify.filter(p => {
         if (usedKeys.has(getPropKey(p))) return false;
         if (priceMaxRemaining > 0) {
@@ -585,15 +598,27 @@ const SUPPLEMENT_PHOTO_SETS = [
     const orderedProperties = recommended.results || recommended;
     const matchTier = recommended.matchTier || 'exact';
 
-    if (savedCity && savedCity !== 'unknown') {
+    if (savedCity && savedCity !== 'unknown' && finalProperties.length > 0) {
       try {
         const dbCityKey = intent === 'rent' ? `${savedCity}-rent` : savedCity;
+        // Merge newly scraped properties with any existing in DB to accumulate a rich full-city inventory
+        const { data: existingRow } = await supabase.from('city_property_data').select('properties').eq('city', dbCityKey).single();
+        const existingList = (existingRow?.properties && Array.isArray(existingRow.properties)) ? existingRow.properties : [];
+        const seenUrls = new Set();
+        const merged = [];
+        for (const p of [...finalProperties, ...existingList]) {
+          const key = (p.url || p.address || p.id || p.zpid || '').toLowerCase().trim();
+          if (key && !seenUrls.has(key)) {
+            seenUrls.add(key);
+            merged.push(p);
+          }
+        }
         await supabase.from('city_property_data').upsert({
           city: dbCityKey,
-          properties: orderedProperties,
+          properties: merged.slice(0, 50),
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
-        console.log(`[apify-result] Successfully saved ${orderedProperties.length} properties to DB for city key: "${dbCityKey}"`);
+        console.log(`[apify-result] Successfully saved ${merged.length} accumulated properties to DB for city key: "${dbCityKey}"`);
       } catch (dbErr) {
         console.error('[apify-result] DB Save Error:', dbErr.message);
       }

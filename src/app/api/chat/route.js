@@ -1142,25 +1142,21 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   }
 
   // ── POOL 2: Exact type + Exact beds + Exact baths + Up to +10% Over Budget ──
-  // If exact / lower budget properties are scarce, check up to +10% over user budget (e.g. 700k -> 770k)
+  const pool2 = strictList.filter(p => {
+    const price = getPrice(p);
+    const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
+    const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+    const within10Percent = (targetBudget > 0)
+      ? (price > targetBudget && price <= targetBudget + BUDGET_FLEX)
+      : true;
+    return matchBed && matchBath && within10Percent;
+  });
   if (selected.length < totalTarget) {
-    const priceMax10Percent = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
-    const pool2 = strictList.filter(p => {
-      const price = getPrice(p);
-      const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-      const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-      const within10Percent = (targetBudget > 0 && priceMax10Percent > 0)
-        ? (price > targetBudget && price <= priceMax10Percent)
-        : true;
-      return matchBed && matchBath && within10Percent;
-    });
-    const prevCount = selected.length;
-    // Lowest price above budget first (closest to user budget)
     for (const p of [...pool2].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0))) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
-    if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_flex';
+    if (selected.length > 0 && pool1.length === 0) matchTier = 'budget_flex';
   }
 
   // ── POOL 3: Exact type + Relaxed beds/baths + Price <= Budget * 1.10 ──
@@ -1168,21 +1164,33 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     const priceMax = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
     const pool3 = strictList.filter(p => {
       const price = getPrice(p);
-      const withinRange = priceMax > 0 ? (price > 0 && price <= priceMax) : true;
-      return withinRange;
+      return priceMax > 0 ? (price > 0 && price <= priceMax) : true;
     });
     const prevCount = selected.length;
     for (const p of sortBudgetFirst(pool3)) {
       if (selected.length >= totalTarget) break;
       addProp(p);
     }
-    if (selected.length > prevCount && pool1.length === 0) matchTier = 'budget_only';
+    if (selected.length > prevCount && pool1.length === 0 && pool2.length === 0) matchTier = 'budget_only';
   }
 
-  // ── Pool 4 REMOVED: If Pools 1-3 don't fill enough results, caller triggers live Apify scrape ──
+  // ── POOL 4 (Market Lowest Fallback): If city market starts slightly above user budget, show lowest available market homes (sorted lowest price first, max 1.35x budget) ──
+  if (selected.length === 0 && strictList.length > 0) {
+    const hardCap = targetBudget > 0 ? targetBudget * 1.35 : 0;
+    const pool4 = strictList.filter(p => {
+      const price = getPrice(p);
+      return hardCap > 0 ? (price > 0 && price <= hardCap) : true;
+    });
+    const sortedLowest = [...pool4].sort((a, b) => (getPrice(a) || 0) - (getPrice(b) || 0));
+    for (const p of sortedLowest) {
+      if (selected.length >= totalTarget) break;
+      addProp(p);
+    }
+    if (selected.length > 0) matchTier = 'exact_bedbath_over_budget';
+  }
 
-  // Remaining for "Show more" — within budget+10% only, exact beds/baths first
-  const priceMaxRemaining = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
+  // Remaining for "Show more" — prioritize closest beds/baths within 1.35x budget cap
+  const priceMaxRemaining = targetBudget > 0 ? targetBudget * 1.35 : 0;
   const remainingStrict = strictList.filter(p => {
     if (usedKeys.has(getPropKey(p))) return false;
     if (priceMaxRemaining > 0) {
