@@ -580,13 +580,11 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isRecentlySold: { value: false }
       };
 
-  // Beds & Baths filters on scraper (without tight budget cap so all matching listings are fetched)
+  // Beds filter on scraper: broad enough to fetch full inventory for exact & close bed counts
   if (propBeds > 0) {
-    filterState.beds = { min: propBeds };
+    filterState.beds = { min: Math.max(1, propBeds - 1) };
   }
-  if (propBaths > 0) {
-    filterState.baths = { min: propBaths };
-  }
+  // DO NOT add rigid baths filter to scraper URL, because Zillow's bath filter drops properties with half-baths or unlisted bath counts
 
   // ── Apply property type filter on Zillow URL (use proper Zillow boolean flags) ──
   const zillowType = mapPropTypeToZillow(propType);
