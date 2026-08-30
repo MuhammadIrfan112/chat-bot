@@ -384,13 +384,14 @@ const SUPPLEMENT_PHOTO_SETS = [
         const baths = parseFloat(
           p.property?.building?.bathroom_total || p.Building?.BathroomTotal || p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0
         ) || 2;
-        const rawType = p.property?.building?.type || p.property?.property_type || p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
+        const itemRawType = p.property?.building?.type || p.property?.property_type || p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
 
         // ── Normalize raw type to a clean display label ──────────────────────
         const normalizeTypeLabel = (val) => {
           if (!val) return 'Detached';
           const v = String(val).toLowerCase().replace(/_/g, ' ').trim();
-          if (v.includes('semi') || v.includes('duplex') || v.includes('triplex') || v.includes('multi') || v.includes('link')) return 'Semi-Detached';
+          if (v.includes('duplex') || v.includes('triplex') || v.includes('multi')) return 'Multi-Family';
+          if (v.includes('semi') || v.includes('link')) return 'Semi-Detached';
           if (v.includes('town') || v.includes('row')) return 'Townhouse';
           if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata')) return 'Condo';
           if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential')) return 'Detached';
@@ -399,7 +400,7 @@ const SUPPLEMENT_PHOTO_SETS = [
           return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         };
 
-        const type = normalizeTypeLabel(rawType);
+        const type = normalizeTypeLabel(itemRawType);
         const city = (typeof p.location?.address === 'string' && p.location.address.includes(',') ? p.location.address.split(',')[1]?.replace(/\(.*?\)/g, '').trim() : '') || p.Property?.Address?.AddressText?.split('|')[1]?.trim() || p.city || p.addressCity || p.hdpData?.homeInfo?.city || (typeof address === 'string' && address.includes(',') ? address.split(',')[1]?.replace(/\(.*?\)/g, '').trim() : '') || requestedCity || '';
 
 
