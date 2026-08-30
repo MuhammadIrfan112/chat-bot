@@ -1190,6 +1190,10 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   const strictList = typeHasResults ? typeFiltered : [];
 
+  const isLandType = targetType && (targetType.toLowerCase().includes('land') || targetType.toLowerCase().includes('lot'));
+  const effectiveBeds = isLandType ? 0 : targetBeds;
+  const effectiveBaths = isLandType ? 0 : targetBaths;
+
   // ── Price floor: start from budget-100k for buy (rent: $150 below budget, e.g. $2000 → $1850), NO upper limit ──
   // Rule: if user says $2000 rent → show from $1850 upward, no ceiling
   // Rule: if market floor > budget-150 → properties naturally start at market floor
@@ -1210,8 +1214,8 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const pool1 = strictList.filter(p => {
     const price = getPrice(p);
     const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-    const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-    const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
+    const matchBed = effectiveBeds > 0 ? getBeds(p) === effectiveBeds : true;
+    const matchBath = effectiveBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(effectiveBaths) : true;
     return aboveFloor && matchBed && matchBath;
   });
   for (const p of sortAscendingPrice(pool1)) {
@@ -1220,11 +1224,11 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   }
 
   // ── POOL 2A: Strict Type + price >= floor + Exact Bed (relax bath) ──
-  if (selected.length < totalTarget && targetBeds > 0) {
+  if (selected.length < totalTarget && effectiveBeds > 0) {
     const pool2A = strictList.filter(p => {
       const price = getPrice(p);
       const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-      return aboveFloor && getBeds(p) === targetBeds;
+      return aboveFloor && getBeds(p) === effectiveBeds;
     });
     for (const p of sortAscendingPrice(pool2A)) {
       if (selected.length >= totalTarget) break;
@@ -1247,8 +1251,8 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   // ── POOL 3: floor empty (budget below market floor) → show cheapest available starting from market floor ──
   if (selected.length < totalTarget && strictList.length > 0) {
     const unselected = strictList.filter(p => !usedKeys.has(getPropKey(p)));
-    if (targetBeds > 0) {
-      for (const p of sortAscendingPrice(unselected.filter(p => getBeds(p) === targetBeds))) {
+    if (effectiveBeds > 0) {
+      for (const p of sortAscendingPrice(unselected.filter(p => getBeds(p) === effectiveBeds))) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
@@ -1454,8 +1458,11 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
     const candidateList = Array.isArray(candidateObj) ? candidateObj : (candidateObj?.results || []);
 
-    if (candidateList.length < cardsLimit && !isShowMore) {
-      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB within budget for city="${cleanCity}" — falling back to live Apify scrape.`);
+    // For rare types (multi-family, land/lot) allow showing even 1-2 DB results rather than always falling to Apify
+    const isRareType = propType && (propType.toLowerCase().includes('multi') || propType.toLowerCase().includes('duplex') || propType.toLowerCase().includes('land') || propType.toLowerCase().includes('lot'));
+    const minRequired = isRareType ? 1 : cardsLimit;
+    if (candidateList.length < minRequired && !isShowMore) {
+      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${minRequired}) matching properties in DB within budget for city="${cleanCity}" — falling back to live Apify scrape.`);
       return { text: '', rawProperties: [] };
     }
 
