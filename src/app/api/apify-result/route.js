@@ -664,8 +664,9 @@ const SUPPLEMENT_PHOTO_SETS = [
 
     if (savedCity && savedCity !== 'unknown' && finalProperties.length > 0) {
       try {
-        const dbCityKey = intent === 'rent' ? `${savedCity}-rent` : savedCity;
-        // Merge newly scraped properties with any existing in DB to accumulate a rich full-city inventory
+        const cleanCityName = (savedCity || requestedCity || '').toLowerCase().trim();
+        const dbCityKey = cleanCityName;
+        // Merge newly scraped properties with existing in DB to accumulate a rich full-city inventory across all types
         const { data: existingRow } = await supabase.from('city_property_data').select('properties').eq('city', dbCityKey).single();
         const existingList = (existingRow?.properties && Array.isArray(existingRow.properties)) ? existingRow.properties : [];
         const seenUrls = new Set();
@@ -679,7 +680,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
         await supabase.from('city_property_data').upsert({
           city: dbCityKey,
-          properties: merged.slice(0, 50),
+          properties: merged.slice(0, 150),
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
         console.log(`[apify-result] Successfully saved ${merged.length} accumulated properties to DB for city key: "${dbCityKey}"`);

@@ -1361,7 +1361,12 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   useEffect(() => {
     if (!activeApifyRunId) return;
 
+    let isHandled = false;
+    let isFetching = false;
+
     const interval = setInterval(async () => {
+      if (isHandled || isFetching) return;
+      isFetching = true;
       try {
         const cityParam = activeApifyCity ? `&city=${encodeURIComponent(activeApifyCity)}` : '';
         const budgetParam = activeApifyBudget ? `&budget=${encodeURIComponent(activeApifyBudget)}` : '';
@@ -1372,7 +1377,10 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}${budgetParam}${bedsParam}${bathsParam}${typeParam}${botNameParam}`);
         const data = await res.json();
 
+        if (isHandled) return;
+
         if (data.status === 'done') {
+          isHandled = true;
           clearInterval(interval);
           setActiveApifyRunId(null);
           setIsLoading(false);
@@ -1403,7 +1411,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
           const cityName = data.city && data.city !== 'unknown'
             ? data.city.charAt(0).toUpperCase() + data.city.slice(1)
-            : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'Edmonton');
+            : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the requested area');
 
           if (props.length === 0 && rawProps.length > 0) {
             props = rawProps.slice(0, 4);
@@ -1431,6 +1439,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           };
           setMessages(prev => [...prev, newModelMsg]);
         } else if (data.status === 'no_results' || data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
+          isHandled = true;
           clearInterval(interval);
           setActiveApifyRunId(null);
           setIsLoading(false);
@@ -1445,10 +1454,15 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         }
       } catch (e) {
         console.error('Apify polling error:', e);
+      } finally {
+        isFetching = false;
       }
     }, 2500); // Fast polling every 2.5s
 
-    return () => clearInterval(interval);
+    return () => {
+      isHandled = true;
+      clearInterval(interval);
+    };
   }, [activeApifyRunId, activeApifyIntent, activeApifyCity, activeApifyBudget, activeApifyBeds, activeApifyBaths, activeApifyType]);
 
   // Reusable parser for AI replies (both live chat and Apify background responses)
