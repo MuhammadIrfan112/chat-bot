@@ -1415,9 +1415,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
 
           if (props.length === 0) {
             // All properties were already displayed — show complete message rather than repeating duplicates
-            const friendlyType = (data.type || activeApifyIntent === 'rent' ? 'rental' : 'property').replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim();
+            const friendlyType = (data.type || activeApifyType || (activeApifyIntent === 'rent' ? 'rental' : 'property')).replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim();
             const noMoreMsg = rawProps.length > 0
-              ? `You've viewed all ${rawProps.length} available **${friendlyType}** listings in **${cityName}** right now.\n\nWould you like to explore nearby areas or adjust your criteria?`
+              ? `You've viewed all available **${friendlyType}** listings in **${cityName}** right now.\n\nWould you like to explore nearby areas or adjust your criteria?`
               : `I couldn't find live listings matching those exact criteria in **${cityName}** right now.\n\nYou can refine your search with the options below:`;
             setMessages(prev => [...prev, {
               role: 'model',
