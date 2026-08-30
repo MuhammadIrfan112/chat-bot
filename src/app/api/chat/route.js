@@ -643,7 +643,11 @@ function normalizeHomeType(val) {
 function propTypeMatches(p, requestedType) {
   if (!requestedType) return true; // no filter if not specified
   const rawPropType = String(p.homeType || p.property_type || p.propertyType || p.home_type || p.type || '').toLowerCase();
+  const descText = String(p.description || p.PublicRemarks || p.remarks || p.title || p.statusText || '').toLowerCase();
+  const addrText = String(p.address || '').toLowerCase();
+  const fullSearchText = rawPropType + ' ' + descText + ' ' + addrText;
   const pType = normalizeHomeType(rawPropType);
+  const pTypeFromDesc = normalizeHomeType(fullSearchText);
 
   // Support comma-separated multi-type: match if property matches ANY of the selected types
   const requestedTypes = requestedType.toLowerCase().split(',').map(t => t.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim()).filter(Boolean);
@@ -651,19 +655,23 @@ function propTypeMatches(p, requestedType) {
   return requestedTypes.some(req => {
     // 1. Multi-Family / Duplex
     if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-      return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
+      return pType === 'multi-family' || pTypeFromDesc === 'multi-family' ||
+        fullSearchText.includes('duplex') || fullSearchText.includes('triplex') ||
+        fullSearchText.includes('multi') || fullSearchText.includes('two unit') ||
+        fullSearchText.includes('2 unit') || fullSearchText.includes('in-law') ||
+        fullSearchText.includes('legal suite') || fullSearchText.includes('secondary suite');
     }
     // 2. Townhouse
     if (req.includes('town')) {
-      return pType === 'townhouse';
+      return pType === 'townhouse' || rawPropType.includes('town');
     }
     // 3. Condo / Apartment / Co-op
     if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
-      return pType === 'condo';
+      return pType === 'condo' || rawPropType.includes('condo') || rawPropType.includes('apartment');
     }
     // 4. Land / Lot
     if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
-      return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
+      return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land') || rawPropType.includes('vacant');
     }
     // 5. Manufactured / Mobile
     if (req.includes('manufactured') || req.includes('mobile')) {
@@ -675,13 +683,13 @@ function propTypeMatches(p, requestedType) {
     }
     // 7. Detached / Single Family / House (strictly detached, NOT semi or multi)
     if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
-      return pType === 'detached';
+      return pType === 'detached' || rawPropType.includes('single') || rawPropType.includes('detach');
     }
     // 8. Semi-Detached
     if (req.includes('semi') || req.includes('link')) {
       return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
     }
-    return pType.includes(req);
+    return pType.includes(req) || pTypeFromDesc.includes(req);
   });
 }
 
