@@ -529,42 +529,31 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFilteredApify.length} strict type props`);
 
-      // Dynamic +10% budget buffer (minimum $30,000) so e.g. $700k checks up to $770k
+      // Dynamic +10% budget buffer
       const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
-
-      // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──
-      const sortAscendingPrice = (list) => [...list].sort((a, b) => {
-        const aPrice = getPrice(a) || 0;
-        const bPrice = getPrice(b) || 0;
-        return aPrice - bPrice;
-      });
-
-      // Calculate budget window: (budget - 100k) up to (budget + 10%)
-      const minBudgetWindow = targetBudget > 100000 ? (targetBudget - 100000) : 0;
       const maxBudgetWindow = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
 
       let apifyMatchTier = 'exact';
 
-      // ── POOL 1: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Exact Bed (if given) ──
-      // Sorted in ASCENDING order (e.g. $700k -> $750k -> $800k)
+      // ── POOL 1: Strict Type + Within Max Budget + Exact Bed + Exact Bath ──
       const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
-        const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
+        const inBudget = maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-        return inWindow && matchBed && matchBath;
+        return inBudget && matchBed && matchBath;
       });
       for (const p of sortAscendingPrice(pool1Apify)) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      // ── POOL 2A: Strict Type + In Budget Window + Exact Bed (if targetBeds specified but bath relaxed) ──
+      // ── POOL 2A: Strict Type + Within Max Budget + Exact Bed ──
       if (selected.length < totalTarget && targetBeds > 0) {
         const pool2A = strictListApify.filter(p => {
           const price = getPrice(p);
-          const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
-          return inWindow && getBeds(p) === targetBeds;
+          const inBudget = maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
+          return inBudget && getBeds(p) === targetBeds;
         });
         for (const p of sortAscendingPrice(pool2A)) {
           if (selected.length >= totalTarget) break;
@@ -572,48 +561,31 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // ── POOL 2B: Strict Type + In Budget Window [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
-      // Sorted in ASCENDING order (lowest price first)
+      // ── POOL 2B: Strict Type + Within Max Budget + Relaxed Bed/Bath ──
       if (selected.length < totalTarget) {
         const pool2Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          const inWindow = targetBudget > 0 ? (price >= minBudgetWindow && price <= maxBudgetWindow) : true;
-          return inWindow;
+          const inBudget = maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
+          return inBudget;
         });
-        const prevCount = selected.length;
         for (const p of sortAscendingPrice(pool2Apify)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
-        if (selected.length > prevCount && pool1Apify.length === 0) apifyMatchTier = 'budget_only';
       }
 
-      // Pool 3 REMOVED: Never show properties below (budget - 100k). Minimum price = budget - 100k.
-
-      // ── POOL 4: Strict Type, Any Budget (Market Lowest for this type, starting from budget-100k floor) ──
+      // ── POOL 3: If budget is lower than market (or to fill remaining), fill with lowest available market prices ──
       if (selected.length < totalTarget && strictListApify.length > 0) {
-        const pool4List = strictListApify.filter(p => {
-          const price = getPrice(p);
-          const aboveFloor = minBudgetWindow > 0 ? price >= minBudgetWindow : true;
-          return aboveFloor && !usedKeys.has(getPropKey(p));
-        });
+        const unselected = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
         if (targetBeds > 0) {
-          for (const p of sortAscendingPrice(pool4List.filter(p => getBeds(p) === targetBeds))) {
+          for (const p of sortAscendingPrice(unselected.filter(p => getBeds(p) === targetBeds))) {
             if (selected.length >= totalTarget) break;
             addProp(p);
           }
         }
-        for (const p of sortAscendingPrice(pool4List)) {
+        for (const p of sortAscendingPrice(unselected)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
-        }
-        // If budget is lower than all available listings in market, fill with lowest available market prices
-        if (selected.length < totalTarget) {
-          const unselected = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-          for (const p of sortAscendingPrice(unselected)) {
-            if (selected.length >= totalTarget) break;
-            addProp(p);
-          }
         }
       }
 
@@ -717,21 +689,21 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // Both platforms returned 0 (or US city has 0 for this type) — show friendly message
+    // Both platforms returned 0 (or US city has 0 for this type) — show friendly message in English
     if (orderedProperties.length === 0) {
       const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
       let altSuggestion = '';
       const reqLow = (rawType || '').toLowerCase();
       if (reqLow.includes('multi') || reqLow.includes('duplex') || reqLow.includes('triplex')) {
-        altSuggestion = ' Aap **Semi-Detached** ya **Townhouse** dekh sakte hain \u2014 yeh bhi multi-unit style homes hoti hain.';
+        altSuggestion = ' You may also want to explore **Townhouses** or **Semi-Detached** homes.';
       } else if (reqLow.includes('semi') || reqLow.includes('link')) {
-        altSuggestion = ' Aap **Townhouse** ya **Detached House** dekh sakte hain.';
+        altSuggestion = ' You can also explore **Townhouses** or **Detached Houses** in this area.';
       } else if (reqLow.includes('land') || reqLow.includes('lot')) {
-        altSuggestion = ' Land listings is area mein available nahi hain. Aap directly Sandra se rabta kar sakte hain.';
+        altSuggestion = ' Land listings are currently limited in this area.';
       } else if (reqLow.includes('condo') || reqLow.includes('apartment')) {
-        altSuggestion = ` Is waqt **${savedCity || requestedCity || 'is city'}** mein condo listings available nahi hain. Kuch waqt baad dobara try karein.`;
+        altSuggestion = ' You may also want to check nearby areas for more condo options.';
       }
-      const noResultMsg = `Maafi chahta hoon! \ud83d\ude14 **${savedCity || requestedCity || 'Is city'}** mein abhi **${friendlyType}** ki koi listing live available nahi hai.${altSuggestion}\n\n\ud83d\udcde Sandra se seedha rabta karein taake woh aapko best options bata sakein.`;
+      const noResultMsg = `I wasn't able to find live listings for **${friendlyType}** in **${savedCity || requestedCity || 'this area'}** right now.${altSuggestion}\n\n📞 Feel free to contact Sandra directly to explore off-market or upcoming opportunities.`;
       return Response.json({
         status: 'no_results',
         city: savedCity || requestedCity,
