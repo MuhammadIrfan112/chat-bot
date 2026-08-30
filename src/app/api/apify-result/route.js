@@ -745,30 +745,30 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // If exact type filter returned 0, but city has properties — intelligently recommend closest available homes
+    // If exact type filter within user's floor returned 0, check if ANY properties of that type exist in the dataset
     if (orderedProperties.length === 0 && finalProperties.length > 0) {
-      const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'property';
-      const sortedAll = [...finalProperties].sort((a, b) => {
-        const pa = parseBudgetNum(a.price);
-        const pb = parseBudgetNum(b.price);
-        return pa - pb;
-      });
-      const relaxedIntro = `While exact **${friendlyType}** listings in your specific range are limited in **${savedCity || requestedCity}**, here are the top available properties in the area (sorted by lowest price first): 🏡`;
-      return Response.json({
-        status: 'done',
-        city: savedCity || requestedCity,
-        properties: sortedAll.slice(0, 16),
-        introMessage: relaxedIntro
-      });
+      const typeMatchesAnyPrice = finalProperties.filter(p => propTypeMatches(p, rawType));
+      if (typeMatchesAnyPrice.length > 0) {
+        const sortedTypeProps = sortAscendingPrice(typeMatchesAnyPrice);
+        const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'property';
+        const startPrice = sortedTypeProps[0]?.price || 'market price';
+        const marketIntro = `Here are available **${friendlyType}** properties in **${savedCity || requestedCity}** starting from ${startPrice} (sorted by lowest price first): 🏡`;
+        return Response.json({
+          status: 'done',
+          city: savedCity || requestedCity,
+          properties: sortedTypeProps.slice(0, 16),
+          introMessage: marketIntro
+        });
+      }
     }
 
-    // Both platforms returned 0 (or no data) — show friendly message in English
+    // Requested type returned 0 across the entire city dataset — return no_results so user can adjust or refine
     if (orderedProperties.length === 0) {
       const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
       let altSuggestion = '';
       const reqLow = (rawType || '').toLowerCase();
       if (reqLow.includes('multi') || reqLow.includes('duplex') || reqLow.includes('triplex')) {
-        altSuggestion = ' You may also want to explore **Townhouses** or **Semi-Detached** homes.';
+        altSuggestion = ' You may also want to explore **Townhouses** or **Detached Houses**.';
       } else if (reqLow.includes('semi') || reqLow.includes('link')) {
         altSuggestion = ' You can also explore **Townhouses** or **Detached Houses** in this area.';
       } else if (reqLow.includes('land') || reqLow.includes('lot')) {

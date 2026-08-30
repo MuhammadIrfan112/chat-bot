@@ -709,7 +709,12 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     : {
         sort: { value: 'days' },
         ah: { value: true },
-        isForSale: { value: true }
+        isForSaleByAgent: { value: true },
+        isForSaleByOwner: { value: true },
+        isNewConstruction: { value: true },
+        isComingSoon: { value: true },
+        isAuction: { value: true },
+        isForSaleForeclosure: { value: true }
       };
 
   // ── Apply property type filter on Zillow URL (set ONLY positive flags) ──
@@ -737,6 +742,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
 
   const searchQueryState = {
     pagination: {},
+    usersSearchTerm: `${normCity}, ${normState || 'ON'}`,
     ...(bounds ? { mapBounds: bounds } : {}),
     isMapVisible: true,
     isListVisible: true,
