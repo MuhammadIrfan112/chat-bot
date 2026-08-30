@@ -1429,22 +1429,23 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             quickReplies: ['Show more properties', '🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms']
           };
           setMessages(prev => [...prev, newModelMsg]);
-        } else if (data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
+        } else if (data.status === 'no_results' || data.status === 'empty' || data.status === 'failed' || data.status === 'error') {
           clearInterval(interval);
           setActiveApifyRunId(null);
           setIsLoading(false);
 
           const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the requested area';
+          const msgText = data.introMessage || `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now.\n\nWould you like to adjust your search?`;
           setMessages(prev => [...prev, {
             role: 'model',
-            parts: [{ text: `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now.\n\nWould you like to adjust your search?` }],
+            parts: [{ text: msgText }],
             quickReplies: ['🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms']
           }]);
         }
       } catch (e) {
         console.error('Apify polling error:', e);
       }
-    }, 6000); // Poll every 6 seconds
+    }, 2500); // Fast polling every 2.5s
 
     return () => clearInterval(interval);
   }, [activeApifyRunId, activeApifyIntent, activeApifyCity, activeApifyBudget, activeApifyBeds, activeApifyBaths, activeApifyType]);

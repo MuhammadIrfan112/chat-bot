@@ -39,6 +39,15 @@ export async function GET(req) {
     const propBeds = parseInt(rawBeds, 10) || 0;
     const propBaths = parseFloat(rawBaths) || 0;
 
+    const isCanadianLocation = (city, state) => {
+      const canadianProvinces = ['on', 'ontario', 'bc', 'british columbia', 'ab', 'alberta', 'qc', 'quebec', 'mb', 'manitoba', 'sk', 'saskatchewan', 'ns', 'nova scotia', 'nb', 'new brunswick', 'nl', 'pe'];
+      const st = String(state || '').toLowerCase().trim();
+      const c = String(city || '').toLowerCase().trim();
+      if (st && canadianProvinces.includes(st)) return true;
+      if (c.includes(', on') || c.includes(', bc') || c.includes(', ab') || c.includes('toronto') || c.includes('milton') || c.includes('mississauga') || c.includes('brampton') || c.includes('vancouver') || c.includes('calgary') || c.includes('ottawa') || c.includes('hamilton') || c.includes('oakville')) return true;
+      return false;
+    };
+
     function normalizeHomeType(val) {
       if (!val) return '';
       const v = String(val).toLowerCase().replace(/_/g, ' ');
@@ -143,12 +152,12 @@ export async function GET(req) {
 
     let rawItems = (items && Array.isArray(items) && items.length > 0) ? items : [];
 
-    // If Zillow returned 0 items — fallback to Realtor.ca live scrape
-    if (rawItems.length === 0) {
-      console.log('[apify-result] Zillow returned 0 items — falling back to Realtor.ca for:', requestedCity, 'type:', rawType);
+    // If Zillow returned 0 items — fallback to Realtor.ca ONLY for Canadian cities
+    if (rawItems.length === 0 && isCanadianLocation(requestedCity)) {
+      console.log('[apify-result] Zillow returned 0 items — falling back to Realtor.ca for Canadian city:', requestedCity, 'type:', rawType);
       try {
         const realtorRes = await fetch(
-          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=90`,
+          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=25`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -168,14 +177,14 @@ export async function GET(req) {
             console.log('[apify-result] Realtor.ca also returned 0 items — returning empty status');
             return Response.json({ status: 'empty', properties: [], city: requestedCity });
           }
-        } else {
-          console.warn('[apify-result] Realtor.ca scraper HTTP error:', realtorRes.status);
-          return Response.json({ status: 'empty', properties: [], city: requestedCity });
         }
       } catch (realtorErr) {
         console.error('[apify-result] Realtor.ca fallback error:', realtorErr.message);
-        return Response.json({ status: 'empty', properties: [], city: requestedCity });
       }
+    }
+
+    if (rawItems.length === 0) {
+      return Response.json({ status: 'empty', properties: [], city: requestedCity });
     }
 
 
@@ -652,12 +661,12 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // If Zillow type-filter returned 0 results — try Realtor.ca fallback
-    if (orderedProperties.length === 0) {
-      console.log('[apify-result] Zillow gave 0 matched properties for type:', rawType, '— trying Realtor.ca fallback');
+    // If Zillow type-filter returned 0 results — try Realtor.ca fallback ONLY for Canadian cities
+    if (orderedProperties.length === 0 && isCanadianLocation(savedCity || requestedCity)) {
+      console.log('[apify-result] Zillow gave 0 matched properties for type:', rawType, '— trying Realtor.ca fallback for Canadian city');
       try {
         const realtorRes2 = await fetch(
-          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=90`,
+          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=25`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -672,7 +681,6 @@ const SUPPLEMENT_PHOTO_SETS = [
           const realtorItems2 = await realtorRes2.json();
           if (Array.isArray(realtorItems2) && realtorItems2.length > 0) {
             console.log('[apify-result] Realtor.ca type-fallback returned', realtorItems2.length, 'items');
-            // Map Realtor.ca items to standard format
             const realtorFormatted = realtorItems2.map((p, i) => ({
               address: p.address || p.AddressText || 'Address not available',
               price: p.price ? '$' + String(p.price).replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : 'Contact for Price',
@@ -707,21 +715,26 @@ const SUPPLEMENT_PHOTO_SETS = [
       } catch (realtorErr2) {
         console.error('[apify-result] Realtor.ca type-fallback error:', realtorErr2.message);
       }
-      // Both Zillow and Realtor.ca returned 0 — show friendly message
+    }
+
+    // Both platforms returned 0 (or US city has 0 for this type) — show friendly message
+    if (orderedProperties.length === 0) {
       const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
       let altSuggestion = '';
       const reqLow = (rawType || '').toLowerCase();
       if (reqLow.includes('multi') || reqLow.includes('duplex') || reqLow.includes('triplex')) {
         altSuggestion = ' Aap **Semi-Detached** ya **Townhouse** dekh sakte hain \u2014 yeh bhi multi-unit style homes hoti hain.';
+      } else if (reqLow.includes('semi') || reqLow.includes('link')) {
+        altSuggestion = ' Aap **Townhouse** ya **Detached House** dekh sakte hain.';
       } else if (reqLow.includes('land') || reqLow.includes('lot')) {
         altSuggestion = ' Land listings is area mein available nahi hain. Aap directly Sandra se rabta kar sakte hain.';
       } else if (reqLow.includes('condo') || reqLow.includes('apartment')) {
-        altSuggestion = ` Is waqt **${savedCity || 'is city'}** mein condo listings available nahi hain. Kuch waqt baad dobara try karein.`;
+        altSuggestion = ` Is waqt **${savedCity || requestedCity || 'is city'}** mein condo listings available nahi hain. Kuch waqt baad dobara try karein.`;
       }
-      const noResultMsg = `Maafi chahta hoon! \ud83d\ude14 **${savedCity || 'Is city'}** mein abhi **${friendlyType}** ki koi listing Zillow aur Realtor.ca par available nahi hai.${altSuggestion}\n\n\ud83d\udcde Sandra se seedha rabta karein taake woh aapko best options bata sakein.`;
+      const noResultMsg = `Maafi chahta hoon! \ud83d\ude14 **${savedCity || requestedCity || 'Is city'}** mein abhi **${friendlyType}** ki koi listing live available nahi hai.${altSuggestion}\n\n\ud83d\udcde Sandra se seedha rabta karein taake woh aapko best options bata sakein.`;
       return Response.json({
         status: 'no_results',
-        city: savedCity,
+        city: savedCity || requestedCity,
         properties: [],
         introMessage: noResultMsg
       });
