@@ -561,13 +561,15 @@ const SUPPLEMENT_PHOTO_SETS = [
       // Dynamic +10% budget buffer
       const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
       const maxBudgetWindow = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
+      // Primary window: starts from 100k below user budget (or 25% for rent)
+      const minBudgetWindow = targetBudget > 0 ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000)) : 0;
 
       let apifyMatchTier = 'exact';
 
-      // ── POOL 1: Strict Type + Within Max Budget + Exact Bed + Exact Bath ──
+      // ── POOL 1: Strict Type + In [budget - 100k, budget + 10%] + Exact Bed + Exact Bath ──
       const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
-        const inBudget = maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
+        const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
         return inBudget && matchBed && matchBath;
@@ -577,11 +579,11 @@ const SUPPLEMENT_PHOTO_SETS = [
         addProp(p);
       }
 
-      // ── POOL 2A: Strict Type + Within Max Budget + Exact Bed ──
+      // ── POOL 2A: Strict Type + In [budget - 100k, budget + 10%] + Exact Bed ──
       if (selected.length < totalTarget && targetBeds > 0) {
         const pool2A = strictListApify.filter(p => {
           const price = getPrice(p);
-          const inBudget = maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
+          const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
           return inBudget && getBeds(p) === targetBeds;
         });
         for (const p of sortAscendingPrice(pool2A)) {
@@ -590,14 +592,26 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // ── POOL 2B: Strict Type + Within Max Budget + Relaxed Bed/Bath ──
+      // ── POOL 2B: Strict Type + In [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
       if (selected.length < totalTarget) {
         const pool2Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          const inBudget = maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
+          const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
           return inBudget;
         });
         for (const p of sortAscendingPrice(pool2Apify)) {
+          if (selected.length >= totalTarget) break;
+          addProp(p);
+        }
+      }
+
+      // ── POOL 2C: Strict Type + Any price up to max budget (expand downwards if 100k window had fewer than 4) ──
+      if (selected.length < totalTarget) {
+        const pool2CApify = strictListApify.filter(p => {
+          const price = getPrice(p);
+          return maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
+        });
+        for (const p of sortAscendingPrice(pool2CApify)) {
           if (selected.length >= totalTarget) break;
           addProp(p);
         }
