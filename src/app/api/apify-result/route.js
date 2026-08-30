@@ -74,7 +74,7 @@ export async function GET(req) {
       if (!val) return '';
       const v = String(val).toLowerCase().replace(/_/g, ' ');
       // Check MULTI_FAMILY before 'single' or 'family'
-      if (v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'multi-family';
+      if (v.includes('multi') || v.includes('duplex') || v.includes('triplex') || v.includes('two unit') || v.includes('2 unit') || v.includes('in-law') || v.includes('legal suite') || v.includes('secondary suite')) return 'multi-family';
       // Check SEMI-DETACHED / LINK before 'detach' or 'single'
       if (v.includes('semi') || v.includes('link')) return 'semi-detached';
       if (v.includes('town') || v.includes('row') || v.includes('terrace') || v.includes('attached')) return 'townhouse';
@@ -88,44 +88,31 @@ export async function GET(req) {
 
     function propTypeMatches(p, requestedType) {
       if (!requestedType) return true;
-      const rawPropType = String(p.property_type || p.propertyType || p.homeType || p.home_type || p.type || '').toLowerCase();
+      const rawPropType = String(p.homeType || p.property_type || p.propertyType || p.home_type || p.type || '').toLowerCase();
+      // Also check address, description and title fields for property type keywords (needed for Zillow Canada)
+      const descText = String(p.description || p.PublicRemarks || p.remarks || p.title || p.statusText || '').toLowerCase();
+      const addrText = String(p.address || '').toLowerCase();
+      const fullSearchText = rawPropType + ' ' + descText + ' ' + addrText;
       const pType = normalizeHomeType(rawPropType);
+      const pTypeFromDesc = normalizeHomeType(fullSearchText);
       const requestedTypes = requestedType.toLowerCase().split(',').map(t => t.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim()).filter(Boolean);
 
       return requestedTypes.some(req => {
-        // 1. Multi-Family / Duplex
         if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-          return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
+          // For Zillow Canada: also check description for duplex/triplex/multi keywords
+          return pType === 'multi-family' || pTypeFromDesc === 'multi-family' ||
+            fullSearchText.includes('duplex') || fullSearchText.includes('triplex') ||
+            fullSearchText.includes('multi') || fullSearchText.includes('two unit') ||
+            fullSearchText.includes('2 unit') || fullSearchText.includes('in-law') ||
+            fullSearchText.includes('legal suite') || fullSearchText.includes('secondary suite');
         }
-        // 2. Townhouse
-        if (req.includes('town')) {
-          return pType === 'townhouse';
-        }
-        // 3. Condo / Apartment / Co-op
-        if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
-          return pType === 'condo';
-        }
-        // 4. Land / Lot
-        if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
-          return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
-        }
-        // 5. Manufactured / Mobile
-        if (req.includes('manufactured') || req.includes('mobile')) {
-          return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
-        }
-        // 6. Villa / Luxury → same as Detached
-        if (req.includes('villa') || req.includes('luxury')) {
-          return pType === 'detached';
-        }
-        // 7. Detached / Single Family (strictly detached)
-        if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
-          return pType === 'detached';
-        }
-        // 8. Semi-Detached
-        if (req.includes('semi') || req.includes('link')) {
-          return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
-        }
-        return pType.includes(req);
+        if (req.includes('town')) return pType === 'townhouse' || rawPropType.includes('town');
+        if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata')) return pType === 'condo' || rawPropType.includes('condo') || rawPropType.includes('apartment');
+        if (req.includes('land') || req.includes('lot') || req.includes('vacant')) return pType === 'land' || rawPropType.includes('land') || rawPropType.includes('lot') || rawPropType.includes('vacant');
+        if (req.includes('manufactured') || req.includes('mobile')) return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
+        if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) return pType === 'detached' || rawPropType.includes('single') || rawPropType.includes('detach');
+        if (req.includes('semi') || req.includes('link')) return pType === 'semi-detached' || pType === 'townhouse';
+        return pType.includes(req) || pTypeFromDesc.includes(req);
       });
     }
 
@@ -691,52 +678,105 @@ const SUPPLEMENT_PHOTO_SETS = [
 
     // If Zillow type-filter returned 0 results — try Realtor.ca fallback ONLY for Canadian cities
     if (orderedProperties.length === 0 && isCanadianLocation(savedCity || requestedCity)) {
-      console.log('[apify-result] Zillow gave 0 matched properties for type:', rawType, '— trying Realtor.ca fallback for Canadian city');
+      console.log('[apify-result] Zillow gave 0 matched properties for type:', rawType, '— trying Realtor.ca async run for Canadian city:', savedCity || requestedCity);
       try {
-        const realtorRes2 = await fetch(
-          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=45`,
+        // Map user property type to Realtor.ca property type filter
+        const mapTypeToRealtor = (t) => {
+          if (!t) return null;
+          const tl = t.toLowerCase();
+          if (tl.includes('multi') || tl.includes('duplex') || tl.includes('triplex')) return 'DuplexTriplex';
+          if (tl.includes('town')) return 'RowTownhouse';
+          if (tl.includes('condo') || tl.includes('apartment')) return 'ApartmentCondo';
+          if (tl.includes('land') || tl.includes('lot') || tl.includes('vacant')) return 'VacantLand';
+          if (tl.includes('manufactured') || tl.includes('mobile')) return 'MobileManufactured';
+          if (tl.includes('detach') || tl.includes('single') || tl.includes('house')) return 'Detached';
+          return null;
+        };
+        const realtorType = mapTypeToRealtor(rawType);
+
+        // Start async Realtor.ca run
+        const startRes = await fetch(
+          `https://api.apify.com/v2/acts/petrpatek~realtorca-scraper/runs?token=${APIFY_TOKEN}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              location: savedCity ? `${savedCity}, Ontario` : 'Ontario',
-              listingType: intent === 'rent' ? 'rent' : 'sale',
-              maxItems: 50
+              location: savedCity ? `${savedCity}, ON` : 'ON',
+              propertyType: realtorType || undefined,
+              transactionType: intent === 'rent' ? 'For Rent' : 'For Sale',
+              maxListings: 50
             })
           }
         );
-        if (realtorRes2.ok) {
-          const realtorItems2 = await realtorRes2.json();
-          if (Array.isArray(realtorItems2) && realtorItems2.length > 0) {
-            console.log('[apify-result] Realtor.ca type-fallback returned', realtorItems2.length, 'items');
-            const realtorFormatted = realtorItems2.map((p, i) => ({
-              address: p.address || p.AddressText || 'Address not available',
-              price: p.price ? '$' + String(p.price).replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : 'Contact for Price',
-              bedrooms: String(p.bedrooms || p.Bedrooms || ''),
-              bathrooms: String(p.bathrooms || p.Bathrooms || ''),
-              property_type: p.propertyType || p.PropertyType || rawType || 'Residential',
-              homeType: p.propertyType || p.PropertyType || rawType || 'Residential',
-              images: Array.isArray(p.photos) ? p.photos.slice(0, 6) : (p.image ? [p.image] : []),
-              image_url: p.image || (Array.isArray(p.photos) ? p.photos[0] : '') || '',
-              url: p.listingUrl || p.url || `https://www.realtor.ca`,
-              source: 'realtor.ca'
-            }));
-            const realtorFiltered = realtorFormatted.filter(p => propTypeMatches(p, rawType));
-            const realtorSorted = realtorFiltered.sort((a, b) => {
-              const pa = parseInt((a.price || '').replace(/[^0-9]/g, ''), 10) || 0;
-              const pb = parseInt((b.price || '').replace(/[^0-9]/g, ''), 10) || 0;
-              return pa - pb;
+
+        // If actor not found, try direct URL based Realtor.ca scrape via Zillow with broad filters
+        if (!startRes.ok || startRes.status === 404) {
+          console.log('[apify-result] Realtor.ca actor not found, using broad Zillow fallback without type filter for:', rawType);
+          // Show any available properties in the city sorted by price — not by wrong type
+          const sortedAll = sortAscendingPrice([...finalProperties]);
+          if (sortedAll.length > 0) {
+            const fallbackIntro = `Here are available properties in **${savedCity || requestedCity}** (live from Zillow, sorted by lowest price first). **${rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'This property type'}** listings may be limited in this area — contact ${botName} for off-market opportunities: 🏡`;
+            return Response.json({
+              status: 'done',
+              city: savedCity || requestedCity,
+              properties: sortedAll.slice(0, 16),
+              introMessage: fallbackIntro
             });
-            if (realtorSorted.length > 0) {
-              const realtorIntro = intent === 'rent'
-                ? `Here are live rental ${rawType ? rawType + ' ' : ''}properties in **${savedCity}** from Realtor.ca (sorted by lowest price first): 🏡`
-                : `Here are live ${rawType ? rawType + ' ' : ''}properties in **${savedCity}** from Realtor.ca (sorted by lowest price first): 🏡`;
-              return Response.json({
-                status: 'done',
-                city: savedCity,
-                properties: realtorSorted.slice(0, 16),
-                introMessage: realtorIntro
-              });
+          }
+        } else {
+          const startData = await startRes.json();
+          const realtorRunId = startData.data?.id;
+          if (realtorRunId) {
+            // Poll for up to 40 seconds
+            for (let pi = 0; pi < 10; pi++) {
+              await new Promise(r => setTimeout(r, 4000));
+              const pollRes = await fetch(`https://api.apify.com/v2/actor-runs/${realtorRunId}?token=${APIFY_TOKEN}`);
+              const pollData = await pollRes.json();
+              if (pollData.data?.status === 'SUCCEEDED') {
+                const dsId = pollData.data.defaultDatasetId;
+                const itemsRes = await fetch(`https://api.apify.com/v2/datasets/${dsId}/items?token=${APIFY_TOKEN}`);
+                const realtorItems = await itemsRes.json();
+                if (Array.isArray(realtorItems) && realtorItems.length > 0) {
+                  console.log('[apify-result] Realtor.ca async run returned', realtorItems.length, 'items for type:', rawType);
+                  const realtorFormatted = realtorItems.map((p) => ({
+                    address: (p.Address?.AddressText || p.address || 'Address not available').replace(/\|/g, ', '),
+                    price: p.Property?.Price || p.price
+                      ? '$' + String(p.Property?.Price || p.price).replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                      : 'Contact for Price',
+                    bedrooms: parseInt(p.Building?.Bedrooms || p.bedrooms || 0, 10) || 0,
+                    bathrooms: parseFloat(p.Building?.BathroomTotal || p.bathrooms || 0) || 0,
+                    property_type: p.Building?.Type || p.propertyType || rawType || 'Residential',
+                    homeType: p.Building?.Type || p.propertyType || rawType || 'Residential',
+                    images: Array.isArray(p.Property?.Photo) ? p.Property.Photo.map(ph => ph.HighResPath || ph.MedResPath || ph.url).filter(Boolean) : [],
+                    image_url: p.Property?.Photo?.[0]?.HighResPath || p.image || '',
+                    url: p.RelativeDetailsURL ? `https://www.realtor.ca${p.RelativeDetailsURL}` : (p.url || 'https://www.realtor.ca'),
+                    city: savedCity || requestedCity,
+                    listing_status: intent === 'rent' ? '🔵 For Rent' : '🟢 For Sale',
+                    source: 'realtor.ca'
+                  }));
+                  const realtorFiltered = realtorFormatted.filter(p => propTypeMatches(p, rawType));
+                  const realtorSorted = realtorFiltered.sort((a, b) => {
+                    const pa = parseBudgetNum(a.price) || 0;
+                    const pb = parseBudgetNum(b.price) || 0;
+                    return pa - pb;
+                  });
+                  if (realtorSorted.length > 0) {
+                    const realtorIntro = intent === 'rent'
+                      ? `Here are live rental ${rawType ? rawType + ' ' : ''}properties in **${savedCity || requestedCity}** from Realtor.ca (sorted by lowest price first): 🏡`
+                      : `Here are live ${rawType ? rawType + ' ' : ''}properties in **${savedCity || requestedCity}** from Realtor.ca (sorted by lowest price first): 🏡`;
+                    return Response.json({
+                      status: 'done',
+                      city: savedCity || requestedCity,
+                      properties: realtorSorted.slice(0, 16),
+                      introMessage: realtorIntro
+                    });
+                  }
+                }
+                break;
+              } else if (pollData.data?.status === 'FAILED' || pollData.data?.status === 'ABORTED') {
+                console.log('[apify-result] Realtor.ca run failed:', pollData.data?.status);
+                break;
+              }
             }
           }
         }
