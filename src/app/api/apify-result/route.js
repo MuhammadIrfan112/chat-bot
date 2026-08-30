@@ -143,11 +143,39 @@ export async function GET(req) {
 
     let rawItems = (items && Array.isArray(items) && items.length > 0) ? items : [];
 
-    // If Apify returned 0 real items — return 'empty' status so frontend shows honest no-results message
-    // NEVER generate fake/mock addresses
+    // If Zillow returned 0 items — fallback to Realtor.ca live scrape
     if (rawItems.length === 0) {
-      console.log('[apify-result] Apify returned 0 items for city:', requestedCity, '— returning empty status');
-      return Response.json({ status: 'empty', properties: [], city: requestedCity });
+      console.log('[apify-result] Zillow returned 0 items — falling back to Realtor.ca for:', requestedCity, 'type:', rawType);
+      try {
+        const realtorRes = await fetch(
+          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=90`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: requestedCity ? `${requestedCity}, Ontario` : 'Ontario',
+              listingType: intent === 'rent' ? 'rent' : 'sale',
+              maxItems: 50
+            })
+          }
+        );
+        if (realtorRes.ok) {
+          const realtorItems = await realtorRes.json();
+          if (Array.isArray(realtorItems) && realtorItems.length > 0) {
+            console.log('[apify-result] Realtor.ca fallback returned', realtorItems.length, 'items');
+            rawItems = realtorItems;
+          } else {
+            console.log('[apify-result] Realtor.ca also returned 0 items — returning empty status');
+            return Response.json({ status: 'empty', properties: [], city: requestedCity });
+          }
+        } else {
+          console.warn('[apify-result] Realtor.ca scraper HTTP error:', realtorRes.status);
+          return Response.json({ status: 'empty', properties: [], city: requestedCity });
+        }
+      } catch (realtorErr) {
+        console.error('[apify-result] Realtor.ca fallback error:', realtorErr.message);
+        return Response.json({ status: 'empty', properties: [], city: requestedCity });
+      }
     }
 
 
@@ -624,19 +652,73 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // If no matching properties found for the selected type, return a friendly message
+    // If Zillow type-filter returned 0 results — try Realtor.ca fallback
     if (orderedProperties.length === 0) {
+      console.log('[apify-result] Zillow gave 0 matched properties for type:', rawType, '— trying Realtor.ca fallback');
+      try {
+        const realtorRes2 = await fetch(
+          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=90`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: savedCity ? `${savedCity}, Ontario` : 'Ontario',
+              listingType: intent === 'rent' ? 'rent' : 'sale',
+              maxItems: 50
+            })
+          }
+        );
+        if (realtorRes2.ok) {
+          const realtorItems2 = await realtorRes2.json();
+          if (Array.isArray(realtorItems2) && realtorItems2.length > 0) {
+            console.log('[apify-result] Realtor.ca type-fallback returned', realtorItems2.length, 'items');
+            // Map Realtor.ca items to standard format
+            const realtorFormatted = realtorItems2.map((p, i) => ({
+              address: p.address || p.AddressText || 'Address not available',
+              price: p.price ? '$' + String(p.price).replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : 'Contact for Price',
+              bedrooms: String(p.bedrooms || p.Bedrooms || ''),
+              bathrooms: String(p.bathrooms || p.Bathrooms || ''),
+              property_type: p.propertyType || p.PropertyType || rawType || 'Residential',
+              homeType: p.propertyType || p.PropertyType || rawType || 'Residential',
+              images: Array.isArray(p.photos) ? p.photos.slice(0, 6) : (p.image ? [p.image] : []),
+              image_url: p.image || (Array.isArray(p.photos) ? p.photos[0] : '') || '',
+              url: p.listingUrl || p.url || `https://www.realtor.ca`,
+              source: 'realtor.ca'
+            }));
+            const realtorFiltered = realtorFormatted.filter(p => propTypeMatches(p, rawType));
+            const realtorSorted = realtorFiltered.sort((a, b) => {
+              const pa = parseInt((a.price || '').replace(/[^0-9]/g, ''), 10) || 0;
+              const pb = parseInt((b.price || '').replace(/[^0-9]/g, ''), 10) || 0;
+              return pa - pb;
+            });
+            if (realtorSorted.length > 0) {
+              const realtorIntro = intent === 'rent'
+                ? `Here are live rental ${rawType ? rawType + ' ' : ''}properties in **${savedCity}** from Realtor.ca (sorted by lowest price first): 🏡`
+                : `Here are live ${rawType ? rawType + ' ' : ''}properties in **${savedCity}** from Realtor.ca (sorted by lowest price first): 🏡`;
+              return Response.json({
+                status: 'done',
+                city: savedCity,
+                properties: realtorSorted.slice(0, 16),
+                introMessage: realtorIntro
+              });
+            }
+          }
+        }
+      } catch (realtorErr2) {
+        console.error('[apify-result] Realtor.ca type-fallback error:', realtorErr2.message);
+      }
+      // Both Zillow and Realtor.ca returned 0 — show friendly message
       const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
       let altSuggestion = '';
       const reqLow = (rawType || '').toLowerCase();
       if (reqLow.includes('multi') || reqLow.includes('duplex') || reqLow.includes('triplex')) {
-        altSuggestion = ' Aap **Semi-Detached** ya **Townhouse** dekh sakte hain — yeh bhi multi-unit style homes hoti hain.';
+        altSuggestion = ' Aap **Semi-Detached** ya **Townhouse** dekh sakte hain \u2014 yeh bhi multi-unit style homes hoti hain.';
       } else if (reqLow.includes('land') || reqLow.includes('lot')) {
-        altSuggestion = ' Land listings is area mein Zillow par available nahi hain. Aap directly Sandra se rabta kar sakte hain.';
+        altSuggestion = ' Land listings is area mein available nahi hain. Aap directly Sandra se rabta kar sakte hain.';
       } else if (reqLow.includes('condo') || reqLow.includes('apartment')) {
-        altSuggestion = ' Is waqt **' + (savedCity || 'is city') + '** mein condo listings scrape nahi hui. Kuch waqt baad dobara try karein.';
+        altSuggestion = ` Is waqt **${savedCity || 'is city'}** mein condo listings available nahi hain. Kuch waqt baad dobara try karein.`;
       }
-      const noResultMsg = `Maafi chahta hoon! 😔 **${savedCity || 'Is city'}** mein abhi **${friendlyType}** ki koi listing available nahi hai Zillow par.${altSuggestion}\n\n📞 Sandra se seedha rabta karein taake woh aapko best options bata sakein.`;
+      const noResultMsg = `Maafi chahta hoon! \ud83d\ude14 **${savedCity || 'Is city'}** mein abhi **${friendlyType}** ki koi listing Zillow aur Realtor.ca par available nahi hai.${altSuggestion}\n\n\ud83d\udcde Sandra se seedha rabta karein taake woh aapko best options bata sakein.`;
       return Response.json({
         status: 'no_results',
         city: savedCity,
