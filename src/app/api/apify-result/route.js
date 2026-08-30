@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
-export const maxDuration = 10;
+export const maxDuration = 60;
 
 // Initialize Supabase admin client to save scraped properties
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -44,7 +44,16 @@ export async function GET(req) {
       const st = String(state || '').toLowerCase().trim();
       const c = String(city || '').toLowerCase().trim();
       if (st && canadianProvinces.includes(st)) return true;
-      if (c.includes(', on') || c.includes(', bc') || c.includes(', ab') || c.includes('toronto') || c.includes('milton') || c.includes('mississauga') || c.includes('brampton') || c.includes('vancouver') || c.includes('calgary') || c.includes('ottawa') || c.includes('hamilton') || c.includes('oakville')) return true;
+      for (const prov of canadianProvinces) {
+        if (c.endsWith(`, ${prov}`) || c.endsWith(` ${prov}`) || c.includes(`, ${prov},`)) return true;
+      }
+      const majorCanadianCities = [
+        'toronto', 'hamilton', 'mississauga', 'brampton', 'ottawa', 'vancouver', 'calgary', 'edmonton', 
+        'montreal', 'winnipeg', 'halifax', 'victoria', 'london', 'markham', 'vaughan', 'kitchener', 
+        'windsor', 'burlington', 'oshawa', 'barrie', 'milton', 'oakville', 'guelph', 'cambridge', 
+        'whitby', 'ajax', 'pickering', 'waterloo', 'saskatoon', 'regina', 'kelowna', 'surrey', 'burnaby', 'richmond'
+      ];
+      if (majorCanadianCities.some(mc => c.includes(mc))) return true;
       return false;
     };
 
@@ -157,7 +166,7 @@ export async function GET(req) {
       console.log('[apify-result] Zillow returned 0 items — falling back to Realtor.ca for Canadian city:', requestedCity, 'type:', rawType);
       try {
         const realtorRes = await fetch(
-          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=25`,
+          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=45`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -638,7 +647,7 @@ const SUPPLEMENT_PHOTO_SETS = [
       console.log('[apify-result] Zillow gave 0 matched properties for type:', rawType, '— trying Realtor.ca fallback for Canadian city');
       try {
         const realtorRes2 = await fetch(
-          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=25`,
+          `https://api.apify.com/v2/acts/solidcode~realtorca-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}&timeout=45`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

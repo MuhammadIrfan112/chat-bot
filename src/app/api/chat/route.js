@@ -431,18 +431,139 @@ Link: ${p.property_url}
 // In-memory cache for geocoded city center (avoids repeated API calls for same city)
 const GEOCODE_CACHE = {};
 
-// TIGHT_BOX_DEG: ~0.12 degrees ≈ 14 km radius
-// Covers the entire city and immediate suburban communities
+// Comprehensive coordinates dictionary for major Canadian and US cities
+const KNOWN_CITY_COORDINATES = {
+  // ── CANADA (Ontario) ──
+  'toronto': { lat: 43.6532, lon: -79.3832 },
+  'hamilton': { lat: 43.2557, lon: -79.8711 },
+  'mississauga': { lat: 43.5890, lon: -79.6441 },
+  'brampton': { lat: 43.7315, lon: -79.7624 },
+  'ottawa': { lat: 45.4215, lon: -75.6972 },
+  'london': { lat: 42.9849, lon: -81.2453 },
+  'markham': { lat: 43.8561, lon: -79.3370 },
+  'vaughan': { lat: 43.8563, lon: -79.5085 },
+  'kitchener': { lat: 43.4516, lon: -80.4925 },
+  'windsor': { lat: 42.3149, lon: -83.0364 },
+  'burlington': { lat: 43.3255, lon: -79.7990 },
+  'oshawa': { lat: 43.8971, lon: -78.8658 },
+  'barrie': { lat: 44.3894, lon: -79.6903 },
+  'milton': { lat: 43.5183, lon: -79.8774 },
+  'oakville': { lat: 43.4675, lon: -79.6877 },
+  'guelph': { lat: 43.5448, lon: -80.2482 },
+  'cambridge': { lat: 43.3616, lon: -80.3144 },
+  'whitby': { lat: 43.8975, lon: -78.9429 },
+  'ajax': { lat: 43.8509, lon: -79.0204 },
+  'pickering': { lat: 43.8384, lon: -79.0868 },
+  'waterloo': { lat: 43.4643, lon: -80.5204 },
+  'niagara falls': { lat: 43.0896, lon: -79.0849 },
+  'st. catharines': { lat: 43.1594, lon: -79.2469 },
+  'saint catharines': { lat: 43.1594, lon: -79.2469 },
+  'sudbury': { lat: 46.4917, lon: -80.9930 },
+  'thunder bay': { lat: 48.3809, lon: -89.2477 },
+  'belleville': { lat: 44.1628, lon: -77.3832 },
+  'sarnia': { lat: 42.9745, lon: -82.4066 },
+  'brantford': { lat: 43.1394, lon: -80.2644 },
+  'peterborough': { lat: 44.3091, lon: -78.3197 },
+  'aurora': { lat: 44.0065, lon: -79.4504 },
+  'newmarket': { lat: 44.0592, lon: -79.4613 },
+  'richmond hill': { lat: 43.8828, lon: -79.4403 },
+
+  // ── CANADA (BC, AB, QC, MB, SK, NS, NB) ──
+  'vancouver': { lat: 49.2827, lon: -123.1207 },
+  'surrey': { lat: 49.1913, lon: -122.8490 },
+  'burnaby': { lat: 49.2488, lon: -122.9805 },
+  'richmond': { lat: 49.1666, lon: -123.1336 },
+  'coquitlam': { lat: 49.2838, lon: -122.7932 },
+  'langley': { lat: 49.1044, lon: -122.6587 },
+  'kelowna': { lat: 49.8880, lon: -119.4960 },
+  'victoria': { lat: 48.4284, lon: -123.3656 },
+  'calgary': { lat: 51.0447, lon: -114.0719 },
+  'edmonton': { lat: 53.5461, lon: -113.4938 },
+  'red deer': { lat: 52.2681, lon: -113.8112 },
+  'lethbridge': { lat: 49.6956, lon: -112.8451 },
+  'montreal': { lat: 45.5017, lon: -73.5673 },
+  'laval': { lat: 45.6066, lon: -73.7124 },
+  'quebec city': { lat: 46.8139, lon: -71.2080 },
+  'gatineau': { lat: 45.4765, lon: -75.7013 },
+  'winnipeg': { lat: 49.8951, lon: -97.1384 },
+  'saskatoon': { lat: 52.1332, lon: -106.6700 },
+  'regina': { lat: 50.4452, lon: -104.6189 },
+  'halifax': { lat: 44.6488, lon: -63.5752 },
+  'moncton': { lat: 46.0878, lon: -64.7782 },
+  'saint john': { lat: 45.2733, lon: -66.0633 },
+  'st. john': { lat: 45.2733, lon: -66.0633 },
+  'charlottetown': { lat: 46.2382, lon: -63.1311 },
+
+  // ── USA (Top Metro Cities) ──
+  'morton grove': { lat: 42.0411, lon: -87.7845 },
+  'chicago': { lat: 41.8781, lon: -87.6298 },
+  'skokie': { lat: 42.0324, lon: -87.7416 },
+  'evanston': { lat: 42.0451, lon: -87.6877 },
+  'schaumburg': { lat: 42.0334, lon: -88.0834 },
+  'naperville': { lat: 41.7508, lon: -88.1535 },
+  'new york': { lat: 40.7128, lon: -74.0060 },
+  'brooklyn': { lat: 40.6782, lon: -73.9442 },
+  'queens': { lat: 40.7282, lon: -73.7949 },
+  'los angeles': { lat: 34.0522, lon: -118.2437 },
+  'houston': { lat: 29.7604, lon: -95.3698 },
+  'phoenix': { lat: 33.4484, lon: -112.0740 },
+  'philadelphia': { lat: 39.9526, lon: -75.1652 },
+  'san antonio': { lat: 29.4241, lon: -98.4936 },
+  'san diego': { lat: 32.7157, lon: -117.1611 },
+  'dallas': { lat: 32.7767, lon: -96.7970 },
+  'austin': { lat: 30.2672, lon: -97.7431 },
+  'san jose': { lat: 37.3382, lon: -121.8863 },
+  'san francisco': { lat: 37.7749, lon: -122.4194 },
+  'seattle': { lat: 47.6062, lon: -122.3321 },
+  'denver': { lat: 39.7392, lon: -104.9903 },
+  'boston': { lat: 42.3601, lon: -71.0589 },
+  'miami': { lat: 25.7617, lon: -80.1918 },
+  'orlando': { lat: 28.5383, lon: -81.3792 },
+  'tampa': { lat: 27.9506, lon: -82.4572 },
+  'fort lauderdale': { lat: 26.1224, lon: -80.1373 },
+  'atlanta': { lat: 33.7490, lon: -84.3880 },
+  'las vegas': { lat: 36.1699, lon: -115.1398 },
+  'charlotte': { lat: 35.2271, lon: -80.8431 },
+  'detroit': { lat: 42.3314, lon: -83.0458 },
+  'columbus': { lat: 39.9612, lon: -82.9988 },
+  'indianapolis': { lat: 39.7684, lon: -86.1581 },
+  'nashville': { lat: 36.1627, lon: -86.7816 },
+  'minneapolis': { lat: 44.9778, lon: -93.2650 },
+  'raleigh': { lat: 35.7796, lon: -78.6382 },
+  'portland': { lat: 45.5152, lon: -122.6784 },
+  'sacramento': { lat: 38.5816, lon: -121.4944 },
+  'kansas city': { lat: 39.0997, lon: -94.5786 },
+  'cleveland': { lat: 41.4993, lon: -81.6944 },
+  'pittsburgh': { lat: 40.4406, lon: -79.9959 },
+  'st. louis': { lat: 38.6270, lon: -90.1994 },
+  'saint louis': { lat: 38.6270, lon: -90.1994 },
+};
+
+// TIGHT_BOX_DEG: ~0.20 degrees ≈ 22 km radius
 const TIGHT_BOX_DEG = 0.20;
 
-// Fetch city center lat/lng using OpenStreetMap Nominatim (free, no API key needed)
-// Returns a bounding box (~14km radius) around the city center
+// Fetch city center lat/lng using fast dictionary first, then OpenStreetMap Nominatim
 async function getCityBounds(city, state) {
-  const normCity = normalizeCityName(city);
-  const normState = state || resolveStateOrProvince(normCity, state);
-  const cacheKey = `${normCity.toLowerCase()}_${(normState || '').toLowerCase()}`;
+  const normCity = normalizeCityName(city).toLowerCase().trim();
+  const normState = (state || resolveStateOrProvince(normCity, state) || '').toLowerCase().trim();
+  const cacheKey = `${normCity}_${normState}`;
   if (GEOCODE_CACHE[cacheKey]) return GEOCODE_CACHE[cacheKey];
 
+  // 1. Direct match in KNOWN_CITY_COORDINATES dictionary
+  const known = KNOWN_CITY_COORDINATES[normCity] || KNOWN_CITY_COORDINATES[normCity.replace(/,.*$/, '').trim()];
+  if (known) {
+    const bounds = {
+      west:  known.lon - TIGHT_BOX_DEG,
+      east:  known.lon + TIGHT_BOX_DEG,
+      south: known.lat - TIGHT_BOX_DEG,
+      north: known.lat + TIGHT_BOX_DEG,
+    };
+    GEOCODE_CACHE[cacheKey] = bounds;
+    console.log(`[Geocode] 📍 Dictionary match for ${normCity}, ${normState} → bounds:`, bounds);
+    return bounds;
+  }
+
+  // 2. OpenStreetMap Nominatim live query
   try {
     const q = normState ? `${normCity}, ${normState}` : normCity;
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
@@ -459,15 +580,16 @@ async function getCityBounds(city, state) {
         north: lat + TIGHT_BOX_DEG,
       };
       GEOCODE_CACHE[cacheKey] = bounds;
-      console.log(`[Geocode] ${normCity}, ${normState} → bounds (${TIGHT_BOX_DEG}° radius):`, bounds);
+      console.log(`[Geocode] 🌐 Nominatim match for ${normCity}, ${normState} → bounds:`, bounds);
       return bounds;
     }
   } catch (e) {
     console.warn(`[Geocode] Failed for ${normCity}:`, e.message);
   }
 
-  // Fallback default box (Chicago area)
-  return { west: -87.85, east: -87.70, south: 41.98, north: 42.10 };
+  // 3. If geocoding completely fails, return null so Zillow searches the native city slug without bounding box error
+  console.log(`[Geocode] No coordinates for ${normCity} — using native city slug boundaries`);
+  return null;
 }
 
 // Build a proper Zillow search URL with ?searchQueryState= (required by zillow-scraper actor)
@@ -611,7 +733,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
 
   const searchQueryState = {
     pagination: {},
-    mapBounds: bounds,
+    ...(bounds ? { mapBounds: bounds } : {}),
     isMapVisible: true,
     isListVisible: true,
     filterState,
