@@ -1458,11 +1458,10 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
     const candidateList = Array.isArray(candidateObj) ? candidateObj : (candidateObj?.results || []);
 
-    // For rare types (multi-family, land/lot) allow showing even 1-2 DB results rather than always falling to Apify
-    const isRareType = propType && (propType.toLowerCase().includes('multi') || propType.toLowerCase().includes('duplex') || propType.toLowerCase().includes('land') || propType.toLowerCase().includes('lot'));
-    const minRequired = isRareType ? 1 : cardsLimit;
-    if (candidateList.length < minRequired && !isShowMore) {
-      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${minRequired}) matching properties in DB within budget for city="${cleanCity}" — falling back to live Apify scrape.`);
+    // Always require at least 4 matching properties from DB — if fewer found, fall through to Apify for fresh scrape
+    // This ensures we never show just 1-2 properties when more may be available live
+    if (candidateList.length < cardsLimit && !isShowMore) {
+      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB within budget for city="${cleanCity}" — falling back to live Apify scrape.`);
       return { text: '', rawProperties: [] };
     }
 
