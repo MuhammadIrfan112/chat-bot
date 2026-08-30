@@ -578,42 +578,18 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     ? {
         sort: { value: 'priorityscore' },
         ah: { value: true },
-        isForRent: { value: true },
-        isForSale: { value: false },
-        isForSaleByAgent: { value: false },
-        isForSaleByOwner: { value: false },
-        isNewConstruction: { value: false },
-        isForSaleForeclosure: { value: false },
-        isComingSoon: { value: false },
-        isAuction: { value: false },
-        isRecentlySold: { value: false }
+        isForRent: { value: true }
       }
     : {
         sort: { value: 'days' },
         ah: { value: true },
-        isForSale: { value: true },
-        isForSaleByAgent: { value: true },
-        isForSaleByOwner: { value: true },
-        isNewConstruction: { value: true },
-        isComingSoon: { value: true },
-        isForRent: { value: false },
-        isRecentlySold: { value: false }
+        isForSale: { value: true }
       };
 
-  // DO NOT add beds or baths filter to scraper URL, so we fetch the complete inventory for this property type
-  // and sort all listings in pure ascending price order on our backend
-
-  // ── Apply property type filter on Zillow URL (use proper Zillow boolean flags) ──
+  // ── Apply property type filter on Zillow URL (set ONLY positive flags) ──
   const zillowType = mapPropTypeToZillow(propType);
   if (zillowType) {
     console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
-    filterState.isSingleFamily = { value: false };
-    filterState.isTownhouse = { value: false };
-    filterState.isCondo = { value: false };
-    filterState.isMultiFamily = { value: false };
-    filterState.isLotLand = { value: false };
-    filterState.isManufactured = { value: false };
-    filterState.isApartment = { value: false };
     if (zillowType === 'SINGLE_FAMILY') {
       filterState.isSingleFamily = { value: true };
     } else if (zillowType === 'SEMI_DETACHED') {
@@ -626,9 +602,10 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
       filterState.isApartment = { value: true };
     } else if (zillowType === 'MULTI_FAMILY') {
       filterState.isMultiFamily = { value: true };
-      filterState.isSingleFamily = { value: true };
     } else if (zillowType === 'LOT') {
       filterState.isLotLand = { value: true };
+    } else if (zillowType === 'MANUFACTURED') {
+      filterState.isManufactured = { value: true };
     }
   }
 
@@ -684,27 +661,35 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths);
     console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
 
-    let runRes = await fetch(
-      `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=50&token=${APIFY_TOKEN}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startUrls: [{ url: searchUrl }],
-          searchUrls: [{ url: searchUrl }],
-          search: `${normCity}${state ? ', ' + state : ''}`.trim(),
-          proxy: {
-            useApifyProxy: true
+    let runData = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        let runRes = await fetch(
+          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=50&token=${APIFY_TOKEN}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              startUrls: [{ url: searchUrl }],
+              searchUrls: [{ url: searchUrl }],
+              search: `${normCity}${state ? ', ' + state : ''}`.trim(),
+              proxy: {
+                useApifyProxy: true
+              }
+            })
           }
-        })
+        );
+        runData = await runRes.json();
+        if (runData.data?.id) break;
+      } catch (fetchErr) {
+        console.warn(`[Apify] Run start attempt ${attempt} failed: ${fetchErr.message}`);
+        if (attempt === 3) throw fetchErr;
+        await new Promise(r => setTimeout(r, 1000 * attempt));
       }
-    );
+    }
 
-    let runData = await runRes.json();
-
-    if (!runData.data?.id) {
-      console.error('[Apify] API call returned success status but missing run ID. HTTP Status:', runRes.status);
-      console.error('[Apify] Full Response Payload:', JSON.stringify(runData, null, 2));
+    if (!runData?.data?.id) {
+      console.error('[Apify] API call returned missing run ID. Payload:', JSON.stringify(runData, null, 2));
       return null;
     }
 
