@@ -718,7 +718,24 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // Both platforms returned 0 (or US city has 0 for this type) — show friendly message in English
+    // If exact type filter returned 0, but city has properties — intelligently recommend closest available homes
+    if (orderedProperties.length === 0 && finalProperties.length > 0) {
+      const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'property';
+      const sortedAll = [...finalProperties].sort((a, b) => {
+        const pa = parseBudgetNum(a.price);
+        const pb = parseBudgetNum(b.price);
+        return pa - pb;
+      });
+      const relaxedIntro = `While exact **${friendlyType}** listings in your specific range are limited in **${savedCity || requestedCity}**, here are the top available properties in the area (sorted by lowest price first): 🏡`;
+      return Response.json({
+        status: 'done',
+        city: savedCity || requestedCity,
+        properties: sortedAll.slice(0, 16),
+        introMessage: relaxedIntro
+      });
+    }
+
+    // Both platforms returned 0 (or no data) — show friendly message in English
     if (orderedProperties.length === 0) {
       const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
       let altSuggestion = '';
