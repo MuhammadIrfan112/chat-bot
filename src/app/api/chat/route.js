@@ -803,7 +803,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         let runRes = await fetch(
-          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=50&token=${APIFY_TOKEN}`,
+          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=100&token=${APIFY_TOKEN}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
