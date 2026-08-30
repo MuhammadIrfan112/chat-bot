@@ -1776,16 +1776,19 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     setLeadStep(null);
 
     const isStandard = embedPlan === 'standard';
-    let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and our team will be in touch soon.\n\nFeel free to ask me anything else! 😊`;
+    const agentName = botConfig.botName || 'Sandra Adams';
+    const agentFirstName = agentName.split(' ')[0] || agentName;
+
+    let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and **${agentName}** will be in touch soon.\n\nFeel free to ask me anything else! 😊`;
     
     if (isHomeValue) {
-      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️ Bedrooms: ${homeValueData.bedrooms} | 🛁 Bathrooms: ${homeValueData.bathrooms}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time with a personalized valuation based on your property and the local market.\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️ Bedrooms: ${homeValueData.bedrooms} | 🛁 Bathrooms: ${homeValueData.bathrooms}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\n**${agentName}** will reach out to you at your preferred **${time_preference}** time with a personalized valuation based on your property and the local market.\n\nIs there anything else I can help you with?`;
     } else if (isRentOut) {
-      confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Parking:** ${rentOutData.parking}\n**Features:** ${rentOutData.features}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\nOne of our agents will reach out to you at your preferred **${time_preference}** time to discuss the next steps, help you find the right tenant, and maximize your rental income.\n\n**We’re excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Parking:** ${rentOutData.parking}\n**Features:** ${rentOutData.features}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\n**${agentName}** will reach out to you at your preferred **${time_preference}** time to discuss the next steps, help you find the right tenant, and maximize your rental income.\n\n**We’re excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
     } else if (resolvedGoal === 'Investment Property') {
-      confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\nA real estate professional will connect with you at your preferred **${time_preference}** time to discuss your investment goals and available opportunities.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\n**${agentName}** will connect with you at your preferred **${time_preference}** time to discuss your investment goals and available opportunities.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
     } else if (isStandard) {
-      const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline;
+      const isRent = !sumOccupants || !sumPets || !sumRentTimeline;
       let reqLines = [];
       
       if (isRent) {
@@ -1812,7 +1815,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         ];
       }
 
-      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to our real estate team.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**What happens next?**\nAn agent from our team will review your requirements and look for properties that closely match your search. They will contact you during your preferred **${time_preference}** hours to discuss suitable properties and the next steps.\n\nWe're looking forward to helping you find the right home! 🏡\n\nIs there anything else you'd like to know?`;
+      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to **${agentName}**.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**What happens next?**\n**${agentName}** will review your requirements and search for matching properties. ${agentFirstName} will contact you during your preferred **${time_preference}** hours to discuss suitable options and schedule private tours.\n\nWe're looking forward to helping you find your perfect home! 🏡\n\nIs there anything else you'd like to know?`;
     }
 
     setMessages(prev => [...prev, {

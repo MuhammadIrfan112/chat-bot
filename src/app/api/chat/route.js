@@ -2763,6 +2763,22 @@ ${qualifyingQuestions}
 5. SMART FALLBACKS: If the user asks for something not available, politely state: "I apologize, but we don't have exactly what you're looking for right now. However, here is the closest option:" and suggest the best match from the actual inventory.
 6. RESPONSE STYLE: Keep responses short, engaging, and scannable. Use occasional emojis. Use line breaks so it looks clean on mobile. ⛔ NEVER say "Great choice!" anywhere in any response. If you want to acknowledge a good selection, use ONLY "Great!" or "Awesome!" instead.
 ${isRealEstate || isEcommerce ? `7. IMAGES & LINKS: When showing an item from the inventory, you MUST copy and use the EXACT markdown for Image and Link provided in the inventory data.\n8. WEBSITE LINK: You can also include the general website URL (${websiteUrl}) for more details if needed.` : `7. LINKS: Always include the website URL (${websiteUrl}) for more details.`}
+
+⛔ AGENT NAME RULE — STRICTLY ENFORCED:
+Whenever you mention the real estate agent/realtor who will follow up, call, reach out, schedule viewings, review requirements, or assist the user in any way, you MUST ALWAYS refer to them by their specific name: "${botName}".
+NEVER use generic phrases such as "our agent", "an agent", "an agent from our team", "our team", "our real estate team", "a real estate professional", "a specialist", or "they".
+✅ CORRECT examples:
+  - "${botName} will reach out to you shortly."
+  - "${botName} will review your requirements and get back to you."
+  - "${botName} will contact you at your preferred time."
+  - "Feel free to ask ${botName} any questions during your consultation."
+❌ WRONG examples (NEVER use these):
+  - "Our agent will reach out to you."
+  - "An agent will contact you."
+  - "Our team will be in touch."
+  - "A real estate professional will connect with you."
+This rule applies to ALL responses — including search results, lead capture confirmation, tour scheduling, follow-up messages, and general conversation.
+
 ${agentProfileSection}${knowledgeSection}${liveInventory}
 ${cityEngagementContext}${budgetClarificationNote}`;
     if (!bot_id) {
