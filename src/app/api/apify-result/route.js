@@ -558,33 +558,33 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFilteredApify.length} strict type props`);
 
-      // Dynamic +10% budget buffer
+      // Price floor: start from budget-100k (rent: 25% below budget), NO upper limit
       const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
-      const maxBudgetWindow = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
-      // Primary window: starts from 100k below user budget (or 25% for rent)
-      const minBudgetWindow = targetBudget > 0 ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000)) : 0;
+      const minBudgetFloor = targetBudget > 0
+        ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000))
+        : 0;
 
       let apifyMatchTier = 'exact';
 
-      // ── POOL 1: Strict Type + In [budget - 100k, budget + 10%] + Exact Bed + Exact Bath ──
+      // ── POOL 1: Strict Type + price >= floor + Exact Bed + Exact Bath — NO upper cap ──
       const pool1Apify = strictListApify.filter(p => {
         const price = getPrice(p);
-        const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
+        const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
         const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
         const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-        return inBudget && matchBed && matchBath;
+        return aboveFloor && matchBed && matchBath;
       });
       for (const p of sortAscendingPrice(pool1Apify)) {
         if (selected.length >= totalTarget) break;
         addProp(p);
       }
 
-      // ── POOL 2A: Strict Type + In [budget - 100k, budget + 10%] + Exact Bed ──
+      // ── POOL 2A: Strict Type + price >= floor + Exact Bed (relax bath) ──
       if (selected.length < totalTarget && targetBeds > 0) {
         const pool2A = strictListApify.filter(p => {
           const price = getPrice(p);
-          const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
-          return inBudget && getBeds(p) === targetBeds;
+          const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
+          return aboveFloor && getBeds(p) === targetBeds;
         });
         for (const p of sortAscendingPrice(pool2A)) {
           if (selected.length >= totalTarget) break;
@@ -592,12 +592,11 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // ── POOL 2B: Strict Type + In [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
+      // ── POOL 2B: Strict Type + price >= floor, relax all beds/baths ──
       if (selected.length < totalTarget) {
         const pool2Apify = strictListApify.filter(p => {
           const price = getPrice(p);
-          const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
-          return inBudget;
+          return minBudgetFloor > 0 ? price >= minBudgetFloor : true;
         });
         for (const p of sortAscendingPrice(pool2Apify)) {
           if (selected.length >= totalTarget) break;
@@ -605,19 +604,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // ── POOL 2C: Strict Type + Any price up to max budget (expand downwards if 100k window had fewer than 4) ──
-      if (selected.length < totalTarget) {
-        const pool2CApify = strictListApify.filter(p => {
-          const price = getPrice(p);
-          return maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
-        });
-        for (const p of sortAscendingPrice(pool2CApify)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-      }
-
-      // ── POOL 3: If budget is lower than market (or to fill remaining), fill with lowest available market prices ──
+      // ── POOL 3: floor empty (budget below market) → show cheapest available from market floor ──
       if (selected.length < totalTarget && strictListApify.length > 0) {
         const unselected = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
         if (targetBeds > 0) {
@@ -632,8 +619,12 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // Strictly sort ALL returned properties in pure ASCENDING price order ($Low → $High)
-      const finalOrdered = sortAscendingPrice([...selected, ...strictListApify.filter(p => !usedKeys.has(getPropKey(p)))]);
+      // Return ALL properties >= floor sorted ascending — no upper cap, enables infinite Show More
+      const allAboveFloor = strictListApify
+        .filter(p => minBudgetFloor > 0 ? getPrice(p) >= minBudgetFloor : true);
+      const finalOrdered = sortAscendingPrice([...new Map(
+        (allAboveFloor.length > 0 ? allAboveFloor : strictListApify).map(p => [getPropKey(p), p])
+      ).values()]);
       return { results: finalOrdered, matchTier: apifyMatchTier };
     }
 

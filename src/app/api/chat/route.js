@@ -1120,17 +1120,13 @@ function parseBudget(text) {
   return 0;
 }
 
-// 🏡 Smart 4-Pool Recommendation Algorithm (Type-Strict with Smart Budget Fallback)
-// Pool 1: Exact type + Exact beds + Exact baths + Budget (±$2k)
-// Pool 2: Exact type + Exact beds + Exact baths + Budget ±$30k (e.g. $345k → $315k-$375k)
-// Pool 3: Exact type + Budget ±$30k (beds/baths relaxed, e.g. $345k → $315k-$375k)
-// Pool 4: Exact type + Exact beds + Exact baths + Budget removed (lowest market price first)
-// Returns { results, matchTier } so callers can craft explanatory messages
+// Pool 1: Strict Type + price >= (budget - 100k) + Exact Bed + Exact Bath — NO upper price cap
+// Pool 2: Relax bath, then relax beds — still no upper cap
+// Pool 3: If budget-100k window still empty → show cheapest available (market floor)
+// Returns { results, matchTier } — ALL matching sorted ascending so callers can slice 4-per-page infinitely
 function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
   if (!Array.isArray(properties) || properties.length === 0) return { results: [], matchTier: 'none' };
   const totalTarget = budgetCountNeeded + bedCountNeeded;
-  // Dynamic +10% budget buffer (minimum $30,000) so e.g. $700k checks up to $770k
-  const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
 
   const usedKeys = new Set();
   const selected = [];
@@ -1186,9 +1182,13 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const typeHasResults = typeFiltered.length > 0;
 
   const strictList = typeHasResults ? typeFiltered : [];
-  const maxBudgetWindow = targetBudget > 0 ? (targetBudget + BUDGET_FLEX) : 0;
-  // Primary window: starts from 100k below user budget (or 25% for rent)
-  const minBudgetWindow = targetBudget > 0 ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000)) : 0;
+
+  // ── Price floor: start from budget-100k (rent: 25% below), NO upper limit ──
+  // Rule: if user says $890k → show from $790k upward, no ceiling
+  // Rule: if market floor ($400k) > budget-100k ($500k) → properties naturally start at $500k anyway
+  const minBudgetFloor = targetBudget > 0
+    ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000))
+    : 0;
 
   // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──
   const sortAscendingPrice = (list) => [...list].sort((a, b) => {
@@ -1199,25 +1199,25 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   let matchTier = 'exact';
 
-  // ── POOL 1: Strict Type + In [budget - 100k, budget + 10%] + Exact Bed + Exact Bath ──
+  // ── POOL 1: Strict Type + price >= floor + Exact Bed + Exact Bath — NO upper cap ──
   const pool1 = strictList.filter(p => {
     const price = getPrice(p);
-    const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
+    const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
     const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
     const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-    return inBudget && matchBed && matchBath;
+    return aboveFloor && matchBed && matchBath;
   });
   for (const p of sortAscendingPrice(pool1)) {
     if (selected.length >= totalTarget) break;
     addProp(p);
   }
 
-  // ── POOL 2A: Strict Type + In [budget - 100k, budget + 10%] + Exact Bed ──
+  // ── POOL 2A: Strict Type + price >= floor + Exact Bed (relax bath) ──
   if (selected.length < totalTarget && targetBeds > 0) {
     const pool2A = strictList.filter(p => {
       const price = getPrice(p);
-      const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
-      return inBudget && getBeds(p) === targetBeds;
+      const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
+      return aboveFloor && getBeds(p) === targetBeds;
     });
     for (const p of sortAscendingPrice(pool2A)) {
       if (selected.length >= totalTarget) break;
@@ -1225,12 +1225,11 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // ── POOL 2B: Strict Type + In [budget - 100k, budget + 10%] + Relaxed Bed/Bath ──
+  // ── POOL 2B: Strict Type + price >= floor, relax all beds/baths ──
   if (selected.length < totalTarget) {
     const pool2B = strictList.filter(p => {
       const price = getPrice(p);
-      const inBudget = (maxBudgetWindow > 0 ? price <= maxBudgetWindow : true) && (minBudgetWindow > 0 ? price >= minBudgetWindow : true);
-      return inBudget;
+      return minBudgetFloor > 0 ? price >= minBudgetFloor : true;
     });
     for (const p of sortAscendingPrice(pool2B)) {
       if (selected.length >= totalTarget) break;
@@ -1238,19 +1237,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // ── POOL 2C: Strict Type + Any price up to max budget (expand downwards if 100k window had fewer than 4) ──
-  if (selected.length < totalTarget) {
-    const pool2C = strictList.filter(p => {
-      const price = getPrice(p);
-      return maxBudgetWindow > 0 ? price <= maxBudgetWindow : true;
-    });
-    for (const p of sortAscendingPrice(pool2C)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-  }
-
-  // ── POOL 3: If budget is lower than market (or to fill remaining), fill with lowest available market prices ──
+  // ── POOL 3: floor empty (budget below market floor) → show cheapest available starting from market floor ──
   if (selected.length < totalTarget && strictList.length > 0) {
     const unselected = strictList.filter(p => !usedKeys.has(getPropKey(p)));
     if (targetBeds > 0) {
@@ -1265,8 +1252,19 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // Strictly sort ALL returned properties in pure ASCENDING price order ($Low ➔ $High)
-  const finalOrdered = sortAscendingPrice([...selected, ...strictList.filter(p => !usedKeys.has(getPropKey(p)))]);
+  // ── Return ALL qualifying properties sorted ascending (caller slices 4-per-page for infinite Show More) ──
+  // No upper price ceiling — user can "Show More" indefinitely as prices go up
+  const allMatching = sortAscendingPrice([...new Map(
+    strictList
+      .filter(p => minBudgetFloor > 0 ? getPrice(p) >= minBudgetFloor : true)
+      .map(p => [getPropKey(p), p])
+  ).values()]);
+
+  // If floor filter returned results, use them; otherwise fall back to all strict list sorted
+  const finalOrdered = allMatching.length > 0
+    ? allMatching
+    : sortAscendingPrice([...new Map(strictList.map(p => [getPropKey(p), p])).values()]);
+
   return { results: finalOrdered, matchTier };
 }
 
