@@ -2531,7 +2531,7 @@ function formatCityDisplay(msg) {
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: `What type of property is it?` }],
-        quickReplies: ['🏡 Detached Home', '🏘️ Townhouse', '🏢 Condo', '🏚 Semi-Detached', '💡 Other']
+        quickReplies: ['🏡 Detached Home', '🏘️ Townhouse', '🏢 Condo / Apartment', '🏢 Multi-Family', '💡 Other']
       }]);
       return;
     }
@@ -2617,7 +2617,7 @@ function formatCityDisplay(msg) {
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: `Great! What type of property is it?` }],
-        quickReplies: ['🏢 Condo', '🏨 Townhouse', '🏡 Detached Home', '🏚 Semi-Detached', '💡 Other']
+        quickReplies: ['🏢 Condo / Apartment', '🏘️ Townhouse', '🏡 Detached Home', '🏢 Multi-Family', '💡 Other']
       }]);
       return;
     }
@@ -3184,7 +3184,7 @@ function formatCityDisplay(msg) {
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: `Please select your preferred **house type**:` }],
-        quickReplies: ['🏠 Detached House', '🏡 Semi-Detached', '🏘️ Townhouse', '🏢 Condo', '🏢 Multi-Family / Duplex', '🌳 Land / Lot']
+        quickReplies: ['🏠 Detached House', '🏘️ Townhouse', '🏢 Condo / Apartment', '🏢 Multi-Family / Duplex', '🌳 Land / Lot', '🏗️ Manufactured']
       }]);
       return;
     }
