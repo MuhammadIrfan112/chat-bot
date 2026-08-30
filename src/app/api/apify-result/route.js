@@ -21,17 +21,29 @@ export async function GET(req) {
 
     const parseBudgetNum = (text) => {
       if (!text) return 0;
+      if (typeof text === 'number') return text > 0 ? text : 0;
       const t = String(text).replace(/,/g, '').toLowerCase().trim();
-      const mMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/);
-      if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
-      const kMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*k\b/);
-      if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
-      const tMatch = t.match(/\$?\s*([\d]+(?:\.[\d]+)?)\s*thousand\b/);
-      if (tMatch) return Math.round(parseFloat(tMatch[1]) * 1_000);
-      const plainMatch = t.match(/\$?\s*([\d]{4,})/);
-      if (plainMatch) return parseInt(plainMatch[1], 10);
-      const smallNum = t.match(/\$?\s*([\d]+)/);
-      if (smallNum) return parseInt(smallNum[1], 10);
+      
+      // 1. Range support: e.g. '$900k - $1.2M' or '600k - 800k' -> pick highest maximum budget
+      const millionMatches = [...t.matchAll(/([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/g)];
+      const kMatches = [...t.matchAll(/([\d]+(?:\.[\d]+)?)\s*(?:k|thousand)\b/g)];
+      
+      let maxBudget = 0;
+      for (const m of millionMatches) {
+        const val = Math.round(parseFloat(m[1]) * 1_000_000);
+        if (val > maxBudget) maxBudget = val;
+      }
+      for (const k of kMatches) {
+        const val = Math.round(parseFloat(k[1]) * 1_000);
+        if (val > maxBudget) maxBudget = val;
+      }
+      if (maxBudget > 0) return maxBudget;
+
+      // 2. Direct clean digits parsing (removes $, C$, CAD, spaces)
+      const digits = t.replace(/[^0-9]/g, '');
+      if (digits && digits.length >= 3) {
+        return parseInt(digits, 10);
+      }
       return 0;
     };
 
@@ -352,7 +364,15 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
 
         // Price — resolve accurately and never return $0
-        const price = p.pricing?.display_price || (p.pricing?.amount ? `$${Number(p.pricing.amount).toLocaleString()}` : null) || p.Property?.Price || resolveAndFormatPrice(p, intent === 'rent');
+        let price = resolveAndFormatPrice(p, intent === 'rent');
+        if (!price || price === 'Contact for price') {
+          const rawNum = parseBudgetNum(p.pricing?.display_price || p.pricing?.amount || p.Property?.Price || p.price || p.unformattedPrice);
+          if (rawNum > 0) {
+            price = '$' + rawNum.toLocaleString('en-US') + (intent === 'rent' ? '/mo' : '');
+          } else {
+            price = 'Contact for price';
+          }
+        }
 
         // Beds, baths, type, city (support Realtor.ca + Zillow)
         const beds = parseInt(

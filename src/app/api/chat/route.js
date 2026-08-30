@@ -1091,32 +1091,32 @@ const SUPPLEMENT_PHOTO_SETS = [
 ];
 
 // ─── Universal Budget Parser ───────────────────────────────────────────────
-// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, under 800k, 500 thousand, etc.
+// Handles: 990k, 870K, 1.2m, 7M, 4 million, $1,200,000, 650000, $900k - $1.2M, under 800k, 500 thousand, C$799,900, etc.
 function parseBudget(text) {
   if (!text) return 0;
-  // Remove commas ($1,200,000 → $1200000), spaces, dollar signs
-  const t = String(text).replace(/,/g, '').replace(/\$/g, '').trim().toLowerCase();
+  if (typeof text === 'number') return text > 0 ? text : 0;
+  const t = String(text).replace(/,/g, '').toLowerCase().trim();
 
-  // Match: 1.2m, 1.2M, 7m, 7M, 1m
-  const mMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*m\b/);
-  if (mMatch) return Math.round(parseFloat(mMatch[1]) * 1_000_000);
+  // 1. Range support: e.g. '$900k - $1.2M' or '600k - 800k' -> pick highest maximum budget
+  const millionMatches = [...t.matchAll(/([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/g)];
+  const kMatches = [...t.matchAll(/([\d]+(?:\.[\d]+)?)\s*(?:k|thousand)\b/g)];
+  
+  let maxBudget = 0;
+  for (const m of millionMatches) {
+    const val = Math.round(parseFloat(m[1]) * 1_000_000);
+    if (val > maxBudget) maxBudget = val;
+  }
+  for (const k of kMatches) {
+    const val = Math.round(parseFloat(k[1]) * 1_000);
+    if (val > maxBudget) maxBudget = val;
+  }
+  if (maxBudget > 0) return maxBudget;
 
-  // Match: 1.2 million, 4 million, 1.5 million
-  const millionMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*million/);
-  if (millionMatch) return Math.round(parseFloat(millionMatch[1]) * 1_000_000);
-
-  // Match: 990k, 780k, 780K, 1.5k
-  const kMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*k\b/);
-  if (kMatch) return Math.round(parseFloat(kMatch[1]) * 1_000);
-
-  // Match: 500 thousand, 780 thousand
-  const thousandMatch = t.match(/([0-9]+(?:\.[0-9]+)?)\s*thousand/);
-  if (thousandMatch) return Math.round(parseFloat(thousandMatch[1]) * 1_000);
-
-  // Match: plain number (at least 4 digits) like 1200000, 780000, 986000
-  const plainMatch = t.match(/([0-9]{4,})/);
-  if (plainMatch) return parseInt(plainMatch[1], 10);
-
+  // 2. Direct clean digits parsing (removes $, C$, CAD, spaces)
+  const digits = t.replace(/[^0-9]/g, '');
+  if (digits && digits.length >= 3) {
+    return parseInt(digits, 10);
+  }
   return 0;
 }
 
