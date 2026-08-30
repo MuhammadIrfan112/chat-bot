@@ -2189,7 +2189,7 @@ ${areasNotServed.length ? `
       // DEBUG: log extracted values to Vercel logs
       console.log(`[PropertySearch] intent=${propIntent} city=${detectedCity} state=${detectedState} beds=${propBeds} baths=${propBaths} budget=${propBudget} confirmed=${hasConfirmedSummary} enoughInfo=${hasEnoughInfo} isCriteriaUpdate=${isCriteriaUpdate} lastMsg="${lastUserMsg}"`);
 
-      if (hasEnoughInfo && hasConfirmedSummary) {
+      if (hasEnoughInfo && (hasConfirmedSummary || isConfirmedSearchPrompt)) {
         const cityLower = (detectedCity || '').toLowerCase().trim();
         const isMortonGrove = cityLower === 'morton grove' || cityLower === '';
 
