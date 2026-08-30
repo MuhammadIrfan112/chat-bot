@@ -88,49 +88,45 @@ export async function GET(req) {
 
     function propTypeMatches(p, requestedType) {
       if (!requestedType) return true;
-      const req = requestedType.toLowerCase().trim();
       const rawPropType = String(p.property_type || p.propertyType || p.homeType || p.home_type || p.type || '').toLowerCase();
       const pType = normalizeHomeType(rawPropType);
+      const requestedTypes = requestedType.toLowerCase().split(',').map(t => t.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim()).filter(Boolean);
 
-      // 1. Semi-Detached / Link Home
-      // NOTE: Zillow Canada does NOT have a dedicated Semi-Detached type.
-      // Semi-Detached homes in Ontario are listed as TOWNHOUSE on Zillow.
-      // So we match both 'semi-detached' and 'townhouse' when user picks Semi-Detached.
-      if (req.includes('semi') || req.includes('link')) {
-        return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
-      }
-      // 2. Multi-Family / Duplex
-      if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-        return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
-      }
-      // 3. Townhouse
-      if (req.includes('town')) {
-        return pType === 'townhouse';
-      }
-      // 4. Condo / Apartment / Co-op
-      if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
-        return pType === 'condo';
-      }
-      // 5. Land / Lot
-      if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
-        return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
-      }
-      // 6. Manufactured / Mobile
-      if (req.includes('manufactured') || req.includes('mobile')) {
-        return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
-      }
-      // 7. Villa / Luxury → same as Detached
-      if (req.includes('villa') || req.includes('luxury')) {
-        return pType === 'detached';
-      }
-      // 8. Detached / Single Family (strictly detached)
-      if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
-        return pType === 'detached';
-      }
-      if (req.includes('land') || req.includes('lot')) {
-        return pType === 'land';
-      }
-      return pType.includes(req);
+      return requestedTypes.some(req => {
+        // 1. Multi-Family / Duplex
+        if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
+          return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
+        }
+        // 2. Townhouse
+        if (req.includes('town')) {
+          return pType === 'townhouse';
+        }
+        // 3. Condo / Apartment / Co-op
+        if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
+          return pType === 'condo';
+        }
+        // 4. Land / Lot
+        if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
+          return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
+        }
+        // 5. Manufactured / Mobile
+        if (req.includes('manufactured') || req.includes('mobile')) {
+          return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
+        }
+        // 6. Villa / Luxury → same as Detached
+        if (req.includes('villa') || req.includes('luxury')) {
+          return pType === 'detached';
+        }
+        // 7. Detached / Single Family (strictly detached)
+        if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
+          return pType === 'detached';
+        }
+        // 8. Semi-Detached
+        if (req.includes('semi') || req.includes('link')) {
+          return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
+        }
+        return pType.includes(req);
+      });
     }
 
     if (!runId) return Response.json({ error: 'Missing runId' }, { status: 400 });
@@ -526,6 +522,13 @@ const SUPPLEMENT_PHOTO_SETS = [
       const getBeds = (p) => parseInt(p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || 0, 10) || 0;
       const getBaths = (p) => parseFloat(p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || 0) || 0;
 
+      // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──
+      const sortAscendingPrice = (list) => [...list].sort((a, b) => {
+        const aPrice = getPrice(a) || 0;
+        const bPrice = getPrice(b) || 0;
+        return aPrice - bPrice;
+      });
+
       function isPropertyRental(p) {
         if (!p) return false;
         // 1. Price threshold: Monthly rentals in USA/Canada are $500 - $25,000. Homes for sale are $50k - $20M+.
@@ -781,9 +784,13 @@ const SUPPLEMENT_PHOTO_SETS = [
       });
     }
 
+    const introMessage = intent === 'rent'
+      ? `Here are live rental ${rawType ? rawType + ' ' : ''}properties in **${savedCity || requestedCity}** (sorted by lowest price first): 🏡`
+      : `Here are live ${rawType ? rawType + ' ' : ''}properties in **${savedCity || requestedCity}** (sorted by lowest price first): 🏡`;
+
     return Response.json({ 
       status: 'done', 
-      city: savedCity, 
+      city: savedCity || requestedCity, 
       properties: orderedProperties.slice(0, 16),
       introMessage
     });
