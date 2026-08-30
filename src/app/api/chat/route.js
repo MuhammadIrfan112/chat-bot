@@ -639,52 +639,50 @@ function normalizeHomeType(val) {
   return v;
 }
 
-// Check if a property's type matches what user requested
+// Check if a property's type matches what user requested (supports comma-separated multi-type e.g. 'manufactured, detached house')
 function propTypeMatches(p, requestedType) {
   if (!requestedType) return true; // no filter if not specified
-  const req = requestedType.toLowerCase().trim();
   const rawPropType = String(p.homeType || p.property_type || p.propertyType || p.home_type || p.type || '').toLowerCase();
   const pType = normalizeHomeType(rawPropType);
 
-  // 1. Semi-Detached / Link Home
-  // NOTE: Zillow Canada does NOT have a dedicated Semi-Detached type.
-  // Semi-Detached homes in Ontario are listed as TOWNHOUSE on Zillow.
-  // So we match both 'semi-detached' and 'townhouse' when user picks Semi-Detached.
-  if (req.includes('semi') || req.includes('link')) {
-    return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
-  }
-  // 2. Multi-Family / Duplex
-  if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-    return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
-  }
-  // 3. Townhouse
-  if (req.includes('town')) {
-    return pType === 'townhouse';
-  }
-  // 4. Condo / Apartment / Co-op
-  if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
-    return pType === 'condo';
-  }
-  // 5. Land / Lot
-  if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
-    return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
-  }
-  // 6. Manufactured / Mobile
-  if (req.includes('manufactured') || req.includes('mobile')) {
-    return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
-  }
-  // 7. Villa / Luxury → same as Detached (luxury = high-price detached)
-  if (req.includes('villa') || req.includes('luxury')) {
-    return pType === 'detached';
-  }
-  // 8. Detached / Single Family (strictly detached, NOT semi or multi)
-  if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
-    return pType === 'detached';
-  }
-  if (req.includes('land') || req.includes('lot')) {
-    return pType === 'land';
-  }
-  return pType.includes(req);
+  // Support comma-separated multi-type: match if property matches ANY of the selected types
+  const requestedTypes = requestedType.toLowerCase().split(',').map(t => t.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim()).filter(Boolean);
+
+  return requestedTypes.some(req => {
+    // 1. Multi-Family / Duplex
+    if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
+      return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
+    }
+    // 2. Townhouse
+    if (req.includes('town')) {
+      return pType === 'townhouse';
+    }
+    // 3. Condo / Apartment / Co-op
+    if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
+      return pType === 'condo';
+    }
+    // 4. Land / Lot
+    if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
+      return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
+    }
+    // 5. Manufactured / Mobile
+    if (req.includes('manufactured') || req.includes('mobile')) {
+      return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
+    }
+    // 6. Villa / Luxury → same as Detached
+    if (req.includes('villa') || req.includes('luxury')) {
+      return pType === 'detached';
+    }
+    // 7. Detached / Single Family / House (strictly detached, NOT semi or multi)
+    if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
+      return pType === 'detached';
+    }
+    // 8. Semi-Detached
+    if (req.includes('semi') || req.includes('link')) {
+      return pType === 'semi-detached' || pType === 'townhouse' || rawPropType.includes('semi') || rawPropType.includes('link') || rawPropType.includes('town') || rawPropType.includes('row');
+    }
+    return pType.includes(req);
+  });
 }
 
 async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null, propBeds = 0, propBaths = 0) {
@@ -1955,10 +1953,14 @@ ${areasNotServed.length ? `
         const typeMatch = fullText.match(/(apartment|condo|townhouse|house|single family|multi family|semi detached|detached)/i);
         propType = typeMatch ? typeMatch[1].toLowerCase() : null;
       }
-      // Latest user message property type takes precedence if user refined it
-      const latestTypeMatch = lastUserMsg.match(/(semi[- ]detached|detached|single[- ]family|townhouse|condo|apartment|duplex|multi[- ]family|villa)/i);
-      if (latestTypeMatch) {
-        propType = latestTypeMatch[1].toLowerCase().replace(/\s+/g, '-');
+      // Latest user message property type takes precedence ONLY if user sent a short standalone message (not the full searchPrompt)
+      // Don't overwrite a multi-type sumType like 'manufactured, detached house' with just 'detached'
+      const isSearchPromptMsg = lastUserMsg.includes('User confirmed requirements');
+      if (!isSearchPromptMsg) {
+        const latestTypeMatch = lastUserMsg.match(/(semi[- ]detached|detached|single[- ]family|townhouse|condo|apartment|duplex|multi[- ]family|villa)/i);
+        if (latestTypeMatch) {
+          propType = latestTypeMatch[1].toLowerCase().replace(/\s+/g, '-');
+        }
       }
 
       const propFeatures = sumFeatures || 'Beautiful property with modern finishes';
