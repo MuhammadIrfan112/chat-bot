@@ -700,7 +700,13 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     ? {
         sort: { value: 'priorityscore' },
         ah: { value: true },
-        isForRent: { value: true }
+        isForRent: { value: true },
+        isForSaleByAgent: { value: false },
+        isForSaleByOwner: { value: false },
+        isNewConstruction: { value: false },
+        isComingSoon: { value: false },
+        isAuction: { value: false },
+        isForSaleForeclosure: { value: false }
       }
     : {
         sort: { value: 'days' },
@@ -748,8 +754,8 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
 
 // ─── Apify Run Sharing: Deduplicate concurrent searches ────────────────────
 // Key = "city_budgetBucket_intent" → prevents duplicate Apify runs for same search
-const ACTIVE_APIFY_RUNS = {};
-const APIFY_RUN_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const ACTIVE_APIFY_RUNS = {}; // { [runKey]: { runId, startedAt, intent } }
+const APIFY_RUN_TTL_MS = 60 * 1000; // 60s TTL
 
 // Round budget to nearest 50k bucket (e.g. 680k, 700k, 720k → all 700k bucket)
 function getBudgetBucket(budget) {
@@ -777,11 +783,9 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
       return existing.runId;
     }
 
-    // ── Canada check: If Canadian city, search Realtor.ca first, fallback to Zillow Canada ──
-    // Use fast Zillow scraper (runs in ~7s with exact property type filters for Canada & US)
-
+    // ── Build accurate Zillow search URL ──
     const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths);
-    console.log(`[Apify] Starting Zillow scraper run | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
+    console.log(`[Apify] Starting Zillow scraper run | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runData = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -794,7 +798,6 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
             body: JSON.stringify({
               startUrls: [{ url: searchUrl }],
               searchUrls: [{ url: searchUrl }],
-              search: `${normCity}${state ? ', ' + state : ''}`.trim(),
               proxy: {
                 useApifyProxy: true
               }

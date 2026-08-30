@@ -137,15 +137,29 @@ export async function GET(req) {
 
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
 
-    // Check run status
-    const statusRes = await fetch(
-      `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
-    );
-    if (!statusRes.ok) return Response.json({ status: 'error' });
+    // Check run status with 3-attempt retry for DNS / network resilience
+    let statusData = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const statusRes = await fetch(
+          `https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`
+        );
+        if (statusRes.ok) {
+          statusData = await statusRes.json();
+          break;
+        }
+      } catch (fetchErr) {
+        console.warn(`[apify-result] Status check attempt ${attempt} failed:`, fetchErr.message);
+        if (attempt === 3) return Response.json({ status: 'running' }); // Keep frontend polling instead of error
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+    }
 
-    const statusData = await statusRes.json();
-    const runStatus = statusData?.data?.status;
+    if (!statusData?.data) {
+      return Response.json({ status: 'running' });
+    }
 
+    const runStatus = statusData.data.status;
     console.log(`[apify-result] runId=${runId} status=${runStatus} intent=${intent} budget=${propBudget} beds=${propBeds} baths=${propBaths}`);
 
     if (runStatus === 'RUNNING' || runStatus === 'READY' || runStatus === 'CREATED') {
@@ -154,18 +168,22 @@ export async function GET(req) {
 
     let items = [];
     if (runStatus === 'SUCCEEDED') {
-      const datasetId = statusData?.data?.defaultDatasetId;
+      const datasetId = statusData.data.defaultDatasetId;
       if (datasetId) {
-        try {
-          const itemsRes = await fetch(
-            `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=100`
-          );
-          if (itemsRes.ok) {
-            items = await itemsRes.json();
-            console.log('[apify-result] Raw items count:', items?.length);
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const itemsRes = await fetch(
+              `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&limit=100`
+            );
+            if (itemsRes.ok) {
+              items = await itemsRes.json();
+              console.log('[apify-result] Raw items count:', items?.length);
+              break;
+            }
+          } catch (fetchErr) {
+            console.warn(`[apify-result] Dataset fetch attempt ${attempt} failed:`, fetchErr.message);
+            if (attempt < 3) await new Promise(r => setTimeout(r, 1000 * attempt));
           }
-        } catch (fetchErr) {
-          console.warn('[apify-result] Dataset fetch error:', fetchErr.message);
         }
       }
     } else {
