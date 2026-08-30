@@ -1413,15 +1413,15 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
             ? data.city.charAt(0).toUpperCase() + data.city.slice(1)
             : (activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the requested area');
 
-          if (props.length === 0 && rawProps.length > 0) {
-            props = rawProps.slice(0, 4);
-          }
-
           if (props.length === 0) {
-            // No properties found at all — show refinement options
+            // All properties were already displayed — show complete message rather than repeating duplicates
+            const friendlyType = (data.type || activeApifyIntent === 'rent' ? 'rental' : 'property').replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim();
+            const noMoreMsg = rawProps.length > 0
+              ? `You've viewed all ${rawProps.length} available **${friendlyType}** listings in **${cityName}** right now.\n\nWould you like to explore nearby areas or adjust your criteria?`
+              : `I couldn't find live listings matching those exact criteria in **${cityName}** right now.\n\nYou can refine your search with the options below:`;
             setMessages(prev => [...prev, {
               role: 'model',
-              parts: [{ text: `I couldn't find live listings matching those exact criteria in **${cityName}** right now.\n\nYou can refine your search with the options below:` }],
+              parts: [{ text: noMoreMsg }],
               quickReplies: ['🏠 Change House Type', '💰 Change Budget', '🛏️ Change Bedrooms']
             }]);
             return;
