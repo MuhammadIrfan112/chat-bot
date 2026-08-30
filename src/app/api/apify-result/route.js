@@ -42,13 +42,16 @@ export async function GET(req) {
     function normalizeHomeType(val) {
       if (!val) return '';
       const v = String(val).toLowerCase().replace(/_/g, ' ');
-      // Check SEMI-DETACHED / MULTI-FAMILY first before checking 'detach' or 'single'
-      if (v.includes('semi') || v.includes('multi') || v.includes('duplex') || v.includes('triplex') || v.includes('link')) return 'semi-detached';
+      // Check MULTI_FAMILY before 'single' or 'family'
+      if (v.includes('multi') || v.includes('duplex') || v.includes('triplex')) return 'multi-family';
+      // Check SEMI-DETACHED / LINK before 'detach' or 'single'
+      if (v.includes('semi') || v.includes('link')) return 'semi-detached';
       if (v.includes('town') || v.includes('row') || v.includes('terrace') || v.includes('attached')) return 'townhouse';
-      if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata') || v.includes('loft') || v.includes('co-op')) return 'condo';
+      if (v.includes('condo') || v.includes('apartment') || v.includes('flat') || v.includes('strata') || v.includes('loft') || v.includes('co-op') || v.includes('coop')) return 'condo';
+      if (v.includes('lot') || v.includes('land') || v.includes('vacant')) return 'land';
+      if (v.includes('manufactured') || v.includes('mobile')) return 'manufactured';
       if (v.includes('villa') || v.includes('luxury')) return 'detached';
       if (v.includes('single') || v.includes('detach') || v.includes('house') || v.includes('residential') || v.includes('bungalow') || v.includes('cottage')) return 'detached';
-      if (v.includes('land') || v.includes('lot') || v.includes('vacant')) return 'land';
       return v;
     }
 
@@ -67,21 +70,29 @@ export async function GET(req) {
       }
       // 2. Multi-Family / Duplex
       if (req.includes('multi') || req.includes('duplex') || req.includes('triplex')) {
-        return pType === 'semi-detached' || rawPropType.includes('multi') || rawPropType.includes('duplex');
+        return pType === 'multi-family' || rawPropType.includes('multi') || rawPropType.includes('duplex') || rawPropType.includes('triplex');
       }
       // 3. Townhouse
       if (req.includes('town')) {
         return pType === 'townhouse';
       }
-      // 4. Condo / Apartment
-      if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata')) {
+      // 4. Condo / Apartment / Co-op
+      if (req.includes('condo') || req.includes('apartment') || req.includes('flat') || req.includes('strata') || req.includes('co-op') || req.includes('coop')) {
         return pType === 'condo';
       }
-      // 5. Villa / Luxury → same as Detached (luxury = high-price detached)
+      // 5. Land / Lot
+      if (req.includes('land') || req.includes('lot') || req.includes('vacant')) {
+        return pType === 'land' || rawPropType.includes('lot') || rawPropType.includes('land');
+      }
+      // 6. Manufactured / Mobile
+      if (req.includes('manufactured') || req.includes('mobile')) {
+        return pType === 'manufactured' || rawPropType.includes('manufactured') || rawPropType.includes('mobile');
+      }
+      // 7. Villa / Luxury → same as Detached
       if (req.includes('villa') || req.includes('luxury')) {
         return pType === 'detached';
       }
-      // 6. Detached / Single Family (strictly detached, NOT semi)
+      // 8. Detached / Single Family (strictly detached)
       if ((req.includes('detach') && !req.includes('semi')) || req.includes('single') || req.includes('house')) {
         return pType === 'detached';
       }
@@ -613,11 +624,26 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
-    // Compute clean, positive contextual intro message (lowest price first)
-    const typeName = rawType ? rawType.replace(/[🏘️🏠🏡🏗️]/gu, '').trim() : '';
-    const introMessage = intent === 'rent'
-      ? `Here are live rental ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** (sorted by lowest price first): 🏡`
-      : `Here are live ${typeName ? typeName + ' ' : ''}properties in **${savedCity}** matching your preferences (sorted by lowest price first): 🏡`;
+    // If no matching properties found for the selected type, return a friendly message
+    if (orderedProperties.length === 0) {
+      const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
+      let altSuggestion = '';
+      const reqLow = (rawType || '').toLowerCase();
+      if (reqLow.includes('multi') || reqLow.includes('duplex') || reqLow.includes('triplex')) {
+        altSuggestion = ' Aap **Semi-Detached** ya **Townhouse** dekh sakte hain — yeh bhi multi-unit style homes hoti hain.';
+      } else if (reqLow.includes('land') || reqLow.includes('lot')) {
+        altSuggestion = ' Land listings is area mein Zillow par available nahi hain. Aap directly Sandra se rabta kar sakte hain.';
+      } else if (reqLow.includes('condo') || reqLow.includes('apartment')) {
+        altSuggestion = ' Is waqt **' + (savedCity || 'is city') + '** mein condo listings scrape nahi hui. Kuch waqt baad dobara try karein.';
+      }
+      const noResultMsg = `Maafi chahta hoon! 😔 **${savedCity || 'Is city'}** mein abhi **${friendlyType}** ki koi listing available nahi hai Zillow par.${altSuggestion}\n\n📞 Sandra se seedha rabta karein taake woh aapko best options bata sakein.`;
+      return Response.json({
+        status: 'no_results',
+        city: savedCity,
+        properties: [],
+        introMessage: noResultMsg
+      });
+    }
 
     return Response.json({ 
       status: 'done', 
