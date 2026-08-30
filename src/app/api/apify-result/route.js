@@ -18,6 +18,7 @@ export async function GET(req) {
     const rawBeds = searchParams.get('beds') || '0';
     const rawBaths = searchParams.get('baths') || '0';
     const rawType = searchParams.get('type') || '';
+    const botName = searchParams.get('botName') || searchParams.get('agentName') || 'your realtor';
 
     const parseBudgetNum = (text) => {
       if (!text) return 0;
@@ -558,10 +559,9 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFilteredApify.length} strict type props`);
 
-      // Price floor: start from budget-100k (rent: 25% below budget), NO upper limit
-      const BUDGET_FLEX = targetBudget > 0 ? Math.max(30000, targetBudget * 0.10) : 30000;
+      // Price floor: start from budget-100k for buy (rent: $150 below budget, e.g. $2000 → $1850), NO upper limit
       const minBudgetFloor = targetBudget > 0
-        ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000))
+        ? Math.max(0, isRent ? (targetBudget - 150) : (targetBudget - 100000))
         : 0;
 
       let apifyMatchTier = 'exact';
@@ -754,7 +754,7 @@ const SUPPLEMENT_PHOTO_SETS = [
       } else if (reqLow.includes('condo') || reqLow.includes('apartment')) {
         altSuggestion = ' You may also want to check nearby areas for more condo options.';
       }
-      const noResultMsg = `I wasn't able to find live listings for **${friendlyType}** in **${savedCity || requestedCity || 'this area'}** right now.${altSuggestion}\n\n📞 Feel free to contact Sandra directly to explore off-market or upcoming opportunities.`;
+      const noResultMsg = `I wasn't able to find live listings for **${friendlyType}** in **${savedCity || requestedCity || 'this area'}** right now.${altSuggestion}\n\n📞 Feel free to contact ${botName} directly to explore off-market or upcoming opportunities.`;
       return Response.json({
         status: 'no_results',
         city: savedCity || requestedCity,

@@ -1183,11 +1183,11 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   const strictList = typeHasResults ? typeFiltered : [];
 
-  // ── Price floor: start from budget-100k (rent: 25% below), NO upper limit ──
-  // Rule: if user says $890k → show from $790k upward, no ceiling
-  // Rule: if market floor ($400k) > budget-100k ($500k) → properties naturally start at $500k anyway
+  // ── Price floor: start from budget-100k for buy (rent: $150 below budget, e.g. $2000 → $1850), NO upper limit ──
+  // Rule: if user says $2000 rent → show from $1850 upward, no ceiling
+  // Rule: if market floor > budget-150 → properties naturally start at market floor
   const minBudgetFloor = targetBudget > 0
-    ? Math.max(0, isRent ? Math.round(targetBudget * 0.75) : (targetBudget - 100000))
+    ? Math.max(0, isRent ? (targetBudget - 150) : (targetBudget - 100000))
     : 0;
 
   // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──

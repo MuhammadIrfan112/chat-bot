@@ -1368,7 +1368,8 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         const bedsParam = activeApifyBeds ? `&beds=${encodeURIComponent(activeApifyBeds)}` : '';
         const bathsParam = activeApifyBaths ? `&baths=${encodeURIComponent(activeApifyBaths)}` : '';
         const typeParam = activeApifyType ? `&type=${encodeURIComponent(activeApifyType)}` : '';
-        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}${budgetParam}${bedsParam}${bathsParam}${typeParam}`);
+        const botNameParam = botConfig.botName ? `&botName=${encodeURIComponent(botConfig.botName)}` : '';
+        const res = await fetch(`/api/apify-result?runId=${activeApifyRunId}&botId=${botConfig.botId || ''}&intent=${activeApifyIntent || 'buy'}${cityParam}${budgetParam}${bedsParam}${bathsParam}${typeParam}${botNameParam}`);
         const data = await res.json();
 
         if (data.status === 'done') {
