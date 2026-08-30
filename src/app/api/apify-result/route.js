@@ -613,7 +613,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // ── POOL 3: floor empty (budget below market) → show cheapest available from market floor ──
+      // ── POOL 3: If fewer than totalTarget selected, backfill from remaining matching properties ──
       if (selected.length < totalTarget && strictListApify.length > 0) {
         const unselected = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
         if (targetBeds > 0) {
@@ -628,12 +628,9 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // Return ALL properties >= floor sorted ascending — no upper cap, enables infinite Show More
-      const allAboveFloor = strictListApify
-        .filter(p => minBudgetFloor > 0 ? getPrice(p) >= minBudgetFloor : true);
-      const finalOrdered = sortAscendingPrice([...new Map(
-        (allAboveFloor.length > 0 ? allAboveFloor : strictListApify).map(p => [getPropKey(p), p])
-      ).values()]);
+      // Return complete list: selected top recommendations first, followed by all other matching properties sorted ascending
+      const unselectedRemaining = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
+      const finalOrdered = [...selected, ...sortAscendingPrice(unselectedRemaining)];
       return { results: finalOrdered, matchTier: apifyMatchTier };
     }
 

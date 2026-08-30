@@ -1256,7 +1256,7 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // ── POOL 3: floor empty (budget below market floor) → show cheapest available starting from market floor ──
+  // ── POOL 3: If fewer than totalTarget selected, backfill from remaining matching properties ──
   if (selected.length < totalTarget && strictList.length > 0) {
     const unselected = strictList.filter(p => !usedKeys.has(getPropKey(p)));
     if (effectiveBeds > 0) {
@@ -1271,18 +1271,9 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     }
   }
 
-  // ── Return ALL qualifying properties sorted ascending (caller slices 4-per-page for infinite Show More) ──
-  // No upper price ceiling — user can "Show More" indefinitely as prices go up
-  const allMatching = sortAscendingPrice([...new Map(
-    strictList
-      .filter(p => minBudgetFloor > 0 ? getPrice(p) >= minBudgetFloor : true)
-      .map(p => [getPropKey(p), p])
-  ).values()]);
-
-  // If floor filter returned results, use them; otherwise fall back to all strict list sorted
-  const finalOrdered = allMatching.length > 0
-    ? allMatching
-    : sortAscendingPrice([...new Map(strictList.map(p => [getPropKey(p), p])).values()]);
+  // ── Return complete list: selected top recommendations first, followed by all other matching properties sorted ascending ──
+  const unselectedRemaining = strictList.filter(p => !usedKeys.has(getPropKey(p)));
+  const finalOrdered = [...selected, ...sortAscendingPrice(unselectedRemaining)];
 
   return { results: finalOrdered, matchTier };
 }
