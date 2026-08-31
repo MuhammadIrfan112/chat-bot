@@ -1398,17 +1398,20 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       }
     }
 
-    // ── BUDGET GUARD: If user has a budget and NO DB properties are within it → Apify ──
+    // ── BUDGET GUARD: If user has a budget and NO DB properties are within budget+100k → Apify ──
+    // Beds & baths are NOT a fallback trigger — show whatever is in DB regardless of bed/bath count
     if (propBudget > 0) {
-      const maxBudget = Math.round(propBudget * 1.10);
+      const maxBudget = propBudget + 100000; // allow up to $100k above stated budget
       const inBudget = filteredData.filter(p => {
         const price = parseBudget(String(p.price || p.priceDisplay || ''));
         return price <= 0 || price <= maxBudget;
       });
       if (inBudget.length === 0) {
-        console.log(`fetchCityPropertyData: 0 DB properties within budget (${propBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);
+        console.log(`fetchCityPropertyData: 0 DB properties within budget+100k (${maxBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);
         return { text: '', rawProperties: [] };
       }
+      // Narrow filteredData to within-budget pool for card selection
+      filteredData = inBudget;
     }
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
