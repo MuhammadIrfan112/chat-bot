@@ -703,7 +703,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
 
   const filterState = isRent
     ? {
-        sort: { value: 'priorityscore' },
+        sort: { value: 'pricea' },
         ah: { value: true },
         isForRent: { value: true },
         isForSaleByAgent: { value: false },
@@ -714,7 +714,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isForSaleForeclosure: { value: false }
       }
     : {
-        sort: { value: 'days' },
+        sort: { value: 'pricea' },
         ah: { value: true },
         isForSaleByAgent: { value: true },
         isForSaleByOwner: { value: true },
@@ -789,6 +789,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     isMapVisible: true,
     isListVisible: true,
     filterState,
+    sortSelection: { value: 'pricea' }
   };
 
   const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
