@@ -539,8 +539,8 @@ const KNOWN_CITY_COORDINATES = {
   'saint louis': { lat: 38.6270, lon: -90.1994 },
 };
 
-// TIGHT_BOX_DEG: ~0.20 degrees ≈ 22 km radius
-const TIGHT_BOX_DEG = 0.20;
+// TIGHT_BOX_DEG: ~0.35 degrees ≈ 40 km radius covers full metro areas
+const TIGHT_BOX_DEG = 0.35;
 
 // Fetch city center lat/lng using fast dictionary first, then OpenStreetMap Nominatim
 async function getCityBounds(city, state) {
@@ -1437,10 +1437,10 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
     const candidateList = Array.isArray(candidateObj) ? candidateObj : (candidateObj?.results || []);
 
-    // Always require at least 4 matching properties from DB — if fewer found, fall through to Apify for fresh scrape
-    // This ensures we never show just 1-2 properties when more may be available live
-    if (candidateList.length < cardsLimit && !isShowMore) {
-      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB within budget for city="${cleanCity}" — falling back to live Apify scrape.`);
+    // Always require at least 4 matching properties from DB (both initial search AND Show More).
+    // If fewer than 4 are available in DB, fall through to live Apify scrape to fetch a full batch of 4+ live properties!
+    if (candidateList.length < cardsLimit) {
+      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB for city="${cleanCity}" (isShowMore=${isShowMore}) — falling back to live Apify scrape to fetch full 4-card batch.`);
       return { text: '', rawProperties: [] };
     }
 
