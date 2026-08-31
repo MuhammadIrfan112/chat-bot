@@ -724,16 +724,13 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isForSaleForeclosure: { value: true }
       };
 
-  // ── Apply price floor directly in Zillow search filter (budget - 100k for buy, budget - 150 for rent) ──
-  const minBudgetFloor = propBudget > 0
-    ? Math.max(0, isRent ? (propBudget - 150) : (propBudget - 100000))
-    : 0;
-
-  if (minBudgetFloor > 0) {
-    if (isRent) {
-      filterState.monthlyPayment = { min: minBudgetFloor };
-    } else {
-      filterState.price = { min: minBudgetFloor };
+  // ── Apply price floor in Zillow URL ONLY for buy searches (budget - 100k) ──
+  // For rent: do NOT add price filter to URL — rental inventory is limited and we filter in code.
+  // monthlyPayment is not a valid Zillow filterState key, and price floors cut too many rentals.
+  if (!isRent && propBudget > 0) {
+    const minBuyFloor = Math.max(0, propBudget - 100000);
+    if (minBuyFloor > 0) {
+      filterState.price = { min: minBuyFloor };
     }
   }
 
