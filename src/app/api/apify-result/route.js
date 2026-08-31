@@ -704,7 +704,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
         await supabase.from('city_property_data').upsert({
           city: dbCityKey,
-          properties: merged.slice(0, 150),
+          properties: merged.slice(0, 300),
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
         console.log(`[apify-result] Successfully saved ${merged.length} accumulated properties to DB for city key: "${dbCityKey}"`);
@@ -756,7 +756,7 @@ const SUPPLEMENT_PHOTO_SETS = [
             return Response.json({
               status: 'done',
               city: savedCity || requestedCity,
-              properties: sortedAll.slice(0, 16),
+              properties: sortedAll.slice(0, 60),
               introMessage: fallbackIntro
             });
           }
@@ -805,7 +805,7 @@ const SUPPLEMENT_PHOTO_SETS = [
                     return Response.json({
                       status: 'done',
                       city: savedCity || requestedCity,
-                      properties: realtorSorted.slice(0, 16),
+                      properties: realtorSorted.slice(0, 60),
                       introMessage: realtorIntro
                     });
                   }
@@ -834,7 +834,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         return Response.json({
           status: 'done',
           city: savedCity || requestedCity,
-          properties: sortedTypeProps.slice(0, 16),
+          properties: sortedTypeProps.slice(0, 60),
           introMessage: marketIntro
         });
       }
@@ -848,7 +848,7 @@ const SUPPLEMENT_PHOTO_SETS = [
       return Response.json({
         status: 'done',
         city: savedCity || requestedCity,
-        properties: allCitySorted.slice(0, 16),
+        properties: allCitySorted.slice(0, 60),
         introMessage: fallbackIntro
       });
     }
@@ -883,7 +883,7 @@ const SUPPLEMENT_PHOTO_SETS = [
     return Response.json({ 
       status: 'done', 
       city: savedCity || requestedCity, 
-      properties: orderedProperties.slice(0, 16),
+      properties: orderedProperties.slice(0, 60),
       introMessage
     });
 
