@@ -1398,22 +1398,22 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       }
     }
 
-    // ── BUDGET GUARD: Show properties from (budget - $100k) up to exact budget ──
-    // City + Property Type + Budget range = 3 match criteria. Beds/Baths are NOT a filter.
-    // If 0 DB properties fall in this price window → trigger fresh Apify scrape.
+    // ── BUDGET FILTER: Show properties starting from (budget - $100k), no upper ceiling ──
+    // Matching criteria: City ✅ + Property Type ✅ + Price >= (budget - $100k) ✅
+    // User can keep scrolling/showing more — price goes up, city & type stay fixed.
+    // If 0 DB properties are at or above (budget - $100k) → trigger fresh Apify scrape.
     if (propBudget > 0) {
-      const minBudget = Math.max(0, propBudget - 100000); // start $100k below user's budget
-      const maxBudget = propBudget;                        // cap at user's stated budget
+      const minBudget = Math.max(0, propBudget - 100000); // floor: $100k below user's budget
       const inBudget = filteredData.filter(p => {
         const price = parseBudget(String(p.price || p.priceDisplay || ''));
         if (price <= 0) return true;   // price unknown — include it
-        return price >= minBudget && price <= maxBudget;
+        return price >= minBudget;     // no upper ceiling — show all at/above floor
       });
       if (inBudget.length === 0) {
-        console.log(`fetchCityPropertyData: 0 DB properties in budget range $${minBudget.toLocaleString()}–$${maxBudget.toLocaleString()} for city="${cleanCity}" — falling back to live Apify scrape.`);
+        console.log(`fetchCityPropertyData: 0 DB properties at/above $${minBudget.toLocaleString()} for city="${cleanCity}" — falling back to live Apify scrape.`);
         return { text: '', rawProperties: [] };
       }
-      // Use budget-matched pool for card selection (sorted by price ascending)
+      // Sort ascending by price so lowest first, user sees cheapest matching options first
       filteredData = inBudget.sort((a, b) => {
         const pa = parseBudget(String(a.price || a.priceDisplay || '')) || 0;
         const pb = parseBudget(String(b.price || b.priceDisplay || '')) || 0;
