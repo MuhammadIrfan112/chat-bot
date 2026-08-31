@@ -1457,17 +1457,11 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
 
     const sourcePool = isShowMore ? unseenData : (unseenData.length > 0 ? [...unseenData, ...seenData] : filteredData);
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
-    const candidateList = Array.isArray(candidateObj) ? candidateObj : (candidateObj?.results || []);
-
-    // Serve from DB if we have ANY matching properties (1+). No hard 4-card minimum.
-    // The frontend will show what is available and request more from Apify if needed.
-    if (candidateList.length === 0) {
-      console.log(`fetchCityPropertyData: 0 matching properties in DB for city="${cleanCity}" — falling back to live Apify scrape.`);
-      return { text: '', rawProperties: [] };
-    }
-
+    // Always require at least 4 matching properties from DB (both initial search AND Show More).
+    // If fewer than 4 are available in DB, fall through to live Apify scrape to fetch a full batch of 4+ live properties!
     if (candidateList.length < cardsLimit) {
-      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) properties in DB for city="${cleanCity}" — serving available DB results (no live Apify forced for partial match).`);
+      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB for city="${cleanCity}" (isShowMore=${isShowMore}) — falling back to live Apify scrape to fetch full 4-card batch.`);
+      return { text: '', rawProperties: [] };
     }
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
@@ -2311,8 +2305,8 @@ CRITICAL INSTRUCTIONS:
             const recommendedRaw = recommended.results || recommended; // backward compat
             const matchTier = recommended.matchTier || 'exact';
 
-            if (recommendedRaw.length > 0) {
-                // ✅ DIRECT RETURN: matching unique properties found in CRM/DB
+            if (recommendedRaw.length >= cardsLimit) {
+                // ✅ DIRECT RETURN: full 4-card batch found in CRM/DB
                 const SUPPLEMENT_PHOTO_SETS_LOCAL = SUPPLEMENT_PHOTO_SETS || [];
                 const structuredProps = recommendedRaw.slice(0, cardsLimit).map((l, i) => {
                   let rawPhotos = [];
