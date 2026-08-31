@@ -724,47 +724,63 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isForSaleForeclosure: { value: true }
       };
 
-  // ── Apply property type filter on Zillow URL & pick native sub-path ──
+  // ── Apply property type filter on Zillow filterState ──
   const zillowType = mapPropTypeToZillow(propType);
-  let typeSubPath = '';
-
   if (zillowType) {
     console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
     if (zillowType === 'SINGLE_FAMILY') {
       filterState.isSingleFamily = { value: true };
-      typeSubPath = isRent ? '/rentals/houses' : '/houses';
     } else if (zillowType === 'SEMI_DETACHED') {
       filterState.isSingleFamily = { value: true };
       filterState.isTownhouse = { value: true };
-      typeSubPath = isRent ? '/rentals/townhomes' : '/townhomes';
     } else if (zillowType === 'TOWNHOUSE') {
       filterState.isTownhouse = { value: true };
-      typeSubPath = isRent ? '/rentals/townhomes' : '/townhomes';
     } else if (zillowType === 'CONDO') {
       filterState.isCondo = { value: true };
-      filterState.isCoop = { value: true };
-      typeSubPath = isRent ? '/rentals/condos' : '/condos';
+      filterState.isApartment = { value: true };
     } else if (zillowType === 'MULTI_FAMILY') {
       filterState.isMultiFamily = { value: true };
-      typeSubPath = isRent ? '/rentals' : '/duplex';
     } else if (zillowType === 'LOT') {
       filterState.isLotLand = { value: true };
-      typeSubPath = '/land';
     } else if (zillowType === 'MANUFACTURED') {
       filterState.isManufactured = { value: true };
     }
   }
 
+  // ── Fetch geographic bounding box so Zillow scraper map query works 100% ──
+  let mapBounds = null;
+  try {
+    const geoQuery = normState ? `${normCity}, ${normState}` : normCity;
+    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(geoQuery)}&format=json&limit=1`, {
+      headers: { 'User-Agent': 'RealtyPropFlow-Bot/1.0' }
+    });
+    if (geoRes.ok) {
+      const geoData = await geoRes.json();
+      const box = geoData[0]?.boundingbox;
+      if (box && box.length === 4) {
+        mapBounds = {
+          south: parseFloat(box[0]),
+          north: parseFloat(box[1]),
+          west: parseFloat(box[2]),
+          east: parseFloat(box[3]),
+        };
+      }
+    }
+  } catch (geoErr) {
+    console.warn('[Zillow] Geocoding warning:', geoErr.message);
+  }
+
   const searchQueryState = {
     pagination: {},
     usersSearchTerm: `${normCity}, ${normState || ''}`.trim().replace(/,\s*$/, ''),
+    ...(mapBounds ? { mapBounds } : {}),
     isMapVisible: true,
     isListVisible: true,
     filterState,
   };
 
   const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
-  const basePath = typeSubPath ? `${slug}${typeSubPath}` : (isRent ? `${slug}/rentals` : slug);
+  const basePath = isRent ? `${slug}/rentals` : slug;
   return `https://www.zillow.com/${basePath}/?searchQueryState=${encoded}`;
 }
 
