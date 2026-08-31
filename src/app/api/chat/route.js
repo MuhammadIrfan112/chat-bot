@@ -699,8 +699,7 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
   const normState = state || resolveStateOrProvince(normCity, state);
   const citySlug = normCity.trim().toLowerCase().replace(/\s+/g, '-');
   const stateSlug = normState ? normState.trim().toLowerCase().replace(/\s+/g, '-') : '';
-
-  const bounds = await getCityBounds(normCity, normState);
+  const slug = stateSlug ? `${citySlug}-${stateSlug}` : citySlug;
 
   const filterState = isRent
     ? {
@@ -725,24 +724,32 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isForSaleForeclosure: { value: true }
       };
 
-  // ── Apply property type filter on Zillow URL (set ONLY positive flags) ──
+  // ── Apply property type filter on Zillow URL & pick native sub-path ──
   const zillowType = mapPropTypeToZillow(propType);
+  let typeSubPath = '';
+
   if (zillowType) {
     console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
     if (zillowType === 'SINGLE_FAMILY') {
       filterState.isSingleFamily = { value: true };
+      typeSubPath = isRent ? '/rentals/houses' : '/houses';
     } else if (zillowType === 'SEMI_DETACHED') {
       filterState.isSingleFamily = { value: true };
       filterState.isTownhouse = { value: true };
+      typeSubPath = isRent ? '/rentals/townhomes' : '/townhomes';
     } else if (zillowType === 'TOWNHOUSE') {
       filterState.isTownhouse = { value: true };
+      typeSubPath = isRent ? '/rentals/townhomes' : '/townhomes';
     } else if (zillowType === 'CONDO') {
       filterState.isCondo = { value: true };
-      filterState.isApartment = { value: true };
+      filterState.isCoop = { value: true };
+      typeSubPath = isRent ? '/rentals/condos' : '/condos';
     } else if (zillowType === 'MULTI_FAMILY') {
       filterState.isMultiFamily = { value: true };
+      typeSubPath = isRent ? '/rentals' : '/duplex';
     } else if (zillowType === 'LOT') {
       filterState.isLotLand = { value: true };
+      typeSubPath = '/land';
     } else if (zillowType === 'MANUFACTURED') {
       filterState.isManufactured = { value: true };
     }
@@ -750,17 +757,15 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
 
   const searchQueryState = {
     pagination: {},
-    usersSearchTerm: `${normCity}, ${normState || 'ON'}`,
-    ...(bounds ? { mapBounds: bounds } : {}),
+    usersSearchTerm: `${normCity}, ${normState || 'TX'}`,
     isMapVisible: true,
     isListVisible: true,
     filterState,
   };
 
   const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
-  const slug = stateSlug ? `${citySlug}-${stateSlug}` : citySlug;
-  const path = isRent ? `${slug}/rentals` : slug;
-  return `https://www.zillow.com/${path}/?searchQueryState=${encoded}`;
+  const basePath = typeSubPath ? `${slug}${typeSubPath}` : (isRent ? `${slug}/rentals` : slug);
+  return `https://www.zillow.com/${basePath}/?searchQueryState=${encoded}`;
 }
 
 
