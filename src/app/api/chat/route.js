@@ -1303,17 +1303,16 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       const stateMatches = filteredData.filter(item => {
         const itemState = String(item.province || item.state || '').toUpperCase().trim();
         const itemAddr = String(item.address || item.address_full || '').toUpperCase();
-        if (itemState) {
-          if (stateClean === 'IL') return itemState === 'IL' || itemState.includes('ILLINOIS');
-          if (stateClean === 'ON') return itemState === 'ON' || itemState.includes('ONTARIO');
-          if (stateClean === 'MO') return itemState === 'MO' || itemState.includes('MISSOURI');
-          if (stateClean === 'TX') return itemState === 'TX' || itemState.includes('TEXAS');
-          if (stateClean === 'CA') return itemState === 'CA' || itemState.includes('CALIFORNIA');
-          if (stateClean === 'FL') return itemState === 'FL' || itemState.includes('FLORIDA');
-          if (stateClean === 'NY') return itemState === 'NY' || itemState.includes('YORK');
-          return itemState === stateClean;
-        }
-        return itemAddr.includes(`, ${stateClean} `) || itemAddr.includes(`, ${stateClean},`) || itemAddr.endsWith(`, ${stateClean}`) || itemAddr.includes(` ${stateClean} `);
+        // If state field is completely empty (common for Canadian cities from Zillow data), allow it through
+        if (!itemState) return true;
+        if (stateClean === 'IL') return itemState === 'IL' || itemState.includes('ILLINOIS');
+        if (stateClean === 'ON') return itemState === 'ON' || itemState.includes('ONTARIO') || itemState === '';
+        if (stateClean === 'MO') return itemState === 'MO' || itemState.includes('MISSOURI');
+        if (stateClean === 'TX') return itemState === 'TX' || itemState.includes('TEXAS');
+        if (stateClean === 'CA') return itemState === 'CA' || itemState.includes('CALIFORNIA');
+        if (stateClean === 'FL') return itemState === 'FL' || itemState.includes('FLORIDA');
+        if (stateClean === 'NY') return itemState === 'NY' || itemState.includes('YORK');
+        return itemState === stateClean || itemAddr.includes(`, ${stateClean} `) || itemAddr.includes(`, ${stateClean},`) || itemAddr.endsWith(`, ${stateClean}`);
       });
       if (stateMatches.length === 0) {
         console.log(`fetchCityPropertyData: 0 DB properties matched requested state="${targetState}" for city="${cleanCity}" — falling back to live Apify scrape.`);
@@ -1443,11 +1442,15 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     const candidateObj = selectRecommendedProperties(sourcePool, propBudget, propBeds, propBaths, isRentIntent, budgetNeeded, bedNeeded, propType);
     const candidateList = Array.isArray(candidateObj) ? candidateObj : (candidateObj?.results || []);
 
-    // Always require at least 4 matching properties from DB (both initial search AND Show More).
-    // If fewer than 4 are available in DB, fall through to live Apify scrape to fetch a full batch of 4+ live properties!
-    if (candidateList.length < cardsLimit) {
-      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) matching properties in DB for city="${cleanCity}" (isShowMore=${isShowMore}) — falling back to live Apify scrape to fetch full 4-card batch.`);
+    // Serve from DB if we have ANY matching properties (1+). No hard 4-card minimum.
+    // The frontend will show what is available and request more from Apify if needed.
+    if (candidateList.length === 0) {
+      console.log(`fetchCityPropertyData: 0 matching properties in DB for city="${cleanCity}" — falling back to live Apify scrape.`);
       return { text: '', rawProperties: [] };
+    }
+
+    if (candidateList.length < cardsLimit) {
+      console.log(`fetchCityPropertyData: Only ${candidateList.length} (< ${cardsLimit}) properties in DB for city="${cleanCity}" — serving available DB results (no live Apify forced for partial match).`);
     }
 
     let section = `\n\nAVAILABLE PROPERTIES FROM DATABASE (pre-filtered to ±10% of user budget):\n`;
