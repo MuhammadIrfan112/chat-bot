@@ -824,13 +824,14 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         let runRes = await fetch(
-          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=100&token=${APIFY_TOKEN}`,
+          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=30&token=${APIFY_TOKEN}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               startUrls: [{ url: searchUrl }],
               searchUrls: [{ url: searchUrl }],
+              maxItems: 30,
               extractionMethod: 'PAGINATION_WITH_ZOOM_IN',
               proxy: {
                 useApifyProxy: true
