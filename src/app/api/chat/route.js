@@ -1914,11 +1914,12 @@ ${areasNotServed.length ? `
       const userTextOnly = messages.filter(m => m.role === 'user').map(m => m.parts?.[0]?.text || '').join(' ').toLowerCase();
 
       let propIntent = 'buy';
-      if (userTextOnly.includes('intent: rent') || userTextOnly.includes('looking to rent') || userTextOnly.includes('want to rent') || userTextOnly.includes('for rent') || userTextOnly.includes('renting') || userTextOnly.includes('to rent') || userTextOnly.includes('rental')) {
+      const isLandlordIntent = userTextOnly.includes('rent out') || userTextOnly.includes('renting out') || userTextOnly.includes('lease out') || userTextOnly.includes('landlord');
+      if (!isLandlordIntent && (userTextOnly.includes('intent: rent') || userTextOnly.includes('looking to rent') || userTextOnly.includes('want to rent') || userTextOnly.includes('for rent') || userTextOnly.includes('renting') || userTextOnly.includes('to rent') || userTextOnly.includes('rental'))) {
         propIntent = 'rent';
       } else if (userTextOnly.includes('buy') || userTextOnly.includes('buying') || userTextOnly.includes('purchase') || userTextOnly.includes('family home') || userTextOnly.includes('home search')) {
         propIntent = 'buy';
-      } else if (fullText.includes('looking to rent') || fullText.includes('want to rent') || fullText.includes('intent: rent')) {
+      } else if (!isLandlordIntent && (fullText.includes('looking to rent') || fullText.includes('want to rent') || fullText.includes('intent: rent'))) {
         propIntent = 'rent';
       }
 

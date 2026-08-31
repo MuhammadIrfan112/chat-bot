@@ -2345,11 +2345,24 @@ function formatCityDisplay(msg) {
       return;
     }
 
-    // ── Looking to Rent Flow ──────────────────────────────────────────
+    // ── Check Rent Out Intent FIRST ──────────────────────────────────
+    const isRentOutIntent =
+      msg.includes("rent out") ||
+      msg.includes("renting out") ||
+      msg.includes("lease out") ||
+      msg.includes("rent out my house") ||
+      msg.includes("I'm looking to rent out my house") ||
+      msg.includes("🏨 I'm looking to rent out my house") ||
+      msg.includes("🏘️ I'm looking to rent out my house") ||
+      /\b(rent\s*out|renting\s*out|lease\s*out|rent\s+my\s+(house|home|property|condo|apartment)|landlord)\b/i.test(lower);
+
+    // ── Looking to Rent Flow (Tenant / Renter) ─────────────────────────
     const isRentIntent =
-      msg.includes("looking to rent") ||
-      msg.includes("🔑 I'm looking to rent") ||
-      /\b(looking\s+(for|to)\s+rent|want\s+to\s+rent|need\s+(a\s+)?rental|find\s+a\s+rental|rent\s+a\s+(home|house|condo|apartment|place|unit)|interested\s+in\s+renting|looking\s+to\s+lease)\b/i.test(lower);
+      !isRentOutIntent && (
+        msg.includes("🔑 I'm looking to rent") ||
+        (msg.includes("looking to rent") && !msg.includes("rent out")) ||
+        /\b(looking\s+(for|to)\s+rent(?!(\s+out))|want\s+to\s+rent(?!(\s+out))|need\s+(a\s+)?rental|find\s+a\s+rental|rent\s+a\s+(home|house|condo|apartment|place|unit)|interested\s+in\s+renting(?!(\s+out))|looking\s+to\s+lease(?!(\s+out)))\b/i.test(lower)
+      );
 
     if (isRentIntent && !rentStep) {
       resetFlows();
@@ -2699,14 +2712,7 @@ function formatCityDisplay(msg) {
       return;
     }
 
-    // ── Rent Out My House Flow ──────────────────────────────────────
     // ── Rent Out My House Flow (Landlord Flow) ──────────────────────
-    const isRentOutIntent =
-      msg.includes("rent out my house") ||
-      msg.includes("I'm looking to rent out my house") ||
-      msg.includes("🏨 I'm looking to rent out my house") ||
-      /\b(rent\s*out|renting\s*out|lease\s*out|rent\s+my\s+(house|home|property|condo|apartment)|landlord)\b/i.test(lower);
-
     if (isRentOutIntent && !rentOutStep) {
       resetFlows();
       setRentOutStep('ownership');
