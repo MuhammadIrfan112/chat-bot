@@ -1398,20 +1398,27 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       }
     }
 
-    // ── BUDGET GUARD: If user has a budget and NO DB properties are within budget+100k → Apify ──
-    // Beds & baths are NOT a fallback trigger — show whatever is in DB regardless of bed/bath count
+    // ── BUDGET GUARD: Show properties from (budget - $100k) up to exact budget ──
+    // City + Property Type + Budget range = 3 match criteria. Beds/Baths are NOT a filter.
+    // If 0 DB properties fall in this price window → trigger fresh Apify scrape.
     if (propBudget > 0) {
-      const maxBudget = propBudget + 100000; // allow up to $100k above stated budget
+      const minBudget = Math.max(0, propBudget - 100000); // start $100k below user's budget
+      const maxBudget = propBudget;                        // cap at user's stated budget
       const inBudget = filteredData.filter(p => {
         const price = parseBudget(String(p.price || p.priceDisplay || ''));
-        return price <= 0 || price <= maxBudget;
+        if (price <= 0) return true;   // price unknown — include it
+        return price >= minBudget && price <= maxBudget;
       });
       if (inBudget.length === 0) {
-        console.log(`fetchCityPropertyData: 0 DB properties within budget+100k (${maxBudget}) for city="${cleanCity}" — falling back to live Apify scrape.`);
+        console.log(`fetchCityPropertyData: 0 DB properties in budget range $${minBudget.toLocaleString()}–$${maxBudget.toLocaleString()} for city="${cleanCity}" — falling back to live Apify scrape.`);
         return { text: '', rawProperties: [] };
       }
-      // Narrow filteredData to within-budget pool for card selection
-      filteredData = inBudget;
+      // Use budget-matched pool for card selection (sorted by price ascending)
+      filteredData = inBudget.sort((a, b) => {
+        const pa = parseBudget(String(a.price || a.priceDisplay || '')) || 0;
+        const pb = parseBudget(String(b.price || b.priceDisplay || '')) || 0;
+        return pa - pb;
+      });
     }
 
     // ── Extract already-shown property addresses to prevent duplicates ────────
