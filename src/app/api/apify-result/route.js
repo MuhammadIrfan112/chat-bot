@@ -704,7 +704,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
         await supabase.from('city_property_data').upsert({
           city: dbCityKey,
-          properties: merged.slice(0, 300),
+          properties: merged,
           last_scraped_at: new Date().toISOString()
         }, { onConflict: 'city' });
         console.log(`[apify-result] Successfully saved ${merged.length} accumulated properties to DB for city key: "${dbCityKey}"`);

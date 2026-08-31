@@ -693,7 +693,7 @@ function propTypeMatches(p, requestedType) {
   });
 }
 
-async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null, propBeds = 0, propBaths = 0, propBudget = 0) {
+async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null, propBeds = 0, propBaths = 0, propBudget = 0, minPriceOverride = 0) {
   const isRent = intent === 'rent';
   const normCity = normalizeCityName(city);
   const normState = state || resolveStateOrProvince(normCity, state);
@@ -724,10 +724,12 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isForSaleForeclosure: { value: true }
       };
 
-  // ── Apply price floor in Zillow URL ONLY for buy searches (budget - 100k) ──
-  // For rent: do NOT add price filter to URL — rental inventory is limited and we filter in code.
-  // monthlyPayment is not a valid Zillow filterState key, and price floors cut too many rentals.
-  if (!isRent && propBudget > 0) {
+  // ── Apply price floor in Zillow URL ──
+  // If minPriceOverride is provided (from Show More pagination), start directly from that price
+  if (minPriceOverride > 0) {
+    console.log(`[Zillow] Applying minPriceOverride: $${minPriceOverride.toLocaleString()} (pagination after seen properties)`);
+    filterState.price = { min: minPriceOverride };
+  } else if (!isRent && propBudget > 0) {
     const minBuyFloor = Math.max(0, propBudget - 100000);
     if (minBuyFloor > 0) {
       filterState.price = { min: minBuyFloor };
@@ -808,7 +810,7 @@ function getBudgetBucket(budget) {
 
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
 // If another user already started the same city+budget+intent run recently, reuse it (unless forceFresh is true)
-async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null, propBeds = 0, propBaths = 0, forceFresh = false) {
+async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null, propBeds = 0, propBaths = 0, forceFresh = false, minPriceOverride = 0) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
     if (!APIFY_TOKEN) {
@@ -817,7 +819,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     }
 
     const normCity = normalizeCityName(city);
-    const budgetBucket = getBudgetBucket(propBudget);
+    const budgetBucket = minPriceOverride > 0 ? `floor_${Math.round(minPriceOverride / 50000) * 50000}` : getBudgetBucket(propBudget);
     const typeSlug = propType ? propType.toLowerCase().replace(/\s+/g, '_') : 'any';
     const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}`;
     const existing = ACTIVE_APIFY_RUNS[runKey];
@@ -827,8 +829,8 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     }
 
     // ── Build accurate Zillow search URL ──
-    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths, propBudget);
-    console.log(`[Apify] Starting Zillow scraper run (forceFresh=${forceFresh}) | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | Budget=${propBudget} | URL: ${searchUrl.substring(0, 150)}...`);
+    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths, propBudget, minPriceOverride);
+    console.log(`[Apify] Starting Zillow scraper run (forceFresh=${forceFresh}, minPriceOverride=${minPriceOverride}) | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | Budget=${propBudget} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runData = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -2426,9 +2428,20 @@ CRITICAL INSTRUCTIONS:
                   type: propType
                 });
               } else {
-                console.log(`[Route] 0 DB properties available/unseen (isShowMore=${isShowMoreRequest}) — starting live Apify search for City=${detectedCity} Budget=${propBudget} Type=${propType}!`);
+                // Compute the highest price among properties already displayed in this conversation
+                let maxShownPrice = 0;
+                messages.forEach(m => {
+                  if (Array.isArray(m.properties)) {
+                    m.properties.forEach(p => {
+                      const pr = parseBudget(String(p.price || p.priceDisplay || ''));
+                      if (pr > maxShownPrice) maxShownPrice = pr;
+                    });
+                  }
+                });
+                const minPriceToScrape = (isShowMoreRequest && maxShownPrice > 0) ? (maxShownPrice + 1) : 0;
+                console.log(`[Route] 0 DB properties available/unseen (isShowMore=${isShowMoreRequest}) — starting live Apify search for City=${detectedCity} minPriceFloor=$${minPriceToScrape} Type=${propType}!`);
                 const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
-                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType, propBeds, propBaths, isShowMoreRequest);
+                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType, propBeds, propBaths, isShowMoreRequest, minPriceToScrape);
 
                 if (apifyRunId) {
                   const cityBtns = isShowMoreRequest ? '' : [
