@@ -755,8 +755,17 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     }
   }
 
+  const searchQueryState = {
+    pagination: {},
+    usersSearchTerm: `${normCity}, ${normState || ''}`.trim().replace(/,\s*$/, ''),
+    isMapVisible: true,
+    isListVisible: true,
+    filterState,
+  };
+
+  const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
   const basePath = typeSubPath ? `${slug}${typeSubPath}` : (isRent ? `${slug}/rentals` : slug);
-  return `https://www.zillow.com/${basePath}/`;
+  return `https://www.zillow.com/${basePath}/?searchQueryState=${encoded}`;
 }
 
 
@@ -806,6 +815,7 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
             body: JSON.stringify({
               startUrls: [{ url: searchUrl }],
               searchUrls: [{ url: searchUrl }],
+              extractionMethod: 'PAGINATION_WITH_ZOOM_IN',
               proxy: {
                 useApifyProxy: true
               }
