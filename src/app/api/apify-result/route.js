@@ -628,7 +628,7 @@ const SUPPLEMENT_PHOTO_SETS = [
         : 0;
 
       // 1. First priority: properties of exact type at or above floor (sorted ascending)
-      const aboveFloor = (typeHasResultsApify ? typeFilteredApify : []).filter(p => {
+      const aboveFloor = (typeHasResultsApify ? typeFilteredApify : intentFiltered).filter(p => {
         const price = getPrice(p);
         return minBudgetFloor === 0 || price <= 0 || price >= minBudgetFloor;
       });
@@ -637,8 +637,9 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
 
       // 2. If fewer than 4, fill remaining slots from same type below floor (closest to budget first)
-      if (selected.length < 4 && typeHasResultsApify) {
-        const belowFloor = typeFilteredApify.filter(p => {
+      if (selected.length < 4) {
+        const candidatePool = typeHasResultsApify ? typeFilteredApify : intentFiltered;
+        const belowFloor = candidatePool.filter(p => {
           const price = getPrice(p);
           return price > 0 && price < minBudgetFloor;
         });
@@ -649,13 +650,9 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      // 3. If still fewer than 4, fill remaining slots from other property types in the city within budget
-      if (selected.length < 4 && intentFiltered.length > 0) {
-        const otherCityProps = intentFiltered.filter(p => {
-          const price = getPrice(p);
-          return price <= 0 || (targetBudget > 0 ? price <= targetBudget * 1.15 : true);
-        });
-        for (const p of sortAscendingPrice(otherCityProps)) {
+      // 3. Only if user did NOT specify any property type, fill from any remaining listings
+      if (selected.length < 4 && !targetType && intentFiltered.length > 0) {
+        for (const p of sortAscendingPrice(intentFiltered)) {
           if (selected.length >= 4) break;
           addProp(p);
         }
