@@ -618,7 +618,6 @@ const SUPPLEMENT_PHOTO_SETS = [
         ? intentFiltered.filter(p => propTypeMatches(p, targetType))
         : intentFiltered;
       const typeHasResultsApify = typeFilteredApify.length > 0;
-      const strictListApify = typeHasResultsApify ? typeFilteredApify : [];
       const relaxedTypeListApify = intentFiltered;
 
       console.log(`[apify-result] Type filter "${targetType}": ${propsList.length} → ${typeFilteredApify.length} strict type props`);
@@ -627,6 +626,18 @@ const SUPPLEMENT_PHOTO_SETS = [
       const minBudgetFloor = targetBudget > 0
         ? Math.max(0, isRent ? (targetBudget - 150) : (targetBudget - 100000))
         : 0;
+
+      // Filter strictListApify to only properties at or above minBudgetFloor
+      let strictListApify = typeHasResultsApify ? typeFilteredApify : [];
+      if (minBudgetFloor > 0 && strictListApify.length > 0) {
+        const aboveFloor = strictListApify.filter(p => {
+          const price = getPrice(p);
+          return price <= 0 || price >= minBudgetFloor;
+        });
+        if (aboveFloor.length > 0) {
+          strictListApify = aboveFloor;
+        }
+      }
 
       let apifyMatchTier = 'exact';
 

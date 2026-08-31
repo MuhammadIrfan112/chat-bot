@@ -1196,8 +1196,6 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     : intentFiltered;
   const typeHasResults = typeFiltered.length > 0;
 
-  const strictList = typeHasResults ? typeFiltered : [];
-
   const isLandType = targetType && (targetType.toLowerCase().includes('land') || targetType.toLowerCase().includes('lot'));
   const effectiveBeds = isLandType ? 0 : targetBeds;
   const effectiveBaths = isLandType ? 0 : targetBaths;
@@ -1208,6 +1206,18 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
   const minBudgetFloor = targetBudget > 0
     ? Math.max(0, isRent ? (targetBudget - 150) : (targetBudget - 100000))
     : 0;
+
+  // Filter strictList to only properties at or above minBudgetFloor
+  let strictList = typeHasResults ? typeFiltered : [];
+  if (minBudgetFloor > 0 && strictList.length > 0) {
+    const aboveFloor = strictList.filter(p => {
+      const price = getPrice(p);
+      return price <= 0 || price >= minBudgetFloor;
+    });
+    if (aboveFloor.length > 0) {
+      strictList = aboveFloor;
+    }
+  }
 
   // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──
   const sortAscendingPrice = (list) => [...list].sort((a, b) => {
@@ -1403,7 +1413,7 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
     // User can keep scrolling/showing more — price goes up, city & type stay fixed.
     // If 0 DB properties are at or above (budget - $100k) → trigger fresh Apify scrape.
     if (propBudget > 0) {
-      const minBudget = Math.max(0, propBudget - 100000); // floor: $100k below user's budget
+      const minBudget = Math.max(0, isRentIntent ? (propBudget - 150) : (propBudget - 100000)); // floor: $100k below user budget
       const inBudget = filteredData.filter(p => {
         const price = parseBudget(String(p.price || p.priceDisplay || ''));
         if (price <= 0) return true;   // price unknown — include it
