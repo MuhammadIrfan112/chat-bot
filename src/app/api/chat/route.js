@@ -736,26 +736,66 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     }
   }
 
-  // ── Apply property type filter on Zillow filterState ──
+  // ── Apply strict property type filter on Zillow filterState (must set other types to false) ──
   const zillowType = mapPropTypeToZillow(propType);
   if (zillowType) {
-    console.log(`[Zillow] Applying homeType filter: ${zillowType} (from user: "${propType}")`);
+    console.log(`[Zillow] Applying strict homeType filter: ${zillowType} (from user: "${propType}")`);
     if (zillowType === 'SINGLE_FAMILY') {
       filterState.isSingleFamily = { value: true };
+      filterState.isTownhouse = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isLotLand = { value: false };
+      filterState.isManufactured = { value: false };
     } else if (zillowType === 'SEMI_DETACHED') {
       filterState.isSingleFamily = { value: true };
       filterState.isTownhouse = { value: true };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isLotLand = { value: false };
+      filterState.isManufactured = { value: false };
     } else if (zillowType === 'TOWNHOUSE') {
       filterState.isTownhouse = { value: true };
+      filterState.isSingleFamily = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isLotLand = { value: false };
+      filterState.isManufactured = { value: false };
     } else if (zillowType === 'CONDO') {
       filterState.isCondo = { value: true };
       filterState.isApartment = { value: true };
+      filterState.isSingleFamily = { value: false };
+      filterState.isTownhouse = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isLotLand = { value: false };
+      filterState.isManufactured = { value: false };
     } else if (zillowType === 'MULTI_FAMILY') {
       filterState.isMultiFamily = { value: true };
+      filterState.isSingleFamily = { value: false };
+      filterState.isTownhouse = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isLotLand = { value: false };
+      filterState.isManufactured = { value: false };
     } else if (zillowType === 'LOT') {
       filterState.isLotLand = { value: true };
+      filterState.isSingleFamily = { value: false };
+      filterState.isTownhouse = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isManufactured = { value: false };
     } else if (zillowType === 'MANUFACTURED') {
       filterState.isManufactured = { value: true };
+      filterState.isSingleFamily = { value: false };
+      filterState.isTownhouse = { value: false };
+      filterState.isCondo = { value: false };
+      filterState.isApartment = { value: false };
+      filterState.isMultiFamily = { value: false };
+      filterState.isLotLand = { value: false };
     }
   }
 
