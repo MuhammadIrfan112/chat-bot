@@ -3393,6 +3393,29 @@ function formatCityDisplay(msg) {
       messageTextToSend = `Find ${type} properties in ${city} with ${cleanBeds} bedrooms${budgetText}`;
     }
 
+    // ── Direct Property Inquire / Tour Lead Capture Interception ──
+    const isDirectInquire = lowerMsg.includes('inquire about') || lowerMsg.includes('learn more details about');
+    const isDirectTour = lowerMsg.includes('schedule a tour') || lowerMsg.includes('schedule a private tour');
+
+    if (isDirectInquire || isDirectTour) {
+      const propText = msg.replace(/^I want to learn more details about\s*/i, '').replace(/^I would like to schedule a private tour for\s*/i, '').trim();
+      const agentDisplayName = botConfig.agentName || botConfig.botName || 'our team';
+
+      setLeadData(prev => ({ ...prev, selected_property: propText, inquiry_type: isDirectTour ? 'tour' : 'inquiry' }));
+      
+      const introPrompt = isDirectTour
+        ? `Wonderful! 🏡 I would be happy to arrange a private tour for **${propText}** with ${agentDisplayName}.\n\nMay I have your **full name** please?`
+        : `Great! 📄 I can provide full disclosures, floor plans, and additional details for **${propText}**.\n\nMay I have your **full name** please?`;
+
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: introPrompt }],
+        inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
+      }]);
+      setLeadStep('name');
+      return;
+    }
+
     // ── Interested in Property / Lead Capture Interception ────────
     if (
       lowerMsg.includes('like one of these') ||
