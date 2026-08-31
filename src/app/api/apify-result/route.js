@@ -639,65 +639,13 @@ const SUPPLEMENT_PHOTO_SETS = [
         }
       }
 
-      let apifyMatchTier = 'exact';
-
-      // ── POOL 1: Strict Type + price >= floor + Exact Bed + Exact Bath — NO upper cap ──
-      const pool1Apify = strictListApify.filter(p => {
-        const price = getPrice(p);
-        const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-        const matchBed = targetBeds > 0 ? getBeds(p) === targetBeds : true;
-        const matchBath = targetBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(targetBaths) : true;
-        return aboveFloor && matchBed && matchBath;
-      });
-      for (const p of sortAscendingPrice(pool1Apify)) {
-        if (selected.length >= totalTarget) break;
+      // ── Pure Ascending Price Sorting: lowest price at or above minBudgetFloor ALWAYS comes first ──
+      const sortedByPrice = sortAscendingPrice(strictListApify);
+      for (const p of sortedByPrice) {
         addProp(p);
       }
 
-      // ── POOL 2A: Strict Type + price >= floor + Exact Bed (relax bath) ──
-      if (selected.length < totalTarget && targetBeds > 0) {
-        const pool2A = strictListApify.filter(p => {
-          const price = getPrice(p);
-          const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-          return aboveFloor && getBeds(p) === targetBeds;
-        });
-        for (const p of sortAscendingPrice(pool2A)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-      }
-
-      // ── POOL 2B: Strict Type + price >= floor, relax all beds/baths ──
-      if (selected.length < totalTarget) {
-        const pool2Apify = strictListApify.filter(p => {
-          const price = getPrice(p);
-          return minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-        });
-        for (const p of sortAscendingPrice(pool2Apify)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-      }
-
-      // ── POOL 3: If fewer than totalTarget selected, backfill from remaining matching properties ──
-      if (selected.length < totalTarget && strictListApify.length > 0) {
-        const unselected = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-        if (targetBeds > 0) {
-          for (const p of sortAscendingPrice(unselected.filter(p => getBeds(p) === targetBeds))) {
-            if (selected.length >= totalTarget) break;
-            addProp(p);
-          }
-        }
-        for (const p of sortAscendingPrice(unselected)) {
-          if (selected.length >= totalTarget) break;
-          addProp(p);
-        }
-      }
-
-      // Return complete list: selected top recommendations first, followed by all other matching properties sorted ascending
-      const unselectedRemaining = strictListApify.filter(p => !usedKeys.has(getPropKey(p)));
-      const finalOrdered = [...selected, ...sortAscendingPrice(unselectedRemaining)];
-      return { results: finalOrdered, matchTier: apifyMatchTier };
+      return { results: selected, matchTier: 'exact' };
     }
 
     const recommended = selectRecommendedProperties(

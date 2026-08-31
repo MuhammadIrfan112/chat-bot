@@ -1226,66 +1226,13 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     return aPrice - bPrice;
   });
 
-  let matchTier = 'exact';
-
-  // ── POOL 1: Strict Type + price >= floor + Exact Bed + Exact Bath — NO upper cap ──
-  const pool1 = strictList.filter(p => {
-    const price = getPrice(p);
-    const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-    const matchBed = effectiveBeds > 0 ? getBeds(p) === effectiveBeds : true;
-    const matchBath = effectiveBaths > 0 ? Math.floor(getBaths(p)) === Math.floor(effectiveBaths) : true;
-    return aboveFloor && matchBed && matchBath;
-  });
-  for (const p of sortAscendingPrice(pool1)) {
-    if (selected.length >= totalTarget) break;
+  // ── Pure Ascending Price Sorting: lowest price at or above minBudgetFloor ALWAYS comes first ──
+  const sortedByPrice = sortAscendingPrice(strictList);
+  for (const p of sortedByPrice) {
     addProp(p);
   }
 
-  // ── POOL 2A: Strict Type + price >= floor + Exact Bed (relax bath) ──
-  if (selected.length < totalTarget && effectiveBeds > 0) {
-    const pool2A = strictList.filter(p => {
-      const price = getPrice(p);
-      const aboveFloor = minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-      return aboveFloor && getBeds(p) === effectiveBeds;
-    });
-    for (const p of sortAscendingPrice(pool2A)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-  }
-
-  // ── POOL 2B: Strict Type + price >= floor, relax all beds/baths ──
-  if (selected.length < totalTarget) {
-    const pool2B = strictList.filter(p => {
-      const price = getPrice(p);
-      return minBudgetFloor > 0 ? price >= minBudgetFloor : true;
-    });
-    for (const p of sortAscendingPrice(pool2B)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-  }
-
-  // ── POOL 3: If fewer than totalTarget selected, backfill from remaining matching properties ──
-  if (selected.length < totalTarget && strictList.length > 0) {
-    const unselected = strictList.filter(p => !usedKeys.has(getPropKey(p)));
-    if (effectiveBeds > 0) {
-      for (const p of sortAscendingPrice(unselected.filter(p => getBeds(p) === effectiveBeds))) {
-        if (selected.length >= totalTarget) break;
-        addProp(p);
-      }
-    }
-    for (const p of sortAscendingPrice(unselected)) {
-      if (selected.length >= totalTarget) break;
-      addProp(p);
-    }
-  }
-
-  // ── Return complete list: selected top recommendations first, followed by all other matching properties sorted ascending ──
-  const unselectedRemaining = strictList.filter(p => !usedKeys.has(getPropKey(p)));
-  const finalOrdered = [...selected, ...sortAscendingPrice(unselectedRemaining)];
-
-  return { results: finalOrdered, matchTier };
+  return { results: selected, matchTier: 'exact' };
 }
 
 // 🏡 Fetch listings from city_property_data (Apify real data) & properties table
