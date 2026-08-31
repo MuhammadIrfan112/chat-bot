@@ -23,9 +23,9 @@ export async function GET(req) {
     const parseBudgetNum = (text) => {
       if (!text) return 0;
       if (typeof text === 'number') return text > 0 ? text : 0;
-      const t = String(text).replace(/,/g, '').toLowerCase().trim();
+      const t = String(text).toLowerCase().trim();
       
-      // 1. Range support: e.g. '$900k - $1.2M' or '600k - 800k' -> pick highest maximum budget
+      // 1. Range support for k/m: e.g. '$900k - $1.2M' or '600k - 800k' -> pick highest maximum budget
       const millionMatches = [...t.matchAll(/([\d]+(?:\.[\d]+)?)\s*(?:m|million)\b/g)];
       const kMatches = [...t.matchAll(/([\d]+(?:\.[\d]+)?)\s*(?:k|thousand)\b/g)];
       
@@ -40,8 +40,20 @@ export async function GET(req) {
       }
       if (maxBudget > 0) return maxBudget;
 
-      // 2. Direct clean digits parsing (removes $, C$, CAD, spaces)
-      const digits = t.replace(/[^0-9]/g, '');
+      // 2. Range support for standard numbers: e.g. '$2,000–$2,500/mo', '$500,000 - $700,000', '2000 to 2500'
+      const numMatches = [...t.matchAll(/\$?([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)/g)];
+      if (numMatches.length > 0) {
+        for (const nm of numMatches) {
+          const cleanNum = parseFloat(nm[1].replace(/,/g, ''));
+          if (cleanNum > maxBudget) {
+            maxBudget = Math.round(cleanNum);
+          }
+        }
+        if (maxBudget > 0) return maxBudget;
+      }
+
+      // 3. Fallback direct clean digits parsing (removes $, C$, CAD, spaces)
+      const digits = t.replace(/,/g, '').replace(/[^0-9]/g, '');
       if (digits && digits.length >= 3) {
         return parseInt(digits, 10);
       }
