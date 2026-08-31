@@ -41,7 +41,11 @@ export async function GET(req) {
   var timestamp = new Date().getTime();
   var planParams = config.plan ? '&plan=' + encodeURIComponent(config.plan) : '';
   var autoOpenParam = config.autoOpen ? '&autoOpen=true' : '';
-  var iframeUrl = baseUrl + '/bot/' + config.botId + '?position=' + position + (isMobile ? '&device=mobile' : '&desktop=true') + planParams + autoOpenParam + '&v=' + timestamp;
+  // Forward demo_id / demo / ref from parent page URL into iframe so tracking works across cross-origin iframes
+  var parentParams = new URLSearchParams(window.location.search);
+  var demoId = parentParams.get('demo_id') || parentParams.get('demo') || parentParams.get('ref') || '';
+  var demoParam = demoId ? '&demo_id=' + encodeURIComponent(demoId) : '';
+  var iframeUrl = baseUrl + '/bot/' + config.botId + '?position=' + position + (isMobile ? '&device=mobile' : '&desktop=true') + planParams + autoOpenParam + demoParam + '&v=' + timestamp;
   iframe.src = iframeUrl;
   
   // Closed: desktop pill button area | mobile: pill button area
