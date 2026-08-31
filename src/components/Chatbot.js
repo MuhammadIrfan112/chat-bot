@@ -1169,7 +1169,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   // ── Looking to Rent Flow ────────────────────────────────────────
   const [rentStep, setRentStep] = useState(null);
   const [rentData, setRentData] = useState({
-    prop_type: '', city: '', bedrooms: '', bathrooms: '', budget: '', move_in: '', pets: '', has_agent: ''
+    prop_type: '', city: '', bedrooms: '', bathrooms: '', parking: '', features: '',
+    occupants: '', pets: '', pet_details: '', smoking: '', income_proof: '', credit_check: '',
+    budget: '', move_in: '', has_agent: ''
   });
 
   // ── Thinking About Selling Flow ─────────────────────────────────
@@ -1189,7 +1191,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     setBuyHomeStep(null);
     setBuyHomeData({ goal: '', city: '', type: '', bedrooms: '', bathrooms: '', firstTime: '', features: '', schools: '', budget: '', timeline: '', mortgage: '', agent: '', inv_type: '', inv_prop_type: '', inv_downpayment: '', inv_location: '', inv_experience: '', inv_financing: '', inv_return: '' });
     setRentStep(null);
-    setRentData({ prop_type: '', city: '', bedrooms: '', bathrooms: '', budget: '', move_in: '', pets: '', has_agent: '' });
+    setRentData({ prop_type: '', city: '', bedrooms: '', bathrooms: '', parking: '', features: '', occupants: '', pets: '', pet_details: '', smoking: '', income_proof: '', credit_check: '', budget: '', move_in: '', has_agent: '' });
     setSellStep(null);
     setSellData({ address: '', prop_type: '', bedrooms: '', bathrooms: '', condition: '', timeline: '', reason: '', has_agent: '' });
     setRentOutStep(null);
@@ -1703,10 +1705,14 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       const mg = st.match(/Mortgage:\s*(.+)/)?.[1]?.trim(); if (mg) sumMortgage = mg;
       const sc = st.match(/School preference:\s*(.+)/)?.[1]?.trim(); if (sc) sumSchool = sc;
       // Rent specific fields
+      let sumSmoking = '', sumIncome = '', sumCredit = '';
       const occ = st.match(/Occupants:\s*(.+)/)?.[1]?.trim(); if (occ) sumOccupants = occ;
       const pets = st.match(/Pets:\s*(.+)/)?.[1]?.trim(); if (pets) sumPets = pets;
+      const smk = st.match(/(?:Smoke\s*\/\s*Vape|Smoking):\s*(.+)/)?.[1]?.trim(); if (smk) sumSmoking = smk;
+      const inc = st.match(/Proof of [Ii]ncome:\s*(.+)/)?.[1]?.trim(); if (inc) sumIncome = inc;
+      const crd = st.match(/Credit [Cc]heck:\s*(.+)/)?.[1]?.trim(); if (crd) sumCredit = crd;
       const park = st.match(/Parking:\s*(.+)/)?.[1]?.trim(); if (park) sumParking = park;
-      const rentTl = st.match(/Moving timeline:\s*(.+)/)?.[1]?.trim(); if (rentTl) sumRentTimeline = rentTl;
+      const rentTl = st.match(/Move-in:\s*(.+)/)?.[1]?.trim() || st.match(/Moving timeline:\s*(.+)/)?.[1]?.trim(); if (rentTl) sumRentTimeline = rentTl;
     }
 
     const isRealEstate = botIndustry !== 'E-Commerce';
@@ -1720,7 +1726,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       if (isSell) {
         finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Seller Details:\n• Reason for selling: ${messages.find(m=>m.parts[0].text.toLowerCase().includes('reason you are considering selling')) ? 'Captured in chat' : 'Not specified'}\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Timeline: ${timeline || 'Not specified'}`;
       } else if (isRent) {
-        finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Renter Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Occupants: ${sumOccupants || 'Not specified'}\n• Pets: ${sumPets || 'Not specified'}\n• Moving Timeline: ${sumRentTimeline || 'Not specified'}`;
+        finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Renter Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Occupants: ${sumOccupants || 'Not specified'}\n• Pets: ${sumPets || 'Not specified'}\n• Smoke / Vape: ${sumSmoking || 'Not specified'}\n• Proof of Income: ${sumIncome || 'Not specified'}\n• Credit Check: ${sumCredit || 'Not specified'}\n• Parking: ${sumParking || 'Not specified'}\n• Moving Timeline: ${sumRentTimeline || 'Not specified'}`;
       } else {
         finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Buyer Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Pre-Approved: ${sumMortgage || preApproved || 'Not specified'}\n• Timeline: ${sumTimeline || timeline || 'Not specified'}\n• First-Time Buyer: ${firstTimeBuyer || 'Not specified'}`;
         if (buyHomeData?.pre_approval_letter_url) {
@@ -2438,6 +2444,86 @@ function formatCityDisplay(msg) {
 
     if (rentStep === 'features') {
       setRentData(prev => ({ ...prev, features: msg }));
+      setRentStep('occupants');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `How many people would be living in the home?` }],
+        quickReplies: ['1 Person', '2 People', '3 People', '4 People', '5+ People']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'occupants') {
+      setRentData(prev => ({ ...prev, occupants: msg }));
+      setRentStep('pets');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Will you be bringing any pets?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'pets') {
+      const hasPets = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (hasPets) {
+        setRentData(prev => ({ ...prev, pets: 'Yes' }));
+        setRentStep('pet_details');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `What type of pet and how many?` }],
+          quickReplies: ['🐕 1 Dog', '🐕 2+ Dogs', '🐈 1 Cat', '🐈 2+ Cats', '🐾 Dog & Cat', 'Other']
+        }]);
+      } else {
+        setRentData(prev => ({ ...prev, pets: 'No', pet_details: '' }));
+        setRentStep('smoking');
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `And do you or anyone in the household smoke or vape?` }],
+          quickReplies: ['✅ Yes', '❌ No']
+        }]);
+      }
+      return;
+    }
+
+    if (rentStep === 'pet_details') {
+      setRentData(prev => ({ ...prev, pet_details: msg }));
+      setRentStep('smoking');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `And do you or anyone in the household smoke or vape?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'smoking') {
+      const isSmoking = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      setRentData(prev => ({ ...prev, smoking: isSmoking ? 'Yes' : 'No' }));
+      setRentStep('income_proof');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Do you currently have employment or another source of income that you can provide proof of, if required by the landlord?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'income_proof') {
+      const hasIncome = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      setRentData(prev => ({ ...prev, income_proof: hasIncome ? 'Yes' : 'No' }));
+      setRentStep('credit_check');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you comfortable providing a credit report or authorizing a credit check if the landlord requires one?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
+    if (rentStep === 'credit_check') {
+      const okCredit = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      setRentData(prev => ({ ...prev, credit_check: okCredit ? 'Yes' : 'No' }));
       setRentStep('budget');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -2484,7 +2570,8 @@ function formatCityDisplay(msg) {
       }
 
       setRentStep('summary');
-      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms} | 🛁 Bathrooms: ${rd.bathrooms}\n🚗 Parking: ${rd.parking}\n✨ Features: ${rd.features}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${rd.move_in}\n\nDoes everything look correct?`;
+      const petStr = rd.pets === 'Yes' ? `Yes${rd.pet_details ? ` (${rd.pet_details})` : ''}` : (rd.pets || 'No');
+      const summaryText = `Here's what I have for your rental search:\n📍 Location: ${rd.city}\n🏠 Property type: ${rd.prop_type}\n🛏️ Bedrooms: ${rd.bedrooms} | 🛁 Bathrooms: ${rd.bathrooms}\n👥 Occupants: ${rd.occupants || '1 Person'}\n🐾 Pets: ${petStr}\n🚭 Smoke / Vape: ${rd.smoking || 'No'}\n💼 Proof of Income: ${rd.income_proof || 'Yes'}\n📊 Credit Check: ${rd.credit_check || 'Yes'}\n🚗 Parking: ${rd.parking}\n✨ Features: ${rd.features}\n💰 Budget: ${rd.budget}\n📅 Move-in: ${rd.move_in}\nCurrently working with an agent: No\n\nDoes everything look correct?`;
       setMessages(prev => [...prev, {
         role: 'model',
         parts: [{ text: summaryText }],
@@ -2509,7 +2596,8 @@ function formatCityDisplay(msg) {
         } else {
           // Trigger live rental property search via AI / Apify
           const rd = rentData;
-          const searchPrompt = `User confirmed requirements. Intent: rent. Location: ${rd.city}. Property: ${rd.prop_type || 'Apartment/Condo'}. Bedrooms: ${rd.bedrooms}. Bathrooms: ${rd.bathrooms}. Maximum budget: ${rd.budget}. Features: ${rd.features}. Please search and show me matching live rental properties for rent in ${rd.city}.`;
+          const petStr = rd.pets === 'Yes' ? `Yes${rd.pet_details ? ` (${rd.pet_details})` : ''}` : (rd.pets || 'No');
+          const searchPrompt = `User confirmed requirements. Intent: rent. Location: ${rd.city}. Property: ${rd.prop_type || 'Apartment/Condo'}. Bedrooms: ${rd.bedrooms}. Bathrooms: ${rd.bathrooms}. Maximum budget: ${rd.budget}. Features: ${rd.features}. Occupants: ${rd.occupants || '1'}. Pets: ${petStr}. Smoke/Vape: ${rd.smoking || 'No'}. Proof of income: ${rd.income_proof || 'Yes'}. Credit check: ${rd.credit_check || 'Yes'}. Move-in: ${rd.move_in}. Please search and show me matching live rental properties for rent in ${rd.city}.`;
           apiMessages.pop(); // remove "yes"
           apiMessages.push({ role: 'user', parts: [{ text: searchPrompt }] });
         }
