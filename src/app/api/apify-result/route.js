@@ -225,10 +225,12 @@ export async function GET(req) {
 
     // ── Helper: format price nicely and NEVER return $0 ──────────────────────
     function resolveAndFormatPrice(p, isRent = false) {
-      // 1. Primary price fields
+      // 1. Primary price fields (support standard & rental multi-unit building cards)
       const primaryNum = parseValidPriceNum(
         p.price || 
         p.rentPrice || 
+        p.minPrice ||
+        p.units?.[0]?.price ||
         p.listingPrice?.value || 
         p.listingPrice?.formatted || 
         p.unformattedPrice || 
@@ -378,13 +380,13 @@ const SUPPLEMENT_PHOTO_SETS = [
 
         // Beds, baths, type, city (support Realtor.ca + Zillow)
         const beds = parseInt(
-          p.property?.building?.bedrooms || p.Building?.Bedrooms || p.bedrooms || p.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0,
+          p.property?.building?.bedrooms || p.Building?.Bedrooms || p.bedrooms || p.beds || p.units?.[0]?.beds || p.hdpData?.homeInfo?.bedrooms || p.resoFacts?.bedrooms || 0,
           10
         ) || 3;
         const baths = parseFloat(
-          p.property?.building?.bathroom_total || p.Building?.BathroomTotal || p.bathrooms || p.baths || p.hdpData?.homeInfo?.bathrooms || p.resoFacts?.bathrooms || 0
+          p.property?.building?.bathroom_total || p.Building?.BathroomTotal || p.bathrooms || p.baths || 0
         ) || 2;
-        const itemRawType = p.property?.building?.type || p.property?.property_type || p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || 'Single Family Home';
+        const itemRawType = p.property?.building?.type || p.property?.property_type || p.Property?.Type || p.Building?.Type || p.homeType || p.propertyType || p.property_type || p.hdpData?.homeInfo?.homeType || p.resoFacts?.homeType || (rawType || 'Residential');
 
         // ── Normalize raw type to a clean display label ──────────────────────
         const normalizeTypeLabel = (val) => {
@@ -519,14 +521,15 @@ const SUPPLEMENT_PHOTO_SETS = [
 
       function isPropertyRental(p) {
         if (!p) return false;
-        // 1. Price threshold: Monthly rentals in USA/Canada are $500 - $25,000. Homes for sale are $50k - $20M+.
+        // 1. Zillow explicit rental status
+        if (p.listingStatus === 'forRent' || p.cardType === 'apartmentBuilding' || (Array.isArray(p.units) && p.units.length > 0)) return true;
+        if (p.isForRent === true || p.is_for_rent === true) return true;
+        if (p.isForSale === true || p.is_for_sale === true) return false;
+
+        // 2. Price threshold: Monthly rentals in USA/Canada are $500 - $35,000. Homes for sale are $50k - $20M+.
         const numPrice = getPrice(p);
         if (numPrice > 0 && numPrice < 35000) return true; // Definitely a monthly rental!
         if (numPrice >= 35000) return false; // Definitely a for-sale property!
-
-        // 2. Zillow explicit boolean flags
-        if (p.isForRent === true || p.is_for_rent === true) return true;
-        if (p.isForSale === true || p.is_for_sale === true) return false;
 
         // 2. Status Type & Home Status from Zillow HDP data
         const statusType = String(p.statusType || p.hdpData?.homeInfo?.homeStatus || p.homeStatus || '').toUpperCase();
