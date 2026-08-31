@@ -1052,7 +1052,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(79,70,229,0.35)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(79,70,229,0.25)'; }}
         >
-          <span>📋</span> Show More Details
+          <span>📋</span> More Details
         </button>
       </div>
 
@@ -2105,7 +2105,13 @@ function formatCityDisplay(msg) {
         : `Since you’re an experienced homebuyer, let’s focus on what’s most important for your next purchase—whether that’s more space, a new neighborhood, a better commute, or a specific budget.\n\nAre there any important features you’re looking for? You can select multiple options!`;
       
       setMessages(prev => [...prev, { role: 'model', parts: [{ text: replyText }] }]);
-      setMultiSelectOptions(['🌊 Swimming Pool', '🏠 Basement', '🚗 Garage', 'None']);
+      // Smart features based on property type — Condo/Apartment don't have Basement
+      const selectedType2 = (buyHomeData.type || '').toLowerCase();
+      const isCondoApt = selectedType2.includes('condo') || selectedType2.includes('apartment') || selectedType2.includes('multi');
+      const featureOptions = isCondoApt
+        ? ['🌊 Swimming Pool', '🏋️ Gym / Fitness', '🚗 Parking', '🌅 Balcony', 'None']
+        : ['🌊 Swimming Pool', '🏠 Basement', '🚗 Garage', 'None'];
+      setMultiSelectOptions(featureOptions);
       return;
     }
 
@@ -2465,10 +2471,16 @@ function formatCityDisplay(msg) {
     if (rentStep === 'parking') {
       setRentData(prev => ({ ...prev, parking: msg }));
       setRentStep('features');
+      const rType = (rentData.prop_type || '').toLowerCase();
+      const isCondo = rType.includes('condo') || rType.includes('apartment') || rType.includes('multi');
+      const rentFeatureReplies = isCondo
+        ? ['🧺 In-unit Laundry', '🌅 Balcony', '🐾 Pet-friendly', '🏋️ Gym / Fitness', 'None']
+        : ['🏠 Basement', '🧺 In-unit Laundry', '🌅 Balcony', '🐾 Pet-friendly', 'None'];
+      const exampleText = isCondo ? 'In-unit Laundry, Balcony, Gym' : 'Basement, Balcony, In-unit Laundry';
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Any specific **must-have features**? (e.g., Basement, Balcony, In-unit Laundry)` }],
-        quickReplies: ['🏠 Basement', '🧺 In-unit Laundry', '🌅 Balcony', '🐾 Pet-friendly', 'None']
+        parts: [{ text: `Any specific **must-have features**? (e.g., ${exampleText})` }],
+        quickReplies: rentFeatureReplies
       }]);
       return;
     }
