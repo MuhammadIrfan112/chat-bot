@@ -693,7 +693,7 @@ function propTypeMatches(p, requestedType) {
   });
 }
 
-async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null, propBeds = 0, propBaths = 0) {
+async function buildZillowSearchUrl(city, state, intent, fullChatText = '', propType = null, propBeds = 0, propBaths = 0, propBudget = 0) {
   const isRent = intent === 'rent';
   const normCity = normalizeCityName(city);
   const normState = state || resolveStateOrProvince(normCity, state);
@@ -723,6 +723,19 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
         isAuction: { value: true },
         isForSaleForeclosure: { value: true }
       };
+
+  // ── Apply price floor directly in Zillow search filter (budget - 100k for buy, budget - 150 for rent) ──
+  const minBudgetFloor = propBudget > 0
+    ? Math.max(0, isRent ? (propBudget - 150) : (propBudget - 100000))
+    : 0;
+
+  if (minBudgetFloor > 0) {
+    if (isRent) {
+      filterState.monthlyPayment = { min: minBudgetFloor };
+    } else {
+      filterState.price = { min: minBudgetFloor };
+    }
+  }
 
   // ── Apply property type filter on Zillow filterState ──
   const zillowType = mapPropTypeToZillow(propType);
@@ -817,8 +830,8 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     }
 
     // ── Build accurate Zillow search URL ──
-    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths);
-    console.log(`[Apify] Starting Zillow scraper run | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | URL: ${searchUrl.substring(0, 150)}...`);
+    const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths, propBudget);
+    console.log(`[Apify] Starting Zillow scraper run | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | Budget=${propBudget} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runData = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
