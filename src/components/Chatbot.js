@@ -2818,9 +2818,10 @@ function formatCityDisplay(msg) {
       } else {
         setRentOutData(prev => ({ ...prev, rent_expectation: 'Help determining rental value', expected_rent: 'Help determining rental value' }));
         setRentOutStep('services_needed');
+        const agentFirstName2 = (botConfig.botName || 'your agent').split(' ')[0];
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: `No problem! We can have a realtor help you understand the current rental market and what similar properties are renting for in your area.\n\nAre you mainly looking for a tenant, or would you also like help with things like marketing the property, showings, and the rental process?` }],
+          parts: [{ text: `No problem! We can have ${agentFirstName2} help you understand the current rental market and what similar properties are renting for in your area.\n\nAre you mainly looking for a tenant, or would you also like help with things like marketing the property, showings, and the rental process?` }],
           quickReplies: ['Tenant placement only', 'Full service (marketing, showings & process)', 'Property management advice', 'Just exploring options']
         }]);
         return;
@@ -2877,9 +2878,10 @@ function formatCityDisplay(msg) {
       setRentOutStep(null);
       const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
       if (isYes) {
+        const agentFirstName = (botConfig.botName || 'your agent').split(' ')[0];
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: `Great! I can have the realtor follow up with you about renting your property and discussing next steps. Please provide your contact details below to schedule a quick call!` }]
+          parts: [{ text: `Great! I can have ${agentFirstName} follow up with you about renting your property and discussing next steps. Please provide your contact details below to schedule a quick call!` }]
         }]);
         setLeadStep('name');
         return;
@@ -3982,24 +3984,7 @@ function formatCityDisplay(msg) {
 
 
 
-          {leadStep && (
-            <div style={{
-              padding: '8px 16px',
-              backgroundColor: 'rgba(255, 123, 44, 0.08)',
-              borderTop: '1px solid rgba(255, 123, 44, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#FF7B2C'
-            }}>
-              <span>{leadStep === 'name' ? '👤' : leadStep === 'phone' ? '📞' : leadStep === 'email' ? '✉️' : '🕒'}</span>
-              <span>
-                {leadStep === 'name' ? 'Full Name required to book call' : leadStep === 'phone' ? 'Valid Phone Number required' : leadStep === 'email' ? 'Valid Email Address required' : 'Preferred Contact Time required'}
-              </span>
-            </div>
-          )}
+
 
           <div className={styles.inputArea}>
             {buyHomeStep === 'mortgage_upload' ? (
