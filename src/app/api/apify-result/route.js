@@ -627,22 +627,38 @@ const SUPPLEMENT_PHOTO_SETS = [
         ? Math.max(0, isRent ? (targetBudget - 150) : (targetBudget - 100000))
         : 0;
 
-      // Filter strictListApify to only properties at or above minBudgetFloor
-      let strictListApify = typeHasResultsApify ? typeFilteredApify : [];
-      if (minBudgetFloor > 0 && strictListApify.length > 0) {
-        const aboveFloor = strictListApify.filter(p => {
+      // 1. First priority: properties of exact type at or above floor (sorted ascending)
+      const aboveFloor = (typeHasResultsApify ? typeFilteredApify : []).filter(p => {
+        const price = getPrice(p);
+        return minBudgetFloor === 0 || price <= 0 || price >= minBudgetFloor;
+      });
+      for (const p of sortAscendingPrice(aboveFloor)) {
+        addProp(p);
+      }
+
+      // 2. If fewer than 4, fill remaining slots from same type below floor (closest to budget first)
+      if (selected.length < 4 && typeHasResultsApify) {
+        const belowFloor = typeFilteredApify.filter(p => {
           const price = getPrice(p);
-          return price <= 0 || price >= minBudgetFloor;
+          return price > 0 && price < minBudgetFloor;
         });
-        if (aboveFloor.length > 0) {
-          strictListApify = aboveFloor;
+        const sortedBelowFloor = [...belowFloor].sort((a, b) => (getPrice(b) || 0) - (getPrice(a) || 0));
+        for (const p of sortedBelowFloor) {
+          if (selected.length >= 4) break;
+          addProp(p);
         }
       }
 
-      // ── Pure Ascending Price Sorting: lowest price at or above minBudgetFloor ALWAYS comes first ──
-      const sortedByPrice = sortAscendingPrice(strictListApify);
-      for (const p of sortedByPrice) {
-        addProp(p);
+      // 3. If still fewer than 4, fill remaining slots from other property types in the city within budget
+      if (selected.length < 4 && intentFiltered.length > 0) {
+        const otherCityProps = intentFiltered.filter(p => {
+          const price = getPrice(p);
+          return price <= 0 || (targetBudget > 0 ? price <= targetBudget * 1.15 : true);
+        });
+        for (const p of sortAscendingPrice(otherCityProps)) {
+          if (selected.length >= 4) break;
+          addProp(p);
+        }
       }
 
       return { results: selected, matchTier: 'exact' };

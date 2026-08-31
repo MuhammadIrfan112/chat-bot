@@ -1225,22 +1225,10 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
 
   // ── Price floor: start from budget-100k for buy (rent: $150 below budget, e.g. $2000 → $1850), NO upper limit ──
   // Rule: if user says $2000 rent → show from $1850 upward, no ceiling
-  // Rule: if market floor > budget-150 → properties naturally start at market floor
+  // ── Price floor: start from budget-100k for buy (rent: $150 below budget, e.g. $2000 → $1850), NO upper limit ──
   const minBudgetFloor = targetBudget > 0
     ? Math.max(0, isRent ? (targetBudget - 150) : (targetBudget - 100000))
     : 0;
-
-  // Filter strictList to only properties at or above minBudgetFloor
-  let strictList = typeHasResults ? typeFiltered : [];
-  if (minBudgetFloor > 0 && strictList.length > 0) {
-    const aboveFloor = strictList.filter(p => {
-      const price = getPrice(p);
-      return price <= 0 || price >= minBudgetFloor;
-    });
-    if (aboveFloor.length > 0) {
-      strictList = aboveFloor;
-    }
-  }
 
   // ── Sort helper: ASCENDING PRICE ORDER (lowest to highest price) ──
   const sortAscendingPrice = (list) => [...list].sort((a, b) => {
@@ -1249,10 +1237,38 @@ function selectRecommendedProperties(properties, targetBudget = 0, targetBeds = 
     return aPrice - bPrice;
   });
 
-  // ── Pure Ascending Price Sorting: lowest price at or above minBudgetFloor ALWAYS comes first ──
-  const sortedByPrice = sortAscendingPrice(strictList);
-  for (const p of sortedByPrice) {
+  // 1. First priority: properties of exact type at or above floor (sorted ascending)
+  const aboveFloor = (typeHasResults ? typeFiltered : []).filter(p => {
+    const price = getPrice(p);
+    return minBudgetFloor === 0 || price <= 0 || price >= minBudgetFloor;
+  });
+  for (const p of sortAscendingPrice(aboveFloor)) {
     addProp(p);
+  }
+
+  // 2. If fewer than 4, fill remaining slots from same type below floor (closest to budget first)
+  if (selected.length < 4 && typeHasResults) {
+    const belowFloor = typeFiltered.filter(p => {
+      const price = getPrice(p);
+      return price > 0 && price < minBudgetFloor;
+    });
+    const sortedBelowFloor = [...belowFloor].sort((a, b) => (getPrice(b) || 0) - (getPrice(a) || 0));
+    for (const p of sortedBelowFloor) {
+      if (selected.length >= 4) break;
+      addProp(p);
+    }
+  }
+
+  // 3. If still fewer than 4, fill remaining slots from other property types in the city within budget
+  if (selected.length < 4 && intentFiltered.length > 0) {
+    const otherCityProps = intentFiltered.filter(p => {
+      const price = getPrice(p);
+      return price <= 0 || (targetBudget > 0 ? price <= targetBudget * 1.15 : true);
+    });
+    for (const p of sortAscendingPrice(otherCityProps)) {
+      if (selected.length >= 4) break;
+      addProp(p);
+    }
   }
 
   return { results: selected, matchTier: 'exact' };
