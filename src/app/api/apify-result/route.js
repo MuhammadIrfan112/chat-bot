@@ -815,6 +815,19 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
+    // If exact type returned 0 across the entire city, but other properties exist in the city: show all available city properties
+    if (orderedProperties.length === 0 && finalProperties.length > 0) {
+      const allCitySorted = sortAscendingPrice(finalProperties);
+      const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'property';
+      const fallbackIntro = `Although exact **${friendlyType}** listings are currently limited in **${savedCity || requestedCity}**, here are live properties in **${savedCity || requestedCity}** (sorted by lowest price first): 🏡`;
+      return Response.json({
+        status: 'done',
+        city: savedCity || requestedCity,
+        properties: allCitySorted.slice(0, 16),
+        introMessage: fallbackIntro
+      });
+    }
+
     // Requested type returned 0 across the entire city dataset — return no_results so user can adjust or refine
     if (orderedProperties.length === 0) {
       const friendlyType = rawType ? rawType.replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim() : 'this property type';
