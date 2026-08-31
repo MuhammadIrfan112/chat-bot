@@ -1162,8 +1162,9 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   // ── Rent Out My House Flow ─────────────────────────────────────
   const [rentOutStep, setRentOutStep] = useState(null);
   const [rentOutData, setRentOutData] = useState({
-    ownership: '', prop_type: '', address: '', bedrooms: '', bathrooms: '',
-    timeline: '', furnished: '', expected_rent: '', has_agent: '', priority: ''
+    ownership: '', address: '', prop_type: '', bedrooms: '', bathrooms: '',
+    tenant_status: '', timeline: '', rent_expectation: '', expected_rent: '',
+    services_needed: '', has_agent: ''
   });
 
   // ── Looking to Rent Flow ────────────────────────────────────────
@@ -1195,7 +1196,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     setSellStep(null);
     setSellData({ address: '', prop_type: '', bedrooms: '', bathrooms: '', condition: '', timeline: '', reason: '', has_agent: '' });
     setRentOutStep(null);
-    setRentOutData({ ownership: '', prop_type: '', address: '', bedrooms: '', bathrooms: '', parking: '', features: '', timeline: '', furnished: '', expected_rent: '', has_agent: '', priority: '' });
+    setRentOutData({ ownership: '', address: '', prop_type: '', bedrooms: '', bathrooms: '', tenant_status: '', timeline: '', rent_expectation: '', expected_rent: '', services_needed: '', has_agent: '' });
     setHomeValueStep(null);
     setHomeValueData({ address: '', bedrooms: '', bathrooms: '', renovations: '', condition: '', reason: '', timeline: '', expected_rent: '', has_agent: '' });
   };
@@ -1718,12 +1719,15 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     const isRealEstate = botIndustry !== 'E-Commerce';
 
     let finalPropertyInterest = '';
-    const isRent = !!sumOccupants || !!sumPets || !!sumRentTimeline || messages.some(m => m.parts[0].text.toLowerCase().includes('looking to rent'));
-    const isSell = messages.some(m => m.parts[0].text.toLowerCase().includes('understand your home\'s value') || m.parts[0].text.toLowerCase().includes('considering selling'));
-    const leadType = isSell ? 'Selling Home' : isRent ? 'Renting Home' : 'Buying Home';
+    const isLandlord = !!rentOutData.address || messages.some(m => m.parts[0].text.toLowerCase().includes('summary of your rental property') || m.parts[0].text.toLowerCase().includes('rent out a property you already own'));
+    const isRent = !isLandlord && (!!sumOccupants || !!sumPets || !!sumRentTimeline || messages.some(m => m.parts[0].text.toLowerCase().includes('looking to rent')));
+    const isSell = !isLandlord && messages.some(m => m.parts[0].text.toLowerCase().includes('understand your home\'s value') || m.parts[0].text.toLowerCase().includes('considering selling'));
+    const leadType = isLandlord ? 'Landlord (Renting Out Property)' : isSell ? 'Selling Home' : isRent ? 'Renting Home' : 'Buying Home';
 
     if (isRealEstate) {
-      if (isSell) {
+      if (isLandlord) {
+        finalPropertyInterest = `🔥 NEW LANDLORD LEAD\n• Property: ${rentOutData.address || 'Not specified'}\n• Type: ${rentOutData.prop_type || 'Not specified'}\n• Beds/Baths: ${rentOutData.bedrooms || '-'} Beds / ${rentOutData.bathrooms || '-'} Baths\n• Current Status: ${rentOutData.tenant_status || 'Not specified'}\n• Timeline: ${rentOutData.timeline || 'Not specified'}\n• Expected Rent: ${rentOutData.expected_rent || 'Help determining rental value'}\n• Services Needed: ${rentOutData.services_needed || 'Full service'}`;
+      } else if (isSell) {
         finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Seller Details:\n• Reason for selling: ${messages.find(m=>m.parts[0].text.toLowerCase().includes('reason you are considering selling')) ? 'Captured in chat' : 'Not specified'}\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Timeline: ${timeline || 'Not specified'}`;
       } else if (isRent) {
         finalPropertyInterest = `[Lead Type: ${leadType}]\n📋 Renter Requirements:\n• Property Type: ${sumPropType || propertyType || 'Not specified'}\n• Target City: ${sumCity || city || 'Not specified'}\n• Bedrooms: ${sumBeds || bedsBaths || 'Not specified'}\n• Max Budget: ${sumBudget || budget || 'Not specified'}\n• Occupants: ${sumOccupants || 'Not specified'}\n• Pets: ${sumPets || 'Not specified'}\n• Smoke / Vape: ${sumSmoking || 'Not specified'}\n• Proof of Income: ${sumIncome || 'Not specified'}\n• Credit Check: ${sumCredit || 'Not specified'}\n• Parking: ${sumParking || 'Not specified'}\n• Moving Timeline: ${sumRentTimeline || 'Not specified'}`;
@@ -2696,6 +2700,7 @@ function formatCityDisplay(msg) {
     }
 
     // ── Rent Out My House Flow ──────────────────────────────────────
+    // ── Rent Out My House Flow (Landlord Flow) ──────────────────────
     const isRentOutIntent =
       msg.includes("rent out my house") ||
       msg.includes("I'm looking to rent out my house") ||
@@ -2707,36 +2712,36 @@ function formatCityDisplay(msg) {
       setRentOutStep('ownership');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Absolutely! I can help with that. Are you looking to rent out a property you **already own**, or are you considering **buying a property as an investment** and then renting it out?` }],
-        quickReplies: ['🏠 I already own the property', '💰 Buying to rent out (investment)']
+        parts: [{ text: `Absolutely, I can help with that! Are you looking to rent out a property you **already own**?` }],
+        quickReplies: ['✅ Yes, I already own it', '💰 Looking to buy as an investment', '💡 Other']
       }]);
       return;
     }
 
     if (rentOutStep === 'ownership') {
       setRentOutData(prev => ({ ...prev, ownership: msg }));
-      setRentOutStep('prop_type');
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Great! What type of property is it?` }],
-        quickReplies: ['🏢 Condo / Apartment', '🏘️ Townhouse', '🏡 Detached Home', '🏢 Multi-Family', '💡 Other']
-      }]);
-      return;
-    }
-
-    if (rentOutStep === 'prop_type') {
-      setRentOutData(prev => ({ ...prev, prop_type: msg }));
       setRentOutStep('address');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `What is the address of the property?` }],
-        inputCard: { icon: '📍', label: 'Property Address', placeholder: 'e.g. 123 Main St, Chicago, IL...' }
+        parts: [{ text: `What is the address or general location of the property?` }],
+        inputCard: { icon: '📍', label: 'Property Address / Location', placeholder: 'e.g. 123 Main St, Mississauga, ON...' }
       }]);
       return;
     }
 
     if (rentOutStep === 'address') {
       setRentOutData(prev => ({ ...prev, address: msg }));
+      setRentOutStep('prop_type');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `What type of property is it — detached home, townhouse, condo, apartment, or something else?` }],
+        quickReplies: ['🏡 Detached Home', '🏘️ Townhouse', '🏢 Condo / Apartment', '🏢 Multi-Family / Duplex', '💡 Other']
+      }]);
+      return;
+    }
+
+    if (rentOutStep === 'prop_type') {
+      setRentOutData(prev => ({ ...prev, prop_type: msg }));
       setRentOutStep('bedrooms');
       setMessages(prev => [...prev, {
         role: 'model',
@@ -2759,95 +2764,86 @@ function formatCityDisplay(msg) {
 
     if (rentOutStep === 'bathrooms') {
       setRentOutData(prev => ({ ...prev, bathrooms: msg }));
-      setRentOutStep('parking');
+      setRentOutStep('tenant_status');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Does the property have **parking** available for tenants?` }],
-        quickReplies: ['🚗 Yes, 1 space', '🚗 Yes, 2+ spaces', '❌ No parking']
+        parts: [{ text: `Is the property currently vacant, or do you currently have a tenant?` }],
+        quickReplies: ['Vacant & Ready', 'Currently Occupied by Tenant', 'Owner Occupied', 'Under Renovation']
       }]);
       return;
     }
 
-    if (rentOutStep === 'parking') {
-      setRentOutData(prev => ({ ...prev, parking: msg }));
-      setRentOutStep('features');
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Does the property have any notable **features**? (e.g., Finished Basement, Balcony, In-unit Laundry)` }],
-        quickReplies: ['🏠 Finished Basement', '🧺 In-unit Laundry', '🌅 Balcony', '🐾 Pet-friendly', 'None']
-      }]);
-      return;
-    }
-
-    if (rentOutStep === 'features') {
-      setRentOutData(prev => ({ ...prev, features: msg }));
+    if (rentOutStep === 'tenant_status') {
+      setRentOutData(prev => ({ ...prev, tenant_status: msg }));
       setRentOutStep('timeline');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `When are you hoping to have the property available for rent?` }],
-        quickReplies: ['🚀 As soon as possible', '📅 Within 1–3 months', '🌱 Later this year', '🤷 Not sure yet']
+        parts: [{ text: `When are you hoping to have the property rented?` }],
+        quickReplies: ['Immediately', 'Within 30 days', '1–3 months', 'Later', 'Just researching']
       }]);
       return;
     }
 
     if (rentOutStep === 'timeline') {
       setRentOutData(prev => ({ ...prev, timeline: msg }));
-      setRentOutStep('furnished');
+      setRentOutStep('rent_expectation');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Will the property be rented **furnished** or **unfurnished**?` }],
-        quickReplies: ['🛋️ Furnished', '📦 Unfurnished', '📋 Partially Furnished']
+        parts: [{ text: `Do you already have a monthly rent in mind, or would you like help determining the potential rental value?` }],
+        quickReplies: ['💰 I have a price in mind', '📊 Help me determine rental value']
       }]);
       return;
     }
 
-    if (rentOutStep === 'furnished') {
-      setRentOutData(prev => ({ ...prev, furnished: msg }));
-      setRentOutStep('expected_rent');
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Do you have a **monthly rent** in mind, or would you like help estimating what the property could rent for?` }],
-        quickReplies: ['I have a price in mind', 'Help me estimate the rent']
-      }]);
-      return;
-    }
-
-    if (rentOutStep === 'expected_rent') {
-      let rentAnswer = msg;
-      if (msg.toLowerCase().includes('price in mind')) {
-        setRentOutData(prev => ({ ...prev, expected_rent: 'To be specified' }));
-        setRentOutStep('has_agent');
+    if (rentOutStep === 'rent_expectation') {
+      if (msg.toLowerCase().includes('price in mind') || msg.includes('💰')) {
+        setRentOutData(prev => ({ ...prev, rent_expectation: 'Price in mind' }));
+        setRentOutStep('expected_rent');
         setMessages(prev => [...prev, {
           role: 'model',
           parts: [{ text: `What monthly rent are you thinking?` }],
-          inputCard: { icon: '💰', label: 'Expected Monthly Rent', placeholder: 'e.g. $1,800/month...' }
-        }]);
-        return;
-      } else if (msg.toLowerCase().includes('estimate') || msg.toLowerCase().includes('help')) {
-        setRentOutData(prev => ({ ...prev, expected_rent: 'Needs estimation' }));
-        setRentOutStep('has_agent');
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: [{ text: `No worries! An agent can give you a professional rental market analysis. \n\nAre you currently working with a **real estate agent or property manager** for this rental?` }],
-          quickReplies: ['✅ Yes', '❌ No']
+          inputCard: { icon: '💰', label: 'Expected Monthly Rent', placeholder: 'e.g. $2,800/month...' }
         }]);
         return;
       } else {
-        // They typed a price
-        setRentOutData(prev => ({ ...prev, expected_rent: msg }));
-        setRentOutStep('has_agent');
+        setRentOutData(prev => ({ ...prev, rent_expectation: 'Help determining rental value', expected_rent: 'Help determining rental value' }));
+        setRentOutStep('services_needed');
         setMessages(prev => [...prev, {
           role: 'model',
-          parts: [{ text: `Great! Are you currently working with a **real estate agent or property manager** for this rental?` }],
-          quickReplies: ['✅ Yes', '❌ No']
+          parts: [{ text: `No problem! We can have a realtor help you understand the current rental market and what similar properties are renting for in your area.\n\nAre you mainly looking for a tenant, or would you also like help with things like marketing the property, showings, and the rental process?` }],
+          quickReplies: ['Tenant placement only', 'Full service (marketing, showings & process)', 'Property management advice', 'Just exploring options']
         }]);
         return;
       }
     }
 
+    if (rentOutStep === 'expected_rent') {
+      setRentOutData(prev => ({ ...prev, expected_rent: msg }));
+      setRentOutStep('services_needed');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Got it! Are you mainly looking for a tenant, or would you also like help with things like marketing the property, showings, and the rental process?` }],
+        quickReplies: ['Tenant placement only', 'Full service (marketing, showings & process)', 'Property management advice', 'Just exploring options']
+      }]);
+      return;
+    }
+
+    if (rentOutStep === 'services_needed') {
+      setRentOutData(prev => ({ ...prev, services_needed: msg }));
+      setRentOutStep('has_agent');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `Are you currently working with another real estate agent or property manager for this property?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
+      return;
+    }
+
     if (rentOutStep === 'has_agent') {
       const hasAgent = msg.toLowerCase().includes('yes') || msg.includes('✅');
-      setRentOutData(prev => ({ ...prev, has_agent: hasAgent ? 'Yes' : 'No' }));
+      const rd = { ...rentOutData, has_agent: hasAgent ? 'Yes' : 'No' };
+      setRentOutData(rd);
+
       if (hasAgent) {
         setRentOutStep(null);
         setMessages(prev => [...prev, {
@@ -2856,25 +2852,34 @@ function formatCityDisplay(msg) {
         }]);
         return;
       }
-      setRentOutStep('priority');
+
+      setRentOutStep('summary');
+      const summaryText = `Great! Here's a summary of your rental property:\n📍 Location: ${rd.address}\n🏠 Property Type: ${rd.prop_type}\n🛏️ Beds / Baths: ${rd.bedrooms} Beds | ${rd.bathrooms} Baths\n🔑 Current Status: ${rd.tenant_status || 'Vacant & Ready'}\n📅 Rental Timing: ${rd.timeline}\n💰 Expected Rent: ${rd.expected_rent || 'Help determining rental value'}\n📋 Services Needed: ${rd.services_needed || 'Full service'}\nCurrently working with an agent: No\n\nDoes everything look correct?`;
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Got it! I can connect you with someone who can help you **determine the rental value**, market the property, and guide you through the rental process.\n\nWhat’s most important to you with this rental?` }],
-        quickReplies: ['⏰ Finding a tenant quickly', '💰 Getting the best possible rent', '👤 Having someone manage the process for me', '📝 All of the above']
+        parts: [{ text: summaryText }],
+        quickReplies: ['✅ Yes', '❌ No']
       }]);
       return;
     }
 
-    if (rentOutStep === 'priority') {
-      setRentOutData(prev => ({ ...prev, priority: msg }));
+    if (rentOutStep === 'summary') {
       setRentOutStep(null);
-      const data = { ...rentOutData, priority: msg };
-      setMessages(prev => [...prev, {
-        role: 'model',
-        parts: [{ text: `Thanks! I’ve got a clear picture of your rental plans. 👍\n\nPlease share your **contact details** below, and an agent will follow up with you about the property, answer any questions, and help you get started.` }]
-      }]);
-      setLeadStep('name');
-      return;
+      const isYes = msg.toLowerCase().includes('yes') || msg.includes('✅');
+      if (isYes) {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `Great! I can have the realtor follow up with you about renting your property and discussing next steps. Please provide your contact details below to schedule a quick call!` }]
+        }]);
+        setLeadStep('name');
+        return;
+      } else {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{ text: `No problem! Let me know what you'd like to change.` }]
+        }]);
+        return;
+      }
     }
 
     // ── Home Value Flow ────────────────────────────────────────────
