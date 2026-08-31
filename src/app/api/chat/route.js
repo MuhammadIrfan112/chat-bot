@@ -755,17 +755,8 @@ async function buildZillowSearchUrl(city, state, intent, fullChatText = '', prop
     }
   }
 
-  const searchQueryState = {
-    pagination: {},
-    usersSearchTerm: `${normCity}, ${normState || 'TX'}`,
-    isMapVisible: true,
-    isListVisible: true,
-    filterState,
-  };
-
-  const encoded = encodeURIComponent(JSON.stringify(searchQueryState));
   const basePath = typeSubPath ? `${slug}${typeSubPath}` : (isRent ? `${slug}/rentals` : slug);
-  return `https://www.zillow.com/${basePath}/?searchQueryState=${encoded}`;
+  return `https://www.zillow.com/${basePath}/`;
 }
 
 
