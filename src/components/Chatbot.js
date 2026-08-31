@@ -5,9 +5,26 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from './Chatbot.module.css';
 
-// Generate a unique visitor ID for this browser session
+// Generate a unique visitor ID for this browser session (or capture ?demo_id= from marketing links)
 const getVisitorId = () => {
   if (typeof window === 'undefined') return null;
+  let demoId = '';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    demoId = params.get('demo_id') || params.get('demo') || params.get('ref') || '';
+    if (!demoId && window.parent && window.parent !== window) {
+      try {
+        const parentParams = new URLSearchParams(window.parent.location.search);
+        demoId = parentParams.get('demo_id') || parentParams.get('demo') || parentParams.get('ref') || '';
+      } catch (pe) {}
+    }
+  } catch (e) {}
+
+  if (demoId) {
+    const cleanDemo = demoId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+    return `demo_${cleanDemo}`;
+  }
+
   let id = localStorage.getItem('visitor_id');
   if (!id) {
     id = 'visitor_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now();

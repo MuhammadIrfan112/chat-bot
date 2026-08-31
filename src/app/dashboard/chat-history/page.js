@@ -121,8 +121,18 @@ export default function ChatHistory() {
                   onMouseLeave={e => { if (activeSession?.id !== s.id) e.currentTarget.style.backgroundColor = 'transparent' }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px' }}>
-                      👤 Visitor {s.visitor_id?.slice(-4)}
+                    <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {s.visitor_id?.startsWith('demo_') ? (
+                        <>
+                          <span>🎯</span>
+                          <span style={{ color: '#10b981', fontWeight: 'bold' }}>Demo #{s.visitor_id.replace(/^demo_/, '')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>👤</span>
+                          <span>Visitor {s.visitor_id?.slice(-4)}</span>
+                        </>
+                      )}
                     </div>
                     <button
                       onClick={e => { e.stopPropagation(); deleteSession(s.id); }}
@@ -165,7 +175,16 @@ export default function ChatHistory() {
               {/* Chat Header */}
               <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.01)' }}>
                 <div>
-                  <div style={{ fontWeight: '700', color: 'white' }}>Transcript: Visitor {activeSession.visitor_id?.slice(-4)}</div>
+                  <div style={{ fontWeight: '700', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {activeSession.visitor_id?.startsWith('demo_') ? (
+                      <>
+                        <span>🎯</span>
+                        <span>Demo ID: <span style={{ color: '#10b981', fontWeight: 'bold' }}>{activeSession.visitor_id.replace(/^demo_/, '')}</span></span>
+                      </>
+                    ) : (
+                      <span>Transcript: Visitor {activeSession.visitor_id?.slice(-4)}</span>
+                    )}
+                  </div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                     Started {new Date(activeSession.created_at).toLocaleString()}
                   </div>
