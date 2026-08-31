@@ -1448,7 +1448,21 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
           setIsLoading(false);
 
           const cityName = activeApifyCity ? (activeApifyCity.charAt(0).toUpperCase() + activeApifyCity.slice(1)) : 'the requested area';
-          const msgText = data.introMessage || `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now.\n\nWould you like to adjust your search?`;
+          const friendlyType = (activeApifyType || (activeApifyIntent === 'rent' ? 'rental' : 'property')).replace(/[\u{1F300}-\u{1FFFF}]/gu, '').trim();
+
+          // Count how many properties user has already seen in chat
+          let alreadyShownCount = 0;
+          messages.forEach(m => {
+            if (Array.isArray(m.properties)) alreadyShownCount += m.properties.length;
+          });
+
+          let msgText;
+          if (alreadyShownCount > 0) {
+            msgText = `You've viewed all available **${friendlyType}** listings in **${cityName}** right now. 🏡\n\nWould you like to explore other property types or adjust your budget?`;
+          } else {
+            msgText = data.introMessage || `I wasn't able to find live listings matching your exact criteria in **${cityName}** right now.\n\nWould you like to adjust your search?`;
+          }
+
           setMessages(prev => [...prev, {
             role: 'model',
             parts: [{ text: msgText }],
