@@ -1408,22 +1408,35 @@ async function fetchCityPropertyData(botId, targetCity, intent = 'buy', propBudg
       }
     }
 
-    // ── BUDGET FILTER: Show properties starting from (budget - $100k), no upper ceiling ──
-    // Matching criteria: City ✅ + Property Type ✅ + Price >= (budget - $100k) ✅
-    // User can keep scrolling/showing more — price goes up, city & type stay fixed.
-    // If 0 DB properties are at or above (budget - $100k) → trigger fresh Apify scrape.
+    // ── BUDGET FILTER & DB MATCH CHECK ──
+    // Example: User Budget = $566k -> Floor = $466k (budget - $100k)
+    // 1. Check if DB has properties near user's target budget [minBudget, budget + 10%]:
+    //    If DB properties only start far above user budget (e.g. DB starts at $645k),
+    //    DB does not have affordable options in user's range -> trigger fresh Apify scrape!
+    // 2. If DB HAS matching properties in range -> serve from DB starting from lowest price at/above floor ($466k).
     if (propBudget > 0) {
-      const minBudget = Math.max(0, isRentIntent ? (propBudget - 150) : (propBudget - 100000)); // floor: $100k below user budget
+      const minBudget = Math.max(0, isRentIntent ? (propBudget - 150) : (propBudget - 100000)); // floor: $100k below budget
+      const maxBudgetMatch = isRentIntent ? (propBudget + 250) : Math.round(propBudget * 1.10); // user budget + 10% tolerance
+
+      // Check if DB has at least 1 property near the user's budget range
+      const inBudgetMatch = filteredData.filter(p => {
+        const price = parseBudget(String(p.price || p.priceDisplay || ''));
+        return price > 0 && price >= minBudget && price <= maxBudgetMatch;
+      });
+
+      if (inBudgetMatch.length === 0) {
+        console.log(`fetchCityPropertyData: DB has 0 properties in user's budget range ($${minBudget.toLocaleString()}–$${maxBudgetMatch.toLocaleString()}) for city="${cleanCity}" — falling back to live Apify scrape to find $${minBudget.toLocaleString()}+ listings.`);
+        return { text: '', rawProperties: [] };
+      }
+
+      // Filter all properties at or above floor (minBudget), no upper ceiling for continuous pagination
       const inBudget = filteredData.filter(p => {
         const price = parseBudget(String(p.price || p.priceDisplay || ''));
         if (price <= 0) return true;   // price unknown — include it
-        return price >= minBudget;     // no upper ceiling — show all at/above floor
+        return price >= minBudget;     // start at/above floor
       });
-      if (inBudget.length === 0) {
-        console.log(`fetchCityPropertyData: 0 DB properties at/above $${minBudget.toLocaleString()} for city="${cleanCity}" — falling back to live Apify scrape.`);
-        return { text: '', rawProperties: [] };
-      }
-      // Sort ascending by price so lowest first, user sees cheapest matching options first
+
+      // Sort ascending by price so lowest first, user sees cheapest matching options first starting from floor
       filteredData = inBudget.sort((a, b) => {
         const pa = parseBudget(String(a.price || a.priceDisplay || '')) || 0;
         const pb = parseBudget(String(b.price || b.priceDisplay || '')) || 0;
