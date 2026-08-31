@@ -487,6 +487,58 @@ const SUPPLEMENT_PHOTO_SETS = [
       }
     }
 
+    // ── Auto-save fresh scraped properties to Supabase Database (city_property_data) ──
+    const saveToDatabase = async (cityToSave, propsToSave) => {
+      try {
+        if (!cityToSave || !Array.isArray(propsToSave) || propsToSave.length === 0) return;
+        const cityKey = cityToSave.toLowerCase().trim().split(',')[0].trim();
+        if (!cityKey) return;
+
+        // 1. Fetch existing properties in city_property_data to merge without duplicates
+        const { data: existingRow } = await supabase
+          .from('city_property_data')
+          .select('properties')
+          .eq('city', cityKey)
+          .single();
+
+        const existingProps = Array.isArray(existingRow?.properties) ? existingRow.properties : [];
+        const seenKeys = new Set(existingProps.map(p => (p.address || p.url || p.zpid || '').toLowerCase().trim()));
+        const mergedProps = [...existingProps];
+
+        for (const p of propsToSave) {
+          const k = (p.address || p.url || p.zpid || '').toLowerCase().trim();
+          if (k && !seenKeys.has(k)) {
+            seenKeys.add(k);
+            mergedProps.push(p);
+          }
+        }
+
+        const finalToStore = mergedProps.length > 0 ? mergedProps : propsToSave;
+
+        // 2. Upsert into city_property_data for instant bot retrieval in future chats
+        const { error: upsertErr } = await supabase.from('city_property_data').upsert(
+          {
+            city: cityKey,
+            properties: finalToStore,
+            last_scraped_at: new Date().toISOString()
+          },
+          { onConflict: 'city' }
+        );
+
+        if (upsertErr) {
+          console.error('[apify-result] Database auto-save error for city_property_data:', upsertErr.message);
+        } else {
+          console.log(`[apify-result] Successfully auto-saved ${finalToStore.length} properties for "${cityKey}" in database.`);
+        }
+      } catch (dbErr) {
+        console.error('[apify-result] Auto-save database error:', dbErr.message);
+      }
+    };
+
+    if (finalProperties.length > 0) {
+      saveToDatabase(savedCity || requestedCity, finalProperties);
+    }
+
     // ── Apply recommendation rules: Cards 1 & 2 (budget match), Cards 3 & 4 (exact bed/bath match) ──
     function selectRecommendedProperties(propsList, targetBudget = 0, targetBeds = 0, targetBaths = 0, isRent = false, budgetCountNeeded = 2, bedCountNeeded = 2, targetType = null) {
       if (!Array.isArray(propsList) || propsList.length === 0) return { results: [], matchTier: 'none' };
@@ -762,6 +814,7 @@ const SUPPLEMENT_PHOTO_SETS = [
                     return pa - pb;
                   });
                   if (realtorSorted.length > 0) {
+                    saveToDatabase(savedCity || requestedCity, realtorSorted);
                     const realtorIntro = intent === 'rent'
                       ? `Here are live rental ${rawType ? rawType + ' ' : ''}properties in **${savedCity || requestedCity}** from Realtor.ca (sorted by lowest price first): 🏡`
                       : `Here are live ${rawType ? rawType + ' ' : ''}properties in **${savedCity || requestedCity}** from Realtor.ca (sorted by lowest price first): 🏡`;
