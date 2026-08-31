@@ -2497,23 +2497,13 @@ function formatCityDisplay(msg) {
 
     if (rentStep === 'pets') {
       const hasPets = msg.toLowerCase().includes('yes') || msg.includes('✅');
-      if (hasPets) {
-        setRentData(prev => ({ ...prev, pets: 'Yes' }));
-        setRentStep('pet_details');
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: [{ text: `What type of pet and how many?` }],
-          quickReplies: ['🐕 1 Dog', '🐕 2+ Dogs', '🐈 1 Cat', '🐈 2+ Cats', '🐾 Dog & Cat', 'Other']
-        }]);
-      } else {
-        setRentData(prev => ({ ...prev, pets: 'No', pet_details: '' }));
-        setRentStep('smoking');
-        setMessages(prev => [...prev, {
-          role: 'model',
-          parts: [{ text: `And do you or anyone in the household smoke or vape?` }],
-          quickReplies: ['✅ Yes', '❌ No']
-        }]);
-      }
+      setRentData(prev => ({ ...prev, pets: hasPets ? 'Yes' : 'No', pet_details: '' }));
+      setRentStep('smoking');
+      setMessages(prev => [...prev, {
+        role: 'model',
+        parts: [{ text: `And do you or anyone in the household smoke or vape?` }],
+        quickReplies: ['✅ Yes', '❌ No']
+      }]);
       return;
     }
 
