@@ -807,8 +807,8 @@ function getBudgetBucket(budget) {
 }
 
 // Start Apify Zillow scraper run (non-blocking) — returns runId immediately
-// If another user already started the same city+budget+intent run recently, reuse it
-async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null, propBeds = 0, propBaths = 0) {
+// If another user already started the same city+budget+intent run recently, reuse it (unless forceFresh is true)
+async function startApifyRun(city, state, intent, fullChatText = '', propBudget = 0, propType = null, propBeds = 0, propBaths = 0, forceFresh = false) {
   try {
     const APIFY_TOKEN = process.env.APIFY_API_TOKEN?.trim();
     if (!APIFY_TOKEN) {
@@ -821,27 +821,27 @@ async function startApifyRun(city, state, intent, fullChatText = '', propBudget 
     const typeSlug = propType ? propType.toLowerCase().replace(/\s+/g, '_') : 'any';
     const runKey = `${normCity.toLowerCase()}_${budgetBucket}_${intent}_${typeSlug}`;
     const existing = ACTIVE_APIFY_RUNS[runKey];
-    if (existing && (Date.now() - existing.startedAt) < APIFY_RUN_TTL_MS) {
+    if (!forceFresh && existing && (Date.now() - existing.startedAt) < APIFY_RUN_TTL_MS) {
       console.log(`[Apify] ♻️ Reusing active run ${existing.runId} for key="${runKey}" (started ${Math.round((Date.now()-existing.startedAt)/1000)}s ago)`);
       return existing.runId;
     }
 
     // ── Build accurate Zillow search URL ──
     const searchUrl = await buildZillowSearchUrl(normCity, state, intent, fullChatText, propType, propBeds, propBaths, propBudget);
-    console.log(`[Apify] Starting Zillow scraper run | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | Budget=${propBudget} | URL: ${searchUrl.substring(0, 150)}...`);
+    console.log(`[Apify] Starting Zillow scraper run (forceFresh=${forceFresh}) | Intent=${intent} | Type=${propType || 'any'} | Beds=${propBeds || 'any'} | Budget=${propBudget} | URL: ${searchUrl.substring(0, 150)}...`);
 
     let runData = null;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         let runRes = await fetch(
-          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=30&token=${APIFY_TOKEN}`,
+          `https://api.apify.com/v2/acts/maxcopell~zillow-scraper/runs?maxItems=60&token=${APIFY_TOKEN}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               startUrls: [{ url: searchUrl }],
               searchUrls: [{ url: searchUrl }],
-              maxItems: 30,
+              maxItems: 60,
               extractionMethod: 'PAGINATION_WITH_ZOOM_IN',
               proxy: {
                 useApifyProxy: true
@@ -2428,7 +2428,7 @@ CRITICAL INSTRUCTIONS:
               } else {
                 console.log(`[Route] 0 DB properties available/unseen (isShowMore=${isShowMoreRequest}) — starting live Apify search for City=${detectedCity} Budget=${propBudget} Type=${propType}!`);
                 const resolvedState = resolveStateOrProvince(detectedCity, detectedState);
-                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType, propBeds, propBaths);
+                apifyRunId = await startApifyRun(detectedCity, resolvedState, propIntent, fullChatText, propBudget, propType, propBeds, propBaths, isShowMoreRequest);
 
                 if (apifyRunId) {
                   const cityBtns = isShowMoreRequest ? '' : [

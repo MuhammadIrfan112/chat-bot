@@ -1069,7 +1069,7 @@ function PropertyCardItem({ prop, index, onOpenGallery, onOpenDetails, likedProp
           onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(79,70,229,0.35)'; }}
           onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(79,70,229,0.25)'; }}
         >
-          <span>📋</span> More Details
+          <span>📋</span> Details
         </button>
       </div>
 
