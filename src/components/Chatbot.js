@@ -792,43 +792,22 @@ function PropertyDetailsModal({ detailsModal, onClose, onOpenGallery, onInquire 
         flexShrink: 0
       }}>
         <button
-          onClick={() => onInquire(`I want to learn more details about ${facts.address} (${facts.price})`)}
-          style={{
-            flex: 1,
-            padding: '10px 8px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #10b981, #059669)',
-            color: 'white',
-            border: 'none',
-            fontSize: '12px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(16,185,129,0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
-          }}
-        >
-          <span>💬</span> Inquire About This Home
-        </button>
-        <button
           onClick={() => onInquire(`I would like to schedule a private tour for ${facts.address}`)}
           style={{
             flex: 1,
-            padding: '10px 8px',
+            padding: '12px 8px',
             borderRadius: '10px',
             background: 'linear-gradient(135deg, #4f46e5, #3b82f6)',
             color: 'white',
             border: 'none',
-            fontSize: '12px',
+            fontSize: '13px',
             fontWeight: '700',
             cursor: 'pointer',
             boxShadow: '0 2px 6px rgba(79,70,229,0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '4px'
+            gap: '6px'
           }}
         >
           <span>📅</span> Schedule a Tour
@@ -1834,19 +1813,20 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
     const isStandard = embedPlan === 'standard';
     const agentName = botConfig.botName || 'Sandra Adams';
     const agentFirstName = agentName.split(' ')[0] || agentName;
+    const timeLabel = time_preference.toLowerCase().replace(/^(🌅|☀️|🌆|🕐)\s*/u, '');
 
-    let confirmMsg = `You're all set, ${name}! 🎉\n\nYour information has been saved and **${agentName}** will be in touch soon.\n\nFeel free to ask me anything else! 😊`;
-    
+    let confirmMsg = `You're all set, ${name}! 🎉\n\n**${agentFirstName}** will reach out to you tomorrow ${timeLabel}.\n\nFeel free to ask me anything else! 😊`;
+
     if (isHomeValue) {
-      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️ Bedrooms: ${homeValueData.bedrooms} | 🛁 Bathrooms: ${homeValueData.bathrooms}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\n**${agentName}** will reach out to you at your preferred **${time_preference}** time with a personalized valuation based on your property and the local market.\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! 🎉 Your property information has been submitted successfully.\n\n**Property Details:**\n📍 ${homeValueData.address}\n🛏️ Bedrooms: ${homeValueData.bedrooms} | 🛁 Bathrooms: ${homeValueData.bathrooms}\n🛠️ Condition: ${homeValueData.condition}\n${homeValueData.renovations !== 'No' ? `✨ Renovations: ${homeValueData.renovations}` : ''}\n\n**${agentFirstName}** will reach out to you tomorrow ${timeLabel} with a personalized valuation.\n\nIs there anything else I can help you with?`;
     } else if (isRentOut) {
-      confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Parking:** ${rentOutData.parking}\n**Features:** ${rentOutData.features}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\n**${agentName}** will reach out to you at your preferred **${time_preference}** time to discuss the next steps, help you find the right tenant, and maximize your rental income.\n\n**We’re excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! 🎉 Your rental details have been submitted successfully.\n\n**Property:** ${rentOutData.prop_type} at ${rentOutData.address}\n**Bedrooms:** ${rentOutData.bedrooms} | **Bathrooms:** ${rentOutData.bathrooms}\n**Parking:** ${rentOutData.parking}\n**Features:** ${rentOutData.features}\n**Available:** ${rentOutData.timeline}\n**Furnished:** ${rentOutData.furnished}\n\n**${agentFirstName}** will reach out to you tomorrow ${timeLabel} to discuss next steps.\n\n**We're excited to help you make the most of your property!** 🏠✨\n\nIs there anything else I can help you with?`;
     } else if (resolvedGoal === 'Investment Property') {
-      confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\n**${agentName}** will connect with you at your preferred **${time_preference}** time to discuss your investment goals and available opportunities.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
+      confirmMsg = `Thank you, ${name}! Your information has been submitted. 🎉\n\n**${agentFirstName}** will reach out to you tomorrow ${timeLabel} to discuss your investment goals.\n\nWe look forward to speaking with you! 🏡\n\nIs there anything else I can help you with?`;
     } else if (isStandard) {
       const isRent = !sumOccupants || !sumPets || !sumRentTimeline;
       let reqLines = [];
-      
+
       if (isRent) {
         reqLines = [
           sumBeds ? `🏡 ${sumBeds}-bedroom ${sumPropType || 'rental'}` : '',
@@ -1871,7 +1851,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         ];
       }
 
-      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted to **${agentName}**.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**What happens next?**\n**${agentName}** will review your requirements and search for matching properties. ${agentFirstName} will contact you during your preferred **${time_preference}** hours to discuss suitable options and schedule private tours.\n\nWe're looking forward to helping you find your perfect home! 🏡\n\nIs there anything else you'd like to know?`;
+      confirmMsg = `You're all set, ${name}! 🎉\n\nYour home search request has been successfully submitted.\n\n**Your requirements:**\n${reqLines.filter(Boolean).join('\n')}\n\n**${agentFirstName}** will reach out to you tomorrow ${time_preference.toLowerCase().replace(/^(🌅|☀️|🌆|🕐)\s*/u, '')} to discuss suitable options and schedule private tours.\n\nWe're looking forward to helping you find your perfect home! 🏡\n\nIs there anything else you'd like to know?`;
     }
 
     setMessages(prev => [...prev, {
@@ -3127,7 +3107,7 @@ function formatCityDisplay(msg) {
       setLeadStep('name');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Great choice! 🎉 Our team can arrange a private tour, provide complete property disclosures, and answer all your questions.\n\nMay I have your **full name** please?` }],
+        parts: [{ text: `Great choice! 🎉 Our team can arrange a private tour, provide complete property disclosures, and answer all your questions.\n\nMay I have your **first and last name**?` }],
         inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
       }]);
       return;
@@ -3138,7 +3118,7 @@ function formatCityDisplay(msg) {
       setLeadStep('phone');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `What is the best phone number for our agent to reach you?` }],
+        parts: [{ text: `What is the phone number to reach you?` }],
         inputCard: { icon: '📞', label: 'Phone Number', placeholder: 'e.g. 0300-1234567 or +92 300 1234567...' }
       }]);
       return;
@@ -3399,13 +3379,13 @@ function formatCityDisplay(msg) {
 
     if (isDirectInquire || isDirectTour) {
       const propText = msg.replace(/^I want to learn more details about\s*/i, '').replace(/^I would like to schedule a private tour for\s*/i, '').trim();
-      const agentDisplayName = botConfig.agentName || botConfig.botName || 'our team';
+      const agentDisplayName = (botConfig.botName || 'our team').split(' ')[0];
 
       setLeadData(prev => ({ ...prev, selected_property: propText, inquiry_type: isDirectTour ? 'tour' : 'inquiry' }));
       
       const introPrompt = isDirectTour
-        ? `Wonderful! 🏡 I would be happy to arrange a private tour for **${propText}** with ${agentDisplayName}.\n\nMay I have your **full name** please?`
-        : `Great! 📄 I can provide full disclosures, floor plans, and additional details for **${propText}**.\n\nMay I have your **full name** please?`;
+        ? `Wonderful! 🏡 I would be happy to arrange a private tour for **${propText}** with ${agentDisplayName}.\n\nMay I have your **first and last name**?`
+        : `Great! 📄 I can provide full disclosures, floor plans, and additional details for **${propText}**.\n\nMay I have your **first and last name**?`;
 
       setMessages(prev => [...prev, {
         role: 'model',
@@ -3445,7 +3425,7 @@ function formatCityDisplay(msg) {
 
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Wonderful! 🎉 Our team can arrange a private tour, provide detailed property disclosures, and answer all your questions.\n\nMay I have your **full name** please?` }],
+        parts: [{ text: `Wonderful! 🎉 Our team can arrange a private tour, provide detailed property disclosures, and answer all your questions.\n\nMay I have your **first and last name**?` }],
         inputCard: { icon: '👤', label: 'Full Name', placeholder: 'e.g. John Doe...' }
       }]);
       setLeadStep('name');

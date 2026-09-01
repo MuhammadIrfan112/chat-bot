@@ -99,6 +99,7 @@ export default function AgentProfilePage() {
   const [botAvatar, setBotAvatar] = useState('🤖');
   const [primaryColor, setPrimaryColor] = useState('#4F46E5');
   const [welcomeMessage, setWelcomeMessage] = useState('');
+  const [chatbotName, setChatbotName] = useState('');
   const [avatarMode, setAvatarMode] = useState('emoji');
   const [imagePreview, setImagePreview] = useState(null);
   const fileRef = useRef(null);
@@ -156,6 +157,7 @@ export default function AgentProfilePage() {
       setBotId(currentBot.id);
       setPrimaryColor(currentBot.primary_color || '#4F46E5');
       setWelcomeMessage(currentBot.welcome_message || '');
+      setChatbotName(currentBot.chatbot_name || currentBot.name || '');
       const av = currentBot.bot_avatar || '🤖';
       if (av.startsWith('http') || av.startsWith('/')) {
         setAvatarMode('image');
@@ -247,6 +249,7 @@ export default function AgentProfilePage() {
     if (botId) {
       await supabase.from('bots').update({ 
         name: profile.full_name,
+        chatbot_name: chatbotName || profile.full_name,
         primary_color: primaryColor,
         bot_avatar: botAvatar,
         welcome_message: welcomeMessage,
@@ -431,6 +434,22 @@ export default function AgentProfilePage() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Welcome Message */}
+          <div style={{ marginTop: '24px' }}>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🤖 Chatbot Display Name
+            </label>
+            <input
+              value={chatbotName}
+              onChange={(e) => setChatbotName(e.target.value)}
+              placeholder={`e.g. ${profile.full_name ? profile.full_name.split(' ')[0] + "'s AI Assistant" : "Sarah's AI Assistant"}`}
+              style={{ ...inputStyle, marginBottom: '4px' }}
+            />
+            <p style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+              This is the name shown in the chat header (e.g. &quot;Sandra&apos;s AI Assistant&quot;). Leave blank to use your agent name.
+            </p>
           </div>
 
           {/* Welcome Message */}
