@@ -751,8 +751,19 @@ export default function AdminPage() {
                       {userBots[user.user_id].map(bot => (
                         <div key={bot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', padding: '14px 18px', borderRadius: '12px', border: '1px solid #E2E8F0', flexWrap: 'wrap', gap: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                           <div>
-                            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
-                              {bot.bot_avatar || '🤖'} {bot.name}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {bot.bot_avatar && (bot.bot_avatar.startsWith('http') || bot.bot_avatar.startsWith('/')) ? (
+                                <img 
+                                  src={bot.bot_avatar} 
+                                  alt="Bot Avatar" 
+                                  style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #E2E8F0' }} 
+                                />
+                              ) : (
+                                <span style={{ fontSize: '18px' }}>{bot.bot_avatar || '🤖'}</span>
+                              )}
+                              <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '14px' }}>
+                                {bot.name}
+                              </span>
                             </div>
                             <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>🌐 {bot.website_url || 'No URL'}</div>
                             <div style={{ fontSize: '11px', marginTop: '6px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
