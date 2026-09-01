@@ -3631,7 +3631,12 @@ function formatCityDisplay(msg) {
         <div className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`}>
           <div className={styles.header}>
             <a 
-              href={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/login${typeof window !== 'undefined' && window.location.href ? `?ref=${encodeURIComponent(window.location.href)}` : ''}`} 
+              href={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/login${(() => {
+                const clientUrl = (typeof document !== 'undefined' && document.referrer && !document.referrer.includes('/bot/') && !document.referrer.includes('realtypropflow.com'))
+                  ? document.referrer
+                  : (botConfig.websiteUrl || '');
+                return clientUrl ? `?ref=${encodeURIComponent(clientUrl)}` : '';
+              })()}`} 
               target="_blank" 
               rel="noopener noreferrer" 
               style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}

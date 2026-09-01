@@ -40,6 +40,7 @@ export default async function BotEmbedPage({ params, searchParams }) {
     primaryColor: bot.primary_color || '#4F46E5',
     welcomeMessage: bot.welcome_message || 'Hi there! 👋 How can I help you today?',
     plan: botPlan,
+    websiteUrl: bot.website_url || '',
     autoOpen: autoOpenFromUrl || bot.auto_open || false
   };
 

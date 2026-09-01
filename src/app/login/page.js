@@ -156,9 +156,9 @@ export default function Login() {
           onClick={() => {
             const params = new URLSearchParams(window.location.search);
             const refUrl = params.get('ref');
-            if (refUrl) {
+            if (refUrl && !refUrl.includes('/bot/') && !refUrl.includes('/login')) {
               window.location.href = refUrl;
-            } else if (typeof document !== 'undefined' && document.referrer && !document.referrer.includes('/login')) {
+            } else if (typeof document !== 'undefined' && document.referrer && !document.referrer.includes('/login') && !document.referrer.includes('/bot/')) {
               window.location.href = document.referrer;
             } else if (typeof window !== 'undefined' && window.history.length > 1) {
               window.history.back();
