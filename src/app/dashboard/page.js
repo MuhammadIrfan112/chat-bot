@@ -184,10 +184,10 @@ export default function AgentProfilePage() {
         .single();
 
       if (kb && kb.content) {
-        try { 
-          existingProfile = JSON.parse(kb.content); 
-          setKbRecordId(kb.id); 
-        } catch {}
+        try {
+          existingProfile = JSON.parse(kb.content);
+          setKbRecordId(kb.id);
+        } catch { }
       }
     }
 
@@ -251,7 +251,7 @@ export default function AgentProfilePage() {
     // 1. Sync chatbot display name, avatar, color, welcome message, and website_url to bots table
     const botDisplayName = (chatbotName && chatbotName.trim()) ? chatbotName.trim() : (profile.full_name ? profile.full_name.trim() : 'RealtyPropFlow AI');
     if (botId) {
-      await supabase.from('bots').update({ 
+      await supabase.from('bots').update({
         name: botDisplayName,
         primary_color: primaryColor,
         bot_avatar: botAvatar,
@@ -335,19 +335,19 @@ export default function AgentProfilePage() {
       </div>
 
       <form onSubmit={handleSave}>
-      
+
         {/* Chatbot Appearance Section */}
         <div style={sectionStyle}>
           <div style={sectionTitleStyle}><Bot size={18} /> Chatbot Appearance</div>
           <p style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '20px' }}>
             Customize how your AI assistant looks when chatting with clients on your website.
           </p>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
             {/* Avatar Selection */}
             <div>
               <label style={labelStyle}>Bot Avatar</label>
-              
+
               <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
                 <button
                   type="button"
@@ -425,7 +425,7 @@ export default function AgentProfilePage() {
                   style={{ ...inputStyle, width: '120px' }}
                 />
               </div>
-              
+
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 {['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#0EA5E9', '#000000'].map(color => (
                   <button
