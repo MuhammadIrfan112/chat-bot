@@ -3630,26 +3630,34 @@ function formatCityDisplay(msg) {
       {isOpen ? (
         <div className={`${styles.chatWindow} ${isGlobal ? styles.globalChatWindow : ''}`}>
           <div className={styles.header}>
-            <div className={styles.headerInfo}>
-              <div className={styles.avatar}>
-                {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
-                  <img src={botConfig.botAvatar} alt="Bot Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  botConfig.botAvatar
-                )}
-              </div>
-              <div>
-                <div className={styles.title}>{botConfig.botName}</div>
-                <div className={styles.status}>
-                  {isHumanTakeover ? '🟡 Live Agent Connected' : '🟢 AI Online'}
+            <a 
+              href={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.realtypropflow.com'}/login${typeof window !== 'undefined' && window.location.href ? `?ref=${encodeURIComponent(window.location.href)}` : ''}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style={{ textDecoration: 'none', color: 'inherit', display: 'flex' }}
+              title="Dashboard Login"
+            >
+              <div className={styles.headerInfo}>
+                <div className={styles.avatar}>
+                  {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
+                    <img src={botConfig.botAvatar} alt="Bot Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    botConfig.botAvatar
+                  )}
                 </div>
-                {isDemoBot && embedPlan && (
-                  <div style={{ marginTop: '2px', fontSize: '10px', background: embedPlan === 'premium' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.15)', color: embedPlan === 'premium' ? '#FDE047' : '#E2E8F0', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {embedPlan === 'premium' ? '👑 Premium Plan' : '📦 Standard Plan'}
+                <div>
+                  <div className={styles.title}>{botConfig.botName}</div>
+                  <div className={styles.status}>
+                    {isHumanTakeover ? '🟡 Live Agent Connected' : '🟢 AI Online'}
                   </div>
-                )}
+                  {isDemoBot && embedPlan && (
+                    <div style={{ marginTop: '2px', fontSize: '10px', background: embedPlan === 'premium' ? 'rgba(255, 215, 0, 0.2)' : 'rgba(255, 255, 255, 0.15)', color: embedPlan === 'premium' ? '#FDE047' : '#E2E8F0', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {embedPlan === 'premium' ? '👑 Premium Plan' : '📦 Standard Plan'}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </a>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {/* Close & Reset Button (✕): Closes widget AND starts fresh new chat session */}
               <button

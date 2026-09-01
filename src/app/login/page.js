@@ -153,7 +153,13 @@ export default function Login() {
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) {
+            const params = new URLSearchParams(window.location.search);
+            const refUrl = params.get('ref');
+            if (refUrl) {
+              window.location.href = refUrl;
+            } else if (typeof document !== 'undefined' && document.referrer && !document.referrer.includes('/login')) {
+              window.location.href = document.referrer;
+            } else if (typeof window !== 'undefined' && window.history.length > 1) {
               window.history.back();
             } else {
               window.location.href = '/';
