@@ -192,9 +192,12 @@ export default function AgentProfilePage() {
     }
 
     // Resolve values: knowledge_base > bots table > users_subscription table
-    const resolvedFullName = existingProfile?.full_name || currentBot?.name || sub?.name || '';
+    const resolvedFullName = existingProfile?.full_name || sub?.name || currentBot?.name || '';
+    const resolvedChatbotName = existingProfile?.chatbot_name || currentBot?.name || '';
     const resolvedEmail = existingProfile?.email || sub?.email || session.user.email || '';
     const resolvedWebsite = existingProfile?.website_url || currentBot?.website_url || sub?.website_url || '';
+
+    setChatbotName(resolvedChatbotName);
 
     // Merge: existing profile + resolved fields
     setProfile(prev => ({
@@ -245,11 +248,11 @@ export default function AgentProfilePage() {
     const uid = userId || session?.user?.id;
     const cleanWebsite = profile.website_url ? profile.website_url.trim() : null;
 
-    // 1. Sync name, avatar, color, welcome message, and website_url to bots table
+    // 1. Sync chatbot display name, avatar, color, welcome message, and website_url to bots table
+    const botDisplayName = (chatbotName && chatbotName.trim()) ? chatbotName.trim() : (profile.full_name ? profile.full_name.trim() : 'RealtyPropFlow AI');
     if (botId) {
       await supabase.from('bots').update({ 
-        name: profile.full_name,
-        chatbot_name: chatbotName || profile.full_name,
+        name: botDisplayName,
         primary_color: primaryColor,
         bot_avatar: botAvatar,
         welcome_message: welcomeMessage,
@@ -257,7 +260,7 @@ export default function AgentProfilePage() {
       }).eq('id', botId);
     }
 
-    // 2. Sync to users_subscription table
+    // 2. Sync realtor name to users_subscription table
     if (uid) {
       await supabase.from('users_subscription').update({
         name: profile.full_name,
@@ -268,6 +271,7 @@ export default function AgentProfilePage() {
     // 3. Save full profile to knowledge_base
     const profileToSave = {
       ...profile,
+      chatbot_name: chatbotName ? chatbotName.trim() : '',
       website_url: cleanWebsite || ''
     };
     const profileJson = JSON.stringify(profileToSave);
