@@ -770,9 +770,30 @@ export default function AdminPage() {
                               <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.industry === 'Real Estate' ? '#D1FAE5' : '#FEF3C7', color: bot.industry === 'Real Estate' ? '#065F46' : '#92400E', fontWeight: '800' }}>
                                 {bot.industry === 'Real Estate' ? '🏡 Real Estate' : `⚠️ ${bot.industry || 'No Industry'}`}
                               </span>
-                              <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: bot.plan === 'premium' ? '#EEF2FF' : '#FEF3C7', color: bot.plan === 'premium' ? '#4338CA' : '#92400E', fontWeight: '800' }}>
-                                {bot.plan === 'premium' ? '⭐ Premium' : `⚠️ ${bot.plan || 'No Plan'}`}
-                              </span>
+                              {(() => {
+                                const effectivePlan = (bot.plan || user.plan || (user.status === 'Active' ? 'pro' : null) || '').toLowerCase();
+                                const isPremium = effectivePlan === 'premium' || effectivePlan === 'pro';
+                                const isStandard = effectivePlan === 'standard' || effectivePlan === 'starter';
+                                if (isPremium) {
+                                  return (
+                                    <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: '#EEF2FF', color: '#4338CA', fontWeight: '800' }}>
+                                      ⭐ Premium
+                                    </span>
+                                  );
+                                }
+                                if (isStandard) {
+                                  return (
+                                    <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: '#E0F2FE', color: '#0369A1', fontWeight: '800' }}>
+                                      📦 Standard
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span style={{ padding: '2px 8px', borderRadius: '20px', backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: '800' }}>
+                                    ⚠️ No Plan
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
