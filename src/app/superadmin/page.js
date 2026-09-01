@@ -652,6 +652,44 @@ export default function AdminPage() {
                       >
                         {expandedUser === user.user_id ? '▲ Hide Bots' : '▼ View Bots & Get Code'}
                       </button>
+                      {user.plain_password && (
+                        <>
+                          <span style={{ color: '#CBD5E1' }}>•</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const btn = e.currentTarget;
+                              if (btn.dataset.shown === 'true') {
+                                btn.innerHTML = '🔑 Show Password';
+                                btn.dataset.shown = 'false';
+                                btn.style.color = '#92400E';
+                                btn.style.background = '#FFFBEB';
+                                btn.style.border = '1px solid #FDE68A';
+                              } else {
+                                btn.innerHTML = `🔓 ${user.plain_password} (click to hide)`;
+                                btn.dataset.shown = 'true';
+                                btn.style.color = '#166534';
+                                btn.style.background = '#DCFCE7';
+                                btn.style.border = '1px solid #86EFAC';
+                              }
+                            }}
+                            data-shown="false"
+                            style={{
+                              padding: '2px 10px',
+                              background: '#FFFBEB',
+                              color: '#92400E',
+                              border: '1px solid #FDE68A',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            🔑 Show Password
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

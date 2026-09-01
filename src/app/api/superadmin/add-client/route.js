@@ -70,7 +70,8 @@ export async function POST(req) {
         status: 'Active',
         plan: 'premium',
         website_url: website_url,
-        trial_ends_at: trialEndDate.toISOString()
+        trial_ends_at: trialEndDate.toISOString(),
+        plain_password: password
       }).eq('user_id', userId);
       subError = res.error;
       debugLog.push(`Sub UPDATE result: err=${subError?.message}`);
@@ -82,7 +83,8 @@ export async function POST(req) {
         email: email,
         plan: 'premium',
         website_url: website_url,
-        trial_ends_at: trialEndDate.toISOString()
+        trial_ends_at: trialEndDate.toISOString(),
+        plain_password: password
       });
       subError = res.error;
       debugLog.push(`Sub INSERT result: err=${subError?.message}`);
