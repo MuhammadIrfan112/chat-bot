@@ -2728,11 +2728,11 @@ function formatCityDisplay(msg) {
     // ── Rent Out My House Flow (Landlord Flow) ──────────────────────
     if (isRentOutIntent && !rentOutStep) {
       resetFlows();
-      setRentOutStep('ownership');
+      setRentOutStep('address');
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: `Absolutely, I can help with that! Are you looking to rent out a property you **already own**?` }],
-        quickReplies: ['✅ Yes, I already own it', '💰 Looking to buy as an investment', '💡 Other']
+        parts: [{ text: `Absolutely, I can help you in renting out your property. What is the address?` }],
+        inputCard: { icon: '📍', label: 'Property Address / Location', placeholder: 'e.g. 123 Main St, Mississauga, ON...' }
       }]);
       return;
     }
