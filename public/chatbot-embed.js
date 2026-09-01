@@ -39,7 +39,7 @@
   
   // Closed state: only button size visible, no scrollbar gap
   var closedStyle = isMobile
-    ? "position: fixed; bottom: 80px; right: 16px; width: 155px; height: 56px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;"
+    ? "position: fixed; bottom: 80px; right: 16px; width: 175px; height: 56px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.3s ease; color-scheme: light; overflow: hidden;"
     : "position: fixed; bottom: 24px; right: 20px; width: 175px; height: 56px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden;";
   var openStyle = "position: fixed; bottom: 20px; right: 20px; width: 375px; height: 700px; max-height: calc(100vh - 30px); border: none; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light; overflow: hidden; border-radius: 22px;";
   

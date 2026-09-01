@@ -4119,7 +4119,7 @@ function formatCityDisplay(msg) {
             e.preventDefault();
             setIsOpen(true);
           }}
-          title={isMobile ? "Message" : "Chat with us"}
+          title="Chat with us"
         >
           <div className={styles.btnAvatarCircle}>
             {botConfig.botAvatar && (botConfig.botAvatar.startsWith('http') || botConfig.botAvatar.startsWith('/')) ? (
@@ -4132,7 +4132,7 @@ function formatCityDisplay(msg) {
             <span className={styles.onlineDot}></span>
           </div>
           <span className={styles.btnLabel}>
-            {isMobile ? 'Message' : 'Chat with us'}
+            Chat with us
           </span>
         </button>
       )}

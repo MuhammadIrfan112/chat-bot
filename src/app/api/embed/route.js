@@ -50,7 +50,7 @@ export async function GET(req) {
   
   // Closed: desktop pill button area | mobile: pill button area
   var closedStyle = isMobile
-    ? "position: fixed; bottom: 80px; " + position + ": 16px; width: 155px; height: 56px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
+    ? "position: fixed; bottom: 80px; " + position + ": 16px; width: 175px; height: 56px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;"
     : "position: fixed; bottom: 24px; " + position + ": 16px; width: 175px; height: 56px; border: none; border-radius: 50px; z-index: 2147483647; background: transparent; pointer-events: auto; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); color-scheme: light;";
 
   // Open: desktop floating card with rounded corners, tablet same
