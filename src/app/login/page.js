@@ -4,13 +4,14 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { AlertCircle, ChevronLeft } from 'lucide-react';
+import { AlertCircle, ChevronLeft, Eye, EyeOff } from 'lucide-react';
 import styles from './login.module.css';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [websiteType, setWebsiteType] = useState('');
   const [loading, setLoading] = useState(false);
@@ -269,17 +270,43 @@ export default function Login() {
                   <Link href="#" style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: '500' }}>Forgot password?</Link>
                 )}
               </div>
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', transition: 'all 0.2s', outline: 'none' }}
-                placeholder="••••••••"
-                onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  style={{ width: '100%', padding: '12px 46px 12px 16px', borderRadius: '12px', border: '1px solid var(--border)', fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', transition: 'all 0.2s', outline: 'none', boxSizing: 'border-box' }}
+                  placeholder="••••••••"
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    padding: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'color 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button
