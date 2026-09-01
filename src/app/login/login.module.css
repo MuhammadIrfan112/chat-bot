@@ -1,0 +1,80 @@
+.loginContainer {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  background-color: var(--bg-page, #0A0D14);
+  position: relative;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.backHomeBtn {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  z-index: 20;
+}
+
+.leftPanel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 60px;
+  color: white;
+  justify-content: center;
+}
+
+.rightPanel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative;
+  width: 100%;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 440px;
+  padding: 40px;
+  border-radius: 24px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+}
+
+/* Mobile & Tablet Responsive: Hide left branding side completely on <= 900px */
+@media (max-width: 900px) {
+  .loginContainer {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .leftPanel {
+    display: none !important;
+  }
+
+  .backHomeBtn {
+    top: 18px;
+    left: 18px;
+  }
+
+  .rightPanel {
+    flex: 1;
+    width: 100%;
+    padding: 72px 16px 36px 16px;
+    box-sizing: border-box;
+  }
+
+  .authCard {
+    padding: 28px 20px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 100%;
+  }
+}

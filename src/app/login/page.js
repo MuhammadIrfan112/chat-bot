@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AlertCircle, ChevronLeft } from 'lucide-react';
+import styles from './login.module.css';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -145,18 +146,18 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', backgroundColor: 'var(--bg-page)', position: 'relative', overflow: 'hidden' }}>
+    <div className={styles.loginContainer}>
       
       {/* Absolute Header for Back Button */}
-      <div style={{ position: 'absolute', top: '40px', left: '40px', zIndex: 10 }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-          <ChevronLeft size={20} />
+      <div className={styles.backHomeBtn}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.2s', fontSize: '14px' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+          <ChevronLeft size={18} />
           Back to Home
         </Link>
       </div>
 
-      {/* Left Side: Branding / Gradient Panel */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '60px', color: 'white', justifyContent: 'center' }}>
+      {/* Left Side: Branding / Gradient Panel (Hidden on Mobile) */}
+      <div className={styles.leftPanel}>
         
         {/* Dynamic Abstract Background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)', zIndex: 0 }}></div>
@@ -180,16 +181,16 @@ export default function Login() {
       </div>
 
       {/* Right Side: Auth Form */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', position: 'relative' }}>
+      <div className={styles.rightPanel}>
         
         <div style={{ position: 'absolute', top: '50%', right: '50%', transform: 'translate(50%, -50%)', width: '600px', height: '600px', background: 'var(--primary)', filter: 'blur(150px)', opacity: 0.1, zIndex: 0, pointerEvents: 'none' }}></div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel" style={{ width: '100%', maxWidth: '440px', padding: '40px', borderRadius: '24px', position: 'relative', zIndex: 1, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
-          <div style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`glass-panel ${styles.authCard}`}>
+          <div style={{ marginBottom: '28px' }}>
+            <h2 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.02em' }}>
               {isLogin ? 'Welcome back' : 'Create an account'}
             </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
               {isLogin ? 'Enter your details to access your workspace.' : 'Start automating your leads today.'}
             </p>
           </div>
