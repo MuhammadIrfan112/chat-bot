@@ -172,8 +172,36 @@ export default function AdminPage() {
     setDeletingUser(null);
   };
 
+  const handlePayWithStripe = async (e) => {
+    e?.preventDefault();
+    if (!assignModal) return;
+    setIsAssigning(true);
+    setAssignResult(null);
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: assignForm.plan === 'premium' || assignForm.plan === 'pro' ? 'pro' : 'starter',
+          cycle: assignForm.cycle,
+          userId: assignModal.userId,
+          userEmail: assignModal.email || 'no-email@realtypropflow.com'
+        })
+      });
+      const data = await res.json();
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        setAssignResult({ type: 'error', message: data.error || 'Failed to start Stripe checkout' });
+      }
+    } catch (err) {
+      setAssignResult({ type: 'error', message: 'Network error.' });
+    }
+    setIsAssigning(false);
+  };
+
   const handleAssignPlan = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!assignModal) return;
     setIsAssigning(true);
     setAssignResult(null);
@@ -245,7 +273,7 @@ export default function AdminPage() {
           <div style={{ backgroundColor: 'white', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid #E2E8F0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0F172A' }}>💳 Assign Plan</h2>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0F172A' }}>💳 Assign / Pay Plan</h2>
                 <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748B' }}>{assignModal.email}</p>
               </div>
               <button onClick={() => { setAssignModal(null); setAssignResult(null); }} style={{ background: '#F1F5F9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '14px', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -254,41 +282,123 @@ export default function AdminPage() {
             {assignResult?.type === 'success' ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
-                <h3 style={{ fontSize: '18px', color: '#065F46', margin: '0 0 8px' }}>Plan Assigned Successfully!</h3>
+                <h3 style={{ fontSize: '18px', color: '#065F46', margin: '0 0 8px', fontWeight: '800' }}>Plan Assigned Successfully!</h3>
                 <p style={{ fontSize: '13px', color: '#64748B' }}>Plan: <strong style={{ color: '#0F172A', textTransform: 'capitalize' }}>{assignResult.plan}</strong></p>
                 <p style={{ fontSize: '13px', color: '#64748B' }}>Valid until: <strong style={{ color: '#0F172A' }}>{new Date(assignResult.endDate).toLocaleDateString()}</strong></p>
                 <button onClick={() => { setAssignModal(null); setAssignResult(null); }} style={{ width: '100%', marginTop: '20px', padding: '12px', backgroundColor: '#4F46E5', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}>Done</button>
               </div>
             ) : (
-              <form onSubmit={handleAssignPlan} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {assignResult?.type === 'error' && (
                   <div style={{ backgroundColor: '#FEF2F2', color: '#991B1B', padding: '12px', borderRadius: '10px', fontSize: '13px', border: '1px solid #FECACA' }}>
                     {assignResult.message}
                   </div>
                 )}
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Plan Tier</label>
-                  <select value={assignForm.plan} onChange={e => setAssignForm({ ...assignForm, plan: e.target.value })} style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '14px', outline: 'none', backgroundColor: '#F8FAFC' }}>
-                    <option value="starter">Starter / Standard</option>
-                    <option value="pro">Pro / Premium</option>
-                    <option value="enterprise">Enterprise</option>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#0F172A' }}>Select Plan Tier</label>
+                  <select
+                    value={assignForm.plan}
+                    onChange={e => setAssignForm({ ...assignForm, plan: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #CBD5E1',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#FFFFFF',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="starter" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>📦 Starter / Standard ($29/mo)</option>
+                    <option value="pro" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>⭐ Pro / Premium ($79/mo)</option>
+                    <option value="enterprise" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>🚀 Enterprise ($199/mo)</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#334155' }}>Billing Cycle</label>
-                  <select value={assignForm.cycle} onChange={e => setAssignForm({ ...assignForm, cycle: e.target.value })} style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '14px', outline: 'none', backgroundColor: '#F8FAFC' }}>
-                    <option value="monthly">Monthly (+30 Days)</option>
-                    <option value="yearly">Yearly (+365 Days)</option>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: '#0F172A' }}>Select Billing Cycle</label>
+                  <select
+                    value={assignForm.cycle}
+                    onChange={e => setAssignForm({ ...assignForm, cycle: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #CBD5E1',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#0F172A',
+                      outline: 'none',
+                      backgroundColor: '#FFFFFF',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="monthly" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>📅 Monthly (Auto-renews or 30 days)</option>
+                    <option value="yearly" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>📆 Yearly (365 days)</option>
                   </select>
                 </div>
-                <button type="submit" disabled={isAssigning} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg, #4F46E5, #3B82F6)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: isAssigning ? 'not-allowed' : 'pointer', fontSize: '14px', marginTop: '6px', opacity: isAssigning ? 0.7 : 1 }}>
-                  {isAssigning ? 'Saving Plan...' : '✓ Confirm Plan'}
-                </button>
-              </form>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                  {/* Option 1: Free / Direct Assign */}
+                  <button
+                    type="button"
+                    onClick={handleAssignPlan}
+                    disabled={isAssigning}
+                    style={{
+                      width: '100%',
+                      padding: '13px',
+                      background: 'linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      cursor: isAssigning ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      opacity: isAssigning ? 0.7 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(79,70,229,0.3)'
+                    }}
+                  >
+                    <span>✓</span> {isAssigning ? 'Processing...' : 'Confirm Plan (Free / Admin Override)'}
+                  </button>
+
+                  {/* Option 2: Pay with Stripe */}
+                  <button
+                    type="button"
+                    onClick={handlePayWithStripe}
+                    disabled={isAssigning}
+                    style={{
+                      width: '100%',
+                      padding: '13px',
+                      background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: '800',
+                      cursor: isAssigning ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      opacity: isAssigning ? 0.7 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(99,102,241,0.25)'
+                    }}
+                  >
+                    <span>💳</span> Pay with Stripe (Client Card)
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
       )}
+
 
       {/* ── Add Client Modal ────────────────────────────────────── */}
       {showAddModal && (
