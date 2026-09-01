@@ -148,12 +148,36 @@ export default function Login() {
   return (
     <div className={styles.loginContainer}>
       
-      {/* Absolute Header for Back Button */}
+      {/* Header Back Button */}
       <div className={styles.backHomeBtn}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', transition: 'color 0.2s', fontSize: '14px' }} onMouseEnter={e => e.currentTarget.style.color = 'white'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = '/';
+            }
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: 'var(--text-secondary)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '14px',
+            padding: 0,
+            transition: 'color 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'white'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+        >
           <ChevronLeft size={18} />
-          Back to Home
-        </Link>
+          Back
+        </button>
       </div>
 
       {/* Left Side: Branding / Gradient Panel (Hidden on Mobile) */}
