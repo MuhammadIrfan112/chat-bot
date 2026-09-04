@@ -23,12 +23,22 @@ export default function SuperAdminLayout({ children }) {
       setAuthed(true);
     }
     // Get logged-in user email for display
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         setUserEmail(session.user.email);
-        if (session.user.email === 'irfangull2288@gmail.com') {
+        if (session.user.email?.toLowerCase() === 'irfangull2288@gmail.com') {
           setAuthed(true);
           sessionStorage.setItem(SESSION_KEY, 'true');
+        } else {
+          const { data: rows } = await supabase
+            .from('users_subscription')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .limit(1);
+          if (rows?.[0]?.role === 'superadmin') {
+            setAuthed(true);
+            sessionStorage.setItem(SESSION_KEY, 'true');
+          }
         }
       } else {
         router.push('/login');

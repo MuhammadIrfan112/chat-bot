@@ -46,7 +46,7 @@ export default function DashboardLayout({ children }) {
         router.push('/login');
         return;
       } else {
-        if (session.user.email === 'irfangull2288@gmail.com' && !localStorage.getItem('impersonated_user_email')) {
+        if (session.user.email?.toLowerCase() === 'irfangull2288@gmail.com' && !localStorage.getItem('impersonated_user_email')) {
           router.push('/superadmin');
           return;
         }

@@ -47,6 +47,11 @@ export default function Login() {
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        if (session.user?.email?.toLowerCase() === 'irfangull2288@gmail.com') {
+          sessionStorage.setItem('superadmin_auth', 'true');
+          window.location.href = '/superadmin';
+          return;
+        }
         // Check role
         const { data: rows } = await supabase
           .from('users_subscription')
@@ -54,6 +59,7 @@ export default function Login() {
           .eq('user_id', session.user.id)
           .limit(1);
         if (rows?.[0]?.role === 'superadmin') {
+          sessionStorage.setItem('superadmin_auth', 'true');
           window.location.href = '/superadmin';
         } else {
           window.location.href = '/dashboard';
@@ -66,7 +72,22 @@ export default function Login() {
     // Also listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        window.location.href = '/dashboard';
+        if (session.user?.email?.toLowerCase() === 'irfangull2288@gmail.com') {
+          sessionStorage.setItem('superadmin_auth', 'true');
+          window.location.href = '/superadmin';
+        } else {
+          const { data: rows } = await supabase
+            .from('users_subscription')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .limit(1);
+          if (rows?.[0]?.role === 'superadmin') {
+            sessionStorage.setItem('superadmin_auth', 'true');
+            window.location.href = '/superadmin';
+          } else {
+            window.location.href = '/dashboard';
+          }
+        }
       }
     });
     return () => subscription.unsubscribe();
@@ -77,12 +98,14 @@ export default function Login() {
     setLoading(true);
     setError(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     let result;
     if (isLogin) {
-      result = await supabase.auth.signInWithPassword({ email, password });
+      result = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     } else {
       result = await supabase.auth.signUp({ 
-        email, 
+        email: cleanEmail, 
         password,
         options: {
           data: { name: name, website_type: websiteType }
@@ -102,14 +125,15 @@ export default function Login() {
         await supabase.from('users_subscription').insert({
           user_id: result.data.user.id,
           status: 'Inactive', // They must pay to activate
-          email: email,
+          email: cleanEmail,
           name: name
         });
         router.push('/dashboard');
       } else {
         // Login success or row already exists - check role to redirect correctly
-        if (sub?.role === 'superadmin' || email === 'irfangull2288@gmail.com') {
-          router.push('/superadmin');
+        if (sub?.role === 'superadmin' || cleanEmail === 'irfangull2288@gmail.com') {
+          sessionStorage.setItem('superadmin_auth', 'true');
+          window.location.href = '/superadmin';
         } else {
           router.push('/dashboard');
         }
