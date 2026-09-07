@@ -524,6 +524,7 @@ export default function PropertiesPage() {
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Status</label>
                   <select name="status" value={formData.status} onChange={handleInputChange} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'white' }}>
                     <option value="Active">Active</option>
+                    <option value="Open House">🏡 Open House</option>
                     <option value="Pending">Pending</option>
                     <option value="Sold">Sold</option>
                     <option value="Off-Market">Off-Market</option>

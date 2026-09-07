@@ -1942,8 +1942,66 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       setIntentSelected(true);
     }
 
-    // ── Buy a Home Flow ─────────────────────────────────────────
     const lower = (msg || '').toLowerCase();
+
+    // ── Open House Flow ─────────────────────────────────────────
+    const isOpenHouseQuery =
+      lower.includes('open house') ||
+      lower.includes('open houses') ||
+      lower.includes('openhouse') ||
+      lower.includes('open-house') ||
+      /\bopen\s*houses?\b/i.test(lower);
+
+    if (isOpenHouseQuery && !leadStep && botIndustry !== 'E-Commerce') {
+      resetFlows();
+      setLoading(true);
+
+      try {
+        const res = await fetch(`/api/open-house?bot_id=${botConfig.botId || ''}`);
+        const data = await res.json();
+        setLoading(false);
+
+        if (data.has_open_house && Array.isArray(data.open_houses) && data.open_houses.length > 0) {
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{
+              text: `Yes! 🏡 We have upcoming open houses scheduled. Here are the properties currently hosting open houses:\n\nTake a look below. If you'd like to visit or attend any of these, let me know!`
+            }],
+            properties: data.open_houses,
+            quickReplies: [
+              '🏡 I want to visit one of these',
+              '📅 Schedule a private tour',
+              "🏡 I'm looking to buy a home"
+            ]
+          }]);
+        } else {
+          setMessages(prev => [...prev, {
+            role: 'model',
+            parts: [{
+              text: `Currently, we don't have any public open houses scheduled at this moment.\n\nHowever, our agent would be delighted to arrange a private tour or notify you as soon as an open house is scheduled! Would you like to schedule a private tour?`
+            }],
+            quickReplies: [
+              '📅 Schedule a private tour',
+              "🏡 I'm looking to buy a home",
+              '❓ I have a general real estate question'
+            ]
+          }]);
+        }
+      } catch (err) {
+        setLoading(false);
+        console.error('Error fetching open houses:', err);
+        setMessages(prev => [...prev, {
+          role: 'model',
+          parts: [{
+            text: `Currently, we don't have any open houses scheduled. Would you like to schedule a private tour with our agent?`
+          }],
+          quickReplies: ['📅 Schedule a private tour', "🏡 I'm looking to buy a home"]
+        }]);
+      }
+      return;
+    }
+
+    // ── Buy a Home Flow ─────────────────────────────────────────
     const isBuyIntent =
       msg.includes("I'm looking to buy a home") ||
       lower.includes('buy a home') ||
@@ -3378,14 +3436,21 @@ function formatCityDisplay(msg) {
     const isDirectTour = lowerMsg.includes('schedule a tour') || lowerMsg.includes('schedule a private tour');
 
     if (isDirectInquire || isDirectTour) {
-      const propText = msg.replace(/^I want to learn more details about\s*/i, '').replace(/^I would like to schedule a private tour for\s*/i, '').trim();
+      const rawPropText = msg
+        .replace(/^[📅🗓️⏰🕐]?\s*schedule\s+a\s+(private\s+)?tour(\s+for)?/i, '')
+        .replace(/^I want to learn more details about\s*/i, '')
+        .replace(/^I would like to schedule a private tour for\s*/i, '')
+        .trim();
+      const propText = rawPropText;
       const agentDisplayName = (botConfig.botName || 'our team').split(' ')[0];
 
-      setLeadData(prev => ({ ...prev, selected_property: propText, inquiry_type: isDirectTour ? 'tour' : 'inquiry' }));
+      setLeadData(prev => ({ ...prev, selected_property: propText || 'General Tour Request', inquiry_type: isDirectTour ? 'tour' : 'inquiry' }));
       
-      const introPrompt = isDirectTour
-        ? `Wonderful! 🏡 I would be happy to arrange a private tour for **${propText}** with ${agentDisplayName}.\n\nMay I have your **first and last name**?`
-        : `Great! 📄 I can provide full disclosures, floor plans, and additional details for **${propText}**.\n\nMay I have your **first and last name**?`;
+      const introPrompt = propText
+        ? (isDirectTour
+            ? `Wonderful! 🏡 I would be happy to arrange a private tour for **${propText}** with ${agentDisplayName}.\n\nMay I have your **first and last name**?`
+            : `Great! 📄 I can provide full disclosures, floor plans, and additional details for **${propText}**.\n\nMay I have your **first and last name**?`)
+        : `Wonderful! 🏡 I would be happy to arrange a private tour with ${agentDisplayName}.\n\nMay I have your **first and last name**?`;
 
       setMessages(prev => [...prev, {
         role: 'model',
@@ -3403,6 +3468,11 @@ function formatCityDisplay(msg) {
       lowerMsg.includes('tell me more') ||
       lowerMsg.includes('i like one') ||
       lowerMsg.includes('yes, i liked one') ||
+      lowerMsg.includes('want to visit') ||
+      lowerMsg.includes('want to see') ||
+      lowerMsg.includes('visit one of these') ||
+      lowerMsg.includes('schedule a visit') ||
+      lowerMsg.includes('attend') ||
       (lowerMsg.includes('like') && lowerMsg.includes('property'))
     ) {
       const allRenderedProps = messages.flatMap(m => m.properties || []);
