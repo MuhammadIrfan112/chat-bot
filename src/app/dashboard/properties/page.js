@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Plus, Search, Building, MoreVertical, Trash2, Edit, ChevronLeft, ChevronRight, Image as ImageIcon, MapPin, DollarSign, Bed, Bath, Maximize } from 'lucide-react';
+import { Plus, Search, Building, MoreVertical, Trash2, Edit, ChevronLeft, ChevronRight, Image as ImageIcon, MapPin, DollarSign, Bed, Bath, Maximize, Calendar, Clock, CheckCircle, X, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function PropertiesPage() {
@@ -34,6 +34,141 @@ export default function PropertiesPage() {
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [scraping, setScraping] = useState(false);
   const [scrapeMessage, setScrapeMessage] = useState('');
+
+  // Open House State
+  const [selectedOpenHouseProp, setSelectedOpenHouseProp] = useState(null);
+  const [savingOpenHouse, setSavingOpenHouse] = useState(false);
+  const [openHouseForm, setOpenHouseForm] = useState({
+    date: '',
+    start_time: '1:00 PM',
+    end_time: '3:00 PM',
+    time_zone: 'Eastern Time (ET)',
+    hosted_by: '',
+    agent_brokerage: '',
+    agent_phone: '',
+    agent_email: '',
+    property_highlights: '',
+    open_house_notes: 'Visitors are welcome during the scheduled open-house hours. No appointment is required.',
+    private_showing: 'Private showings are available by appointment.',
+    open_house_status: 'Scheduled',
+    additional_instructions: 'For questions about the property or to arrange a private showing, contact the listing agent.'
+  });
+
+  const getOpenHouseDataFromProp = (prop) => {
+    if (!prop || !Array.isArray(prop.features)) return null;
+    const jsonStr = prop.features.find(f => typeof f === 'string' && f.startsWith('OPEN_HOUSE_JSON:'));
+    if (jsonStr) {
+      try {
+        return JSON.parse(jsonStr.replace('OPEN_HOUSE_JSON:', ''));
+      } catch (e) {}
+    }
+    return null;
+  };
+
+  const handleOpenHouseClick = (property) => {
+    setSelectedOpenHouseProp(property);
+    const existing = getOpenHouseDataFromProp(property);
+
+    const defaultHighlights = [
+      property.bedrooms ? `• ${property.bedrooms}-bedroom ${property.property_type || 'home'}` : '',
+      property.bathrooms ? `• ${property.bathrooms} bathrooms` : '',
+      property.square_feet ? `• ${Number(property.square_feet).toLocaleString()} sq.ft living space` : '',
+      property.description ? `• ${property.description.slice(0, 150)}` : ''
+    ].filter(Boolean).join('\n');
+
+    if (existing) {
+      setOpenHouseForm({
+        date: existing.date || '',
+        start_time: existing.start_time || '1:00 PM',
+        end_time: existing.end_time || '3:00 PM',
+        time_zone: existing.time_zone || 'Eastern Time (ET)',
+        hosted_by: existing.hosted_by || '',
+        agent_brokerage: existing.agent_brokerage || '',
+        agent_phone: existing.agent_phone || '',
+        agent_email: existing.agent_email || '',
+        property_highlights: existing.property_highlights || defaultHighlights,
+        open_house_notes: existing.open_house_notes || 'Visitors are welcome during the scheduled open-house hours. No appointment is required.',
+        private_showing: existing.private_showing || 'Private showings are available by appointment.',
+        open_house_status: existing.open_house_status || 'Scheduled',
+        additional_instructions: existing.additional_instructions || 'For questions about the property or to arrange a private showing, contact the listing agent.'
+      });
+    } else {
+      setOpenHouseForm({
+        date: '',
+        start_time: '1:00 PM',
+        end_time: '3:00 PM',
+        time_zone: 'Eastern Time (ET)',
+        hosted_by: '',
+        agent_brokerage: '',
+        agent_phone: '',
+        agent_email: '',
+        property_highlights: defaultHighlights,
+        open_house_notes: 'Visitors are welcome during the scheduled open-house hours. No appointment is required.',
+        private_showing: 'Private showings are available by appointment.',
+        open_house_status: 'Scheduled',
+        additional_instructions: 'For questions about the property or to arrange a private showing, contact the listing agent.'
+      });
+    }
+  };
+
+  const handleOpenHouseChange = (e) => {
+    const { name, value } = e.target;
+    setOpenHouseForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveOpenHouse = async (e) => {
+    e.preventDefault();
+    if (!selectedOpenHouseProp) return;
+    setSavingOpenHouse(true);
+    try {
+      const res = await fetch('/api/crm/properties', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property_id: selectedOpenHouseProp.property_id,
+          open_house_data: {
+            ...openHouseForm,
+            last_updated: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          }
+        })
+      });
+      if (res.ok) {
+        setSelectedOpenHouseProp(null);
+        await fetchProperties();
+      } else {
+        alert('Failed to save Open House details');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving Open House: ' + err.message);
+    } finally {
+      setSavingOpenHouse(false);
+    }
+  };
+
+  const handleRemoveOpenHouse = async () => {
+    if (!selectedOpenHouseProp) return;
+    if (!confirm('Are you sure you want to remove the Open House status from this property?')) return;
+    setSavingOpenHouse(true);
+    try {
+      const res = await fetch('/api/crm/properties', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          property_id: selectedOpenHouseProp.property_id,
+          remove_open_house: true
+        })
+      });
+      if (res.ok) {
+        setSelectedOpenHouseProp(null);
+        await fetchProperties();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingOpenHouse(false);
+    }
+  };
 
   useEffect(() => {
     fetchProperties();
@@ -271,71 +406,71 @@ export default function PropertiesPage() {
         <>
           {/* Properties Grid (10 per page) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px', marginBottom: '36px' }}>
-            {currentProperties.map(property => {
-              const photosArr = Array.isArray(property.photos) && property.photos.length > 0 
-                ? property.photos 
-                : (property.image_url ? [property.image_url] : []);
-              const mainPhoto = photosArr[0];
+            {currentProperties.map((property, index) => {
+              const photosArr = Array.isArray(property.photos) ? property.photos : (property.image_url ? [property.image_url] : []);
+              const mainPhoto = photosArr[0] || null;
+              const ohData = getOpenHouseDataFromProp(property);
+              const isOH = (property.status || '').toLowerCase() === 'open house' || !!ohData;
 
               return (
                 <motion.div 
-                  key={property.property_id} 
-                  initial={{ opacity: 0, y: 15 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  style={{ 
-                    background: 'var(--bg-card)', 
-                    borderRadius: '16px', 
-                    border: '1px solid var(--border)', 
+                  key={property.property_id || index}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  style={{
+                    background: 'var(--bg-card)',
+                    borderRadius: '16px',
+                    border: isOH ? '1.5px solid #10b981' : '1px solid var(--border)',
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    boxShadow: isOH ? '0 4px 20px rgba(16, 185, 129, 0.15)' : '0 4px 20px rgba(0,0,0,0.04)',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = isOH ? '0 10px 25px rgba(16, 185, 129, 0.25)' : '0 10px 25px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isOH ? '0 4px 20px rgba(16, 185, 129, 0.15)' : '0 4px 20px rgba(0,0,0,0.04)'; }}
                 >
-                  {/* Photo Container */}
-                  <div style={{ height: '190px', background: 'var(--bg-hover)', position: 'relative', overflow: 'hidden' }}>
+                  {/* Photo Area */}
+                  <div style={{ position: 'relative', width: '100%', height: '180px', background: '#1e293b' }}>
                     {mainPhoto ? (
                       <img 
                         src={mainPhoto} 
-                        alt={property.address}
+                        alt={property.address} 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
                       />
-                    ) : null}
-                    
-                    {/* Fallback Icon when no photo or photo fails to load */}
-                    <div style={{ 
-                      display: mainPhoto ? 'none' : 'flex', 
-                      width: '100%', 
-                      height: '100%', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      background: 'linear-gradient(135deg, rgba(79,70,229,0.1), rgba(16,185,129,0.05))'
-                    }}>
-                      <Building size={48} color="var(--text-muted)" opacity={0.6} />
-                    </div>
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <Building size={40} />
+                      </div>
+                    )}
 
-                    {/* Status Badge */}
-                    <div style={{ 
-                      position: 'absolute', 
-                      top: '12px', 
-                      right: '12px', 
-                      background: 'rgba(0,0,0,0.7)', 
-                      backdropFilter: 'blur(4px)',
-                      padding: '4px 12px', 
-                      borderRadius: '20px', 
-                      color: 'white', 
-                      fontSize: '12px', 
-                      fontWeight: '600' 
-                    }}>
-                      {property.status || 'Active'}
-                    </div>
+                    {/* Open House Badge on Photo */}
+                    {isOH && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '12px',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        boxShadow: '0 2px 8px rgba(16,185,129,0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        zIndex: 2
+                      }}>
+                        <span>🏡</span> OPEN HOUSE {ohData?.date ? `• ${ohData.date}` : ''}
+                      </div>
+                    )}
 
                     {/* Photo Count Badge */}
-                    {photosArr.length > 1 && (
+                    {photosArr.length > 0 && (
                       <div style={{
                         position: 'absolute',
                         bottom: '10px',
@@ -351,25 +486,7 @@ export default function PropertiesPage() {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        <ImageIcon size={12} /> {photosArr.length} photos
-                      </div>
-                    )}
-
-                    {/* Property Type Badge */}
-                    {property.property_type && (
-                      <div style={{
-                        position: 'absolute',
-                        bottom: '10px',
-                        left: '12px',
-                        background: 'rgba(0,0,0,0.65)',
-                        backdropFilter: 'blur(4px)',
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        color: 'white',
-                        fontSize: '11px',
-                        fontWeight: '600'
-                      }}>
-                        {property.property_type}
+                        <ImageIcon size={12} /> {photosArr.length}
                       </div>
                     )}
                   </div>
@@ -381,13 +498,35 @@ export default function PropertiesPage() {
                         <h3 style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--primary)' }}>
                           {property.price ? `$${Number(property.price).toLocaleString()}` : 'Contact for Price'}
                         </h3>
-                        <button 
-                          onClick={() => handleDelete(property.property_id)} 
-                          title="Delete property"
-                          style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button 
+                            onClick={() => handleOpenHouseClick(property)} 
+                            title={isOH ? "Manage Open House" : "Set as Open House"}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '5px', 
+                              padding: '5px 10px', 
+                              borderRadius: '6px', 
+                              border: isOH ? '1px solid #10b981' : '1px solid var(--border)', 
+                              background: isOH ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.04)', 
+                              color: isOH ? '#10b981' : 'var(--text-primary)', 
+                              fontSize: '12px', 
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <span>🏡</span> {isOH ? 'Open House' : 'Open House'}
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(property.property_id)} 
+                            title="Delete property"
+                            style={{ background: 'none', border: 'none', color: '#ff4d4f', cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
 
                       <h4 style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-primary)', lineHeight: '1.4' }}>
@@ -552,6 +691,360 @@ export default function PropertiesPage() {
               <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
                 <button type="submit" style={{ flex: 1, background: 'var(--primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Save Property</button>
                 <button type="button" onClick={() => setShowModal(false)} style={{ flex: 1, background: 'transparent', color: 'white', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Open House Management Modal ─────────────────────────────── */}
+      {selectedOpenHouseProp && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.75)', 
+          backdropFilter: 'blur(6px)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          zIndex: 1100, 
+          padding: '20px' 
+        }}>
+          <div style={{ 
+            background: 'var(--bg-card)', 
+            borderRadius: '20px', 
+            width: '100%', 
+            maxWidth: '720px', 
+            maxHeight: '90vh', 
+            overflowY: 'auto', 
+            border: '1px solid var(--border)', 
+            boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Header */}
+            <div style={{ 
+              padding: '20px 24px', 
+              borderBottom: '1px solid var(--border)', 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.1), transparent)' 
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '22px' }}>🏡</span>
+                  <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+                    Manage Open House
+                  </h2>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                  {selectedOpenHouseProp.address}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedOpenHouseProp(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', borderRadius: '8px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveOpenHouse} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* SECTION 1: Pre-filled Property Info */}
+              <div style={{ background: 'var(--bg-page)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                  📋 Property Overview (Auto-filled)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', fontSize: '12px' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Type:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{selectedOpenHouseProp.property_type || 'Single Family'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Price:</span>
+                    <strong style={{ color: '#10b981' }}>{selectedOpenHouseProp.price ? `$${Number(selectedOpenHouseProp.price).toLocaleString()}` : 'Contact'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>Beds / Baths:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{selectedOpenHouseProp.bedrooms ?? '-'} Beds / {selectedOpenHouseProp.bathrooms ?? '-'} Baths</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block' }}>MLS Number:</span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{selectedOpenHouseProp.mls_number || 'N/A'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: Date & Timing */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={16} style={{ color: 'var(--primary)' }} /> Open House Schedule
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Open House Date *
+                    </label>
+                    <input 
+                      type="text" 
+                      required 
+                      name="date" 
+                      value={openHouseForm.date} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. Saturday, September 12, 2026" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Start Time *
+                    </label>
+                    <input 
+                      type="text" 
+                      required 
+                      name="start_time" 
+                      value={openHouseForm.start_time} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. 1:00 PM" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      End Time *
+                    </label>
+                    <input 
+                      type="text" 
+                      required 
+                      name="end_time" 
+                      value={openHouseForm.end_time} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. 3:00 PM" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Time Zone
+                  </label>
+                  <input 
+                    type="text" 
+                    name="time_zone" 
+                    value={openHouseForm.time_zone} 
+                    onChange={handleOpenHouseChange} 
+                    placeholder="e.g. Eastern Time (ET)" 
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 3: Host & Agent Information */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Building size={16} style={{ color: 'var(--primary)' }} /> Host & Agent Information
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Hosted By (Agent Name)
+                    </label>
+                    <input 
+                      type="text" 
+                      name="hosted_by" 
+                      value={openHouseForm.hosted_by} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. John Smith" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Agent Brokerage
+                    </label>
+                    <input 
+                      type="text" 
+                      name="agent_brokerage" 
+                      value={openHouseForm.agent_brokerage} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. ABC Realty" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Agent Phone
+                    </label>
+                    <input 
+                      type="text" 
+                      name="agent_phone" 
+                      value={openHouseForm.agent_phone} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. 416-555-1234" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Agent Email
+                    </label>
+                    <input 
+                      type="email" 
+                      name="agent_email" 
+                      value={openHouseForm.agent_email} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="e.g. john@example.com" 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: Highlights, Notes & Status */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle size={16} style={{ color: 'var(--primary)' }} /> Open House Details & Notes
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Property Highlights
+                    </label>
+                    <textarea 
+                      rows={3} 
+                      name="property_highlights" 
+                      value={openHouseForm.property_highlights} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="- 4-bedroom detached home&#10;- Finished basement&#10;- Double garage..." 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Open House Notes
+                    </label>
+                    <textarea 
+                      rows={2} 
+                      name="open_house_notes" 
+                      value={openHouseForm.open_house_notes} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="Visitors are welcome during the scheduled open-house hours. No appointment is required." 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                        Private Showing Notice
+                      </label>
+                      <input 
+                        type="text" 
+                        name="private_showing" 
+                        value={openHouseForm.private_showing} 
+                        onChange={handleOpenHouseChange} 
+                        placeholder="Private showings are available by appointment." 
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                        Open House Status
+                      </label>
+                      <select 
+                        name="open_house_status" 
+                        value={openHouseForm.open_house_status} 
+                        onChange={handleOpenHouseChange} 
+                        style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }}
+                      >
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="Active">Active</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="Completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Additional Instructions
+                    </label>
+                    <textarea 
+                      rows={2} 
+                      name="additional_instructions" 
+                      value={openHouseForm.additional_instructions} 
+                      onChange={handleOpenHouseChange} 
+                      placeholder="For questions about the property or to arrange a private showing, contact the listing agent." 
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                <button 
+                  type="submit" 
+                  disabled={savingOpenHouse}
+                  style={{ 
+                    flex: 2, 
+                    background: 'linear-gradient(135deg, #10b981, #059669)', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '12px 18px', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer', 
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(16,185,129,0.3)'
+                  }}
+                >
+                  <span>💾</span> {savingOpenHouse ? 'Saving...' : 'Save Open House Listing'}
+                </button>
+
+                {/* Remove Open House Button (if already an open house) */}
+                {getOpenHouseDataFromProp(selectedOpenHouseProp) && (
+                  <button 
+                    type="button" 
+                    onClick={handleRemoveOpenHouse}
+                    disabled={savingOpenHouse}
+                    style={{ 
+                      flex: 1, 
+                      background: 'rgba(239, 68, 68, 0.1)', 
+                      color: '#ef4444', 
+                      border: '1px solid rgba(239, 68, 68, 0.3)', 
+                      padding: '12px', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer', 
+                      fontWeight: '600',
+                      fontSize: '13px' 
+                    }}
+                  >
+                    Remove Open House
+                  </button>
+                )}
+
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedOpenHouseProp(null)} 
+                  style={{ 
+                    background: 'transparent', 
+                    color: 'var(--text-secondary)', 
+                    border: '1px solid var(--border)', 
+                    padding: '12px 18px', 
+                    borderRadius: '8px', 
+                    cursor: 'pointer', 
+                    fontWeight: '600',
+                    fontSize: '13px' 
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>

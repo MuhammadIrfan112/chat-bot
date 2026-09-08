@@ -1962,10 +1962,19 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
         setLoading(false);
 
         if (data.has_open_house && Array.isArray(data.open_houses) && data.open_houses.length > 0) {
+          let openHouseIntro = `Yes! 🏡 We have upcoming open houses scheduled for our listings:\n\n`;
+          data.open_houses.forEach((oh, i) => {
+            const d = oh.open_house_data;
+            if (d && d.date) {
+              openHouseIntro += `📍 **${oh.address}**\n🗓️ **${d.date}** (${d.start_time || '1:00 PM'} – ${d.end_time || '3:00 PM'}${d.time_zone ? ' ' + d.time_zone : ''})\n${d.hosted_by ? `👤 Hosted by: ${d.hosted_by}${d.agent_brokerage ? ` (${d.agent_brokerage})` : ''}\n` : ''}${d.open_house_notes ? `ℹ️ *${d.open_house_notes}*\n` : ''}\n`;
+            }
+          });
+          openHouseIntro += `Take a look at the properties below! If you'd like to visit or attend any of these, let me know!`;
+
           setMessages(prev => [...prev, {
             role: 'model',
             parts: [{
-              text: `Yes! 🏡 We have upcoming open houses scheduled. Here are the properties currently hosting open houses:\n\nTake a look below. If you'd like to visit or attend any of these, let me know!`
+              text: openHouseIntro
             }],
             properties: data.open_houses,
             quickReplies: [

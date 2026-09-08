@@ -66,3 +66,56 @@ export async function POST(request) {
     return Response.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { property_id, open_house_data, remove_open_house } = body;
+
+    if (!property_id) {
+      return Response.json({ error: 'property_id is required' }, { status: 400 });
+    }
+
+    const { data: prop, error: fetchErr } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('property_id', property_id)
+      .single();
+
+    if (fetchErr || !prop) {
+      return Response.json({ error: 'Property not found' }, { status: 404 });
+    }
+
+    let existingFeatures = Array.isArray(prop.features) ? prop.features : [];
+    // Remove existing OPEN_HOUSE_JSON
+    existingFeatures = existingFeatures.filter(f => !String(f).startsWith('OPEN_HOUSE_JSON:'));
+
+    let updatePayload = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (remove_open_house) {
+      updatePayload.status = 'Active';
+      updatePayload.features = existingFeatures;
+    } else if (open_house_data) {
+      const jsonStr = 'OPEN_HOUSE_JSON:' + JSON.stringify(open_house_data);
+      updatePayload.status = 'Open House';
+      updatePayload.features = [...existingFeatures, jsonStr];
+    }
+
+    const { data: updated, error: updErr } = await supabase
+      .from('properties')
+      .update(updatePayload)
+      .eq('property_id', property_id)
+      .select()
+      .single();
+
+    if (updErr) throw updErr;
+
+    return Response.json({ success: true, property: updated });
+  } catch (err) {
+    console.error('Error updating property open house:', err);
+    return Response.json({ error: err.message }, { status: 500 });
+  }
+}
+

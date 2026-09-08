@@ -66,6 +66,16 @@ function normalizeProps(props) {
       rawImages = [p.image_url];
     }
 
+    let openHouseData = null;
+    if (Array.isArray(p.features)) {
+      const jsonFeature = p.features.find(f => typeof f === 'string' && f.startsWith('OPEN_HOUSE_JSON:'));
+      if (jsonFeature) {
+        try {
+          openHouseData = JSON.parse(jsonFeature.replace('OPEN_HOUSE_JSON:', ''));
+        } catch (e) {}
+      }
+    }
+
     const priceNum = typeof p.price === 'number' ? p.price : parseFloat(p.price) || 0;
     const priceDisplay = priceNum > 0 ? `$${priceNum.toLocaleString()}` : (p.price || 'Contact for Price');
 
@@ -85,7 +95,8 @@ function normalizeProps(props) {
       description: p.description || 'Open House event scheduled. Contact us to reserve a tour or receive gate instructions.',
       images: rawImages,
       image_url: rawImages[0] || '',
-      url: p.source_url || p.url || '#'
+      url: p.source_url || p.url || '#',
+      open_house_data: openHouseData
     };
   });
 }
