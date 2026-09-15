@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -21,6 +21,10 @@ export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
+  const [unreadLeadsCount, setUnreadLeadsCount] = useState(0);
+  const [agentName, setAgentName] = useState('');
+  const [headerAvatar, setHeaderAvatar] = useState(null); // url or null
+  const [profileUploading, setProfileUploading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -140,6 +144,41 @@ export default function DashboardLayout({ children }) {
     await supabase.auth.signOut();
     router.push('/login');
   };
+
+  // Fetch unread leads count + agent name for top header
+  useEffect(() => {
+    const fetchHeaderData = async () => {
+      try {
+        const isDemo = localStorage.getItem('isDemo') === 'true';
+        if (isDemo) {
+          setAgentName('Demo Agent');
+          return;
+        }
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
+
+        // Get bot name for agent display name
+        const { data: bots } = await supabase.from('bots').select('id, name').eq('user_id', userId).limit(1);
+        if (bots && bots.length > 0) {
+          setAgentName(bots[0].name || '');
+          const botIds = bots.map(b => b.id);
+
+          // Count unread (New Lead) leads
+          const { count } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .in('bot_id', botIds)
+            .eq('status', 'New Lead');
+          setUnreadLeadsCount(count || 0);
+        }
+      } catch (err) { console.error(err); }
+    };
+
+    fetchHeaderData();
+    const poll = setInterval(fetchHeaderData, 60000);
+    return () => clearInterval(poll);
+  }, [userEmail]);
 
   if (loading) {
     return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-page)' }}>
@@ -280,76 +319,112 @@ export default function DashboardLayout({ children }) {
         <div style={{
           position: 'sticky', top: 0, zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 40px',
-          backgroundColor: 'rgba(5,5,5,0.85)',
+          padding: '10px 32px',
+          backgroundColor: 'rgba(5,5,5,0.88)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid rgba(201,162,39,0.12)',
           boxShadow: '0 2px 20px rgba(0,0,0,0.4)'
         }}>
 
-          {/* Left Side: Logo text + icons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-
-            {/* Profile Avatar */}
-            <Link href="/dashboard" title="My Profile" style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #C9A227, #4F46E5)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'white', fontWeight: '800', fontSize: '14px', textDecoration: 'none',
-              boxShadow: '0 0 10px rgba(201,162,39,0.3)', flexShrink: 0
-            }}>
-              {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
-            </Link>
-
-            {/* Divider */}
-            <div style={{ width: '1px', height: '22px', background: 'rgba(201,162,39,0.18)', margin: '0 4px' }} />
-
-            {/* Chat History Icon */}
-            <Link href="/dashboard/chat-history" title="Chat History" style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(201,162,39,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-muted)', textDecoration: 'none', transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.45)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)'; }}
-            >
-              <MessageSquare size={16} />
-            </Link>
-
-            {/* CRM Leads Icon */}
-            <Link href="/dashboard/leads" title="CRM Leads" style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(201,162,39,0.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-muted)', textDecoration: 'none', transition: 'all 0.2s',
-              position: 'relative'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.45)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)'; }}
-            >
-              <Users size={16} />
-              {/* Live dot */}
-              <span style={{
-                position: 'absolute', top: '6px', right: '6px',
-                width: '7px', height: '7px', borderRadius: '50%',
-                background: '#4CAF50', border: '1.5px solid #050505'
-              }} />
-            </Link>
-
-          </div>
-
-          {/* Right Side: Brand name */}
+          {/* LEFT: RealtyPropFlow Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '4px', display: 'flex' }}>
-              <img src="/logo-icon.png" alt="R" style={{ height: '16px', width: '16px', objectFit: 'contain' }} />
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '4px 5px', display: 'flex' }}>
+              <img src="/logo-icon.png" alt="R" style={{ height: '17px', width: '17px', objectFit: 'contain' }} />
             </div>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: '-0.01em' }}>
+            <span style={{ fontSize: '14px', fontWeight: '700', color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.01em' }}>
               Realty<span style={{ color: 'var(--primary)' }}>PropFlow</span>
             </span>
+          </div>
+
+          {/* RIGHT: Agent name + Avatar (editable) + Notification bell */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+            {/* Agent / Realtor Name */}
+            {agentName && (
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.01em', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {agentName}
+              </span>
+            )}
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '22px', background: 'rgba(201,162,39,0.18)' }} />
+
+            {/* Profile Avatar — clickable to upload image */}
+            <label title="Change Profile Picture" style={{ cursor: profileUploading ? 'wait' : 'pointer', position: 'relative', flexShrink: 0 }}>
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setProfileUploading(true);
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const uid = localStorage.getItem('impersonated_user_id') || session?.user?.id;
+                  if (!uid) return;
+                  const ext = file.name.split('.').pop();
+                  const path = `avatars/${uid}/header_avatar.${ext}`;
+                  await supabase.storage.from('bot_avatars').upload(path, file, { upsert: true });
+                  const { data: { publicUrl } } = supabase.storage.from('bot_avatars').getPublicUrl(path);
+                  setHeaderAvatar(publicUrl + '?t=' + Date.now());
+                } catch(err) { console.error(err); }
+                setProfileUploading(false);
+              }} />
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '10px',
+                background: headerAvatar ? 'transparent' : 'linear-gradient(135deg, #C9A227, #4F46E5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontWeight: '800', fontSize: '14px',
+                boxShadow: '0 0 10px rgba(201,162,39,0.25)',
+                border: '2px solid rgba(201,162,39,0.3)',
+                overflow: 'hidden', transition: 'all 0.2s'
+              }}>
+                {headerAvatar
+                  ? <img src={headerAvatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : (userEmail ? userEmail.charAt(0).toUpperCase() : 'U')
+                }
+              </div>
+              {/* Camera overlay hint */}
+              {!profileUploading && (
+                <div style={{
+                  position: 'absolute', inset: 0, borderRadius: '10px',
+                  background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0, transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '0'}
+                >
+                  <span style={{ fontSize: '12px' }}>📷</span>
+                </div>
+              )}
+            </label>
+
+            {/* Notification Bell — shows unread lead count */}
+            <Link href="/dashboard/leads" title="New Leads" style={{
+              width: '34px', height: '34px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid ${unreadLeadsCount > 0 ? 'rgba(201,162,39,0.5)' : 'rgba(201,162,39,0.15)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: unreadLeadsCount > 0 ? 'var(--primary)' : 'var(--text-muted)',
+              textDecoration: 'none', transition: 'all 0.2s', position: 'relative', flexShrink: 0
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = unreadLeadsCount > 0 ? 'var(--primary)' : 'var(--text-muted)'; e.currentTarget.style.borderColor = unreadLeadsCount > 0 ? 'rgba(201,162,39,0.5)' : 'rgba(201,162,39,0.15)'; }}
+            >
+              <Bell size={16} />
+              {unreadLeadsCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: '-6px', right: '-6px',
+                  minWidth: '18px', height: '18px', borderRadius: '9px',
+                  background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                  color: 'white', fontSize: '10px', fontWeight: '800',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '2px solid #050505', padding: '0 3px',
+                  boxShadow: '0 0 8px rgba(239,68,68,0.6)'
+                }}>
+                  {unreadLeadsCount > 99 ? '99+' : unreadLeadsCount}
+                </span>
+              )}
+            </Link>
+
           </div>
 
         </div>
