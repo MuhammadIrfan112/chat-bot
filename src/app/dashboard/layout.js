@@ -274,7 +274,88 @@ export default function DashboardLayout({ children }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="dashboard-main" style={{ flex: 1, padding: '48px 56px', overflowY: 'auto', position: 'relative' }}>
+      <main className="dashboard-main" style={{ flex: 1, padding: '0', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+
+        {/* ── Top Header Bar ── */}
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 40px',
+          backgroundColor: 'rgba(5,5,5,0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(201,162,39,0.12)',
+          boxShadow: '0 2px 20px rgba(0,0,0,0.4)'
+        }}>
+
+          {/* Left Side: Logo text + icons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+
+            {/* Profile Avatar */}
+            <Link href="/dashboard" title="My Profile" style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'linear-gradient(135deg, #C9A227, #4F46E5)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white', fontWeight: '800', fontSize: '14px', textDecoration: 'none',
+              boxShadow: '0 0 10px rgba(201,162,39,0.3)', flexShrink: 0
+            }}>
+              {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
+            </Link>
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '22px', background: 'rgba(201,162,39,0.18)', margin: '0 4px' }} />
+
+            {/* Chat History Icon */}
+            <Link href="/dashboard/chat-history" title="Chat History" style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(201,162,39,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-muted)', textDecoration: 'none', transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.45)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)'; }}
+            >
+              <MessageSquare size={16} />
+            </Link>
+
+            {/* CRM Leads Icon */}
+            <Link href="/dashboard/leads" title="CRM Leads" style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(201,162,39,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-muted)', textDecoration: 'none', transition: 'all 0.2s',
+              position: 'relative'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.45)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.15)'; }}
+            >
+              <Users size={16} />
+              {/* Live dot */}
+              <span style={{
+                position: 'absolute', top: '6px', right: '6px',
+                width: '7px', height: '7px', borderRadius: '50%',
+                background: '#4CAF50', border: '1.5px solid #050505'
+              }} />
+            </Link>
+
+          </div>
+
+          {/* Right Side: Brand name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '4px', display: 'flex' }}>
+              <img src="/logo-icon.png" alt="R" style={{ height: '16px', width: '16px', objectFit: 'contain' }} />
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', letterSpacing: '-0.01em' }}>
+              Realty<span style={{ color: 'var(--primary)' }}>PropFlow</span>
+            </span>
+          </div>
+
+        </div>
+        {/* ── End Top Header ── */}
+
+        <div style={{ flex: 1, padding: '40px 56px', position: 'relative' }}>
         {impersonatedEmail && (
           <div style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -363,9 +444,10 @@ export default function DashboardLayout({ children }) {
           </div>
         )}
 
-        <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'var(--primary)', filter: 'blur(150px)', opacity: 0.05, pointerEvents: 'none' }}></div>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          {children}
+          <div style={{ position: 'absolute', top: 0, right: 0, width: '400px', height: '400px', background: 'var(--primary)', filter: 'blur(150px)', opacity: 0.05, pointerEvents: 'none' }}></div>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            {children}
+          </div>
         </div>
       </main>
     </div>
