@@ -1,18 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Check, Zap, Star, Clock, AlertTriangle, Crown, CalendarDays, CreditCard } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { Check, Zap, Clock, Crown, CalendarDays, CreditCard, ShieldCheck, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PlansPage() {
-  const [billingCycle, setBillingCycle] = useState('monthly');
   const [subData, setSubData] = useState(null);
   const [billingHistory, setBillingHistory] = useState([]);
-  const [paying, setPaying] = useState(null);
+  const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState(null);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     const load = async () => {
@@ -38,44 +35,33 @@ export default function PlansPage() {
     load();
   }, []);
 
-  const handleSelectPlan = async (planId, price) => {
-    setPaying(planId);
+  const handleSubscribe = async () => {
+    setPaying(true);
     setPayError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setPayError('Please login first.'); setPaying(null); return; }
+      if (!session) { setPayError('Please login first.'); setPaying(false); return; }
       const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planId, cycle: billingCycle, userId, userEmail: session.user.email })
+        body: JSON.stringify({ userId, userEmail: session.user.email }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        setPayError('Could not start payment. Please try again.');
-        setPaying(null);
+        setPayError(data.error || 'Could not start payment. Please try again.');
+        setPaying(false);
       }
     } catch (err) {
       setPayError('Payment error. Please try again.');
-      setPaying(null);
+      setPaying(false);
     }
   };
 
-  const plans = [
-    {
-      name: 'Premium',
-      description: 'Shows live property listings to buyers, captures hot leads, and syncs real estate data.',
-      monthlyPrice: '99', yearlyPrice: '89',
-      icon: <Zap size={24} color="#FBBF24" />,
-      features: ['1 AI Chatbot', 'Live Property Listings', 'Real Estate Listings Scraping', 'Data Sync from Realtor.ca', 'Advanced CRM Lead Mapping', 'Live Human Takeover'],
-      popular: true, planId: 'pro'
-    }
-  ];
-
-  // Trial/Plan status info
+  // Trial/Plan status
   const trialDaysLeft = subData?.trial_ends_at
     ? Math.ceil((new Date(subData.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
@@ -83,28 +69,41 @@ export default function PlansPage() {
   const isTrialing = subData?.status === 'Trialing';
   const isExpired = subData?.status === 'Inactive' || (trialDaysLeft !== null && trialDaysLeft <= 0 && !isActive);
   const isEndingSoon = !isExpired && trialDaysLeft !== null && trialDaysLeft <= 7;
-  const planEndDate = subData?.trial_ends_at ? new Date(subData.trial_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : null;
+  const planEndDate = subData?.trial_ends_at
+    ? new Date(subData.trial_ends_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : null;
 
-  // Build unified billing & subscription history
+  // Build unified history
   const allHistory = [...billingHistory];
-  if (subData && subData.status) {
+  if (subData?.status) {
     const hasCurrent = allHistory.some(h => h.status === 'Active' || h.status === 'Trialing');
     if (!hasCurrent) {
       const isTrial = subData.status === 'Trialing';
-      const planName = subData.plan === 'starter' ? 'standard' : 'premium';
-      const amountStr = isTrial ? 'Free Trial' : (subData.billing_cycle === 'yearly' ? '$89/mo ($1,068/yr)' : '$99/mo');
       allHistory.unshift({
         id: 'current-active-sub',
-        plan: planName,
-        amount: amountStr,
-        billing_cycle: subData.billing_cycle || 'monthly',
+        plan: 'PropFlow AI',
+        amount: isTrial ? 'Free Trial' : '$99/mo',
+        billing_cycle: 'monthly',
         start_date: subData.created_at || subData.updated_at,
         end_date: subData.trial_ends_at,
         status: subData.status,
-        is_current: true
+        is_current: true,
       });
     }
   }
+
+  const features = [
+    '1 AI Real Estate Chatbot',
+    'Live Property Listings (Zillow + Realtor.ca)',
+    'Lead Capture & Qualification (Hot/Warm/Cold)',
+    'Full Agent Dashboard',
+    'Calendar & Appointment Management',
+    'Live Chat Takeover',
+    'Custom Branding & Colors',
+    'USA + Canada Markets',
+    'Website Embed (Any Platform)',
+    'Knowledge Base Upload',
+  ];
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '80px' }}>
@@ -119,7 +118,7 @@ export default function PlansPage() {
         </p>
       </div>
 
-      {/* Ending Soon / Expired Banner */}
+      {/* Status Banners */}
       <AnimatePresence>
         {isExpired && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -127,9 +126,9 @@ export default function PlansPage() {
             <div style={{ fontSize: '28px' }}>🔒</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>⛔ Your plan has ended — Upgrade to continue</div>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Your chatbot is currently paused. Select a plan below to reactivate it instantly.</div>
+              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Your chatbot is currently paused. Subscribe below to reactivate it instantly.</div>
             </div>
-            <a href="#plans" style={{ background: '#EF4444', color: 'white', padding: '8px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', whiteSpace: 'nowrap' }}>Upgrade Now</a>
+            <a href="#subscribe" style={{ background: '#EF4444', color: 'white', padding: '8px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', whiteSpace: 'nowrap' }}>Subscribe Now</a>
           </motion.div>
         )}
         {isEndingSoon && !isExpired && (
@@ -138,20 +137,29 @@ export default function PlansPage() {
             <div style={{ fontSize: '28px' }}>⚠️</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>Your {isTrialing ? 'free trial' : 'plan'} ends in {trialDaysLeft} day{trialDaysLeft !== 1 ? 's' : ''}</div>
-              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Upgrade before {planEndDate} to avoid any interruption to your chatbot service.</div>
+              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Subscribe before {planEndDate} to avoid any interruption.</div>
             </div>
-            <a href="#plans" style={{ background: '#F59E0B', color: '#000', padding: '8px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', whiteSpace: 'nowrap' }}>Upgrade</a>
+            <a href="#subscribe" style={{ background: '#F59E0B', color: '#000', padding: '8px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13px', textDecoration: 'none', whiteSpace: 'nowrap' }}>Subscribe</a>
+          </motion.div>
+        )}
+        {isActive && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '16px', padding: '18px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <ShieldCheck size={28} color="#10B981" />
+            <div>
+              <div style={{ fontWeight: '800', fontSize: '16px', color: 'white' }}>✅ Active Subscription</div>
+              <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Your PropFlow AI chatbot is live and running.</div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Billing & Subscription History Table ───────────────────────────── */}
+      {/* Billing History Table */}
       <div style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
           <CreditCard size={22} color="var(--text-secondary)" />
           <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>Subscription &amp; Payment History</h2>
         </div>
-
         {loadingHistory ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading records...</div>
         ) : allHistory.length === 0 ? (
@@ -177,9 +185,9 @@ export default function PlansPage() {
                     <motion.tr key={row.id || i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                       style={{ background: isRowActive ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.03)', borderRadius: '12px', border: isRowActive ? '1px solid rgba(99,102,241,0.25)' : 'none' }}>
                       <td style={{ padding: '14px 16px', borderRadius: '12px 0 0 12px', fontWeight: '700', color: 'var(--text-primary)', fontSize: '14px' }}>
-                        {row.plan === 'premium' || row.plan === 'pro' ? '👑 Premium' : row.plan === 'standard' || row.plan === 'starter' ? '📦 Standard' : '🎉 Free Trial'}
+                        👑 {row.plan || 'PropFlow AI'}
                       </td>
-                      <td style={{ padding: '14px 16px', fontWeight: '700', color: 'var(--text-primary)', fontSize: '14px' }}>{row.amount || '—'}</td>
+                      <td style={{ padding: '14px 16px', fontWeight: '700', color: 'var(--text-primary)', fontSize: '14px' }}>{row.amount || '$99/mo'}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'capitalize' }}>{row.billing_cycle || 'monthly'}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '13px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -207,62 +215,81 @@ export default function PlansPage() {
         )}
       </div>
 
-      {/* ── Plans Section (Available if Expired) ─────────────────────────────────────── */}
-      {isExpired && (
-        <div id="plans" style={{ marginTop: '50px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>
-              Reactivate Your Chatbot
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '560px', margin: '0 auto 28px' }}>
-              Choose a plan below to get your chatbot back online immediately.
-            </p>
-            {/* Billing Toggle */}
-            <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', borderRadius: '100px', padding: '4px' }}>
-              <button onClick={() => setBillingCycle('monthly')} style={{ padding: '8px 24px', borderRadius: '100px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', background: billingCycle === 'monthly' ? 'var(--primary)' : 'transparent', color: billingCycle === 'monthly' ? 'white' : 'var(--text-secondary)' }}>Monthly</button>
-              <button onClick={() => setBillingCycle('yearly')} style={{ padding: '8px 24px', borderRadius: '100px', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', background: billingCycle === 'yearly' ? 'var(--primary)' : 'transparent', color: billingCycle === 'yearly' ? 'white' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Yearly <span style={{ background: 'rgba(16,185,129,0.2)', color: 'var(--success)', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>Save 20%</span>
-              </button>
-            </div>
-          </div>
-
-          {payError && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', color: '#FCA5A5', textAlign: 'center' }}>{payError}</div>}
-
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', flexWrap: 'wrap' }}>
-            {plans.map((plan, index) => (
-              <motion.div key={plan.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="glass-panel"
-                style={{ padding: '32px', borderRadius: '24px', position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '380px', border: plan.popular ? '2px solid var(--primary)' : '1px solid var(--border)', transform: plan.popular ? 'scale(1.02)' : 'scale(1)', zIndex: plan.popular ? 2 : 1 }}>
-                {plan.popular && <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', background: 'var(--primary)', color: 'white', padding: '4px 16px', borderRadius: '100px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Most Popular</div>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '12px' }}>{plan.icon}</div>
-                  <h2 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{plan.name}</h2>
-                </div>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px', minHeight: '40px' }}>{plan.description}</p>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: billingCycle === 'yearly' ? '8px' : '32px' }}>
-                  <span style={{ fontSize: '40px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: 1 }}>${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '14px', fontWeight: '500' }}>/ month</span>
-                </div>
-                {billingCycle === 'yearly' && <div style={{ marginBottom: '32px', fontSize: '13px', color: 'rgba(99,102,241,0.9)', fontWeight: '600', background: 'rgba(99,102,241,0.1)', padding: '6px 12px', borderRadius: '8px', display: 'inline-block' }}>Billed ${plan.yearlyPrice * 12}/year — Save ${(plan.monthlyPrice - plan.yearlyPrice) * 12}/year</div>}
-                <div style={{ borderTop: '1px solid var(--border)', margin: '0 -32px 32px', padding: '32px 32px 0' }}>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {plan.features.map(feature => (
-                      <li key={feature} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                        <Check size={18} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} /><span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div style={{ marginTop: 'auto' }}>
-                  <button disabled={paying === plan.planId} onClick={() => handleSelectPlan(plan.planId, billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice)}
-                    style={{ width: '100%', padding: '14px', borderRadius: '12px', fontSize: '15px', fontWeight: '700', cursor: paying === plan.planId ? 'not-allowed' : 'pointer', transition: 'all 0.2s', background: paying === plan.planId ? 'rgba(255,255,255,0.05)' : plan.popular ? 'linear-gradient(90deg, #818CF8, #4F46E5)' : isExpired ? 'linear-gradient(90deg, #EF4444, #DC2626)' : 'white', color: paying === plan.planId ? 'var(--text-muted)' : plan.popular ? 'white' : isExpired ? 'white' : 'black', border: 'none', opacity: paying && paying !== plan.planId ? 0.5 : 1 }}>
-                    {paying === plan.planId ? '⏳ Processing...' : `🔓 Reactivate with ${plan.name}`}
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+      {/* Subscribe Section */}
+      <div id="subscribe" style={{ marginTop: '50px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>
+            {isActive ? '🔄 Manage Your Plan' : '🚀 Get Started with PropFlow AI'}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: '560px', margin: '0 auto' }}>
+            {isActive ? 'Your chatbot is live. Manage your subscription via Paddle.' : 'One simple plan. Everything you need to generate leads with AI.'}
+          </p>
         </div>
-      )}
+
+        {payError && (
+          <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', padding: '14px 20px', marginBottom: '24px', color: '#FCA5A5', textAlign: 'center' }}>
+            {payError}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel"
+            style={{ padding: '40px', borderRadius: '24px', width: '100%', maxWidth: '440px', border: '2px solid var(--primary)', position: 'relative' }}>
+
+            {/* Popular badge */}
+            <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'var(--primary)', color: 'white', padding: '4px 20px', borderRadius: '100px', fontSize: '12px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+              🏆 PropFlow AI — Full Access
+            </div>
+
+            {/* Price */}
+            <div style={{ textAlign: 'center', marginBottom: '32px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '56px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1 }}>$99</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '16px', fontWeight: '500' }}>/month</span>
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '6px' }}>
+                Billed monthly via Paddle • Cancel anytime
+              </div>
+            </div>
+
+            {/* Features */}
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {features.map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                  <Check size={18} color="var(--primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* CTA Button */}
+            <button
+              onClick={handleSubscribe}
+              disabled={paying}
+              style={{
+                width: '100%', padding: '16px', borderRadius: '14px', fontSize: '16px', fontWeight: '800',
+                cursor: paying ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                background: paying ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #818CF8, #4F46E5)',
+                color: paying ? 'var(--text-muted)' : 'white', border: 'none',
+                boxShadow: paying ? 'none' : '0 8px 25px rgba(99,102,241,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              }}
+            >
+              {paying
+                ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
+                : isActive
+                  ? '🔄 Manage Subscription'
+                  : '🚀 Subscribe via Paddle — $99/mo'
+              }
+            </button>
+
+            {/* Trust line */}
+            <div style={{ textAlign: 'center', marginTop: '16px', color: 'var(--text-muted)', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+              🔒 Secure payment via Paddle
+            </div>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

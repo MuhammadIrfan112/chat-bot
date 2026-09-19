@@ -1,76 +1,74 @@
-import Stripe from 'stripe';
+// Paddle Checkout API — replaces Stripe
+// Price ID: pri_01m2wx27af935cqw4w5pksfv17 ($99/month — PropFlow AI)
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16', // Use the latest API version or your preferred one
-});
-
-const PLAN_PRICES = {
-  starter: { monthly: 49, yearly: 42 }, // $49/mo, $42/mo billed yearly ($504/year)
-  pro: { monthly: 79, yearly: 69 }      // $79/mo, $69/mo billed yearly ($828/year)
-};
+const PADDLE_API_KEY = process.env.PADDLE_API_KEY;
+const PADDLE_PRICE_ID = process.env.PADDLE_PRICE_ID || 'pri_01m2wx27af935cqw4w5pksfv17';
 
 export async function POST(req) {
   try {
-    const { plan, cycle, userId, userEmail } = await req.json();
+    const { userId, userEmail } = await req.json();
 
-    if (!plan || !cycle || !userId) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!userId) {
+      return Response.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    const planDetails = PLAN_PRICES[plan];
-    if (!planDetails) {
-      return Response.json({ error: 'Invalid plan' }, { status: 400 });
+    if (!PADDLE_API_KEY) {
+      return Response.json({ error: 'Paddle API key not configured' }, { status: 500 });
     }
 
-    const priceUSD = planDetails[cycle];
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      req.headers.get('origin') ||
+      'https://www.realtypropflow.com';
 
-    // For yearly plans, charge the full annual amount (monthly equivalent × 12)
-    const totalAmount = cycle === 'yearly' ? priceUSD * 12 : priceUSD;
-
-    // Stripe expects amount in cents
-    const amountInCents = Math.round(totalAmount * 100);
-
-    // Always use live domain — fallback to realtypropflow.com
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || origin || 'https://www.realtypropflow.com';
-
-    // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      customer_email: userEmail || undefined,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `RealtyPropFlow ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan (${cycle === 'yearly' ? 'Annual' : 'Monthly'})`,
-              description: cycle === 'yearly'
-                ? `Annual billing — $${priceUSD}/month × 12 months = $${totalAmount}/year`
-                : `Monthly billing — $${priceUSD}/month`,
-            },
-            unit_amount: amountInCents,
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        user_id: userId,
-        user_email: userEmail || '',
-        plan: plan,
-        cycle: cycle,
-        price_usd: totalAmount
+    // Create Paddle transaction (checkout session)
+    const response = await fetch('https://api.paddle.com/transactions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PADDLE_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      success_url: `${appUrl}/dashboard/billing/success?plan=${plan}&cycle=${cycle}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/dashboard/billing?plan=${plan}&cycle=${cycle}&cancelled=true`,
+      body: JSON.stringify({
+        items: [
+          {
+            price_id: PADDLE_PRICE_ID,
+            quantity: 1,
+          },
+        ],
+        customer: userEmail
+          ? { email: userEmail }
+          : undefined,
+        custom_data: {
+          user_id: userId,
+          user_email: userEmail || '',
+        },
+        checkout: {
+          url: `${appUrl}/dashboard/billing/success`,
+        },
+      }),
     });
 
-    // Return the checkout URL to redirect the user
-    return Response.json({ checkoutUrl: session.url });
+    const data = await response.json();
 
+    if (!response.ok) {
+      console.error('Paddle transaction error:', data);
+      return Response.json(
+        { error: data?.error?.detail || 'Paddle checkout failed' },
+        { status: 500 }
+      );
+    }
+
+    // Paddle returns checkout URL in data.data.checkout.url
+    const checkoutUrl = data?.data?.checkout?.url;
+
+    if (!checkoutUrl) {
+      console.error('No checkout URL from Paddle:', data);
+      return Response.json({ error: 'No checkout URL returned' }, { status: 500 });
+    }
+
+    return Response.json({ checkoutUrl });
   } catch (error) {
     console.error('Checkout API error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
-

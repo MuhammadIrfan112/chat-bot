@@ -1,20 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { Building2, Globe, Smartphone, Send, ShieldCheck, ShoppingCart, Lock, Loader2 } from 'lucide-react';
+import { ShieldCheck, ShoppingCart, Lock, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
 
 export default function Billing() {
   const [status, setStatus] = useState('Loading...');
   const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState(null);
-  
-  const searchParams = useSearchParams();
-  const selectedPlan = searchParams.get('plan');
-  const billingCycle = searchParams.get('cycle');
-  const price = searchParams.get('price');
 
   const fetchStatus = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -51,10 +45,8 @@ export default function Billing() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan: selectedPlan,
-          cycle: billingCycle,
           userId: session.user.id,
-          userEmail: session.user.email
+          userEmail: session.user.email,
         })
       });
 
@@ -62,7 +54,7 @@ export default function Billing() {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        setPayError('Could not start payment. Please try again.');
+        setPayError(data.error || 'Could not start payment. Please try again.');
         setPaying(false);
       }
     } catch (err) {
@@ -98,62 +90,39 @@ export default function Billing() {
         </div>
       </div>
 
-      {/* Selected Plan Banner (if navigated from Plans) */}
-      {selectedPlan ? (
-        <div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel" style={{ 
-            background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)',
-            borderRadius: '24px', padding: '32px', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' 
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', borderRadius: '16px' }}>
-                <ShoppingCart size={32} />
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Checkout Summary</div>
-                <h2 style={{ color: 'var(--text-primary)', fontSize: '24px', fontWeight: '800', margin: 0, textTransform: 'capitalize' }}>
-                  {selectedPlan} Plan ({billingCycle})
-                </h2>
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1, marginBottom: '12px' }}>${price} <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500' }}>/ month</span></div>
-              <a href="/dashboard/plans" style={{ display: 'inline-block', fontSize: '13px', fontWeight: '700', color: '#EF4444', background: 'rgba(239, 68, 68, 0.1)', padding: '8px 16px', borderRadius: '8px', textDecoration: 'none', border: '1px solid rgba(239, 68, 68, 0.2)', transition: 'all 0.2s' }}>
-                ✕ Cancel & Change Plan
-              </a>
-            </div>
-          </motion.div>
+      {/* Subscribe CTA */}
+      <div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-panel" style={{ 
+          background: 'rgba(99, 102, 241, 0.05)', border: '2px solid rgba(99, 102, 241, 0.3)',
+          borderRadius: '24px', padding: '40px', marginBottom: '40px', textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🚀</div>
+          <h2 style={{ color: 'var(--text-primary)', fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0' }}>PropFlow AI</h2>
+          <div style={{ fontSize: '48px', fontWeight: '900', color: 'var(--text-primary)', lineHeight: 1, margin: '16px 0 4px' }}>$99<span style={{ fontSize: '18px', color: 'var(--text-muted)', fontWeight: '500' }}>/month</span></div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '28px' }}>Billed monthly via Paddle • Cancel anytime</div>
 
-          <h3 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '20px', color: 'var(--text-primary)' }}>Select Payment Method</h3>
-          {payError && <div style={{ color: 'var(--danger)', fontSize: '14px', marginBottom: '16px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>{payError}</div>}
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-            
-            {/* Stripe (International & Local) */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel" style={{ padding: '32px', borderRadius: '24px', textAlign: 'center', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-              <div style={{ width: '64px', height: '64px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Globe size={32} />
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>Credit / Debit Card</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>Pay securely via Stripe (Visa, Mastercard, Amex, Apple Pay).</p>
-              <button
-                onClick={handlePayNow}
-                disabled={paying}
-                style={{
-                  width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
-                  background: paying ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #6366F1, #4F46E5)',
-                  color: 'white', padding: '14px', borderRadius: '12px', border: 'none',
-                  fontWeight: '700', fontSize: '16px', cursor: paying ? 'not-allowed' : 'pointer',
-                  boxShadow: paying ? 'none' : '0 4px 15px rgba(99, 102, 241, 0.4)', transition: 'all 0.2s'
-                }}
-              >
-                {paying ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</> : <><Lock size={18} /> Pay via Stripe</>}
-              </button>
-            </motion.div>
+          {payError && <div style={{ color: '#FCA5A5', fontSize: '14px', marginBottom: '16px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>{payError}</div>}
 
-          </div>
-        </div>
-      ) : (
+          <button
+            onClick={handlePayNow}
+            disabled={paying}
+            style={{
+              display: 'inline-flex', justifyContent: 'center', alignItems: 'center', gap: '10px',
+              background: paying ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #818CF8, #4F46E5)',
+              color: 'white', padding: '16px 40px', borderRadius: '14px', border: 'none',
+              fontWeight: '800', fontSize: '17px', cursor: paying ? 'not-allowed' : 'pointer',
+              boxShadow: paying ? 'none' : '0 8px 25px rgba(99, 102, 241, 0.4)', transition: 'all 0.2s'
+            }}
+          >
+            {paying ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</> : <><Lock size={18} /> Subscribe via Paddle</>}
+          </button>
+
+          <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '14px' }}>🔒 Secure payment processed by Paddle</div>
+        </motion.div>
+      </div>
+
+      {/* Old empty state fallback */}
+      {false && (
         <div style={{ textAlign: 'center', padding: '60px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed var(--border)' }}>
           <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '16px' }}>Choose a Plan</h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Please select a plan to proceed with payment.</p>
