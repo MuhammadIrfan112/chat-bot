@@ -426,7 +426,7 @@ export default function CalendarPage() {
       </div>
 
       {/* 3. Main Calendar Body (2 Column Layout) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: '24px', alignItems: 'start' }}>
+      <div className="calendar-body-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '24px', alignItems: 'start' }}>
         
         {/* Left Column: Calendar Navigation & Month Grid */}
         <div style={{ backgroundColor: '#1E293B', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', padding: '24px', overflow: 'hidden' }}>

@@ -167,44 +167,42 @@ export default function RealEstateDashboard() {
     <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
       {/* ── Top Greeting & Status ── */}
+      {/* ── Top Greeting & Status ── */}
       <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        flexWrap: 'wrap', gap: '20px', marginBottom: '32px',
-        paddingBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)'
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        flexWrap: 'wrap', gap: '16px', marginBottom: '24px',
+        paddingBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)'
       }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'white', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {getGreeting()}, {agentName ? agentName.split(' ')[0] : 'Agent'} 👋
+          <h1 style={{ fontSize: 'clamp(20px, 4.5vw, 28px)', fontWeight: '800', color: 'white', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{getGreeting()}, {agentName ? agentName.split(' ')[0] : 'Agent'}</span> <span>👋</span>
           </h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span>{todayFormatted}</span>
             <span style={{ opacity: 0.4 }}>•</span>
             <span style={{ color: unreadCount > 0 ? '#F59E0B' : 'var(--text-secondary)' }}>
-              {unreadCount > 0 ? `⚡ ${unreadCount} new chatbot lead${unreadCount > 1 ? 's' : ''} awaiting attention` : 'All inquiries up to date'}
+              {unreadCount > 0 ? `⚡ ${unreadCount} new chatbot lead${unreadCount > 1 ? 's' : ''}` : 'All inquiries up to date'}
             </span>
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <Link href="/dashboard/leads" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '10px 20px', borderRadius: '10px',
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            padding: '8px 16px', borderRadius: '10px',
             backgroundColor: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)',
-            color: 'var(--primary)', textDecoration: 'none', fontSize: '13px', fontWeight: '700',
-            transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(201,162,39,0.08)'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(201,162,39,0.2)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(201,162,39,0.12)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.3)'; }}
-          >
-            <Users size={16} /> Open CRM Pipeline <ArrowRight size={14} />
+            color: 'var(--primary)', textDecoration: 'none', fontSize: '12px', fontWeight: '700',
+            transition: 'all 0.2s'
+          }}>
+            <Users size={15} /> CRM Pipeline <ArrowRight size={13} />
           </Link>
         </div>
       </div>
 
-      {/* ── Quick Action Cards (CloseFlow Style) ── */}
-      <div style={{
+      {/* ── Quick Action Cards (CloseFlow Mobile Look) ── */}
+      <div className="dashboard-quick-actions" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))',
         gap: '12px',
         marginBottom: '28px'
       }}>
@@ -246,9 +244,9 @@ export default function RealEstateDashboard() {
       </div>
 
       {/* ── 5 Core Real Estate Metric Cards ── */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-        gap: '16px', marginBottom: '32px'
+      <div className="dashboard-metrics-grid" style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
+        gap: '12px', marginBottom: '28px'
       }}>
 
         {/* Total Leads */}
@@ -364,13 +362,13 @@ export default function RealEstateDashboard() {
       </div>
 
       {/* ── Middle Grid: Pipeline Funnel + Attention Hub ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+      <div className="dashboard-middle-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px', marginBottom: '28px' }}>
 
         {/* Pipeline Funnel */}
         <div style={{
           backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '18px',
-          border: '1px solid rgba(255,255,255,0.08)', padding: '28px',
-          display: 'flex', flexDirection: 'column', gap: '20px'
+          border: '1px solid rgba(255,255,255,0.08)', padding: 'clamp(16px, 3vw, 24px)',
+          display: 'flex', flexDirection: 'column', gap: '18px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -515,54 +513,51 @@ export default function RealEstateDashboard() {
               const timeAgo = lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
               return (
-                <div key={lead.id} style={{
-                  padding: '16px 20px', borderRadius: '14px',
+                <div key={lead.id} className="dashboard-inquiry-card" style={{
+                  padding: '14px 18px', borderRadius: '14px',
                   backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: '16px', flexWrap: 'wrap', transition: 'all 0.15s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '220px' }}>
+                  gap: '14px', transition: 'all 0.15s'
+                }}>
+                  <div className="inquiry-lead-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '0' }}>
                     <div style={{
-                      width: '42px', height: '42px', borderRadius: '12px',
+                      width: '40px', height: '40px', borderRadius: '12px',
                       background: isHot ? 'linear-gradient(135deg, #EF4444, #B91C1C)' : 'linear-gradient(135deg, #4F46E5, #3730A3)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'white', fontWeight: '800', fontSize: '16px', flexShrink: 0
+                      color: 'white', fontWeight: '800', fontSize: '15px', flexShrink: 0
                     }}>
                       {lead.name ? lead.name.charAt(0).toUpperCase() : 'L'}
                     </div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: '700', color: 'white' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {lead.name || 'Anonymous Visitor'}
                         </span>
                         {isHot && (
-                          <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '10px', backgroundColor: 'rgba(239,68,68,0.2)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' }}>
+                          <span style={{ fontSize: '9px', fontWeight: '800', padding: '1px 6px', borderRadius: '8px', backgroundColor: 'rgba(239,68,68,0.2)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)' }}>
                             🔥 Hot
                           </span>
                         )}
-                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontSize: '9px', fontWeight: '700', padding: '1px 6px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.06)', color: 'var(--text-secondary)' }}>
                           {type}
                         </span>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', gap: '10px' }}>
-                        {lead.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Phone size={11} /> {lead.phone}</span>}
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {lead.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}><Phone size={10} /> {lead.phone}</span>}
                         <span>{timeAgo}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ flex: 1, minWidth: '260px' }}>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
+                  <div className="inquiry-lead-text" style={{ flex: 1, minWidth: '0' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.4' }}>
                       {preview}
                     </p>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="inquiry-lead-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <span style={{
-                      fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '8px',
+                      fontSize: '10px', fontWeight: '700', padding: '3px 8px', borderRadius: '6px',
                       backgroundColor: lead.status === 'New Lead' ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)',
                       color: lead.status === 'New Lead' ? '#10B981' : 'var(--text-secondary)',
                       border: lead.status === 'New Lead' ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent'
@@ -570,10 +565,10 @@ export default function RealEstateDashboard() {
                       {lead.status || 'New Lead'}
                     </span>
                     <Link href="/dashboard/leads" style={{
-                      padding: '7px 12px', borderRadius: '8px',
-                      backgroundColor: 'rgba(255,255,255,0.05)', color: 'white',
-                      textDecoration: 'none', fontSize: '12px', fontWeight: '600',
-                      border: '1px solid rgba(255,255,255,0.08)'
+                      padding: '6px 12px', borderRadius: '8px',
+                      backgroundColor: 'rgba(201,162,39,0.12)', color: 'var(--primary)',
+                      textDecoration: 'none', fontSize: '11px', fontWeight: '700',
+                      border: '1px solid rgba(201,162,39,0.25)', whiteSpace: 'nowrap'
                     }}>
                       Open in CRM
                     </Link>

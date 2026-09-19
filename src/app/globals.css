@@ -177,8 +177,24 @@ button {
 }
 
 /* ─────────────────────────────────────────────
-   DASHBOARD — MOBILE RESPONSIVE
+   DASHBOARD — DESKTOP & MOBILE RESPONSIVE
    ───────────────────────────────────────────── */
+.dashboard-header-bar {
+  padding: 10px 32px;
+}
+
+.dashboard-content-container {
+  padding: 36px 44px;
+}
+
+.desktop-leads-table {
+  display: block;
+}
+
+.mobile-leads-list {
+  display: none !important;
+}
+
 .sidebar-toggle {
   display: none;
   position: fixed;
@@ -201,19 +217,6 @@ button {
 
 .sidebar-overlay {
   display: none !important;
-}
-
-@media (max-width: 900px) {
-  .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 299;
-  }
-
-  .sidebar-overlay.open {
-    display: block !important;
-  }
 }
 
 .dashboard-sidebar {
@@ -246,8 +249,19 @@ button {
 }
 
 @media (max-width: 900px) {
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 299;
+  }
+
+  .sidebar-overlay.open {
+    display: block !important;
+  }
+
   .sidebar-toggle {
-    display: none; /* controlled by top header toggle */
+    display: none;
   }
 
   .dashboard-sidebar {
@@ -266,15 +280,90 @@ button {
     left: 0 !important;
   }
 
+  .dashboard-header-bar {
+    padding: 10px 14px !important;
+  }
+
   .dashboard-main {
-    padding: 16px 16px 90px !important;
+    padding: 0 !important;
     width: 100% !important;
     min-width: 0 !important;
     overflow-x: hidden !important;
   }
 
+  .dashboard-content-container {
+    padding: 16px 14px 100px !important;
+  }
+
   .mobile-only-brand {
     display: flex !important;
+  }
+
+  .desktop-only-agentname {
+    display: none !important;
+  }
+
+  /* Switch between table on desktop and card list on mobile */
+  .desktop-leads-table {
+    display: none !important;
+  }
+
+  .mobile-leads-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 10px 8px !important;
+  }
+
+  .mobile-lead-card:hover, .mobile-lead-card:active {
+    background-color: rgba(255,255,255,0.06) !important;
+    border-color: rgba(201,162,39,0.3) !important;
+  }
+
+  /* Recent inquiries mobile stacked layout */
+  .dashboard-inquiry-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .inquiry-lead-header {
+    width: 100% !important;
+  }
+
+  .inquiry-lead-text {
+    width: 100% !important;
+  }
+
+  .inquiry-lead-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+    border-top: 1px solid rgba(255,255,255,0.06) !important;
+    padding-top: 10px !important;
+  }
+
+  /* Calendar page mobile 1-column */
+  .calendar-body-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Lead detail modal mobile responsiveness */
+  .lead-modal-backdrop {
+    padding: 10px !important;
+  }
+
+  .lead-detail-modal-card {
+    max-height: 94vh !important;
+    border-radius: 18px !important;
+  }
+
+  .lead-modal-header {
+    padding: 18px 16px !important;
+  }
+
+  .lead-modal-body {
+    padding: 16px !important;
+    gap: 14px !important;
   }
 
   /* CloseFlow Style Mobile Bottom Navigation Bar */
@@ -285,7 +374,7 @@ button {
     left: 0;
     right: 0;
     height: 64px;
-    background: rgba(11, 15, 25, 0.95);
+    background: rgba(11, 15, 25, 0.96);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -295,13 +384,6 @@ button {
     padding: 0 4px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.7);
-  }
-
-  /* Horizontal scroll for tables */
-  table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   /* 2-col stat cards */
@@ -319,11 +401,24 @@ button {
 
 @media (max-width: 560px) {
   .dashboard-main {
-    padding: 68px 12px 28px !important;
+    padding: 0 !important;
   }
 
-  /* 1-col on smallest screens */
-  .stats-grid-2, .dashboard-stats {
+  .dashboard-content-container {
+    padding: 14px 10px 105px !important;
+  }
+
+  .dashboard-quick-actions {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-metrics-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .lead-modal-contact-grid {
     grid-template-columns: 1fr !important;
   }
 
@@ -335,8 +430,8 @@ button {
   }
 
   /* Page headings */
-  h1 { font-size: 22px !important; }
-  h2 { font-size: 18px !important; }
+  h1 { font-size: 20px !important; }
+  h2 { font-size: 17px !important; }
 }
 
 /* ─────────────────────────────────────────────

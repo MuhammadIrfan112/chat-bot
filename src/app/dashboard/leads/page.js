@@ -243,78 +243,157 @@ export default function LeadsCRM() {
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{leads.length === 0 ? 'Your AI chatbot will send leads here automatically.' : 'Try adjusting your filters.'}</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  {['', 'Lead', 'Contact', 'Type', 'Temp', 'Stage', 'Date', 'Actions'].map(h => (
-                    <th key={h} style={{ padding: '13px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((lead, i) => {
-                  const { leadType } = parseLeadData(lead.property_interest);
-                  const temp = getTempFromRaw(lead.property_interest, lead.status);
-                  const stage = stageMap[lead.status] || stageMap['New Lead'];
-                  const isNew = lead.status === 'New Lead';
-                  return (
-                    <tr key={lead.id}
-                      style={{ borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.15s', backgroundColor: isNew ? 'rgba(16,185,129,0.03)' : 'transparent' }}
-                      onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.025)'}
-                      onMouseLeave={e => e.currentTarget.style.backgroundColor = isNew ? 'rgba(16,185,129,0.03)' : 'transparent'}>
-                      <td style={{ ...cellStyle, width: '52px' }}><Avatar name={lead.name} temp={temp} /></td>
-                      <td style={cellStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{lead.name || 'Anonymous'}</span>
-                          {isNew && <span style={{ fontSize: '9px', fontWeight: '800', padding: '2px 6px', borderRadius: '6px', backgroundColor: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.4)', textTransform: 'uppercase' }}>New</span>}
-                          {lead.notes && <span title="Has notes" style={{ fontSize: '12px' }}>📌</span>}
+          <>
+            {/* Desktop Table View */}
+            <div className="desktop-leads-table" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                    {['', 'Lead', 'Contact', 'Type', 'Temp', 'Stage', 'Date', 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '13px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((lead, i) => {
+                    const { leadType } = parseLeadData(lead.property_interest);
+                    const temp = getTempFromRaw(lead.property_interest, lead.status);
+                    const stage = stageMap[lead.status] || stageMap['New Lead'];
+                    const isNew = lead.status === 'New Lead';
+                    return (
+                      <tr key={lead.id}
+                        style={{ borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', transition: 'background 0.15s', backgroundColor: isNew ? 'rgba(16,185,129,0.03)' : 'transparent' }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.025)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = isNew ? 'rgba(16,185,129,0.03)' : 'transparent'}>
+                        <td style={{ ...cellStyle, width: '52px' }}><Avatar name={lead.name} temp={temp} /></td>
+                        <td style={cellStyle}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: '700', color: 'white', fontSize: '14px' }}>{lead.name || 'Anonymous'}</span>
+                            {isNew && <span style={{ fontSize: '9px', fontWeight: '800', padding: '2px 6px', borderRadius: '6px', backgroundColor: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.4)', textTransform: 'uppercase' }}>New</span>}
+                            {lead.notes && <span title="Has notes" style={{ fontSize: '12px' }}>📌</span>}
+                          </div>
+                        </td>
+                        <td style={cellStyle}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            {lead.phone_number && <a href={`tel:${lead.phone_number}`} style={{ color: '#34D399', textDecoration: 'none', fontSize: '12px', fontWeight: '600' }}>📞 {lead.phone_number}</a>}
+                            {lead.email && <a href={`mailto:${lead.email}`} style={{ color: '#818CF8', textDecoration: 'none', fontSize: '12px' }}>✉️ <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'bottom' }}>{lead.email}</span></a>}
+                            {!lead.phone_number && !lead.email && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>}
+                          </div>
+                        </td>
+                        <td style={cellStyle}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '8px', backgroundColor: leadType.includes('Sell') ? 'rgba(245,158,11,0.1)' : leadType.includes('Rent') ? 'rgba(236,72,153,0.1)' : 'rgba(139,92,246,0.1)', color: leadType.includes('Sell') ? '#F59E0B' : leadType.includes('Rent') ? '#EC4899' : '#A78BFA', whiteSpace: 'nowrap' }}>
+                            {leadType.includes('Sell') ? '🏷️' : leadType.includes('Rent') ? '🔑' : '🏠'} {leadType}
+                          </span>
+                        </td>
+                        <td style={cellStyle}><TempBadge temp={temp} /></td>
+                        <td style={cellStyle}>
+                          <select value={lead.status || 'New Lead'} onChange={e => updateStatus(lead.id, e.target.value)}
+                            style={{ padding: '6px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '700', backgroundColor: stage.bg, color: stage.color, border: `1px solid ${stage.color}44`, outline: 'none', cursor: 'pointer' }}>
+                            {PIPELINE_STAGES.map(s => <option key={s.key} value={s.key} style={{ backgroundColor: '#111', color: '#fff' }}>{s.label}</option>)}
+                          </select>
+                        </td>
+                        <td style={{ ...cellStyle, whiteSpace: 'nowrap', fontSize: '12px', color: 'var(--text-muted)' }}>
+                          📅 {new Date(lead.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}
+                        </td>
+                        <td style={{ ...cellStyle, whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => openModal(lead)}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '9px', fontSize: '12px', fontWeight: '700', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)', color: '#C9A227', cursor: 'pointer' }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(201,162,39,0.22)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'rgba(201,162,39,0.12)'}>
+                              👁 View
+                            </button>
+                            <button onClick={() => deleteLead(lead.id)}
+                              style={{ padding: '7px 9px', borderRadius: '9px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#F87171', cursor: 'pointer' }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}>
+                              🗑
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Native Card List View (CloseFlow Style) */}
+            <div className="mobile-leads-list">
+              {filtered.map((lead) => {
+                const { leadType } = parseLeadData(lead.property_interest);
+                const temp = getTempFromRaw(lead.property_interest, lead.status);
+                const stage = stageMap[lead.status] || stageMap['New Lead'];
+                const isNew = lead.status === 'New Lead';
+
+                return (
+                  <div
+                    key={lead.id}
+                    onClick={() => openModal(lead)}
+                    className="mobile-lead-card"
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '16px',
+                      backgroundColor: isNew ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
+                      border: isNew ? '1px solid rgba(16,185,129,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                      <Avatar name={lead.name} temp={temp} />
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                          <span style={{ fontWeight: '800', color: '#FFFFFF', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {lead.name || 'Anonymous Lead'}
+                          </span>
+                          {isNew && (
+                            <span style={{ fontSize: '9px', fontWeight: '800', padding: '1px 6px', borderRadius: '5px', backgroundColor: 'rgba(16,185,129,0.2)', color: '#10B981', border: '1px solid rgba(16,185,129,0.4)', textTransform: 'uppercase' }}>
+                              New
+                            </span>
+                          )}
                         </div>
-                      </td>
-                      <td style={cellStyle}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          {lead.phone_number && <a href={`tel:${lead.phone_number}`} style={{ color: '#34D399', textDecoration: 'none', fontSize: '12px', fontWeight: '600' }}>📞 {lead.phone_number}</a>}
-                          {lead.email && <a href={`mailto:${lead.email}`} style={{ color: '#818CF8', textDecoration: 'none', fontSize: '12px' }}>✉️ <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'bottom' }}>{lead.email}</span></a>}
-                          {!lead.phone_number && !lead.email && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>}
+
+                        {/* Property interest & contact preview */}
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span>{leadType.includes('Sell') ? '🏷️' : leadType.includes('Rent') ? '🔑' : '🏠'} {leadType}</span>
+                          {lead.phone_number && <span style={{ color: '#34D399', marginLeft: '6px' }}>• {lead.phone_number}</span>}
                         </div>
-                      </td>
-                      <td style={cellStyle}>
-                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '8px', backgroundColor: leadType.includes('Sell') ? 'rgba(245,158,11,0.1)' : leadType.includes('Rent') ? 'rgba(236,72,153,0.1)' : 'rgba(139,92,246,0.1)', color: leadType.includes('Sell') ? '#F59E0B' : leadType.includes('Rent') ? '#EC4899' : '#A78BFA', whiteSpace: 'nowrap' }}>
-                          {leadType.includes('Sell') ? '🏷️' : leadType.includes('Rent') ? '🔑' : '🏠'} {leadType}
-                        </span>
-                      </td>
-                      <td style={cellStyle}><TempBadge temp={temp} /></td>
-                      <td style={cellStyle}>
-                        <select value={lead.status || 'New Lead'} onChange={e => updateStatus(lead.id, e.target.value)}
-                          style={{ padding: '6px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: '700', backgroundColor: stage.bg, color: stage.color, border: `1px solid ${stage.color}44`, outline: 'none', cursor: 'pointer' }}>
-                          {PIPELINE_STAGES.map(s => <option key={s.key} value={s.key} style={{ backgroundColor: '#111', color: '#fff' }}>{s.label}</option>)}
-                        </select>
-                      </td>
-                      <td style={{ ...cellStyle, whiteSpace: 'nowrap', fontSize: '12px', color: 'var(--text-muted)' }}>
-                        📅 {new Date(lead.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}
-                      </td>
-                      <td style={{ ...cellStyle, whiteSpace: 'nowrap' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={() => openModal(lead)}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '7px 14px', borderRadius: '9px', fontSize: '12px', fontWeight: '700', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)', color: '#C9A227', cursor: 'pointer' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(201,162,39,0.22)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(201,162,39,0.12)'}>
-                            👁 View
-                          </button>
-                          <button onClick={() => deleteLead(lead.id)}
-                            style={{ padding: '7px 9px', borderRadius: '9px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#F87171', cursor: 'pointer' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.18)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}>
-                            🗑
-                          </button>
+
+                        {/* Badges row: Stage + Temp + Date */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '6px', backgroundColor: stage.bg, color: stage.color, border: `1px solid ${stage.color}44` }}>
+                            {stage.label}
+                          </span>
+                          <TempBadge temp={temp} />
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                            📅 {new Date(lead.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                          </span>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+
+                    {/* Right Action Button / Chevron */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      {lead.notes && <span title="Has notes" style={{ fontSize: '12px' }}>📌</span>}
+                      <div style={{
+                        width: '30px', height: '30px', borderRadius: '8px',
+                        backgroundColor: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'var(--primary)', fontSize: '16px', fontWeight: 'bold'
+                      }}>
+                        ›
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -330,26 +409,28 @@ export default function LeadsCRM() {
           const stage = stageMap[selectedLead.status] || stageMap['New Lead'];
           return (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+              className="lead-modal-backdrop"
+              style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={e => { if (e.target === e.currentTarget) setSelectedLead(null); }}>
               <motion.div initial={{ opacity: 0, scale: 0.96, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.22 }}
-                style={{ width: '100%', maxWidth: '680px', maxHeight: '92vh', overflowY: 'auto', borderRadius: '22px', backgroundColor: '#0D0D0D', border: '1px solid rgba(201,162,39,0.2)', boxShadow: '0 30px 60px rgba(0,0,0,0.8)', color: 'white' }}>
-                <div style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'linear-gradient(135deg, rgba(201,162,39,0.06) 0%, transparent 60%)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                className="lead-detail-modal-card"
+                style={{ width: '100%', maxWidth: '680px', maxHeight: '92vh', overflowY: 'auto', borderRadius: '22px', backgroundColor: '#0D0D0D', border: '1px solid rgba(201,162,39,0.25)', boxShadow: '0 30px 60px rgba(0,0,0,0.9)', color: 'white' }}>
+                <div className="lead-modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'linear-gradient(135deg, rgba(201,162,39,0.08) 0%, transparent 60%)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
                     <Avatar name={selectedLead.name} temp={temp} />
-                    <div>
-                      <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>{selectedLead.name || 'Anonymous Lead'}</h2>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedLead.name || 'Anonymous Lead'}</h2>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '6px', flexWrap: 'wrap' }}>
                         <TempBadge temp={temp} />
-                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '8px', backgroundColor: stage.bg, color: stage.color, border: `1px solid ${stage.color}44` }}>{selectedLead.status}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📅 {new Date(selectedLead.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 7px', borderRadius: '6px', backgroundColor: stage.bg, color: stage.color, border: `1px solid ${stage.color}44` }}>{selectedLead.status}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>📅 {new Date(selectedLead.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
                   </div>
                   <button onClick={() => setSelectedLead(null)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '15px' }}>✕</button>
                 </div>
-                <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="lead-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="lead-modal-contact-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div style={{ padding: '16px', borderRadius: '14px', backgroundColor: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.15)' }}>
                       <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '700', textTransform: 'uppercase', marginBottom: '6px' }}>📞 Phone</div>
                       {selectedLead.phone_number ? <a href={`tel:${selectedLead.phone_number}`} style={{ fontSize: '15px', fontWeight: '700', color: '#34D399', textDecoration: 'none' }}>{selectedLead.phone_number}</a> : <span style={{ color: 'var(--text-muted)' }}>Not provided</span>}

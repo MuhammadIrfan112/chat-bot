@@ -369,10 +369,9 @@ export default function DashboardLayout({ children }) {
         {/* Close dropdown on outside click */}
         {showProfileMenu && <div onClick={() => { setShowProfileMenu(false); setShowSettingsPanel(false); }} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />}
 
-        <div style={{
+        <div className="dashboard-header-bar" style={{
           position: 'sticky', top: 0, zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 32px',
           backgroundColor: 'rgba(5,5,5,0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
@@ -408,9 +407,9 @@ export default function DashboardLayout({ children }) {
           {/* RIGHT: Agent name + Bell + Avatar(dropdown) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 
-            {/* Agent / Realtor Name */}
+            {/* Agent / Realtor Name (hidden on mobile to prevent clutter) */}
             {agentName && (
-              <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span className="desktop-only-agentname" style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {agentName}
               </span>
             )}
@@ -690,7 +689,7 @@ export default function DashboardLayout({ children }) {
         </div>
         {/* ── End Top Header ── */}
 
-        <div style={{ flex: 1, padding: '40px 56px', position: 'relative' }}>
+        <div className="dashboard-content-container" style={{ flex: 1, position: 'relative' }}>
         {impersonatedEmail && (
           <div style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '12px 20px', borderRadius: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '600', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
