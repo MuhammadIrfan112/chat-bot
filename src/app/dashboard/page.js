@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { 
   Users, Flame, Trophy, TrendingUp, Sparkles, Clock, 
   ArrowRight, MessageSquare, Phone, AlertCircle, 
-  CheckCircle2, Building, Eye, ChevronRight
+  CheckCircle2, Building, Eye, ChevronRight, CalendarDays, Settings
 } from 'lucide-react';
 
 export default function RealEstateDashboard() {
@@ -199,6 +199,50 @@ export default function RealEstateDashboard() {
             <Users size={16} /> Open CRM Pipeline <ArrowRight size={14} />
           </Link>
         </div>
+      </div>
+
+      {/* ── Quick Action Cards (CloseFlow Style) ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+        gap: '12px',
+        marginBottom: '28px'
+      }}>
+        {[
+          { label: 'CRM Leads', sub: `${leads.length} leads`, href: '/dashboard/leads', icon: <Users size={20} color="#38BDF8" />, bg: 'rgba(56,189,248,0.1)', border: 'rgba(56,189,248,0.25)' },
+          { label: 'Schedule', sub: 'Site Visits', href: '/dashboard/calendar', icon: <CalendarDays size={20} color="#EC4899" />, bg: 'rgba(236,72,153,0.1)', border: 'rgba(236,72,153,0.25)' },
+          { label: 'Properties', sub: 'Active listings', href: '/dashboard/properties', icon: <Building size={20} color="#10B981" />, bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.25)' },
+          { label: 'Bot Settings', sub: 'Customization', href: '/dashboard/settings', icon: <Settings size={20} color="#C9A227" />, bg: 'rgba(201,162,39,0.1)', border: 'rgba(201,162,39,0.25)' },
+        ].map((item, idx) => (
+          <Link
+            key={idx}
+            href={item.href}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: '16px 12px', borderRadius: '14px',
+              backgroundColor: '#1E293B', border: `1px solid ${item.border}`,
+              textDecoration: 'none', transition: 'all 0.2s ease', textAlign: 'center'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.backgroundColor = 'rgba(30,41,59,0.95)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.backgroundColor = '#1E293B';
+            }}
+          >
+            <div style={{
+              width: '42px', height: '42px', borderRadius: '12px',
+              backgroundColor: item.bg, border: `1px solid ${item.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px'
+            }}>
+              {item.icon}
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#FFFFFF' }}>{item.label}</span>
+            <span style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>{item.sub}</span>
+          </Link>
+        ))}
       </div>
 
       {/* ── 5 Core Real Estate Metric Cards ── */}

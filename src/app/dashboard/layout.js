@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight, CalendarDays, MoreHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -372,23 +372,30 @@ export default function DashboardLayout({ children }) {
           boxShadow: '0 2px 20px rgba(0,0,0,0.4)'
         }}>
 
-          {/* LEFT: Sidebar Toggle Button (Open / Close) */}
-          <button
-            onClick={() => setSidebarOpen(v => !v)}
-            title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-            style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(201,162,39,0.22)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: sidebarOpen ? 'var(--primary)' : 'var(--text-muted)',
-              cursor: 'pointer', transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = sidebarOpen ? 'var(--primary)' : 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.22)'; }}
-          >
-            <Menu size={18} />
-          </button>
+          {/* LEFT: Toggle Button + Mobile Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => setSidebarOpen(v => !v)}
+              title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+              style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(201,162,39,0.22)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: sidebarOpen ? 'var(--primary)' : 'var(--text-muted)',
+                cursor: 'pointer', transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = sidebarOpen ? 'var(--primary)' : 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.22)'; }}
+            >
+              <Menu size={18} />
+            </button>
+
+            <Link href="/dashboard" className="mobile-only-brand" style={{ display: 'none', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+              <img src="/logo-icon.png" alt="Logo" style={{ height: '22px', width: '22px', objectFit: 'contain' }} />
+              <span style={{ fontSize: '15px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.02em' }}>PropFlow</span>
+            </Link>
+          </div>
 
           {/* RIGHT: Agent name + Bell + Avatar(dropdown) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -770,6 +777,71 @@ export default function DashboardLayout({ children }) {
           </div>
         </div>
       </main>
+
+      {/* ── Mobile Bottom Navigation Bar (CloseFlow Style) ── */}
+      <nav className="mobile-bottom-nav">
+        {[
+          { name: 'Home', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+          { name: 'Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
+          { name: 'Calendar', path: '/dashboard/calendar', icon: <CalendarDays size={20} /> },
+          { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
+          { name: 'More', isAction: true, action: () => setSidebarOpen(true), icon: <MoreHorizontal size={20} /> }
+        ].map((tab, idx) => {
+          const isActive = !tab.isAction && (
+            tab.path === '/dashboard' 
+              ? pathname === '/dashboard' 
+              : pathname.startsWith(tab.path)
+          );
+
+          if (tab.isAction) {
+            return (
+              <button
+                key={idx}
+                onClick={tab.action}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '4px', flex: 1, padding: '6px 0',
+                  color: sidebarOpen ? 'var(--primary)' : '#94A3B8',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>{tab.icon}</span>
+                <span style={{ fontSize: '10px', fontWeight: sidebarOpen ? '700' : '600' }}>{tab.name}</span>
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={idx}
+              href={tab.path}
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: '4px', flex: 1, padding: '6px 0', textDecoration: 'none',
+                color: isActive ? 'var(--primary)' : '#94A3B8',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <span style={{ 
+                transform: isActive ? 'scale(1.12)' : 'scale(1)', 
+                transition: 'transform 0.15s ease',
+                color: isActive ? 'var(--primary)' : 'inherit'
+              }}>
+                {tab.icon}
+              </span>
+              <span style={{ 
+                fontSize: '10px', 
+                fontWeight: isActive ? '700' : '600',
+                color: isActive ? '#FFFFFF' : 'inherit'
+              }}>
+                {tab.name}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
