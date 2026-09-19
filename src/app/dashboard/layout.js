@@ -217,7 +217,8 @@ export default function DashboardLayout({ children }) {
 
 
   const navItems = [
-    { name: 'My Profile', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'My Profile', path: '/dashboard/profile', icon: <UserPlus size={20} /> },
     { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'CRM Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
@@ -258,7 +259,8 @@ export default function DashboardLayout({ children }) {
           <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', paddingLeft: '12px', marginTop: '16px' }}>Main Menu</div>
           
           {navItems.map((item) => {
-            const isActive = pathname === item.path || (item.path !== '/dashboard' && pathname.startsWith(item.path));
+            const exactMatchPaths = ['/dashboard', '/dashboard/profile'];
+            const isActive = pathname === item.path || (!exactMatchPaths.includes(item.path) && pathname.startsWith(item.path));
             return (
               <Link key={item.path} href={item.path} onClick={() => setSidebarOpen(false)} style={{ 
                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
@@ -485,7 +487,8 @@ export default function DashboardLayout({ children }) {
 
                       {/* Nav Links */}
                       {[
-                        { label: 'My Profile', href: '/dashboard', icon: <LayoutDashboard size={15} /> },
+                        { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={15} /> },
+                        { label: 'My Profile', href: '/dashboard/profile', icon: <UserPlus size={15} /> },
                         { label: 'CRM Leads', href: '/dashboard/leads', icon: <Users size={15} /> },
                         { label: 'Properties', href: '/dashboard/properties', icon: <Building size={15} /> },
                         { label: 'Knowledge Base', href: '/dashboard/knowledge', icon: <Database size={15} /> },
