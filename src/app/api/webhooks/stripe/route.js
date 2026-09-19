@@ -6,20 +6,24 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
-});
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+  : null;
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(req) {
+  if (!stripe || !webhookSecret) {
+    return Response.json({ message: 'Stripe is disabled or unconfigured' }, { status: 200 });
+  }
+
   try {
     const body = await req.text();
     const signature = req.headers.get('stripe-signature');
 
-    if (!signature || !webhookSecret) {
-      console.error('Missing Stripe signature or webhook secret');
-      return Response.json({ error: 'Missing stripe signature or secret' }, { status: 400 });
+    if (!signature) {
+      console.error('Missing Stripe signature');
+      return Response.json({ error: 'Missing stripe signature' }, { status: 400 });
     }
 
     let event;

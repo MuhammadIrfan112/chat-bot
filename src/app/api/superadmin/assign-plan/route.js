@@ -12,10 +12,8 @@ export async function POST(req) {
       return Response.json({ error: 'userId and plan are required' }, { status: 400 });
     }
 
-    const planLabel = plan === 'pro' ? 'premium' : 'standard';
-    const amount = plan === 'pro'
-      ? (cycle === 'yearly' ? '$69' : '$79')
-      : (cycle === 'yearly' ? '$42' : '$49');
+    const planLabel = 'PropFlow AI';
+    const amount = '$99/mo';
 
     const startDate = new Date();
     const endDate = new Date();

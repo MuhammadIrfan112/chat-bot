@@ -24,7 +24,7 @@ export default function AdminPage() {
 
   // Assign Plan Modal
   const [assignModal, setAssignModal] = useState(null); // { userId, email }
-  const [assignForm, setAssignForm] = useState({ plan: 'starter', cycle: 'monthly', note: '' });
+  const [assignForm, setAssignForm] = useState({ plan: 'premium', cycle: 'monthly', note: '' });
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignResult, setAssignResult] = useState(null);
 
@@ -312,9 +312,7 @@ export default function AdminPage() {
                       cursor: 'pointer'
                     }}
                   >
-                    <option value="starter" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>📦 Starter / Standard ($29/mo)</option>
-                    <option value="pro" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>⭐ Pro / Premium ($79/mo)</option>
-                    <option value="enterprise" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>🚀 Enterprise ($199/mo)</option>
+                    <option value="premium" style={{ color: '#0F172A', backgroundColor: '#FFFFFF' }}>🏆 PropFlow AI Plan ($99/mo)</option>
                   </select>
                 </div>
                 <div>
@@ -955,11 +953,11 @@ export default function AdminPage() {
                               borderRadius: '20px',
                               fontSize: '12px',
                               fontWeight: '800',
-                              backgroundColor: isPremium ? '#EEF2FF' : '#F1F5F9',
-                              color: isPremium ? '#4338CA' : '#475569',
-                              border: isPremium ? '1px solid #C7D2FE' : '1px solid #E2E8F0'
+                              backgroundColor: '#EEF2FF',
+                              color: '#4338CA',
+                              border: '1px solid #C7D2FE'
                             }}>
-                              {isPremium ? '⭐ Premium Plan' : '📦 Standard Plan'}
+                              ⭐ PropFlow AI ($99/mo)
                             </span>
                           </div>
 
@@ -1012,7 +1010,7 @@ export default function AdminPage() {
                           <button
                             onClick={() => {
                               setAssignModal({ userId: user.user_id, email: user.email });
-                              setAssignForm({ plan: isPremium ? 'pro' : 'starter', cycle: 'monthly', note: '' });
+                              setAssignForm({ plan: 'premium', cycle: 'monthly', note: '' });
                               setAssignResult(null);
                             }}
                             style={{
