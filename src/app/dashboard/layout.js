@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }) {
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [unreadLeadsCount, setUnreadLeadsCount] = useState(0);
@@ -37,9 +38,16 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
-      setSidebarOpen(false);
-    }
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 900;
+      setIsMobile(mobile);
+      if (mobile) {
+        setSidebarOpen(false);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -778,70 +786,72 @@ export default function DashboardLayout({ children }) {
         </div>
       </main>
 
-      {/* ── Mobile Bottom Navigation Bar (CloseFlow Style) ── */}
-      <nav className="mobile-bottom-nav">
-        {[
-          { name: 'Home', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-          { name: 'Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
-          { name: 'Calendar', path: '/dashboard/calendar', icon: <CalendarDays size={20} /> },
-          { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
-          { name: 'More', isAction: true, action: () => setSidebarOpen(true), icon: <MoreHorizontal size={20} /> }
-        ].map((tab, idx) => {
-          const isActive = !tab.isAction && (
-            tab.path === '/dashboard' 
-              ? pathname === '/dashboard' 
-              : pathname.startsWith(tab.path)
-          );
+      {/* ── Mobile Bottom Navigation Bar (CloseFlow Style, Only rendered on mobile) ── */}
+      {isMobile && (
+        <nav className="mobile-bottom-nav">
+          {[
+            { name: 'Home', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
+            { name: 'Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
+            { name: 'Calendar', path: '/dashboard/calendar', icon: <CalendarDays size={20} /> },
+            { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
+            { name: 'More', isAction: true, action: () => setSidebarOpen(true), icon: <MoreHorizontal size={20} /> }
+          ].map((tab, idx) => {
+            const isActive = !tab.isAction && (
+              tab.path === '/dashboard' 
+                ? pathname === '/dashboard' 
+                : pathname.startsWith(tab.path)
+            );
 
-          if (tab.isAction) {
+            if (tab.isAction) {
+              return (
+                <button
+                  key={idx}
+                  onClick={tab.action}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: '4px', flex: 1, padding: '6px 0',
+                    color: sidebarOpen ? 'var(--primary)' : '#94A3B8',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <span>{tab.icon}</span>
+                  <span style={{ fontSize: '10px', fontWeight: sidebarOpen ? '700' : '600' }}>{tab.name}</span>
+                </button>
+              );
+            }
+
             return (
-              <button
+              <Link
                 key={idx}
-                onClick={tab.action}
+                href={tab.path}
+                onClick={() => setSidebarOpen(false)}
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: '4px', flex: 1, padding: '6px 0',
-                  color: sidebarOpen ? 'var(--primary)' : '#94A3B8',
+                  gap: '4px', flex: 1, padding: '6px 0', textDecoration: 'none',
+                  color: isActive ? 'var(--primary)' : '#94A3B8',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <span>{tab.icon}</span>
-                <span style={{ fontSize: '10px', fontWeight: sidebarOpen ? '700' : '600' }}>{tab.name}</span>
-              </button>
+                <span style={{ 
+                  transform: isActive ? 'scale(1.12)' : 'scale(1)', 
+                  transition: 'transform 0.15s ease',
+                  color: isActive ? 'var(--primary)' : 'inherit'
+                }}>
+                  {tab.icon}
+                </span>
+                <span style={{ 
+                  fontSize: '10px', 
+                  fontWeight: isActive ? '700' : '600',
+                  color: isActive ? '#FFFFFF' : 'inherit'
+                }}>
+                  {tab.name}
+                </span>
+              </Link>
             );
-          }
-
-          return (
-            <Link
-              key={idx}
-              href={tab.path}
-              onClick={() => setSidebarOpen(false)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: '4px', flex: 1, padding: '6px 0', textDecoration: 'none',
-                color: isActive ? 'var(--primary)' : '#94A3B8',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span style={{ 
-                transform: isActive ? 'scale(1.12)' : 'scale(1)', 
-                transition: 'transform 0.15s ease',
-                color: isActive ? 'var(--primary)' : 'inherit'
-              }}>
-                {tab.icon}
-              </span>
-              <span style={{ 
-                fontSize: '10px', 
-                fontWeight: isActive ? '700' : '600',
-                color: isActive ? '#FFFFFF' : 'inherit'
-              }}>
-                {tab.name}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+          })}
+        </nav>
+      )}
     </div>
   );
 }
