@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -218,10 +218,11 @@ export default function DashboardLayout({ children }) {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'My Profile', path: '/dashboard/profile', icon: <UserPlus size={20} /> },
-    { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
-    { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'CRM Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
+    { name: 'Calendar', path: '/dashboard/calendar', icon: <CalendarDays size={20} /> },
+    { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
+    { name: 'My Profile', path: '/dashboard/profile', icon: <UserPlus size={20} /> },
+    { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'Chat History', path: '/dashboard/chat-history', icon: <MessageSquare size={20} /> },
     { name: 'Plans & Billing', path: '/dashboard/plans', icon: <CreditCard size={20} /> },
   ];

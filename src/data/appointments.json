@@ -1,0 +1,47 @@
+[
+  {
+    "id": "apt-seed-1",
+    "client_name": "Alya Shakir",
+    "client_phone": "+1 416 555 0192",
+    "client_email": "alya@example.com",
+    "type": "Property Viewing",
+    "property_title": "Luxury Penthouse Suite - Downtown",
+    "property_address": "180 University Ave, Toronto, ON",
+    "date": "2026-09-20",
+    "time": "14:00",
+    "duration": "45 mins",
+    "status": "Confirmed",
+    "notes": "Client requested private tour of 38th floor terrace and amenities.",
+    "created_at": "2026-09-19T09:00:00.000Z"
+  },
+  {
+    "id": "apt-seed-2",
+    "client_name": "Inam Alvi",
+    "client_phone": "+1 647 889 2314",
+    "client_email": "inam@example.com",
+    "type": "Property Viewing",
+    "property_title": "Executive 4-Bedroom Detached Home",
+    "property_address": "45 King Street West, Mississauga, ON",
+    "date": "2026-09-21",
+    "time": "11:30",
+    "duration": "60 mins",
+    "status": "Confirmed",
+    "notes": "Pre-approved buyer looking for backyard space for family.",
+    "created_at": "2026-09-19T09:15:00.000Z"
+  },
+  {
+    "id": "apt-seed-3",
+    "client_name": "Sarah Jenkins",
+    "client_phone": "+1 905 442 8819",
+    "client_email": "sarah.j@example.com",
+    "type": "Offer Discussion",
+    "property_title": "Modern Townhouse near Transit",
+    "property_address": "12 Ridge Road, Oakville, ON",
+    "date": "2026-09-22",
+    "time": "16:00",
+    "duration": "30 mins",
+    "status": "Scheduled",
+    "notes": "Reviewing seller counter-offer and deposit terms.",
+    "created_at": "2026-09-19T09:30:00.000Z"
+  }
+]
