@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight, CalendarDays, MoreHorizontal } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight, ChevronLeft, CalendarDays, MoreHorizontal } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }) {
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showMoreSheet, setShowMoreSheet] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
@@ -262,25 +263,32 @@ export default function DashboardLayout({ children }) {
         {/* Glow behind Sidebar */}
         <div style={{ position: 'absolute', top: '10%', left: '-50%', width: '100%', height: '50%', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.1, zIndex: 0, pointerEvents: 'none' }}></div>
 
-        {/* Logo Area */}
-        <div style={{ position: 'relative', zIndex: 1, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minWidth: '280px' }}>
-          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '8px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
-            <img src="/logo-icon.png" alt="Logo" style={{ height: '22px', width: '22px', objectFit: 'contain' }} />
-          </div>
-          {/* Close / Collapse button */}
+        {/* Logo & Brand Area */}
+        <div style={{ position: 'relative', zIndex: 1, padding: '22px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minWidth: '280px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+            <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px rgba(255,255,255,0.1)', flexShrink: 0 }}>
+              <img src="/logo-icon.png" alt="Logo" style={{ height: '22px', width: '22px', objectFit: 'contain' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: '1.2' }}>PropFlow</div>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: '#C9A227', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Realty AI</div>
+            </div>
+          </Link>
+
+          {/* Close / Collapse button with Arrow */}
           <button 
             onClick={() => setSidebarOpen(false)} 
             title="Collapse Sidebar"
             style={{ 
-              background: 'none', border: 'none', color: 'var(--text-muted)', 
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', 
               cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center',
               borderRadius: '8px', transition: 'all 0.2s' 
             }} 
-            onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
-            aria-label="Close menu"
+            onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.3)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            aria-label="Collapse sidebar"
           >
-            <X size={20} />
+            <ChevronLeft size={18} />
           </button>
         </div>
         
@@ -379,43 +387,38 @@ export default function DashboardLayout({ children }) {
           boxShadow: '0 2px 20px rgba(0,0,0,0.4)'
         }}>
 
-          {/* LEFT: Toggle Button + Mobile Brand */}
+          {/* LEFT: Arrow Expand Button (ONLY visible when sidebar is CLOSED) + Mobile Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={() => setSidebarOpen(v => !v)}
-              title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-              style={{
-                width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(201,162,39,0.22)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: sidebarOpen ? 'var(--primary)' : 'var(--text-muted)',
-                cursor: 'pointer', transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = sidebarOpen ? 'var(--primary)' : 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.22)'; }}
-            >
-              <Menu size={18} />
-            </button>
+            {!sidebarOpen && (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                title="Expand Sidebar"
+                style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(201,162,39,0.3)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--primary)',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(201,162,39,0.15)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.6)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.3)'; }}
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight size={18} />
+              </button>
+            )}
 
             <Link href="/dashboard" className="mobile-only-brand" style={{ display: 'none', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-              <img src="/logo-icon.png" alt="Logo" style={{ height: '22px', width: '22px', objectFit: 'contain' }} />
+              <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img src="/logo-icon.png" alt="Logo" style={{ height: '18px', width: '18px', objectFit: 'contain' }} />
+              </div>
               <span style={{ fontSize: '15px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.02em' }}>PropFlow</span>
             </Link>
           </div>
 
-          {/* RIGHT: Agent name + Bell + Avatar(dropdown) */}
+          {/* RIGHT: Notification Bell + Avatar(dropdown) — agent name removed per request */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-
-            {/* Agent / Realtor Name (hidden on mobile to prevent clutter) */}
-            {agentName && (
-              <span className="desktop-only-agentname" style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {agentName}
-              </span>
-            )}
-
-            {/* Divider */}
-            <div style={{ width: '1px', height: '22px', background: 'rgba(201,162,39,0.18)' }} />
 
             {/* Notification Bell */}
             <Link href="/dashboard/leads" title="New Leads" style={{
@@ -785,6 +788,165 @@ export default function DashboardLayout({ children }) {
         </div>
       </main>
 
+      {/* ── Mobile "More" Drawer / Bottom Sheet (CloseFlow Style) ── */}
+      {isMobile && (
+        <AnimatePresence>
+          {showMoreSheet && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowMoreSheet(false)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  zIndex: 280
+                }}
+              />
+
+              {/* Bottom Sheet Card */}
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                style={{
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  maxHeight: '85vh',
+                  backgroundColor: '#0F1218',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '24px 24px 0 0',
+                  zIndex: 290,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '16px 20px',
+                  paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)',
+                  boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.85)',
+                  overflowY: 'auto'
+                }}
+              >
+                {/* Drag Handle Bar */}
+                <div 
+                  onClick={() => setShowMoreSheet(false)}
+                  style={{ width: '40px', height: '4px', backgroundColor: 'rgba(255, 255, 255, 0.25)', borderRadius: '2px', margin: '0 auto 16px', cursor: 'pointer' }} 
+                />
+
+                {/* Header Label */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', padding: '0 4px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    MORE
+                  </span>
+                  <button 
+                    onClick={() => setShowMoreSheet(false)} 
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* More Menu Items */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {[
+                    { name: 'My Profile', path: '/dashboard/profile', icon: <UserPlus size={20} color="#818CF8" /> },
+                    { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} color="#34D399" /> },
+                    { name: 'Chat History', path: '/dashboard/chat-history', icon: <MessageSquare size={20} color="#60A5FA" /> },
+                    { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} color="#F59E0B" /> },
+                    { name: 'Plans & Billing', path: '/dashboard/plans', icon: <CreditCard size={20} color="#C9A227" /> },
+                  ].map((item) => (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      onClick={() => setShowMoreSheet(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '13px 14px',
+                        borderRadius: '12px',
+                        backgroundColor: pathname === item.path ? 'rgba(201, 162, 39, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+                        border: pathname === item.path ? '1px solid rgba(201, 162, 39, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                        textDecoration: 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span>{item.icon}</span>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: pathname === item.path ? '#FFFFFF' : '#E2E8F0' }}>
+                          {item.name}
+                        </span>
+                      </div>
+                      <ChevronRight size={16} color="rgba(255,255,255,0.3)" />
+                    </Link>
+                  ))}
+
+                  <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.06)', margin: '8px 0' }} />
+
+                  {/* Visit Live Website */}
+                  <a
+                    href="https://www.realtypropflow.com/?view=website"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setShowMoreSheet(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '13px 14px',
+                      borderRadius: '12px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Globe size={20} color="#38BDF8" />
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#E2E8F0' }}>
+                        Visit Live Website
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '12px', opacity: 0.5 }}>↗</span>
+                  </a>
+
+                  {/* Sign Out */}
+                  <button
+                    onClick={() => {
+                      setShowMoreSheet(false);
+                      handleSignOut();
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '13px 14px',
+                      borderRadius: '12px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      color: '#F87171',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      marginTop: '4px',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <LogOut size={20} color="#EF4444" />
+                    <span>Sign out</span>
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      )}
+
       {/* ── Mobile Bottom Navigation Bar (CloseFlow Style, Only rendered on mobile) ── */}
       {isMobile && (
         <nav className="mobile-bottom-nav">
@@ -793,7 +955,7 @@ export default function DashboardLayout({ children }) {
             { name: 'Leads', path: '/dashboard/leads', icon: <Users size={20} /> },
             { name: 'Calendar', path: '/dashboard/calendar', icon: <CalendarDays size={20} /> },
             { name: 'Properties', path: '/dashboard/properties', icon: <Building size={20} /> },
-            { name: 'More', isAction: true, action: () => setSidebarOpen(true), icon: <MoreHorizontal size={20} /> }
+            { name: 'More', isAction: true, action: () => setShowMoreSheet(v => !v), icon: <MoreHorizontal size={20} /> }
           ].map((tab, idx) => {
             const isActive = !tab.isAction && (
               tab.path === '/dashboard' 
@@ -810,12 +972,24 @@ export default function DashboardLayout({ children }) {
                     background: 'none', border: 'none', cursor: 'pointer',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     gap: '4px', flex: 1, padding: '6px 0',
-                    color: sidebarOpen ? 'var(--primary)' : '#94A3B8',
+                    color: showMoreSheet ? 'var(--primary)' : '#94A3B8',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <span>{tab.icon}</span>
-                  <span style={{ fontSize: '10px', fontWeight: sidebarOpen ? '700' : '600' }}>{tab.name}</span>
+                  <span style={{
+                    transform: showMoreSheet ? 'scale(1.12)' : 'scale(1)',
+                    transition: 'transform 0.15s ease',
+                    color: showMoreSheet ? 'var(--primary)' : 'inherit'
+                  }}>
+                    {tab.icon}
+                  </span>
+                  <span style={{ 
+                    fontSize: '10px', 
+                    fontWeight: showMoreSheet ? '700' : '600',
+                    color: showMoreSheet ? '#FFFFFF' : 'inherit'
+                  }}>
+                    {tab.name}
+                  </span>
                 </button>
               );
             }
@@ -824,7 +998,10 @@ export default function DashboardLayout({ children }) {
               <Link
                 key={idx}
                 href={tab.path}
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  setSidebarOpen(false);
+                  setShowMoreSheet(false);
+                }}
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                   gap: '4px', flex: 1, padding: '6px 0', textDecoration: 'none',
