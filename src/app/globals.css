@@ -212,9 +212,25 @@ button {
   display: block;
 }
 
+.dashboard-sidebar {
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, border 0.2s ease !important;
+}
+
+@media (min-width: 901px) {
+  .dashboard-sidebar.sidebar-closed {
+    width: 0 !important;
+    min-width: 0 !important;
+    border-right: none !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   .sidebar-toggle {
-    display: flex;
+    display: none; /* controlled by top header toggle */
   }
 
   .dashboard-sidebar {

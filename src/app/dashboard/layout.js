@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }) {
   const [userEmail, setUserEmail] = useState('');
   const [impersonatedEmail, setImpersonatedEmail] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [websiteType, setWebsiteType] = useState('');
   const [onboardingLoading, setOnboardingLoading] = useState(false);
   const [unreadLeadsCount, setUnreadLeadsCount] = useState(0);
@@ -35,6 +35,12 @@ export default function DashboardLayout({ children }) {
   const [settingsSaved, setSettingsSaved] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 900) {
+      setSidebarOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
     const checkAuthAndSub = async () => {
@@ -180,7 +186,10 @@ export default function DashboardLayout({ children }) {
           if (b.primary_color) setBotColor(b.primary_color);
           if (b.name) setBotDisplayName(b.name);
           if (b.welcome_message) setBotWelcome(b.welcome_message);
-          if (b.bot_avatar && (b.bot_avatar.startsWith('http') || b.bot_avatar.startsWith('/'))) {
+          const dashAvatar = session.user?.user_metadata?.dashboard_avatar || localStorage.getItem('dashboard_avatar');
+          if (dashAvatar) {
+            setHeaderAvatar(dashAvatar);
+          } else if (b.bot_avatar && (b.bot_avatar.startsWith('http') || b.bot_avatar.startsWith('/'))) {
             setHeaderAvatar(b.bot_avatar);
           }
           const botIds = bots.map(b => b.id);
@@ -224,6 +233,7 @@ export default function DashboardLayout({ children }) {
     { name: 'My Profile', path: '/dashboard/profile', icon: <UserPlus size={20} /> },
     { name: 'Knowledge Base', path: '/dashboard/knowledge', icon: <Database size={20} /> },
     { name: 'Chat History', path: '/dashboard/chat-history', icon: <MessageSquare size={20} /> },
+    { name: 'Settings', path: '/dashboard/settings', icon: <Settings size={20} /> },
     { name: 'Plans & Billing', path: '/dashboard/plans', icon: <CreditCard size={20} /> },
   ];
 
@@ -239,18 +249,29 @@ export default function DashboardLayout({ children }) {
       <div className={`sidebar-overlay${sidebarOpen ? ' open' : ''}`} onClick={() => setSidebarOpen(false)} />
       
       {/* Ultra Premium Sidebar */}
-      <aside className={`dashboard-sidebar${sidebarOpen ? ' sidebar-open' : ''}`} style={{ width: '280px', backgroundColor: 'var(--bg-sidebar)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 10 }}>
+      <aside className={`dashboard-sidebar${sidebarOpen ? ' sidebar-open' : ' sidebar-closed'}`} style={{ width: sidebarOpen ? '280px' : '0px', minWidth: sidebarOpen ? '280px' : '0px', backgroundColor: 'var(--bg-sidebar)', borderRight: sidebarOpen ? '1px solid var(--border)' : 'none', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 10, overflow: 'hidden' }}>
         
         {/* Glow behind Sidebar */}
         <div style={{ position: 'absolute', top: '10%', left: '-50%', width: '100%', height: '50%', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.1, zIndex: 0, pointerEvents: 'none' }}></div>
 
         {/* Logo Area */}
-        <div style={{ position: 'relative', zIndex: 1, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ position: 'relative', zIndex: 1, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minWidth: '280px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '8px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
             <img src="/logo-icon.png" alt="Logo" style={{ height: '22px', width: '22px', objectFit: 'contain' }} />
           </div>
-          {/* Close button on mobile */}
-          <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }} aria-label="Close menu">
+          {/* Close / Collapse button */}
+          <button 
+            onClick={() => setSidebarOpen(false)} 
+            title="Collapse Sidebar"
+            style={{ 
+              background: 'none', border: 'none', color: 'var(--text-muted)', 
+              cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center',
+              borderRadius: '8px', transition: 'all 0.2s' 
+            }} 
+            onMouseEnter={e => { e.currentTarget.style.color = 'white'; e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+            aria-label="Close menu"
+          >
             <X size={20} />
           </button>
         </div>
@@ -351,19 +372,23 @@ export default function DashboardLayout({ children }) {
           boxShadow: '0 2px 20px rgba(0,0,0,0.4)'
         }}>
 
-          {/* LEFT: Message / Chat History icon */}
-          <Link href="/dashboard/chat-history" title="Chat History" style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(201,162,39,0.18)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--text-muted)', textDecoration: 'none', transition: 'all 0.2s'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.18)'; }}
+          {/* LEFT: Sidebar Toggle Button (Open / Close) */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(201,162,39,0.22)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: sidebarOpen ? 'var(--primary)' : 'var(--text-muted)',
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = sidebarOpen ? 'var(--primary)' : 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.22)'; }}
           >
-            <MessageSquare size={17} />
-          </Link>
+            <Menu size={18} />
+          </button>
 
           {/* RIGHT: Agent name + Bell + Avatar(dropdown) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -516,21 +541,24 @@ export default function DashboardLayout({ children }) {
 
                       {/* Settings */}
                       <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                        <button
-                          onClick={() => setShowSettingsPanel(true)}
+                        <Link
+                          href="/dashboard/settings"
+                          onClick={() => setShowProfileMenu(false)}
                           style={{
                             width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                             padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(255,255,255,0.65)', fontSize: '13px', fontWeight: '500',
-                            borderLeft: '2px solid transparent', justifyContent: 'flex-start', transition: 'all 0.15s'
+                            color: pathname === '/dashboard/settings' ? 'var(--primary)' : 'rgba(255,255,255,0.65)',
+                            fontSize: '13px', fontWeight: '500', textDecoration: 'none',
+                            borderLeft: pathname === '/dashboard/settings' ? '2px solid var(--primary)' : '2px solid transparent',
+                            justifyContent: 'flex-start', transition: 'all 0.15s'
                           }}
                           onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(201,162,39,0.06)'; e.currentTarget.style.color = 'white'; }}
-                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = pathname === '/dashboard/settings' ? 'var(--primary)' : 'rgba(255,255,255,0.65)'; }}
                         >
                           <span style={{ opacity: 0.7 }}><Settings size={15} /></span>
-                          Settings
+                          Settings & Customization
                           <ChevronRight size={13} style={{ marginLeft: 'auto', opacity: 0.4 }} />
-                        </button>
+                        </Link>
                         <button
                           onClick={() => { handleSignOut(); setShowProfileMenu(false); }}
                           style={{
