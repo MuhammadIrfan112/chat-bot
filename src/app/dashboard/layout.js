@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Database, Users, Settings, CreditCard, LogOut, Zap, Globe, Menu, X, ShieldAlert, Building, UserPlus, Handshake, Bell, ChevronDown, Palette, Type, AlignLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,6 +25,14 @@ export default function DashboardLayout({ children }) {
   const [agentName, setAgentName] = useState('');
   const [headerAvatar, setHeaderAvatar] = useState(null); // url or null
   const [profileUploading, setProfileUploading] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [botColor, setBotColor] = useState('#0EA5E9');
+  const [botDisplayName, setBotDisplayName] = useState('');
+  const [botWelcome, setBotWelcome] = useState('');
+  const [botId, setBotId] = useState(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -158,10 +166,23 @@ export default function DashboardLayout({ children }) {
         if (!session) return;
         const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
 
-        // Get bot name for agent display name
-        const { data: bots } = await supabase.from('bots').select('id, name').eq('user_id', userId).limit(1);
+        // Get bot settings, display name, and avatar
+        const { data: bots } = await supabase
+          .from('bots')
+          .select('id, name, primary_color, welcome_message, bot_avatar')
+          .eq('user_id', userId)
+          .limit(1);
+
         if (bots && bots.length > 0) {
-          setAgentName(bots[0].name || '');
+          const b = bots[0];
+          setBotId(b.id);
+          setAgentName(b.name || '');
+          if (b.primary_color) setBotColor(b.primary_color);
+          if (b.name) setBotDisplayName(b.name);
+          if (b.welcome_message) setBotWelcome(b.welcome_message);
+          if (b.bot_avatar && (b.bot_avatar.startsWith('http') || b.bot_avatar.startsWith('/'))) {
+            setHeaderAvatar(b.bot_avatar);
+          }
           const botIds = bots.map(b => b.id);
 
           // Count unread (New Lead) leads
@@ -222,12 +243,9 @@ export default function DashboardLayout({ children }) {
         <div style={{ position: 'absolute', top: '10%', left: '-50%', width: '100%', height: '50%', background: 'var(--primary)', filter: 'blur(100px)', opacity: 0.1, zIndex: 0, pointerEvents: 'none' }}></div>
 
         {/* Logo Area */}
-        <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '6px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
-              <img src="/logo-icon.png" alt="RealtyPropFlow AI Icon" style={{ height: '20px', width: '20px', objectFit: 'contain' }} />
-            </div>
-            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', color: 'white' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></h2>
+        <div style={{ position: 'relative', zIndex: 1, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '10px', padding: '8px', display: 'flex', boxShadow: '0 0 15px rgba(255,255,255,0.1)' }}>
+            <img src="/logo-icon.png" alt="Logo" style={{ height: '22px', width: '22px', objectFit: 'contain' }} />
           </div>
           {/* Close button on mobile */}
           <button onClick={() => setSidebarOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }} aria-label="Close menu">
@@ -316,33 +334,40 @@ export default function DashboardLayout({ children }) {
       <main className="dashboard-main" style={{ flex: 1, padding: '0', overflowY: 'auto', position: 'relative', display: 'flex', flexDirection: 'column' }}>
 
         {/* ── Top Header Bar ── */}
+        {/* Close dropdown on outside click */}
+        {showProfileMenu && <div onClick={() => { setShowProfileMenu(false); setShowSettingsPanel(false); }} style={{ position: 'fixed', inset: 0, zIndex: 49 }} />}
+
         <div style={{
           position: 'sticky', top: 0, zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '10px 32px',
-          backgroundColor: 'rgba(5,5,5,0.88)',
+          backgroundColor: 'rgba(5,5,5,0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid rgba(201,162,39,0.12)',
           boxShadow: '0 2px 20px rgba(0,0,0,0.4)'
         }}>
 
-          {/* LEFT: RealtyPropFlow Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '4px 5px', display: 'flex' }}>
-              <img src="/logo-icon.png" alt="R" style={{ height: '17px', width: '17px', objectFit: 'contain' }} />
-            </div>
-            <span style={{ fontSize: '14px', fontWeight: '700', color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.01em' }}>
-              Realty<span style={{ color: 'var(--primary)' }}>PropFlow</span>
-            </span>
-          </div>
+          {/* LEFT: Message / Chat History icon */}
+          <Link href="/dashboard/chat-history" title="Chat History" style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(201,162,39,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-muted)', textDecoration: 'none', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'rgba(201,162,39,0.18)'; }}
+          >
+            <MessageSquare size={17} />
+          </Link>
 
-          {/* RIGHT: Agent name + Avatar (editable) + Notification bell */}
+          {/* RIGHT: Agent name + Bell + Avatar(dropdown) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 
             {/* Agent / Realtor Name */}
             {agentName && (
-              <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.55)', letterSpacing: '-0.01em', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {agentName}
               </span>
             )}
@@ -350,56 +375,9 @@ export default function DashboardLayout({ children }) {
             {/* Divider */}
             <div style={{ width: '1px', height: '22px', background: 'rgba(201,162,39,0.18)' }} />
 
-            {/* Profile Avatar — clickable to upload image */}
-            <label title="Change Profile Picture" style={{ cursor: profileUploading ? 'wait' : 'pointer', position: 'relative', flexShrink: 0 }}>
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setProfileUploading(true);
-                try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  const uid = localStorage.getItem('impersonated_user_id') || session?.user?.id;
-                  if (!uid) return;
-                  const ext = file.name.split('.').pop();
-                  const path = `avatars/${uid}/header_avatar.${ext}`;
-                  await supabase.storage.from('bot_avatars').upload(path, file, { upsert: true });
-                  const { data: { publicUrl } } = supabase.storage.from('bot_avatars').getPublicUrl(path);
-                  setHeaderAvatar(publicUrl + '?t=' + Date.now());
-                } catch(err) { console.error(err); }
-                setProfileUploading(false);
-              }} />
-              <div style={{
-                width: '34px', height: '34px', borderRadius: '10px',
-                background: headerAvatar ? 'transparent' : 'linear-gradient(135deg, #C9A227, #4F46E5)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white', fontWeight: '800', fontSize: '14px',
-                boxShadow: '0 0 10px rgba(201,162,39,0.25)',
-                border: '2px solid rgba(201,162,39,0.3)',
-                overflow: 'hidden', transition: 'all 0.2s'
-              }}>
-                {headerAvatar
-                  ? <img src={headerAvatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : (userEmail ? userEmail.charAt(0).toUpperCase() : 'U')
-                }
-              </div>
-              {/* Camera overlay hint */}
-              {!profileUploading && (
-                <div style={{
-                  position: 'absolute', inset: 0, borderRadius: '10px',
-                  background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  opacity: 0, transition: 'opacity 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                onMouseLeave={e => e.currentTarget.style.opacity = '0'}
-                >
-                  <span style={{ fontSize: '12px' }}>📷</span>
-                </div>
-              )}
-            </label>
-
-            {/* Notification Bell — shows unread lead count */}
+            {/* Notification Bell */}
             <Link href="/dashboard/leads" title="New Leads" style={{
-              width: '34px', height: '34px', borderRadius: '10px',
+              width: '36px', height: '36px', borderRadius: '10px',
               background: 'rgba(255,255,255,0.04)',
               border: `1px solid ${unreadLeadsCount > 0 ? 'rgba(201,162,39,0.5)' : 'rgba(201,162,39,0.15)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -425,8 +403,243 @@ export default function DashboardLayout({ children }) {
               )}
             </Link>
 
-          </div>
+            {/* Divider */}
+            <div style={{ width: '1px', height: '22px', background: 'rgba(201,162,39,0.18)' }} />
 
+            {/* Profile Avatar with Dropdown - on the far right */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                onClick={() => { setShowProfileMenu(v => !v); setShowSettingsPanel(false); }}
+                title="Menu"
+                style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: headerAvatar ? 'transparent' : 'linear-gradient(135deg, #C9A227, #4F46E5)',
+                  border: '2px solid rgba(201,162,39,0.35)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white', fontWeight: '800', fontSize: '14px',
+                  boxShadow: '0 0 10px rgba(201,162,39,0.2)',
+                  overflow: 'hidden', cursor: 'pointer', padding: 0
+                }}
+              >
+                {headerAvatar
+                  ? <img src={headerAvatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : (agentName ? agentName.charAt(0).toUpperCase() : (userEmail ? userEmail.charAt(0).toUpperCase() : 'U'))
+                }
+              </button>
+
+              {/* Dropdown Menu */}
+              {showProfileMenu && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                  width: showSettingsPanel ? '280px' : '220px',
+                  backgroundColor: '#111111',
+                  border: '1px solid rgba(201,162,39,0.2)',
+                  borderRadius: '14px',
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.7)',
+                  zIndex: 100, overflow: 'hidden'
+                }}>
+
+                  {!showSettingsPanel ? (
+                    <>
+                      {/* User Info Header */}
+                      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <label style={{ cursor: 'pointer', flexShrink: 0 }} title="Change photo">
+                          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setProfileUploading(true);
+                            try {
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const uid = localStorage.getItem('impersonated_user_id') || session?.user?.id;
+                              if (!uid) return;
+                              const ext = file.name.split('.').pop();
+                              const path = `avatars/${uid}/header_avatar_${Date.now()}.${ext}`;
+                              await supabase.storage.from('bot_avatars').upload(path, file, { upsert: true });
+                              const { data: { publicUrl } } = supabase.storage.from('bot_avatars').getPublicUrl(path);
+                              setHeaderAvatar(publicUrl);
+                              if (botId) {
+                                await supabase.from('bots').update({ bot_avatar: publicUrl }).eq('id', botId);
+                              }
+                            } catch(err) { console.error(err); }
+                            setProfileUploading(false);
+                          }} />
+                          <div style={{
+                            width: '36px', height: '36px', borderRadius: '10px',
+                            background: headerAvatar ? 'transparent' : 'linear-gradient(135deg, #C9A227, #4F46E5)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'white', fontWeight: '800', fontSize: '14px',
+                            border: '2px solid rgba(201,162,39,0.3)', overflow: 'hidden', position: 'relative'
+                          }}>
+                            {headerAvatar ? <img src={headerAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (agentName ? agentName.charAt(0).toUpperCase() : (userEmail ? userEmail.charAt(0).toUpperCase() : 'U'))}
+                            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: '0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                              onMouseLeave={e => e.currentTarget.style.opacity = '0'}
+                            >📷</div>
+                          </div>
+                        </label>
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agentName || 'Agent'}</div>
+                          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{userEmail}</div>
+                        </div>
+                      </div>
+
+                      {/* Nav Links */}
+                      {[
+                        { label: 'My Profile', href: '/dashboard', icon: <LayoutDashboard size={15} /> },
+                        { label: 'CRM Leads', href: '/dashboard/leads', icon: <Users size={15} /> },
+                        { label: 'Properties', href: '/dashboard/properties', icon: <Building size={15} /> },
+                        { label: 'Knowledge Base', href: '/dashboard/knowledge', icon: <Database size={15} /> },
+                        { label: 'Chat History', href: '/dashboard/chat-history', icon: <MessageSquare size={15} /> },
+                        { label: 'Plans & Subscription', href: '/dashboard/plans', icon: <CreditCard size={15} /> },
+                      ].map(item => (
+                        <Link key={item.href} href={item.href}
+                          onClick={() => setShowProfileMenu(false)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '10px 16px', textDecoration: 'none',
+                            color: pathname === item.href ? 'var(--primary)' : 'rgba(255,255,255,0.65)',
+                            fontSize: '13px', fontWeight: '500',
+                            borderLeft: pathname === item.href ? '2px solid var(--primary)' : '2px solid transparent',
+                            transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(201,162,39,0.06)'; e.currentTarget.style.color = 'white'; }}
+                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = pathname === item.href ? 'var(--primary)' : 'rgba(255,255,255,0.65)'; }}
+                        >
+                          <span style={{ opacity: 0.7 }}>{item.icon}</span>
+                          {item.label}
+                        </Link>
+                      ))}
+
+                      {/* Settings */}
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <button
+                          onClick={() => setShowSettingsPanel(true)}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'rgba(255,255,255,0.65)', fontSize: '13px', fontWeight: '500',
+                            borderLeft: '2px solid transparent', justifyContent: 'flex-start', transition: 'all 0.15s'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(201,162,39,0.06)'; e.currentTarget.style.color = 'white'; }}
+                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
+                        >
+                          <span style={{ opacity: 0.7 }}><Settings size={15} /></span>
+                          Settings
+                          <ChevronRight size={13} style={{ marginLeft: 'auto', opacity: 0.4 }} />
+                        </button>
+                        <button
+                          onClick={() => { handleSignOut(); setShowProfileMenu(false); }}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'rgba(239,68,68,0.75)', fontSize: '13px', fontWeight: '500',
+                            borderLeft: '2px solid transparent', justifyContent: 'flex-start', transition: 'all 0.15s',
+                            marginBottom: '4px'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(239,68,68,0.08)'; e.currentTarget.style.color = '#EF4444'; }}
+                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'rgba(239,68,68,0.75)'; }}
+                        >
+                          <span style={{ opacity: 0.85 }}><LogOut size={15} /></span>
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    /* Settings Sub-Panel */
+                    <>
+                      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={() => setShowSettingsPanel(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                          <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
+                        </button>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Chatbot Settings</span>
+                      </div>
+
+                      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+                        {/* Brand Color */}
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '7px' }}>
+                            <Palette size={12} /> Brand Color
+                          </label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="color" value={botColor} onChange={e => setBotColor(e.target.value)}
+                              style={{ width: '34px', height: '34px', borderRadius: '8px', border: '2px solid rgba(201,162,39,0.25)', cursor: 'pointer', padding: '2px', background: 'none' }} />
+                            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace' }}>{botColor}</span>
+                          </div>
+                        </div>
+
+                        {/* Chatbot Display Name */}
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '7px' }}>
+                            <Type size={12} /> Chatbot Name
+                          </label>
+                          <input
+                            value={botDisplayName}
+                            onChange={e => setBotDisplayName(e.target.value)}
+                            placeholder="e.g. Sandra's Assistant"
+                            style={{
+                              width: '100%', padding: '8px 10px', borderRadius: '8px',
+                              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(201,162,39,0.2)',
+                              color: 'white', fontSize: '13px', outline: 'none', boxSizing: 'border-box'
+                            }}
+                          />
+                        </div>
+
+                        {/* Welcome Message */}
+                        <div>
+                          <label style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '7px' }}>
+                            <AlignLeft size={12} /> Welcome Message
+                          </label>
+                          <textarea
+                            value={botWelcome}
+                            onChange={e => setBotWelcome(e.target.value)}
+                            placeholder="Hi! How can I help you today?"
+                            rows={3}
+                            style={{
+                              width: '100%', padding: '8px 10px', borderRadius: '8px',
+                              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(201,162,39,0.2)',
+                              color: 'white', fontSize: '13px', outline: 'none',
+                              resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit'
+                            }}
+                          />
+                        </div>
+
+                        {/* Save Button */}
+                        <button
+                          disabled={savingSettings}
+                          onClick={async () => {
+                            if (!botId) return;
+                            setSavingSettings(true);
+                            try {
+                              await supabase.from('bots').update({
+                                primary_color: botColor,
+                                name: botDisplayName,
+                                welcome_message: botWelcome
+                              }).eq('id', botId);
+                              setAgentName(botDisplayName);
+                              setSettingsSaved(true);
+                              setTimeout(() => setSettingsSaved(false), 2500);
+                            } catch(e) { console.error(e); }
+                            setSavingSettings(false);
+                          }}
+                          style={{
+                            width: '100%', padding: '9px', borderRadius: '9px',
+                            background: settingsSaved ? '#10B981' : 'linear-gradient(135deg, #C9A227, #a07c1a)',
+                            color: 'white', fontWeight: '700', fontSize: '13px',
+                            border: 'none', cursor: savingSettings ? 'wait' : 'pointer',
+                            opacity: savingSettings ? 0.7 : 1, transition: 'all 0.2s'
+                          }}
+                        >
+                          {savingSettings ? 'Saving...' : settingsSaved ? '✅ Saved!' : 'Save Settings'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </div>
         </div>
         {/* ── End Top Header ── */}
 
