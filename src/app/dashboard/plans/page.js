@@ -49,7 +49,15 @@ export default function PlansPage() {
         body: JSON.stringify({ userId, userEmail: session.user.email }),
       });
       const data = await res.json();
-      if (data.checkoutUrl) {
+      if (data.transactionId && typeof window !== 'undefined' && window.Paddle?.Checkout?.open) {
+        window.Paddle.Checkout.open({
+          transactionId: data.transactionId,
+          settings: {
+            successUrl: `${window.location.origin}/dashboard/billing/success`,
+          }
+        });
+        setPaying(false);
+      } else if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
         setPayError(data.error || 'Could not start payment. Please try again.');

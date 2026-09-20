@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import ConditionalChatbot from '@/components/ConditionalChatbot';
+import PaddleLoader from '@/components/PaddleLoader';
 import "./globals.css";
 
 const inter = Inter({
@@ -23,6 +24,7 @@ export default function RootLayout({ children }) {
       <body style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif', minHeight: '100vh', backgroundColor: 'var(--bg-page)', color: 'var(--text-primary)' }}>
         {children}
         <ConditionalChatbot />
+        <PaddleLoader />
       </body>
     </html>
   );

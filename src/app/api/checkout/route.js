@@ -1,8 +1,8 @@
 // Paddle Checkout API — replaces Stripe
-// Price ID: pri_01m2wx27af935cqw4w5pksfv17 ($99/month — PropFlow AI)
+// Price ID: pri_01m2x0209ny42x6zkg03fpfmme ($99/month — PropFlow AI)
 
 const PADDLE_API_KEY = process.env.PADDLE_API_KEY;
-const PADDLE_PRICE_ID = process.env.PADDLE_PRICE_ID || 'pri_01m2wx27af935cqw4w5pksfv17';
+const PADDLE_PRICE_ID = process.env.PADDLE_PRICE_ID || 'pri_01m2x0209ny42x6zkg03fpfmme';
 
 export async function POST(req) {
   try {
@@ -21,8 +21,13 @@ export async function POST(req) {
       req.headers.get('origin') ||
       'https://www.realtypropflow.com';
 
+    const isSandbox = PADDLE_API_KEY?.startsWith('pdl_sdb') || process.env.PADDLE_ENV === 'sandbox';
+    const paddleBaseUrl = isSandbox
+      ? 'https://sandbox-api.paddle.com'
+      : 'https://api.paddle.com';
+
     // Create Paddle transaction (checkout session)
-    const response = await fetch('https://api.paddle.com/transactions', {
+    const response = await fetch(`${paddleBaseUrl}/transactions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PADDLE_API_KEY}`,
@@ -66,7 +71,9 @@ export async function POST(req) {
       return Response.json({ error: 'No checkout URL returned' }, { status: 500 });
     }
 
-    return Response.json({ checkoutUrl });
+    const transactionId = data?.data?.id;
+
+    return Response.json({ checkoutUrl, transactionId });
   } catch (error) {
     console.error('Checkout API error:', error);
     return Response.json({ error: error.message }, { status: 500 });
