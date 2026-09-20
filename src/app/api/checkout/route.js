@@ -47,9 +47,6 @@ export async function POST(req) {
           user_id: userId,
           user_email: userEmail || '',
         },
-        checkout: {
-          url: `${appUrl}/dashboard/billing/success`,
-        },
       }),
     });
 
