@@ -1164,7 +1164,9 @@ export default function Home() {
             &copy; {new Date().getFullYear()} RealtyPropFlow AI Inc. All rights reserved.
           </p>
 
-          <div style={{ display: 'flex', gap: '24px' }}>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            <Link href="/terms" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Terms of Service</Link>
+            <Link href="/privacy" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Privacy Policy</Link>
             <Link href="/pricing" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Pricing ($99)</Link>
             <Link href="/login" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Login</Link>
             <Link href="#demo" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Live Demo</Link>
