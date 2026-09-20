@@ -51,9 +51,35 @@ export async function POST(req) {
               status: 'Active',
               note: `Paddle: ${data?.id || ''}`
             });
+
+          // 3. Ensure bot exists in 'bots' table with Active status
+          const { data: existingBots } = await supabaseAdmin
+            .from('bots')
+            .select('id')
+            .eq('user_id', userId)
+            .limit(1);
+
+          if (!existingBots || existingBots.length === 0) {
+            await supabaseAdmin
+              .from('bots')
+              .insert({
+                user_id: userId,
+                name: 'RealtyPropFlow AI',
+                industry: 'Real Estate',
+                primary_color: '#C9A227',
+                status: 'Active',
+                plan: 'PropFlow AI',
+                welcome_message: 'Hi! Looking to buy, sell, or rent a property in the area?'
+              });
+          } else {
+            await supabaseAdmin
+              .from('bots')
+              .update({ status: 'Active', plan: 'PropFlow AI' })
+              .eq('id', existingBots[0].id);
+          }
         }
 
-        console.log(`[Paddle Webhook] Successfully activated subscription for userId: ${userId}`);
+        console.log(`[Paddle Webhook] Successfully activated subscription & bot for userId: ${userId}`);
       }
     }
 

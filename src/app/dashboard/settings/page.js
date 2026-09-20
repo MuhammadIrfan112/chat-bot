@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import {
@@ -53,6 +54,7 @@ export default function SettingsPage() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('branding'); // 'branding' | 'chatbot' | 'embed'
+  const [subscriptionStatus, setSubscriptionStatus] = useState('Inactive');
 
   useEffect(() => {
     loadSettings();
@@ -71,6 +73,8 @@ export default function SettingsPage() {
         setBrokerage('Realty Premier Brokerage');
         setDashboardAvatar(localStorage.getItem('dashboard_avatar') || null);
         setBotAvatar(localStorage.getItem('bot_avatar') || null);
+        setSubscriptionStatus('Active');
+        setBotId('demo-bot-id');
         setLoading(false);
         return;
       }
@@ -101,17 +105,40 @@ export default function SettingsPage() {
         if (b.bot_avatar) setBotAvatar(b.bot_avatar);
       }
 
-      // 3. Load Agent name & brokerage from users_subscription or metadata
+      // 3. Load Agent name & subscription status from users_subscription
       const { data: userSub } = await supabase
         .from('users_subscription')
-        .select('name')
+        .select('name, status')
         .eq('user_id', userId)
         .limit(1);
+
+      const isSubActive = userSub && userSub.length > 0 && userSub[0].status === 'Active';
+      setSubscriptionStatus(isSubActive ? 'Active' : 'Inactive');
 
       if (userSub && userSub.length > 0 && userSub[0].name) {
         setAgentName(userSub[0].name);
       } else {
         setAgentName(session.user.user_metadata?.full_name || '');
+      }
+
+      // If subscription is Active but no bot exists yet, auto-generate their bot immediately
+      if (isSubActive && (!bots || bots.length === 0)) {
+        const { data: newBot } = await supabase
+          .from('bots')
+          .insert({
+            user_id: userId,
+            name: 'RealtyPropFlow AI',
+            industry: 'Real Estate',
+            primary_color: '#C9A227',
+            status: 'Active',
+            plan: 'premium',
+            welcome_message: 'Hi! Looking to buy, sell, or rent a property in the area?'
+          })
+          .select()
+          .single();
+        if (newBot) {
+          setBotId(newBot.id);
+        }
       }
 
     } catch (err) {
@@ -630,58 +657,92 @@ export default function SettingsPage() {
 
       {/* TAB 3: Website Embed Code */}
       {activeTab === 'embed' && (
-        <div style={{ backgroundColor: '#1E293B', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', padding: '28px', maxWidth: '850px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <Code size={20} color="#C9A227" />
-            <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#FFFFFF' }}>
-              Add Chatbot to Your Website
-            </h3>
-          </div>
-          <p style={{ fontSize: '13px', color: '#94A3B8', margin: '0 0 20px' }}>
-            Paste this one-line script tag before the closing <code>&lt;/body&gt;</code> tag of your website. It works on WordPress, Wix, Webflow, Squarespace, and custom websites.
-          </p>
+        <div style={{ backgroundColor: '#1E293B', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', padding: '32px', maxWidth: '850px' }}>
+          {subscriptionStatus === 'Active' && botId ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <Code size={20} color="#C9A227" />
+                <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#FFFFFF' }}>
+                  Add Chatbot to Your Website
+                </h3>
+              </div>
+              <p style={{ fontSize: '13px', color: '#94A3B8', margin: '0 0 20px' }}>
+                Paste this one-line script tag before the closing <code>&lt;/body&gt;</code> tag of your website. It works on WordPress, Wix, Webflow, Squarespace, and custom websites.
+              </p>
 
-          <div style={{ position: 'relative', marginBottom: '20px' }}>
-            <pre style={{
-              backgroundColor: '#0F172A', padding: '18px', borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)', color: '#38BDF8', fontSize: '13px',
-              fontFamily: 'monospace', overflowX: 'auto', margin: 0
-            }}>
-              {embedCode}
-            </pre>
+              <div style={{ position: 'relative', marginBottom: '20px' }}>
+                <pre style={{
+                  backgroundColor: '#0F172A', padding: '18px', borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.1)', color: '#38BDF8', fontSize: '13px',
+                  fontFamily: 'monospace', overflowX: 'auto', margin: 0
+                }}>
+                  {embedCode}
+                </pre>
 
-            <button
-              onClick={copyEmbedCode}
-              style={{
-                position: 'absolute', top: '12px', right: '12px',
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', borderRadius: '6px',
-                backgroundColor: copied ? '#10B981' : 'rgba(255,255,255,0.1)',
-                color: '#FFFFFF', border: 'none', fontSize: '12px', fontWeight: '600',
-                cursor: 'pointer', transition: 'all 0.2s'
-              }}
-            >
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? 'Copied!' : 'Copy Code'}
-            </button>
-          </div>
+                <button
+                  onClick={copyEmbedCode}
+                  style={{
+                    position: 'absolute', top: '12px', right: '12px',
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '6px 12px', borderRadius: '6px',
+                    backgroundColor: copied ? '#10B981' : 'rgba(255,255,255,0.1)',
+                    color: '#FFFFFF', border: 'none', fontSize: '12px', fontWeight: '600',
+                    cursor: 'pointer', transition: 'all 0.2s'
+                  }}
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? 'Copied!' : 'Copy Code'}
+                </button>
+              </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <a
-              href={`/embed?bot_id=${botId || ''}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '9px 16px', borderRadius: '8px', backgroundColor: 'rgba(201,162,39,0.15)',
-                color: '#C9A227', border: '1px solid rgba(201,162,39,0.3)', fontSize: '13px',
-                fontWeight: '700', textDecoration: 'none'
-              }}
-            >
-              <ExternalLink size={15} />
-              Open Live Widget Tester
-            </a>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <a
+                  href={`/embed?bot_id=${botId || ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '9px 16px', borderRadius: '8px', backgroundColor: 'rgba(201,162,39,0.15)',
+                    color: '#C9A227', border: '1px solid rgba(201,162,39,0.3)', fontSize: '13px',
+                    fontWeight: '700', textDecoration: 'none'
+                  }}
+                >
+                  <ExternalLink size={15} />
+                  Open Live Widget Tester
+                </a>
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 16px' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px', margin: '0 auto 16px' }}>
+                🔒
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#FFFFFF', marginBottom: '8px' }}>
+                Chatbot Embed Code is Locked
+              </h3>
+              <p style={{ color: '#94A3B8', fontSize: '14px', maxWidth: '520px', margin: '0 auto 24px', lineHeight: 1.6 }}>
+                Your unique AI Chatbot embed script and Bot ID will be generated immediately once you subscribe to the Premium Plan ($99/mo).
+              </p>
+              <Link
+                href="/dashboard/plans"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '13px 30px',
+                  background: 'linear-gradient(135deg, #C9A227, #E5C158)',
+                  color: '#000000',
+                  fontWeight: '800',
+                  borderRadius: '12px',
+                  textDecoration: 'none',
+                  fontSize: '15px',
+                  boxShadow: '0 4px 18px rgba(201,162,39,0.3)'
+                }}
+              >
+                ⚡ Subscribe to Unlock ($99/mo)
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

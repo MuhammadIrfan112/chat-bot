@@ -104,27 +104,21 @@ export default function DashboardLayout({ children }) {
         }
 
         if (sub) {
-          setSubscriptionStatus(sub.status);
-          setPlanName(sub.plan || 'starter');
+          const actualStatus = (sub.status === 'Active') ? 'Active' : 'Inactive';
+          setSubscriptionStatus(actualStatus);
+          setPlanName(sub.plan || 'premium');
           setBillingCycle(sub.billing_cycle || 'monthly');
-          if (sub.trial_ends_at) {
-            const daysLeft = Math.ceil((new Date(sub.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24));
-            setTrialDaysLeft(daysLeft > 0 ? daysLeft : 0);
-          } else {
-            setTrialDaysLeft(0);
-          }
+          setTrialDaysLeft(null);
         } else {
-          const trialEndsAt = new Date();
-          trialEndsAt.setDate(trialEndsAt.getDate() + 15);
           await supabase.from('users_subscription').insert({
             user_id: userId,
-            status: 'Trialing',
-            plan: 'free',
-            email: impEmail || session.user.email,
-            trial_ends_at: trialEndsAt.toISOString()
+            status: 'Inactive',
+            plan: 'premium',
+            email: impEmail || session.user.email
           });
-          setSubscriptionStatus('Trialing');
-          setPlanName('free');
+          setSubscriptionStatus('Inactive');
+          setPlanName('premium');
+          setTrialDaysLeft(null);
         }
         setLoading(false);
       }
@@ -275,7 +269,7 @@ export default function DashboardLayout({ children }) {
             const exactMatchPaths = ['/dashboard', '/dashboard/profile'];
             const isActive = pathname === item.path || (!exactMatchPaths.includes(item.path) && pathname.startsWith(item.path));
             return (
-              <Link key={item.path} href={item.path} onClick={() => setSidebarOpen(false)} style={{ 
+              <Link key={item.path} href={item.path} onClick={() => { if (isMobile) setSidebarOpen(false); }} style={{ 
                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', 
                 color: isActive ? 'white' : 'var(--text-secondary)', 
                 backgroundColor: isActive ? 'rgba(255,255,255,0.03)' : 'transparent', 
@@ -684,75 +678,57 @@ export default function DashboardLayout({ children }) {
           </div>
         )}
 
-        {/* ⏰ Trial Countdown Banner */}
-        {subscriptionStatus && subscriptionStatus.toLowerCase() !== 'active' && (subscriptionStatus.toLowerCase() !== 'inactive' || trialDaysLeft !== null) && (
+        {/* 🔒 Inactive Subscription Banner (No free trial) */}
+        {subscriptionStatus && subscriptionStatus.toLowerCase() !== 'active' && (
           <div style={{
-            background: subscriptionStatus.toLowerCase() === 'inactive' ? 'rgba(239,68,68,0.05)' : 'rgba(79,70,229,0.05)',
-            border: `1px solid ${
-              subscriptionStatus.toLowerCase() === 'inactive' ? 'rgba(239,68,68,0.3)'
-              : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.3)'
-              : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.3)'
-              : 'rgba(79,70,229,0.3)'
-            }`,
+            background: 'rgba(239, 68, 68, 0.06)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
             borderRadius: '16px',
-            padding: '24px',
+            padding: '22px 26px',
             marginBottom: '32px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '20px',
             flexWrap: 'wrap',
-            boxShadow: subscriptionStatus.toLowerCase() === 'inactive' ? '0 8px 25px rgba(239,68,68,0.15)' : '0 4px 15px rgba(0,0,0,0.1)'
+            boxShadow: '0 8px 25px rgba(239, 68, 68, 0.12)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{
-                width: '50px', height: '50px', borderRadius: '14px', flexShrink: 0,
-                background: subscriptionStatus.toLowerCase() === 'inactive' ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 3 ? 'rgba(239,68,68,0.2)' : trialDaysLeft <= 7 ? 'rgba(245,158,11,0.2)' : 'rgba(79,70,229,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px'
+                width: '48px', height: '48px', borderRadius: '14px', flexShrink: 0,
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px'
               }}>
-                {subscriptionStatus.toLowerCase() === 'inactive' ? '🔒' : trialDaysLeft <= 3 ? '🔴' : trialDaysLeft <= 7 ? '🟡' : '🕐'}
+                🔒
               </div>
               <div>
                 <div style={{ fontWeight: '800', fontSize: '16px', color: 'white', marginBottom: '4px' }}>
-                  {subscriptionStatus.toLowerCase() === 'inactive'
-                    ? '⛔ Your 15-day free trial has ended. Your chatbot is now paused.'
-                    : trialDaysLeft === 0
-                    ? '⛔ Last Day! Your trial ends today'
-                    : trialDaysLeft === 1
-                    ? '⚠️ Trial ends tomorrow — 1 day left!'
-                    : `🗓️ Free Trial Active — ${trialDaysLeft} days remaining`
-                  }
+                  Account Inactive — Subscription Required ($99/mo)
                 </div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: '1.5' }}>
-                  {subscriptionStatus.toLowerCase() === 'inactive'
-                    ? 'Your chatbot visitors are seeing a paused message. Purchase a plan below to reactivate instantly.'
-                    : 'Upgrade now to ensure your chatbot never stops working for your visitors.'
-                  }
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5' }}>
+                  Your website embed code and live chatbot features will activate immediately once you subscribe to the Premium Plan.
                 </div>
               </div>
             </div>
-            {subscriptionStatus !== 'Active' && (
-              <a href="/dashboard/plans" style={{
-                padding: '12px 28px',
-                background: subscriptionStatus === 'Inactive' || trialDaysLeft <= 3
-                  ? 'linear-gradient(135deg, #EF4444, #DC2626)'
-                  : 'linear-gradient(135deg, #C9A227, #F59E0B)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: '800',
-                fontSize: '14px',
-                cursor: 'pointer',
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                {subscriptionStatus === 'Inactive' ? '🔓 Purchase a Plan' : '⚡ Upgrade Plan'}
-              </a>
-            )}
+            <a href="/dashboard/plans" style={{
+              padding: '12px 26px',
+              background: 'linear-gradient(135deg, #C9A227, #E5C158)',
+              color: '#000000',
+              border: 'none',
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '14px',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 15px rgba(201,162,39,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              ⚡ Subscribe Now ($99/mo)
+            </a>
           </div>
         )}
 

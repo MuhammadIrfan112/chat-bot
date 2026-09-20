@@ -89,7 +89,33 @@ export async function POST(req) {
         return Response.json({ error: 'Database update failed', details: dbError.message || dbError }, { status: 500 });
       }
 
-      console.log(`Successfully activated subscription for user: ${user_id}`);
+      // Ensure bot exists in 'bots' table with Active status
+      const { data: existingBots } = await supabaseAdmin
+        .from('bots')
+        .select('id')
+        .eq('user_id', user_id)
+        .limit(1);
+
+      if (!existingBots || existingBots.length === 0) {
+        await supabaseAdmin
+          .from('bots')
+          .insert({
+            user_id: user_id,
+            name: 'RealtyPropFlow AI',
+            industry: 'Real Estate',
+            primary_color: '#C9A227',
+            status: 'Active',
+            plan: 'PropFlow AI',
+            welcome_message: 'Hi! Looking to buy, sell, or rent a property in the area?'
+          });
+      } else {
+        await supabaseAdmin
+          .from('bots')
+          .update({ status: 'Active', plan: 'PropFlow AI' })
+          .eq('id', existingBots[0].id);
+      }
+
+      console.log(`Successfully activated subscription & bot for user: ${user_id}`);
     }
 
     return Response.json({ received: true });
