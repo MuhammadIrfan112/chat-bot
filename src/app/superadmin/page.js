@@ -172,7 +172,7 @@ export default function AdminPage() {
     setDeletingUser(null);
   };
 
-  const handlePayWithStripe = async (e) => {
+  const handlePayWithPaddle = async (e) => {
     e?.preventDefault();
     if (!assignModal) return;
     setIsAssigning(true);
@@ -182,22 +182,31 @@ export default function AdminPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          plan: assignForm.plan === 'premium' || assignForm.plan === 'pro' ? 'pro' : 'starter',
+          plan: 'premium',
           cycle: assignForm.cycle,
           userId: assignModal.userId,
           userEmail: assignModal.email || 'no-email@realtypropflow.com'
         })
       });
       const data = await res.json();
-      if (data.checkoutUrl) {
+      if (data.transactionId && typeof window !== 'undefined' && window.Paddle?.Checkout?.open) {
+        window.Paddle.Checkout.open({
+          transactionId: data.transactionId,
+          settings: {
+            successUrl: `${window.location.origin}/dashboard/billing/success`,
+          }
+        });
+        setIsAssigning(false);
+      } else if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        setAssignResult({ type: 'error', message: data.error || 'Failed to start Stripe checkout' });
+        setAssignResult({ type: 'error', message: data.error || 'Failed to start Paddle checkout' });
+        setIsAssigning(false);
       }
     } catch (err) {
       setAssignResult({ type: 'error', message: 'Network error.' });
+      setIsAssigning(false);
     }
-    setIsAssigning(false);
   };
 
   const handleAssignPlan = async (e) => {
@@ -365,10 +374,10 @@ export default function AdminPage() {
                     <span>✓</span> {isAssigning ? 'Processing...' : 'Confirm Plan (Free / Admin Override)'}
                   </button>
 
-                  {/* Option 2: Pay with Stripe */}
+                  {/* Option 2: Pay with Paddle */}
                   <button
                     type="button"
-                    onClick={handlePayWithStripe}
+                    onClick={handlePayWithPaddle}
                     disabled={isAssigning}
                     style={{
                       width: '100%',
@@ -388,7 +397,7 @@ export default function AdminPage() {
                       boxShadow: '0 4px 12px rgba(99,102,241,0.25)'
                     }}
                   >
-                    <span>💳</span> Pay with Stripe (Client Card)
+                    <span>💳</span> {isAssigning ? 'Processing...' : 'Pay with Paddle (Client Card)'}
                   </button>
                 </div>
               </div>
