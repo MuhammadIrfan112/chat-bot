@@ -11,8 +11,11 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [websiteType, setWebsiteType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -97,6 +100,25 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Signup validations
+    if (!isLogin) {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match. Please try again.');
+        setLoading(false);
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters long.');
+        setLoading(false);
+        return;
+      }
+      if (!acceptedTerms) {
+        setError('Please accept the Terms of Service to create an account.');
+        setLoading(false);
+        return;
+      }
+    }
 
     const cleanEmail = email.trim().toLowerCase();
 
@@ -332,6 +354,65 @@ export default function Login() {
                 </button>
               </div>
             </div>
+
+            {/* Confirm Password — signup only */}
+            {!isLogin && (
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '8px' }}>Confirm Password</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    style={{ width: '100%', padding: '12px 46px 12px 16px', borderRadius: '12px', border: `1px solid ${confirmPassword && password !== confirmPassword ? '#EF4444' : 'var(--border)'}`, fontSize: '15px', color: 'white', backgroundColor: 'rgba(255,255,255,0.03)', transition: 'all 0.2s', outline: 'none', boxSizing: 'border-box' }}
+                    placeholder="••••••••"
+                    onFocus={(e) => { e.target.style.borderColor = confirmPassword && password !== confirmPassword ? '#EF4444' : 'var(--primary)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.05)'; }}
+                    onBlur={(e) => { e.target.style.borderColor = confirmPassword && password !== confirmPassword ? '#EF4444' : 'var(--border)'; e.target.style.backgroundColor = 'rgba(255,255,255,0.03)'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p style={{ fontSize: '12px', color: '#EF4444', marginTop: '6px' }}>
+                    ⚠️ Passwords do not match
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Terms & Services checkbox — signup only */}
+            {!isLogin && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <input
+                  type="checkbox"
+                  id="acceptTerms"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    marginTop: '2px',
+                    accentColor: '#818CF8',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                />
+                <label htmlFor="acceptTerms" style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', cursor: 'pointer' }}>
+                  I agree to the{' '}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#818CF8', fontWeight: '600', textDecoration: 'underline' }}>Terms of Service</a>
+                  {' '}and{' '}
+                  <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#818CF8', fontWeight: '600', textDecoration: 'underline' }}>Privacy Policy</a>
+                </label>
+              </div>
+            )}
 
             <button
               type="submit"
