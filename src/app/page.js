@@ -184,18 +184,23 @@ export default function Home() {
 
         <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
           {[
-            ['#demo', 'Live AI Demo'],
-            ['#features', 'Features'],
-            ['#roi', 'ROI Calculator'],
-            ['#pricing', 'Pricing ($99)'],
-            ['#reviews', 'Testimonials'],
-            ['#contact', 'Contact'],
-          ].map(([href, label]) => (
-            <Link key={href} href={href} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '14px', fontWeight: '600', transition: 'color 0.2s' }}
+            ['demo', 'Live AI Demo'],
+            ['features', 'Features'],
+            ['roi', 'ROI Calculator'],
+            ['pricing', 'Pricing ($99)'],
+            ['reviews', 'Testimonials'],
+            ['contact', 'Contact'],
+          ].map(([id, label]) => (
+            <a key={id} href={`#${id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '14px', fontWeight: '600', transition: 'color 0.2s', cursor: 'pointer', background: 'none', border: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = '#E5C158'}
               onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}>
               {label}
-            </Link>
+            </a>
           ))}
         </nav>
 
@@ -235,10 +240,16 @@ export default function Home() {
       {/* ─── Mobile Drawer ─── */}
       {mobileMenuOpen && (
         <div style={{ position: 'fixed', inset: 0, top: '74px', background: '#07090E', zIndex: 99, padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {[['#demo', 'Live AI Demo'], ['#features', 'Features'], ['#roi', 'ROI Calculator'], ['#pricing', 'Pricing ($99)'], ['#contact', 'Contact']].map(([href, label]) => (
-            <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', textDecoration: 'none', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          {[['demo', 'Live AI Demo'], ['features', 'Features'], ['roi', 'ROI Calculator'], ['pricing', 'Pricing ($99)'], ['contact', 'Contact']].map(([id, label]) => (
+            <a key={id} href={`#${id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', textDecoration: 'none', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)', cursor: 'pointer' }}>
               {label}
-            </Link>
+            </a>
           ))}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
             <Link href="/login" onClick={() => setMobileMenuOpen(false)} style={{ textAlign: 'center', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', color: 'white', textDecoration: 'none', fontWeight: '700' }}>Login</Link>
@@ -281,13 +292,13 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             style={{
-              fontSize: 'clamp(38px, 5.5vw, 68px)',
-              fontWeight: '900',
-              lineHeight: 1.1,
-              letterSpacing: '-0.03em',
+              fontSize: 'clamp(26px, 3.5vw, 46px)',
+              fontWeight: '800',
+              lineHeight: 1.15,
+              letterSpacing: '-0.025em',
               color: '#FFFFFF',
-              maxWidth: '960px',
-              margin: '0 auto 24px'
+              maxWidth: '820px',
+              margin: '0 auto 22px'
             }}
           >
             Close More Listings While You Sleep. <br />
@@ -306,11 +317,11 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             style={{
-              fontSize: 'clamp(17px, 2vw, 20px)',
+              fontSize: 'clamp(15px, 1.6vw, 18px)',
               color: '#94A3B8',
-              maxWidth: '720px',
+              maxWidth: '660px',
               margin: '0 auto 40px',
-              lineHeight: 1.6
+              lineHeight: 1.65
             }}
           >
             RealtyPropFlow AI connects to live MLS data (Realtor.ca &amp; Zillow), answers buyer inquiries instantly with rich property photos, qualifies hot leads, and books showings straight into your calendar.
@@ -340,20 +351,26 @@ export default function Home() {
               Start 30-Day Free Trial — $99/mo <ArrowRight size={18} />
             </Link>
 
-            <a href="#demo" style={{
-              background: 'rgba(255,255,255,0.04)',
-              color: '#E2E8F0',
-              padding: '16px 28px',
-              borderRadius: '12px',
-              textDecoration: 'none',
-              fontSize: '16px',
-              fontWeight: '700',
-              border: '1px solid rgba(255,255,255,0.15)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              backdropFilter: 'blur(10px)'
-            }}>
+            <a href="#demo"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                color: '#E2E8F0',
+                padding: '16px 28px',
+                borderRadius: '12px',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '700',
+                border: '1px solid rgba(255,255,255,0.15)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                backdropFilter: 'blur(10px)',
+                cursor: 'pointer'
+              }}>
               Try Live Interactive Demo ↓
             </a>
           </motion.div>
