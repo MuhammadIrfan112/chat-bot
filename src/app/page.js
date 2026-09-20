@@ -187,7 +187,7 @@ export default function Home() {
             ['demo', 'Live AI Demo'],
             ['features', 'Features'],
             ['roi', 'ROI Calculator'],
-            ['pricing', 'Pricing ($99)'],
+            ['pricing', 'Pricing'],
             ['reviews', 'Testimonials'],
             ['contact', 'Contact'],
           ].map(([id, label]) => (
@@ -240,7 +240,7 @@ export default function Home() {
       {/* ─── Mobile Drawer ─── */}
       {mobileMenuOpen && (
         <div style={{ position: 'fixed', inset: 0, top: '74px', background: '#07090E', zIndex: 99, padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {[['demo', 'Live AI Demo'], ['features', 'Features'], ['roi', 'ROI Calculator'], ['pricing', 'Pricing ($99)'], ['contact', 'Contact']].map(([id, label]) => (
+          {[['demo', 'Live AI Demo'], ['features', 'Features'], ['roi', 'ROI Calculator'], ['pricing', 'Pricing'], ['contact', 'Contact']].map(([id, label]) => (
             <a key={id} href={`#${id}`}
               onClick={(e) => {
                 e.preventDefault();
@@ -630,6 +630,61 @@ export default function Home() {
             </div>
 
           </div>
+
+          {/* ─── Demo Website CTA Card ─── */}
+          <div style={{
+            marginTop: '32px',
+            background: 'linear-gradient(135deg, rgba(229,193,88,0.08) 0%, rgba(15,23,42,0.8) 100%)',
+            border: '1px solid rgba(229,193,88,0.25)',
+            borderRadius: '20px',
+            padding: '28px 36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '20px',
+            backdropFilter: 'blur(20px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '48px', height: '48px', borderRadius: '14px',
+                background: 'linear-gradient(135deg, #E5C158, #D4AF37)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '22px', flexShrink: 0
+              }}>🏡</div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#F1F5F9', marginBottom: '4px' }}>
+                  Try the Live Demo Website
+                </div>
+                <div style={{ fontSize: '13px', color: '#94A3B8' }}>
+                  See exactly how RealtyPropFlow AI looks on a real agent website — interact with it live
+                </div>
+              </div>
+            </div>
+            <a
+              href="https://realtypropflow-demo.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '13px 28px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #E5C158 0%, #D4AF37 100%)',
+                color: '#07090E',
+                fontWeight: '800',
+                fontSize: '14px',
+                textDecoration: 'none',
+                boxShadow: '0 4px 20px rgba(229,193,88,0.3)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}
+            >
+              Open Live Demo ↗
+            </a>
+          </div>
+
         </div>
       </section>
 
