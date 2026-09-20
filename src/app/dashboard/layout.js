@@ -131,31 +131,6 @@ export default function DashboardLayout({ children }) {
     };
     checkAuthAndSub();
 
-    const interval = setInterval(async () => {
-      const isDemo = localStorage.getItem('isDemo') === 'true';
-      if (isDemo) return;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-      if (session.user.email === 'demo@gmail.com') return;
-
-      const userId = localStorage.getItem('impersonated_user_id') || session.user.id;
-      const { data: sub, error } = await supabase
-        .from('users_subscription')
-        .select('user_id')
-        .eq('user_id', userId)
-        .single();
-
-      if (!sub || error) {
-        await supabase.auth.signOut();
-        router.push('/login');
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
   }, [router]);
 
   const handleSignOut = async () => {
