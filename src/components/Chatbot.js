@@ -1078,7 +1078,7 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [forceDesktopMode, setForceDesktopMode] = useState(isDesktopEmbed || isGlobal);
+  const [forceDesktopMode, setForceDesktopMode] = useState(isDesktopEmbed);
   const [embedPlan, setEmbedPlan] = useState(null);
   const [embedPosition, setEmbedPosition] = useState('right');
 
@@ -1212,14 +1212,14 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       if (params.get('position')) setEmbedPosition(params.get('position'));
 
       if (isDesktopEmbed || isDesktopParam) {
-        setForceDesktopMode(true);
+        if (!isGlobal) setForceDesktopMode(true);
         setIsMobile(false);
         setIsTablet(false);
         return;
       }
       if (isMobileParam) {
         setIsMobile(true);
-        setForceDesktopMode(false);
+        if (!isGlobal) setForceDesktopMode(false);
         setIsTablet(false);
         return;
       }
@@ -1242,8 +1242,11 @@ export default function Chatbot({ isGlobal = false, isDesktopEmbed = false, init
       
       const mobile = w <= 768;
       setIsMobile(mobile);
-      if (!mobile) setForceDesktopMode(true);
-      else setForceDesktopMode(false);
+      // Only toggle forceDesktopMode for iframe embeds, NOT for the global floating widget
+      if (!isGlobal) {
+        if (!mobile) setForceDesktopMode(true);
+        else setForceDesktopMode(false);
+      }
       setIsTablet(false);
     };
     checkDevice();
