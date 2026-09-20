@@ -1,59 +1,128 @@
 'use client';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { Bot, Zap, Shield, ChevronRight, Activity, Check, ArrowRight, Sparkles, TrendingUp, Globe, Star } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Bot, Zap, Shield, ChevronRight, Check, ArrowRight, Sparkles, 
+  Globe, Star, Calendar, MessageSquare, Flame, PhoneCall, 
+  DollarSign, Calculator, Home as HomeIcon, MapPin, Bed, Bath, Maximize2
+} from 'lucide-react';
 import styles from './page.module.css';
-import { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-const LOGOS = [
-  { name: 'Shopify', letter: 'S', bg: '#96BF48' },
-  { name: 'WordPress', letter: 'W', bg: '#21759B' },
-  { name: 'Wix', letter: 'W', bg: '#FAAD4F' },
-  { name: 'Webflow', letter: 'W', bg: '#4353FF' },
-  { name: 'Squarespace', letter: 'S', bg: '#2C2C2C' },
+const REAL_ESTATE_LOGOS = [
+  { name: 'Realtor.ca Sync', icon: '🇨🇦' },
+  { name: 'Zillow MLS Data', icon: '🇺🇸' },
+  { name: 'Follow Up Boss', icon: '💼' },
+  { name: 'Google Calendar', icon: '📅' },
+  { name: 'kvCORE / BoldTrail', icon: '⚡' },
+  { name: 'Any Website Embed', icon: '🌐' },
 ];
 
-const TESTIMONIALS = [
-  { name: 'Ahmad Raza', role: 'E-commerce Owner', text: 'RealtyPropFlow AI doubled our lead capture rate in the first week. Incredible ROI.', stars: 5 },
-  { name: 'Sara Khan', role: 'Digital Agency', text: 'We deploy this for every client now. Setup takes 10 minutes, results are instant.', stars: 5 },
-  { name: 'Mohammed Ali', role: 'SaaS Founder', text: 'The live takeover feature alone is worth the price. We close 3x more deals.', stars: 5 },
+const RE_TESTIMONIALS = [
+  { 
+    name: 'Marcus Vance', 
+    role: 'Luxury Broker — Toronto & GTA', 
+    text: 'We captured two buyers at 11:30 PM who were browsing our listings. The AI showed them live luxury properties, qualified their $1.4M budget, and booked private tours for Sunday. Outstanding ROI.', 
+    stars: 5,
+    deal: 'Closed $1.4M Deal'
+  },
+  { 
+    name: 'Elena Rostova', 
+    role: 'Top 1% Producing Realtor', 
+    text: 'Normal website forms are dead. Buyers want answers now. RealtyPropFlow AI gives them real-time property photos, square footage, and pricing in seconds. It paid for itself in week one.', 
+    stars: 5,
+    deal: '3x More Buyer Leads'
+  },
+  { 
+    name: 'David Sterling', 
+    role: 'Brokerage Team Lead — 18 Agents', 
+    text: 'The live takeover feature is a game-changer. When a pre-approved buyer asks to put an offer, my agents get an instant ping and step into the chat from their phone. Best $99 we spend every month.', 
+    stars: 5,
+    deal: '15+ Tours Booked / Mo'
+  },
 ];
 
-const FEATURES = [
-  { icon: <Zap size={22} />, title: 'Lightning Fast Setup', desc: 'No coding needed. Paste your URL, upload your docs, and go live in under 10 minutes.', color: '#38BDF8', rgb: '56,189,248' },
-  { icon: <Activity size={22} />, title: 'Capture Leads 24/7', desc: 'AI intelligently collects Name and Email and pushes them straight to your CRM.', color: '#10B981', rgb: '16,185,129' },
-  { icon: <Bot size={22} />, title: 'Custom Knowledge Base', desc: 'Feed it PDFs, URLs, or FAQs. Your bot answers exactly like your best sales rep.', color: '#D4AF37', rgb: '129,140,248' },
-  { icon: <Shield size={22} />, title: 'Live Human Takeover', desc: 'See a high-value prospect? Pause the AI and jump in yourself with a single click.', color: '#F59E0B', rgb: '245,158,11' },
-  { icon: <Globe size={22} />, title: 'Embed Anywhere', desc: 'Works on Shopify, WordPress, Wix, Webflow, or any custom-built website.', color: '#E5C158', rgb: '192,132,252' },
-  { icon: <TrendingUp size={22} />, title: 'Analytics & Insights', desc: 'Track sessions, lead quality, and bot performance from your live dashboard.', color: '#EF4444', rgb: '239,68,68' },
+const INTERACTIVE_PROMPTS = [
+  {
+    question: "Show me 3-bed homes in Toronto under $1M",
+    reply: "Here is a newly listed 3-bedroom luxury property matching your criteria in Downtown Toronto:",
+    property: {
+      title: "The King West Penthouse",
+      address: "180 King St W, Toronto, ON",
+      price: "$895,000",
+      beds: 3,
+      baths: 2,
+      sqft: "1,450 sqft",
+      tag: "Just Listed • MLS® Verified",
+      img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop"
+    },
+    actionText: "Book Private Showing Tomorrow at 2:00 PM",
+    leadTag: "🔥 Hot Buyer Lead — Budget: $1M (Pre-Approved)"
+  },
+  {
+    question: "Can I schedule a private tour for tomorrow?",
+    reply: "Absolutely! I have private showing slots available with the listing agent tomorrow:",
+    property: {
+      title: "Crystal Bay Waterfront Estate",
+      address: "55 Lakefront Way, Lake Tahoe",
+      price: "$1,850,000",
+      beds: 4,
+      baths: 4,
+      sqft: "3,200 sqft",
+      tag: "Private Viewings Available",
+      img: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=800&auto=format&fit=crop"
+    },
+    actionText: "Confirm Tour: Saturday @ 11:30 AM",
+    leadTag: "📅 Tour Scheduled & Synced to Agent Calendar"
+  },
+  {
+    question: "What is my home's estimated market value?",
+    reply: "I can run an instant MLS comparative market analysis (CMA). What is your property address and bedroom count?",
+    property: {
+      title: "Free Instant Home Valuation (CMA)",
+      address: "Local Market Median: +8.4% Year-over-Year",
+      price: "Instant Report",
+      beds: "Any",
+      baths: "Any",
+      sqft: "Full Comp",
+      tag: "Seller Lead Qualifier",
+      img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800&auto=format&fit=crop"
+    },
+    actionText: "Send Free Valuation to My Email",
+    leadTag: "🏠 High-Intent Seller Lead Captured"
+  }
 ];
 
 export default function Home() {
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '25%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const router = useRouter();
-
-  const [formStatus, setFormStatus] = useState('idle');
   const [authChecking, setAuthChecking] = useState(true);
-  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [activePromptIdx, setActivePromptIdx] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [installForm, setInstallForm] = useState({ name: '', phone: '', installTime: '', techInfo: '', websiteType: '', hasHostingAccess: '', hostingUser: '', hostingPass: '' });
-  const [installStatus, setInstallStatus] = useState('idle'); // idle | submitting | success
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installStatus, setInstallStatus] = useState('idle');
+  const [installForm, setInstallForm] = useState({ 
+    name: '', phone: '', installTime: '', techInfo: '', websiteType: '', hasHostingAccess: '', hostingUser: '', hostingPass: '' 
+  });
+
+  // ROI Calculator State
+  const [avgPrice, setAvgPrice] = useState(750000);
+  const [commissionRate, setCommissionRate] = useState(2.5);
+
+  const potentialCommission = (avgPrice * (commissionRate / 100));
+  const annualInvestment = 99 * 12; // $1,188/yr
+  const netProfit = potentialCommission - annualInvestment;
+  const roiPercentage = Math.round((netProfit / annualInvestment) * 100);
 
   // ── Auto-redirect logged-in users to dashboard ────────────────
   useEffect(() => {
     const isViewWebsite = window.location.search.includes('view=website');
-
     if (isViewWebsite) {
       setAuthChecking(false);
-      return; // Skip auto-redirect completely
+      return;
     }
 
-    // Check existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         window.location.href = '/dashboard';
@@ -62,7 +131,6 @@ export default function Home() {
       }
     });
 
-    // Listen for auth state changes (catches token refresh etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         window.location.href = '/dashboard';
@@ -73,577 +141,865 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  // Show blank screen while checking auth (avoids flash of landing page)
   if (authChecking) {
-    return <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page)' }} />;
+    return <div style={{ minHeight: '100vh', backgroundColor: '#07090E' }} />;
   }
 
-  const handleContactSubmit = (e) => {
-    e.preventDefault();
-    setFormStatus('submitting');
-    setTimeout(() => {
-      setFormStatus('success');
-    }, 1500);
-  };
+  const activeDemo = INTERACTIVE_PROMPTS[activePromptIdx];
 
   return (
-    <div style={{ minHeight: '100vh', position: 'relative', backgroundColor: 'var(--bg-page)', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', position: 'relative', backgroundColor: '#07090E', color: '#F1F5F9', overflowX: 'hidden' }}>
 
-      {/* ─── Ambient orbs (positioned to only affect hero area) ─── */}
-      <div className="ambient-glow" style={{ top: '-20%', left: '-10%', width: '650px', height: '650px', background: '#4338CA', opacity: 0.5 }} />
-      <div className="ambient-glow" style={{ top: '10%', right: '-15%', width: '550px', height: '550px', background: '#38BDF8', opacity: 0.1 }} />
+      {/* ─── Ambient Glow Accents ─── */}
+      <div style={{ position: 'fixed', top: '-15%', left: '15%', width: '700px', height: '700px', background: 'radial-gradient(circle, rgba(229,193,88,0.07) 0%, rgba(79,70,229,0.04) 50%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', top: '40%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
 
       {/* ─── Sticky Glass Navbar ─── */}
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-        className="glass-panel"
-        style={{ padding: '0 6%', height: '68px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        style={{
+          padding: '0 6%',
+          height: '74px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          background: 'rgba(7, 9, 14, 0.8)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.07)'
+        }}
       >
-        {/* Logo: icon + text  */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', background: 'transparent' }}>
-          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '60px', width: '60px', objectFit: 'contain', background: 'transparent', display: 'block' }} />
-          <span style={{ fontSize: '18px', fontWeight: '900', fontStyle: 'italic', color: '#E5C158', letterSpacing: '0.01em', fontFamily: 'Georgia, serif' }}>
-            RealtyPropFlow<span style={{ color: '#745909ff' }}>.</span>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '44px', width: '44px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '20px', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center' }}>
+            RealtyPropFlow<span style={{ color: '#E5C158', fontSize: '24px', lineHeight: 1 }}>.</span>
           </span>
         </Link>
 
-        <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '36px', alignItems: 'center' }}>
-          {[['/#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
-            <Link key={href} href={href} className={styles.navLink}>{label}</Link>
+        <nav className={styles.desktopOnly} style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
+          {[
+            ['#demo', 'Live AI Demo'],
+            ['#features', 'Features'],
+            ['#roi', 'ROI Calculator'],
+            ['#pricing', 'Pricing ($99)'],
+            ['#reviews', 'Testimonials'],
+            ['#contact', 'Contact'],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '14px', fontWeight: '600', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#E5C158'}
+              onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}>
+              {label}
+            </Link>
           ))}
         </nav>
 
-        <div className={styles.desktopOnly} style={{ display: 'flex', gap: '12px' }}>
-          <Link href="/login" className={styles.secondaryBtn} style={{ padding: '8px 20px', fontSize: '14px' }}>
-            Login
+        <div className={styles.desktopOnly} style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+          <Link href="/login" style={{ color: '#E2E8F0', padding: '9px 18px', borderRadius: '10px', textDecoration: 'none', fontSize: '14px', fontWeight: '700', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>
+            Client Login
           </Link>
-          <Link href="/login" className={styles.primaryBtn} style={{ padding: '8px 20px', fontSize: '14px' }}>
-            Sign up
+          <Link href="/login" style={{
+            background: 'linear-gradient(135deg, #E5C158 0%, #D4AF37 100%)',
+            color: '#07090E',
+            padding: '10px 22px',
+            borderRadius: '10px',
+            textDecoration: 'none',
+            fontSize: '14px',
+            fontWeight: '800',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 20px rgba(229,193,88,0.25)',
+            transition: 'all 0.2s'
+          }}>
+            Get Started <ArrowRight size={15} />
           </Link>
         </div>
 
         {/* Mobile Hamburger */}
-        <button className={`${styles.hamburger} ${mobileMenuOpen ? styles.open : ''}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
-          <span></span>
-          <span></span>
-          <span></span>
+        <button 
+          className={`${styles.hamburger} ${mobileMenuOpen ? styles.open : ''}`} 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+          aria-label="Toggle menu"
+          style={{ background: 'none', border: 'none', color: '#E5C158', cursor: 'pointer' }}
+        >
+          <span></span><span></span><span></span>
         </button>
       </motion.header>
 
-      {/* Mobile Nav Drawer */}
-      <div className={`${styles.mobileNav} ${mobileMenuOpen ? styles.open : ''}`}>
-        {[['/#features', 'Features'], ['/pricing', 'Pricing'], ['/how-it-works', 'How it Works'], ['/contact', 'Contact Us']].map(([href, label]) => (
-          <Link key={href} href={href} className={styles.mobileNavLink} onClick={() => setMobileMenuOpen(false)}>{label}</Link>
-        ))}
-        <div className={styles.mobileNavBtns}>
-          <Link href="/login" className={styles.secondaryBtn} style={{ flex: 1 }} onClick={() => setMobileMenuOpen(false)}>Login</Link>
-          <Link href="/login" className={styles.primaryBtn} style={{ flex: 1 }} onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
+      {/* ─── Mobile Drawer ─── */}
+      {mobileMenuOpen && (
+        <div style={{ position: 'fixed', inset: 0, top: '74px', background: '#07090E', zIndex: 99, padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {[['#demo', 'Live AI Demo'], ['#features', 'Features'], ['#roi', 'ROI Calculator'], ['#pricing', 'Pricing ($99)'], ['#contact', 'Contact']].map(([href, label]) => (
+            <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', textDecoration: 'none', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              {label}
+            </Link>
+          ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)} style={{ textAlign: 'center', padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', color: 'white', textDecoration: 'none', fontWeight: '700' }}>Login</Link>
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)} style={{ textAlign: 'center', padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg, #E5C158, #D4AF37)', color: 'black', textDecoration: 'none', fontWeight: '800' }}>Get Started ($99/mo)</Link>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ─── HERO ─── */}
-      <section ref={heroRef} style={{ position: 'relative', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '120px 24px 80px', zIndex: 10, overflow: 'hidden' }}>
-        {/* Subtle grid overlay */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '60px 60px', zIndex: 0, pointerEvents: 'none' }} />
-
-        <motion.div style={{ y: heroY, opacity: heroOpacity, position: 'relative', zIndex: 2, maxWidth: '860px', margin: '0 auto' }}>
-          {/* Live badge */}
+      {/* ─── HERO SECTION ─── */}
+      <section style={{ paddingTop: '150px', paddingBottom: '90px', paddingLeft: '6%', paddingRight: '6%', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+          
+          {/* Trust Badge */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(201,162,39,0.12)', padding: '6px 16px', borderRadius: '50px', fontSize: '13px', fontWeight: '700', marginBottom: '32px', border: '1px solid rgba(129,140,248,0.25)', color: '#A5B4FC', letterSpacing: '0.02em' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 18px',
+              borderRadius: '100px',
+              background: 'rgba(229,193,88,0.1)',
+              border: '1px solid rgba(229,193,88,0.3)',
+              color: '#E5C158',
+              fontSize: '13px',
+              fontWeight: '700',
+              marginBottom: '28px',
+              letterSpacing: '0.02em'
+            }}
           >
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981', flexShrink: 0, display: 'inline-block' }} />
-            The #1 AI Chatbot for Sales & Support
+            <Sparkles size={14} color="#E5C158" />
+            The 24/7 AI Real Estate Agent for Top Producers
           </motion.div>
 
-          {/* Headline */}
+          {/* Main Headline */}
           <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, type: 'spring', stiffness: 80 }}
-            style={{ fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: '900', lineHeight: 1.07, marginBottom: '28px', letterSpacing: '-0.03em', color: '#F5F0E1' }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            style={{
+              fontSize: 'clamp(38px, 5.5vw, 68px)',
+              fontWeight: '900',
+              lineHeight: 1.1,
+              letterSpacing: '-0.03em',
+              color: '#FFFFFF',
+              maxWidth: '960px',
+              margin: '0 auto 24px'
+            }}
           >
-            Turn website visitors <br />
-            into <span className="text-gradient-primary">paying customers.</span>
+            Close More Listings While You Sleep. <br />
+            <span style={{
+              background: 'linear-gradient(135deg, #FFF0B8 0%, #E5C158 50%, #C9A227 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              Shows Live Homes &amp; Books Private Tours.
+            </span>
           </motion.h1>
 
+          {/* Subheading */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            style={{ fontSize: '19px', color: '#B8C4BC', maxWidth: '580px', margin: '0 auto 44px', lineHeight: 1.75 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            style={{
+              fontSize: 'clamp(17px, 2vw, 20px)',
+              color: '#94A3B8',
+              maxWidth: '720px',
+              margin: '0 auto 40px',
+              lineHeight: 1.6
+            }}
           >
-            Deploy an AI-powered chatbot trained on <em style={{ color: '#E5C158', fontStyle: 'normal', fontWeight: '600' }}>your data</em> in under 10 minutes. Capture leads, answer questions, and close deals — 24/7.
+            RealtyPropFlow AI connects to live MLS data (Realtor.ca &amp; Zillow), answers buyer inquiries instantly with rich property photos, qualifies hot leads, and books showings straight into your calendar.
           </motion.p>
 
-          {/* CTA Buttons */}
+          {/* CTA Group */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '48px' }}
           >
-            <Link href="/login" className={styles.primaryBtn} style={{ padding: '15px 32px', fontSize: '16px' }}>
-              Start for Free — No Credit Card
-              <ChevronRight size={20} />
+            <Link href="/login" style={{
+              background: 'linear-gradient(135deg, #E5C158 0%, #D4AF37 100%)',
+              color: '#07090E',
+              padding: '16px 36px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              fontSize: '16px',
+              fontWeight: '800',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 8px 30px rgba(229,193,88,0.3)',
+              transition: 'all 0.2s'
+            }}>
+              Start 30-Day Free Trial — $99/mo <ArrowRight size={18} />
             </Link>
-            <Link href="/how-it-works" className={styles.secondaryBtn} style={{ padding: '15px 28px', fontSize: '16px' }}>
-              See How it Works
-            </Link>
+
+            <a href="#demo" style={{
+              background: 'rgba(255,255,255,0.04)',
+              color: '#E2E8F0',
+              padding: '16px 28px',
+              borderRadius: '12px',
+              textDecoration: 'none',
+              fontSize: '16px',
+              fontWeight: '700',
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              Try Live Interactive Demo ↓
+            </a>
           </motion.div>
-        </motion.div>
 
-        {/* ─── Dashboard Mockup ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 45, damping: 18, delay: 0.7 }}
-          style={{ marginTop: '72px', width: '100%', maxWidth: '1050px', position: 'relative', zIndex: 2 }}
-        >
-          <div style={{ position: 'absolute', inset: '-30px', background: 'radial-gradient(ellipse 80% 50% at 50% 60%, rgba(201,162,39,0.18) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }} />
-
-          <div style={{ position: 'relative', zIndex: 1, borderRadius: '18px', border: '1px solid rgba(255,255,255,0.1)', padding: '5px', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)', overflowX: 'auto' }}>
-            <div style={{ minWidth: '800px' }}>
-
-            {/* Browser chrome */}
-            <div style={{ background: '#09090b', borderRadius: '13px 13px 0 0', padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {['#EF4444', '#F59E0B', '#10B981'].map(c => <div key={c} style={{ width: '10px', height: '10px', borderRadius: '50%', background: c }} />)}
-              </div>
-              <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: '5px', padding: '4px 12px', fontSize: '12px', color: '#64748B', textAlign: 'center', maxWidth: '340px', margin: '0 auto' }}>
-                www.realtypropflow.com/dashboard
-              </div>
-            </div>
-
-            {/* Dashboard UI */}
-            <div style={{ background: '#020617', borderRadius: '0 0 13px 13px', display: 'flex', overflow: 'hidden', height: '440px' }}>
-              {/* Sidebar */}
-              <div style={{ width: '188px', background: '#09090b', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '20px 10px', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '28px', paddingLeft: '10px' }}>
-                  <div style={{ width: '22px', height: '22px', borderRadius: '5px', background: 'linear-gradient(135deg, #D4AF37, #E5C158)', flexShrink: 0 }} />
-                  <span style={{ fontWeight: '800', fontSize: '13px', color: 'white', letterSpacing: '-0.02em' }}>RealtyPropFlow.</span>
-                </div>
-                {['Overview', 'My Chatbots', 'Knowledge', 'CRM Leads', 'Live Chat'].map((item, i) => (
-                  <div key={i} style={{ padding: '8px 10px', borderRadius: '8px', marginBottom: '2px', background: i === 0 ? 'rgba(201,162,39,0.12)' : 'transparent', display: 'flex', alignItems: 'center', gap: '8px', borderLeft: i === 0 ? '2px solid #D4AF37' : '2px solid transparent' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: i === 0 ? '#D4AF37' : '#334155' }} />
-                    <span style={{ fontSize: '12px', color: i === 0 ? '#E5C158' : '#475569', fontWeight: i === 0 ? '600' : '400' }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Main area */}
-              <div style={{ flex: 1, padding: '24px', overflowY: 'hidden', background: '#020617' }}>
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#F1F5F9', marginBottom: '3px' }}>Overview</div>
-                  <div style={{ fontSize: '11px', color: '#475569' }}>Track your chatbot's performance and leads</div>
-                </div>
-                {/* Stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
-                  {[{ label: 'Total Leads', value: '247', c: '#10B981' }, { label: 'Knowledge Items', value: '18', c: '#D4AF37' }, { label: 'Chat Sessions', value: '1,482', c: '#F59E0B' }].map((s, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '14px', borderLeft: `3px solid ${s.c}` }}>
-                      <div style={{ fontSize: '10px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>{s.label}</div>
-                      <div style={{ fontSize: '26px', fontWeight: '800', color: '#F1F5F9' }}>{s.value}</div>
-                    </div>
-                  ))}
-                </div>
-                {/* Leads table */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#CBD5E1' }}>Recent CRM Leads</span>
-                    <span style={{ fontSize: '11px', color: '#D4AF37', fontWeight: '600' }}>View All →</span>
-                  </div>
-                  {[{ name: 'Ali Hassan', email: 'ali@store.com', status: 'New Lead', sc: '#10B981', sb: 'rgba(16,185,129,0.12)' }, { name: 'Sara Sheikh', email: 'sara@business.pk', status: 'Contacted', sc: '#F59E0B', sb: 'rgba(245,158,11,0.12)' }, { name: 'Kamran Malik', email: 'kamran@co.com', status: 'New Lead', sc: '#10B981', sb: 'rgba(16,185,129,0.12)' }].map((lead, i) => (
-                    <div key={i} style={{ padding: '9px 14px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg, #D4AF37, #C9A227)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'white', flexShrink: 0 }}>{lead.name[0]}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#E2E8F0' }}>{lead.name}</div>
-                        <div style={{ fontSize: '11px', color: '#475569' }}>{lead.email}</div>
-                      </div>
-                      <span style={{ fontSize: '10px', fontWeight: '700', padding: '3px 8px', borderRadius: '50px', background: lead.sb, color: lead.sc, border: `1px solid ${lead.sc}30` }}>{lead.status}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            </div>
+          {/* Social Proof Line */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', flexWrap: 'wrap', color: '#64748B', fontSize: '13px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10B981', fontWeight: '700' }}>
+              <Check size={16} /> Instant 10-Min Setup
+            </span>
+            <span>•</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#CBD5E1', fontWeight: '600' }}>
+              <Check size={16} color="#10B981" /> Works On Any Agent Website
+            </span>
+            <span>•</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#CBD5E1', fontWeight: '600' }}>
+              <Check size={16} color="#10B981" /> No Technical Skills Required
+            </span>
           </div>
-        </motion.div>
-      </section>
 
-      {/* ─── Trusted By Tools ─── */}
-      <section style={{ padding: '56px 6%', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <motion.p
-          initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
-          style={{ textAlign: 'center', color: '#475569', fontSize: '11px', fontWeight: '700', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '36px' }}
-        >
-          Works with your existing tools
-        </motion.p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {LOGOS.map((logo, i) => (
-            <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '13px', color: 'white' }}>{logo.letter}</div>
-              <span style={{ color: '#64748B', fontWeight: '600', fontSize: '15px' }}>{logo.name}</span>
-            </motion.div>
-          ))}
         </div>
       </section>
 
-      {/* ─── Features Bento ─── */}
-      <section id="features" style={{ padding: '120px 6%', position: 'relative', zIndex: 10, maxWidth: '1200px', margin: '0 auto' }}>
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <h2 style={{ fontSize: 'clamp(32px, 4.5vw, 52px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F5F0E1' }}>
-            Everything you need to <span className="text-gradient-primary">convert visitors</span>
-          </h2>
-          <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '500px', margin: '0 auto' }}>One powerful platform to handle your entire customer engagement funnel.</p>
-        </motion.div>
+      {/* ─── LIVE INTERACTIVE HERO CENTERPIECE (THE WOW FACTOR) ─── */}
+      <section id="demo" style={{ padding: '0 6% 90px', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
+          
+          <div style={{
+            background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(10, 15, 26, 0.95) 100%)',
+            borderRadius: '28px',
+            border: '1px solid rgba(229,193,88,0.3)',
+            boxShadow: '0 25px 80px rgba(0,0,0,0.8), 0 0 60px rgba(229,193,88,0.08)',
+            overflow: 'hidden',
+            backdropFilter: 'blur(30px)'
+          }}>
 
-        {/* Responsive Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          {FEATURES.map((f, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.07, type: 'spring', stiffness: 100 }}
-              style={{ background: 'rgba(15,23,42,0.8)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.07)', padding: '28px', transition: 'border-color 0.3s, transform 0.3s', cursor: 'default', position: 'relative', overflow: 'hidden' }}
-              whileHover={{ y: -4, borderColor: 'rgba(255,255,255,0.15)' }}
-            >
-              {/* Subtle top glow */}
-              <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '120px', height: '1px', background: `linear-gradient(90deg, transparent, ${f.color}, transparent)`, zIndex: 0 }} />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: `rgba(${f.rgb},0.12)`, border: `1px solid rgba(${f.rgb},0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: f.color, marginBottom: '20px' }}>
-                  {f.icon}
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '10px', color: '#F1F5F9', letterSpacing: '-0.02em' }}>{f.title}</h3>
-                <p style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.7' }}>{f.desc}</p>
+            {/* Window Chrome Header */}
+            <div style={{
+              padding: '14px 20px',
+              background: '#0B0F17',
+              borderBottom: '1px solid rgba(255,255,255,0.07)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: '11px', height: '11px', borderRadius: '50%', background: '#EF4444' }} />
+                <span style={{ width: '11px', height: '11px', borderRadius: '50%', background: '#F59E0B' }} />
+                <span style={{ width: '11px', height: '11px', borderRadius: '50%', background: '#10B981' }} />
+                <span style={{ marginLeft: '12px', fontSize: '13px', fontWeight: '700', color: '#E2E8F0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🏡 RealtyPropFlow AI Assistant — Live Interaction
+                </span>
               </div>
-            </motion.div>
-          ))}
+              <div style={{
+                background: 'rgba(16,185,129,0.12)',
+                border: '1px solid rgba(16,185,129,0.3)',
+                padding: '4px 12px',
+                borderRadius: '50px',
+                fontSize: '11px',
+                fontWeight: '800',
+                color: '#10B981',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981' }} />
+                LIVE ON AGENT WEBSITE
+              </div>
+            </div>
+
+            {/* Interactive Prompt Selector Tabs */}
+            <div style={{
+              padding: '16px 20px',
+              background: 'rgba(0,0,0,0.3)',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              display: 'flex',
+              gap: '10px',
+              overflowX: 'auto'
+            }}>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', display: 'flex', alignItems: 'center', marginRight: '6px', flexShrink: 0 }}>
+                Try Asking:
+              </span>
+              {INTERACTIVE_PROMPTS.map((p, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActivePromptIdx(i)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '50px',
+                    fontSize: '13px',
+                    fontWeight: activePromptIdx === i ? '800' : '600',
+                    cursor: 'pointer',
+                    border: activePromptIdx === i ? '1px solid #E5C158' : '1px solid rgba(255,255,255,0.08)',
+                    background: activePromptIdx === i ? 'rgba(229,193,88,0.15)' : 'rgba(255,255,255,0.02)',
+                    color: activePromptIdx === i ? '#E5C158' : '#94A3B8',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  "{p.question}"
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Conversation Body */}
+            <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+              
+              {/* User Message */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #4F46E5, #3B82F6)',
+                  color: 'white',
+                  padding: '14px 20px',
+                  borderRadius: '18px 18px 4px 18px',
+                  maxWidth: '540px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  boxShadow: '0 4px 15px rgba(79,70,229,0.25)'
+                }}>
+                  {activeDemo.question}
+                </div>
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#1E293B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontWeight: '800', fontSize: '13px', flexShrink: 0 }}>
+                  👤
+                </div>
+              </div>
+
+              {/* Bot Response Message with Property Card */}
+              <div style={{ display: 'flex', justifyContent: 'flex-start', gap: '12px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #E5C158, #D4AF37)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#07090E',
+                  fontWeight: '900',
+                  fontSize: '16px',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 12px rgba(229,193,88,0.3)'
+                }}>
+                  🤖
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '620px', width: '100%' }}>
+                  
+                  {/* Bot text bubble */}
+                  <div style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: '#E2E8F0',
+                    padding: '14px 20px',
+                    borderRadius: '18px 18px 18px 4px',
+                    fontSize: '15px',
+                    lineHeight: 1.6
+                  }}>
+                    {activeDemo.reply}
+                  </div>
+
+                  {/* Real Estate Property Card Embedded inside Chat */}
+                  <motion.div
+                    key={activeDemo.property.title}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                    style={{
+                      background: '#0F172A',
+                      borderRadius: '18px',
+                      border: '1px solid rgba(229,193,88,0.3)',
+                      overflow: 'hidden',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                    }}
+                  >
+                    <div style={{ position: 'relative', height: '220px', overflow: 'hidden' }}>
+                      <img
+                        src={activeDemo.property.img}
+                        alt={activeDemo.property.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', padding: '5px 12px', borderRadius: '50px', fontSize: '11px', fontWeight: '800', color: '#E5C158', border: '1px solid rgba(229,193,88,0.4)' }}>
+                        {activeDemo.property.tag}
+                      </div>
+                      <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: '#10B981', color: 'white', padding: '6px 14px', borderRadius: '10px', fontWeight: '900', fontSize: '18px', boxShadow: '0 4px 15px rgba(16,185,129,0.4)' }}>
+                        {activeDemo.property.price}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '20px' }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#FFFFFF', margin: '0 0 4px 0' }}>
+                        {activeDemo.property.title}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94A3B8', fontSize: '13px', marginBottom: '16px' }}>
+                        <MapPin size={14} color="#E5C158" /> {activeDemo.property.address}
+                      </div>
+
+                      {/* Specs */}
+                      <div style={{ display: 'flex', gap: '16px', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#CBD5E1' }}>
+                          <Bed size={15} color="#60A5FA" /> {activeDemo.property.beds} Beds
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#CBD5E1' }}>
+                          <Bath size={15} color="#34D399" /> {activeDemo.property.baths} Baths
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#CBD5E1' }}>
+                          <Maximize2 size={15} color="#FBBF24" /> {activeDemo.property.sqft}
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <button
+                        onClick={() => alert(`Simulating tour booking for ${activeDemo.property.title}! This syncs straight to the agent's Google Calendar.`)}
+                        style={{
+                          width: '100%',
+                          padding: '13px',
+                          borderRadius: '10px',
+                          border: 'none',
+                          background: 'linear-gradient(135deg, #10B981, #059669)',
+                          color: 'white',
+                          fontWeight: '800',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          boxShadow: '0 4px 15px rgba(16,185,129,0.3)',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <Calendar size={16} /> {activeDemo.actionText}
+                      </button>
+
+                    </div>
+                  </motion.div>
+
+                  {/* Qualification notification pill */}
+                  <div style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: 'rgba(16,185,129,0.08)',
+                    border: '1px solid rgba(16,185,129,0.25)',
+                    color: '#34D399',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    {activeDemo.leadTag}
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+          </div>
         </div>
       </section>
 
-      {/* ─── Testimonials ─── */}
-      <section style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', color: '#F5F0E1' }}>
-              Trusted by businesses <span className="text-gradient-primary">like yours</span>
-            </h2>
-          </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            {TESTIMONIALS.map((t, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-                style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px', padding: '28px 32px' }}>
-                <div style={{ display: 'flex', gap: '3px', marginBottom: '16px' }}>
-                  {[...Array(t.stars)].map((_, j) => <Star key={j} size={14} fill="#F59E0B" color="#F59E0B" />)}
-                </div>
-                <p style={{ color: '#CBD5E1', fontSize: '15px', lineHeight: '1.7', marginBottom: '24px', fontWeight: '500' }}>"{t.text}"</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #D4AF37, #E5C158)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: 'white', flexShrink: 0 }}>{t.name[0]}</div>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '14px', color: '#F1F5F9' }}>{t.name}</div>
-                    <div style={{ fontSize: '12px', color: '#475569' }}>{t.role}</div>
-                  </div>
-                </div>
-              </motion.div>
+      {/* ─── INTEGRATIONS & PLATFORMS BAR ─── */}
+      <section style={{ padding: '40px 6%', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#05070A' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ color: '#64748B', fontSize: '12px', fontWeight: '800', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '24px' }}>
+            Built specifically to integrate with real estate workflows &amp; CRMs
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '36px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {REAL_ESTATE_LOGOS.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', fontSize: '15px', fontWeight: '700' }}>
+                <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                <span>{item.name}</span>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── Industry Demo Section ─── */}
-      <section style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '64px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', background: 'rgba(203,168,118,0.1)', padding: '5px 16px', borderRadius: '50px', fontSize: '12px', fontWeight: '700', color: '#cba876', marginBottom: '20px', border: '1px solid rgba(203,168,118,0.25)' }}>
-              <Sparkles size={13} /> Live Industry Demos
+      {/* ─── 4 CORE REAL ESTATE PILLARS ─── */}
+      <section id="features" style={{ padding: '120px 6%', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '70px' }}>
+          <div style={{ display: 'inline-block', padding: '6px 18px', borderRadius: '50px', background: 'rgba(229,193,88,0.1)', color: '#E5C158', fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px' }}>
+            Engineered For High-Volume Agents
+          </div>
+          <h2 style={{ fontSize: 'clamp(32px, 4.5vw, 54px)', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.03em', margin: 0 }}>
+            Everything you need to turn clicks into commission.
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
+          
+          {/* Pillar 1 */}
+          <div style={{ background: '#0B0F17', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(229,193,88,0.12)', border: '1px solid rgba(229,193,88,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+              <HomeIcon size={26} color="#E5C158" />
             </div>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '16px', color: '#F5F0E1' }}>
-              See RealtyPropFlow AI <span className="text-gradient-primary">working live</span>
-            </h2>
-            <p style={{ fontSize: '17px', color: '#64748B', maxWidth: '520px', margin: '0 auto' }}>
-              Real chatbots, deployed on real websites. Click to experience the bot yourself.
+            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', marginBottom: '12px' }}>
+              Live MLS &amp; Listings Showcase
+            </h3>
+            <p style={{ color: '#94A3B8', fontSize: '15px', lineHeight: 1.7, margin: 0 }}>
+              Connects directly to your property database, Realtor.ca, or Zillow. When a buyer asks about price, bedrooms, or neighborhood, the AI pulls actual high-res photos and live MLS specs in seconds.
             </p>
-          </motion.div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
-            {/* Real Estate Demo Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 80 }}
-              style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(203,168,118,0.2)', borderRadius: '22px', overflow: 'hidden', transition: 'all 0.3s' }}
-              whileHover={{ y: -8, borderColor: 'rgba(203,168,118,0.5)', boxShadow: '0 20px 60px rgba(203,168,118,0.1)' }}
-            >
-              {/* Preview Banner */}
-              <div style={{ height: '180px', background: 'linear-gradient(135deg, #0f1115 0%, #1a1208 50%, #0f1115 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(203,168,118,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(203,168,118,0.04) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '200px', background: '#cba876', filter: 'blur(80px)', opacity: 0.12 }} />
-                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>🏠</div>
-                  <div style={{ fontSize: '22px', fontWeight: '800', color: 'white', letterSpacing: '2px' }}>LUXE<span style={{ color: '#cba876' }}>REALTY</span></div>
-                  <div style={{ fontSize: '11px', color: '#cba876', letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>Luxury Real Estate</div>
-                </div>
-                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '50px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', display: 'inline-block' }} />
-                  <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700' }}>LIVE DEMO</span>
-                </div>
-              </div>
-
-              {/* Card Content */}
-              <div style={{ padding: '24px 28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ background: 'rgba(203,168,118,0.12)', border: '1px solid rgba(203,168,118,0.25)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '700', color: '#cba876', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Real Estate
-                  </div>
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#F1F5F9', marginBottom: '8px', letterSpacing: '-0.02em' }}>Luxe Realty — Property Assistant</h3>
-                <p style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.7', marginBottom: '24px' }}>
-                  AI trained on 24 luxury property listings, agent bios, and company info. Answers buyer questions, qualifies leads, and books viewings automatically.
-                </p>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {['Property Search', 'Lead Capture', 'Agent Info'].map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#B8C4BC' }}>{tag}</span>
-                  ))}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div style={{ padding: '0 28px 28px' }}>
-                <a href="https://real-state-23j6.vercel.app/" target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #cba876, #b3915f)', color: '#0f1115', fontWeight: '800', fontSize: '14px', textDecoration: 'none', transition: 'all 0.3s', letterSpacing: '0.02em' }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <Globe size={16} /> Visit Live Demo
-                </a>
-              </div>
-            </motion.div>
-
-            {/* Adnan Alvi Real Estate Demo Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 80 }}
-              style={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '22px', overflow: 'hidden', transition: 'all 0.3s' }}
-              whileHover={{ y: -8, borderColor: 'rgba(16,185,129,0.5)', boxShadow: '0 20px 60px rgba(16,185,129,0.1)' }}
-            >
-              {/* Preview Banner */}
-              <div style={{ height: '180px', background: 'linear-gradient(135deg, #05140a 0%, #0d1a10 50%, #05140a 100%)', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '300px', height: '200px', background: '#10B981', filter: 'blur(80px)', opacity: 0.15 }} />
-                <div style={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                  <div style={{ fontSize: '40px', marginBottom: '8px' }}>🏢</div>
-                  <div style={{ fontSize: '26px', fontWeight: '900', color: 'white', letterSpacing: '4px' }}>A<span style={{ background: 'linear-gradient(135deg, #10B981, #06B6D4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>DNAN</span></div>
-                  <div style={{ fontSize: '11px', color: '#10B981', letterSpacing: '3px', marginTop: '4px', textTransform: 'uppercase' }}>Real Estate Expert</div>
-                </div>
-                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '50px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 6px #10B981', display: 'inline-block' }} />
-                  <span style={{ fontSize: '10px', color: '#10B981', fontWeight: '700' }}>LIVE DEMO</span>
-                </div>
-              </div>
-
-              {/* Card Content */}
-              <div style={{ padding: '24px 28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '6px 12px', fontSize: '11px', fontWeight: '700', color: '#10B981', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    Real Estate
-                  </div>
-                </div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#F1F5F9', marginBottom: '8px', letterSpacing: '-0.02em' }}>Adnan Alvi — Property Assistant</h3>
-                <p style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.7', marginBottom: '24px' }}>
-                  AI trained on real estate market trends, property listings, and agent policies. Helps clients find homes, check property values, and schedule viewings.
-                </p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {['Property Search', 'Market Value', 'Book Viewing'].map((tag, i) => (
-                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50px', padding: '3px 10px', fontSize: '11px', color: '#B8C4BC' }}>{tag}</span>
-                  ))}
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div style={{ padding: '0 28px 28px' }}>
-                <a href="https://realtypropflow.com/" target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', fontWeight: '800', fontSize: '14px', textDecoration: 'none', transition: 'all 0.3s', letterSpacing: '0.02em' }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  <Globe size={16} /> Visit Live Demo
-                </a>
-              </div>
-            </motion.div>
-
           </div>
+
+          {/* Pillar 2 */}
+          <div style={{ background: '#0B0F17', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+              <Flame size={26} color="#EF4444" />
+            </div>
+            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', marginBottom: '12px' }}>
+              Automatic Lead Qualification
+            </h3>
+            <p style={{ color: '#94A3B8', fontSize: '15px', lineHeight: 1.7, margin: 0 }}>
+              Never waste time on tire-kickers. The AI qualifies buyer readiness: pre-approval status, purchase timeline, and budget. Leads are graded as <strong>Hot, Warm, or Cold</strong> and sent straight to your CRM.
+            </p>
+          </div>
+
+          {/* Pillar 3 */}
+          <div style={{ background: '#0B0F17', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+              <Calendar size={26} color="#10B981" />
+            </div>
+            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', marginBottom: '12px' }}>
+              Instant Showing &amp; Tour Booking
+            </h3>
+            <p style={{ color: '#94A3B8', fontSize: '15px', lineHeight: 1.7, margin: 0 }}>
+              Allows buyers to book private tours on the spot. Synced directly with your Google Calendar to prevent double-booking, with automated SMS/email reminders sent to both you and the client.
+            </p>
+          </div>
+
+          {/* Pillar 4 */}
+          <div style={{ background: '#0B0F17', borderRadius: '22px', border: '1px solid rgba(255,255,255,0.08)', padding: '36px 32px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+              <PhoneCall size={26} color="#818CF8" />
+            </div>
+            <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#FFFFFF', marginBottom: '12px' }}>
+              Live Human Agent Takeover
+            </h3>
+            <p style={{ color: '#94A3B8', fontSize: '15px', lineHeight: 1.7, margin: 0 }}>
+              When a buyer says *"I want to put an offer tonight"*, you get an urgent push notification on your mobile phone. With one tap, pause the AI and chat directly with the buyer to lock in the deal.
+            </p>
+          </div>
+
         </div>
       </section>
 
-      {/* ─── Pricing ─── */}
+      {/* ─── INTERACTIVE REAL ESTATE ROI CALCULATOR ─── */}
+      <section id="roi" style={{ padding: '0 6% 120px', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          
+          <div style={{
+            background: 'linear-gradient(135deg, #0D131F 0%, #07090E 100%)',
+            borderRadius: '28px',
+            border: '2px solid rgba(229,193,88,0.35)',
+            padding: 'clamp(32px, 5vw, 56px)',
+            boxShadow: '0 20px 70px rgba(0,0,0,0.8), 0 0 50px rgba(229,193,88,0.1)'
+          }}>
 
-      <section id="pricing" style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <div style={{ maxWidth: '820px', margin: '0 auto' }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '14px', color: '#F5F0E1' }}>Simple, transparent pricing</h2>
-            <p style={{ color: '#64748B', fontSize: '17px' }}>Cancel anytime. No hidden fees.</p>
-          </motion.div>
-          <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'left' }}>
-            {/* Premium */}
-            <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              style={{ background: 'linear-gradient(160deg, rgba(30,27,60,1) 0%, rgba(15,23,42,1) 100%)', padding: '36px', borderRadius: '22px', border: '1px solid rgba(129,140,248,0.3)', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 0 40px rgba(201,162,39,0.12)', transition: 'all 0.3s', maxWidth: '400px', width: '100%' }}
-              whileHover={{ y: -6, boxShadow: '0 0 60px rgba(201,162,39,0.22)' }}>
-              <div style={{ position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(90deg, #D4AF37, #E5C158)', color: 'white', padding: '4px 16px', borderRadius: '50px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.12em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 14px rgba(201,162,39,0.4)' }}>ALL-INCLUSIVE</div>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', marginBottom: '6px', color: '#F5F0E1' }}>Premium</h3>
-              <p style={{ color: '#475569', fontSize: '13px', marginBottom: '24px' }}>Shows live property listings to buyers, captures hot leads, and syncs real estate data.</p>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '28px' }}>
-                <span style={{ fontSize: '48px', fontWeight: '900', color: '#F5F0E1', letterSpacing: '-0.04em' }}>$99</span>
-                <span style={{ fontSize: '14px', color: '#475569' }}>/month</span>
+            <div style={{ textAlign: 'center', marginBottom: '44px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '50px', background: 'rgba(16,185,129,0.12)', color: '#10B981', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', marginBottom: '14px' }}>
+                <Calculator size={14} /> Calculate Your Real Estate ROI
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', flex: 1 }}>
-                {['1 AI Chatbot', 'Live Property Listings Shown to Buyers', 'Real Estate Listings Scraping', 'Data Sync from Realtor.ca', 'Advanced CRM Lead Mapping', 'Live Human Takeover'].map((f, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'rgba(129,140,248,0.15)', border: '1px solid rgba(129,140,248,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={10} color="#D4AF37" strokeWidth={3} />
-                    </div>
-                    <span style={{ fontSize: '14px', color: '#E2E8F0', fontWeight: '600' }}>{f}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/login" className={`${styles.pricingBtn} ${styles.pricingBtnPro}`}>Get Premium <ArrowRight size={15} /></Link>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+              <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', color: '#FFFFFF', margin: 0 }}>
+                See How Fast 1 Deal Pays For The Whole Year
+              </h2>
+            </div>
 
-      {/* ─── Free Trial Installation Section ─── */}
-      <section style={{ padding: '0 6% 100px', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            style={{
-              background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1813 40%, #050505 100%)',
-              borderRadius: '28px',
-              padding: 'clamp(36px, 5vw, 60px)',
-              border: '1px solid rgba(229,193,88,0.25)',
-              boxShadow: '0 0 80px rgba(229,193,88,0.1), 0 40px 100px rgba(0,0,0,0.6)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Background Glow Effects */}
-            <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(229,193,88,0.15) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: '-80px', right: '-60px', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(201,162,39,0.1) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-            <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '40px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
               
-              {/* Left Content */}
-              <div style={{ flex: 1, minWidth: '300px' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(90deg, rgba(253,224,71,0.12), rgba(251,191,36,0.08))', border: '1px solid rgba(253,224,71,0.3)', borderRadius: '50px', padding: '6px 16px', marginBottom: '20px' }}>
-                  <span style={{ fontSize: '14px' }}>🚀</span>
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#FCD34D', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Done-For-You Service</span>
+              {/* Sliders Side */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                
+                {/* Slider 1: Average Price */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#CBD5E1' }}>Average Home Sale Price:</span>
+                    <span style={{ fontSize: '18px', fontWeight: '900', color: '#E5C158' }}>${avgPrice.toLocaleString()}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="300000"
+                    max="2500000"
+                    step="25000"
+                    value={avgPrice}
+                    onChange={e => setAvgPrice(Number(e.target.value))}
+                    style={{ width: '100%', height: '8px', borderRadius: '5px', accentColor: '#E5C158', cursor: 'pointer' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748B', marginTop: '6px' }}>
+                    <span>$300,000</span>
+                    <span>$2,500,000+</span>
+                  </div>
                 </div>
 
-                <h2 style={{ fontSize: 'clamp(26px, 4vw, 42px)', fontWeight: '900', color: '#F5F0E1', margin: '0 0 12px 0', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-                  Try Our AI Chatbot{' '}
-                  <span style={{ background: 'linear-gradient(90deg, #E5C158, #D4AF37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Free for 30 Days!</span>
-                </h2>
-                <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: '1.7', maxWidth: '520px', margin: '0 0 28px 0' }}>
-                  See the difference an intelligent chatbot can make for your business. Improve customer support, capture more leads, and delight your visitors.
-                </p>
-
-                {/* Feature Pills */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '32px' }}>
-                  {[
-                    { icon: '⚡', text: 'Live in 24 Hours' },
-                    { icon: '🔒', text: 'Secure Installation' },
-                    { icon: '🧪', text: 'Fully Tested' },
-                    { icon: '📞', text: '24/7 Support Included' },
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50px', padding: '7px 14px' }}>
-                      <span style={{ fontSize: '13px' }}>{item.icon}</span>
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#CBD5E1' }}>{item.text}</span>
-                    </div>
-                  ))}
+                {/* Slider 2: Commission Rate */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#CBD5E1' }}>Your Commission Rate:</span>
+                    <span style={{ fontSize: '18px', fontWeight: '900', color: '#E5C158' }}>{commissionRate}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1.5"
+                    max="5.0"
+                    step="0.1"
+                    value={commissionRate}
+                    onChange={e => setCommissionRate(Number(e.target.value))}
+                    style={{ width: '100%', height: '8px', borderRadius: '5px', accentColor: '#E5C158', cursor: 'pointer' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748B', marginTop: '6px' }}>
+                    <span>1.5%</span>
+                    <span>5.0%</span>
+                  </div>
                 </div>
 
-                {/* CTA Button */}
-                <button
-                  onClick={() => { setShowInstallModal(true); setInstallStatus('idle'); }}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', background: 'linear-gradient(135deg, #25D366, #1DAA54)', color: 'white', padding: '16px 32px', borderRadius: '50px', border: 'none', fontWeight: '800', fontSize: '16px', boxShadow: '0 6px 25px rgba(37,211,102,0.4)', letterSpacing: '-0.01em', transition: 'all 0.3s', cursor: 'pointer' }}
-                >
-                  ✅ Yes! Install it for me
-                </button>
               </div>
 
-              {/* Right: Price Card */}
-              <motion.div
-                whileHover={{ y: -6, boxShadow: '0 0 60px rgba(229,193,88,0.15)' }}
-                style={{
-                  background: 'rgba(0,0,0,0.6)',
-                  border: '1px solid rgba(229,193,88,0.25)',
-                  borderRadius: '24px',
-                  padding: '36px 40px',
-                  textAlign: 'center',
-                  backdropFilter: 'blur(20px)',
-                  minWidth: '220px',
-                  boxShadow: '0 0 40px rgba(229,193,88,0.1)',
-                  transition: 'all 0.3s',
-                  flexShrink: 0
-                }}
-              >
-                <div style={{ fontSize: '11px', color: '#E5C158', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>One-Time Fee</div>
-                <div style={{ fontSize: '64px', fontWeight: '900', color: 'white', lineHeight: 1, letterSpacing: '-0.05em', marginBottom: '4px' }}>$99</div>
-                <div style={{ fontSize: '13px', color: '#475569', marginBottom: '8px' }}>No monthly charges ever</div>
-                <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, #E5C158, #D4AF37)', margin: '16px auto', borderRadius: '2px' }} />
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#94A3B8', textAlign: 'left', marginBottom: '8px' }}>
-                  {['Setup & Installation', 'Configuration & Testing', 'Go-Live Support'].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'rgba(229,193,88,0.1)', border: '1px solid rgba(229,193,88,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Check size={9} color="#E5C158" strokeWidth={3} />
-                      </div>
-                      <span>{item}</span>
-                    </div>
-                  ))}
+              {/* ROI Output Card */}
+              <div style={{
+                background: 'rgba(0,0,0,0.6)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229,193,88,0.25)',
+                padding: '36px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
+                  Commission On Just 1 Extra Closing
                 </div>
-              </motion.div>
+                <div style={{ fontSize: '48px', fontWeight: '900', color: '#10B981', lineHeight: 1, marginBottom: '12px' }}>
+                  +${Math.round(potentialCommission).toLocaleString()}
+                </div>
+                <div style={{ fontSize: '14px', color: '#CBD5E1', marginBottom: '20px' }}>
+                  PropFlow AI Full Year Cost: <strong style={{ color: '#E5C158' }}>$1,188</strong> ($99/mo)
+                </div>
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '16px 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <span style={{ color: '#94A3B8', fontSize: '14px' }}>Net Extra Profit:</span>
+                  <span style={{ fontSize: '20px', fontWeight: '900', color: '#FFFFFF' }}>+${Math.round(netProfit).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+                  <span style={{ color: '#94A3B8', fontSize: '14px' }}>Estimated ROI:</span>
+                  <span style={{ fontSize: '20px', fontWeight: '900', color: '#10B981' }}>{roiPercentage}% ROI</span>
+                </div>
+
+                <Link href="/login" style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #E5C158, #D4AF37)',
+                  color: '#07090E',
+                  fontWeight: '800',
+                  fontSize: '15px',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 20px rgba(229,193,88,0.3)'
+                }}>
+                  Claim Your 30-Day Free Trial →
+                </Link>
+              </div>
 
             </div>
-          </motion.div>
+
+          </div>
         </div>
       </section>
 
-      {/* ─── Installation Request Modal ─── */}
+      {/* ─── REAL ESTATE AGENT TESTIMONIALS ─── */}
+      <section id="reviews" style={{ padding: '0 6% 120px', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+            <h2 style={{ fontSize: 'clamp(28px, 4vw, 46px)', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.03em', marginBottom: '12px' }}>
+              Trusted by Top 1% Realtors &amp; Brokers
+            </h2>
+            <p style={{ color: '#94A3B8', fontSize: '17px' }}>Real feedback from agents who closed real deals with PropFlow AI.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+            {RE_TESTIMONIALS.map((t, i) => (
+              <div key={i} style={{ background: '#0B0F17', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {[...Array(t.stars)].map((_, s) => <Star key={s} size={15} fill="#E5C158" color="#E5C158" />)}
+                    </div>
+                    <span style={{ fontSize: '11px', fontWeight: '800', padding: '4px 10px', borderRadius: '50px', background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      {t.deal}
+                    </span>
+                  </div>
+                  <p style={{ color: '#CBD5E1', fontSize: '15px', lineHeight: 1.7, marginBottom: '24px' }}>
+                    "{t.text}"
+                  </p>
+                </div>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '800', color: '#FFFFFF' }}>{t.name}</div>
+                  <div style={{ fontSize: '13px', color: '#64748B' }}>{t.role}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SINGLE TRANSPARENT $99/MO PRICING ─── */}
+      <section id="pricing" style={{ padding: '0 6% 120px', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
+          
+          <div style={{
+            background: 'linear-gradient(160deg, #0F172A 0%, #080C14 100%)',
+            borderRadius: '28px',
+            border: '2px solid rgba(229,193,88,0.5)',
+            padding: '48px 40px',
+            position: 'relative',
+            boxShadow: '0 0 60px rgba(229,193,88,0.15)'
+          }}>
+            <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #E5C158, #D4AF37)', color: '#07090E', padding: '6px 24px', borderRadius: '50px', fontSize: '12px', fontWeight: '900', letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap', boxShadow: '0 4px 15px rgba(229,193,88,0.4)' }}>
+              🏆 All-Inclusive Real Estate AI Plan
+            </div>
+
+            <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#FFFFFF', marginBottom: '8px', marginTop: '10px' }}>
+              PropFlow AI Pro
+            </h3>
+            <p style={{ color: '#94A3B8', fontSize: '15px', marginBottom: '28px' }}>
+              Everything your real estate business needs to capture, qualify, and close buyers 24/7.
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+              <span style={{ fontSize: '64px', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.04em' }}>$99</span>
+              <span style={{ fontSize: '18px', color: '#64748B', fontWeight: '600' }}>/month</span>
+            </div>
+            <p style={{ fontSize: '13px', color: '#E5C158', fontWeight: '600', marginBottom: '32px' }}>
+              Billed monthly via Paddle • Cancel anytime • 30-Day Free Trial
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left', marginBottom: '36px' }}>
+              {[
+                '1 Custom-Trained Real Estate AI Chatbot',
+                'Live MLS Property Listings Showing (Photos, Price, Specs)',
+                'Automated Showing & Private Tour Calendar Booking',
+                'Intelligent Lead Qualification (Hot, Warm, Cold Tags)',
+                'Instant Live Agent Human Takeover Alert on Mobile',
+                'Unlimited Conversations & Buyer Inquiries',
+                'Works on Any Platform (WordPress, Squarespace, Custom)',
+                'Dedicated 24/7 Setup & Integration Support'
+              ].map((feature, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(229,193,88,0.15)', border: '1px solid rgba(229,193,88,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Check size={12} color="#E5C158" strokeWidth={3} />
+                  </div>
+                  <span style={{ fontSize: '15px', color: '#E2E8F0', fontWeight: '500' }}>{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            <Link href="/login" style={{
+              display: 'block',
+              width: '100%',
+              padding: '16px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #E5C158 0%, #D4AF37 100%)',
+              color: '#07090E',
+              fontWeight: '900',
+              fontSize: '17px',
+              textDecoration: 'none',
+              boxShadow: '0 8px 30px rgba(229,193,88,0.3)',
+              transition: 'all 0.2s'
+            }}>
+              Start Your 30-Day Free Trial Now →
+            </Link>
+
+            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '16px' }}>
+              🔒 Secure payment processed by Paddle. No contracts, cancel anytime.
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── DONE-FOR-YOU INSTALLATION BANNER ─── */}
+      <section style={{ padding: '0 6% 100px', position: 'relative', zIndex: 10 }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0A0E17 0%, #151A26 100%)',
+            borderRadius: '24px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '24px'
+          }}>
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: '800', color: '#E5C158', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+                Need Help Setting It Up?
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: '900', color: '#FFFFFF', margin: '0 0 8px 0' }}>
+                We Can Install It On Your Website For You
+              </h3>
+              <p style={{ color: '#94A3B8', fontSize: '15px', margin: 0, maxWidth: '560px' }}>
+                Don't have time to paste code? Our technical engineers will configure, test, and embed the chatbot on your agent website in under 24 hours.
+              </p>
+            </div>
+
+            <button
+              onClick={() => { setShowInstallModal(true); setInstallStatus('idle'); }}
+              style={{
+                background: '#10B981',
+                color: 'white',
+                padding: '14px 28px',
+                borderRadius: '10px',
+                border: 'none',
+                fontWeight: '800',
+                fontSize: '15px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(16,185,129,0.3)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              Request Free Installation
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── INSTALLATION REQUEST MODAL ─── */}
       {showInstallModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(6px)' }} onClick={(e) => { if (e.target === e.currentTarget) setShowInstallModal(false); }}>
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            style={{ background: 'linear-gradient(135deg, #0A0A0A, #1A1813)', border: '1px solid rgba(229,193,88,0.3)', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
+            style={{ background: '#0D131F', border: '1px solid rgba(229,193,88,0.3)', borderRadius: '24px', padding: '40px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}
           >
-            {/* Close Button */}
             <button onClick={() => setShowInstallModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'none', border: 'none', color: '#64748B', fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}>✕</button>
 
             {installStatus === 'success' ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
-                <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#F1F5F9', marginBottom: '12px' }}>Thank You Very Much!</h3>
-                <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: 1.6 }}>Our support team will contact you soon to get your chatbot installed.</p>
-                <button onClick={() => setShowInstallModal(false)} style={{ marginTop: '24px', padding: '12px 28px', borderRadius: '50px', background: 'linear-gradient(135deg, #E5C158, #D4AF37)', color: 'black', border: 'none', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Close</button>
+                <h3 style={{ fontSize: '24px', fontWeight: '800', color: '#F1F5F9', marginBottom: '12px' }}>Request Received!</h3>
+                <p style={{ color: '#94A3B8', fontSize: '16px', lineHeight: 1.6 }}>Our technical team will contact you shortly to get your chatbot installed and live.</p>
+                <button onClick={() => setShowInstallModal(false)} style={{ marginTop: '24px', padding: '12px 28px', borderRadius: '50px', background: '#E5C158', color: 'black', border: 'none', fontWeight: '700', fontSize: '15px', cursor: 'pointer' }}>Close</button>
               </div>
             ) : (
               <>
                 <h3 style={{ fontSize: '22px', fontWeight: '800', color: '#F1F5F9', marginBottom: '6px' }}>Get Your Chatbot Installed</h3>
-                <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '28px' }}>Fill in the details below and we&apos;ll set it up for you within 24 hours.</p>
+                <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '28px' }}>Fill in your details below and our team will set it up for you within 24 hours.</p>
 
                 <form onSubmit={async (e) => {
                   e.preventDefault();
@@ -652,90 +1008,47 @@ export default function Home() {
                     const response = await fetch('/api/contact', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        type: 'installation',
-                        ...installForm
-                      }),
+                      body: JSON.stringify({ type: 'installation', ...installForm }),
                     });
                     if (response.ok) {
                       setInstallStatus('success');
                     } else {
-                      alert('Failed to submit request. Please try again.');
+                      alert('Failed to submit. Please try again.');
                       setInstallStatus('idle');
                     }
                   } catch (error) {
-                    console.error('Error submitting form:', error);
-                    alert('An error occurred. Please try again.');
+                    alert('Error submitting form.');
                     setInstallStatus('idle');
                   }
                 }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-                  {/* Name */}
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Full Name *</label>
-                    <input required type="text" placeholder="John Doe" value={installForm.name} onChange={e => setInstallForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                    <input required type="text" placeholder="Sarah Jenkins" value={installForm.name} onChange={e => setInstallForm(p => ({...p, name: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
                   </div>
 
-                  {/* Phone */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Phone Number *</label>
-                    <input required type="tel" placeholder="+92 300 1234567" value={installForm.phone} onChange={e => setInstallForm(p => ({...p, phone: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Phone / WhatsApp *</label>
+                    <input required type="tel" placeholder="+1 (416) 555-0192" value={installForm.phone} onChange={e => setInstallForm(p => ({...p, phone: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
                   </div>
 
-                  {/* Install Time */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Preferred Installation Time *</label>
-                    <input required type="text" placeholder="e.g. Tomorrow morning, Weekdays 10am-12pm" value={installForm.installTime} onChange={e => setInstallForm(p => ({...p, installTime: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Agent Website URL *</label>
+                    <input required type="text" placeholder="https://yourrealtywebsite.com" value={installForm.techInfo} onChange={e => setInstallForm(p => ({...p, techInfo: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
                   </div>
 
-                  {/* Technical Info */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Technical Information / Website URL</label>
-                    <input type="text" placeholder="https://yourwebsite.com" value={installForm.techInfo} onChange={e => setInstallForm(p => ({...p, techInfo: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
-                  </div>
-
-                  {/* Website Type */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Website Type *</label>
-                    <select required value={installForm.websiteType} onChange={e => setInstallForm(p => ({...p, websiteType: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: '#0D0A2A', border: '1px solid rgba(255,255,255,0.1)', color: installForm.websiteType ? 'white' : '#64748B', fontSize: '14px', outline: 'none' }}>
-                      <option value="" disabled>Select website type</option>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Website Platform</label>
+                    <select value={installForm.websiteType} onChange={e => setInstallForm(p => ({...p, websiteType: e.target.value}))} style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', background: '#07090E', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }}>
                       <option value="WordPress">WordPress</option>
-                      <option value="PHP">PHP (Custom)</option>
-                      <option value="Unknown">Unknown</option>
+                      <option value="Squarespace">Squarespace</option>
+                      <option value="Wix">Wix</option>
+                      <option value="Custom / Other">Custom / Other</option>
                     </select>
                   </div>
 
-                  {/* Hosting Access */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Do you have access to your hosting account? *</label>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      {['Yes', 'No'].map(opt => (
-                        <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#CBD5E1', fontSize: '14px' }}>
-                          <input type="radio" name="hostingAccess" value={opt} checked={installForm.hasHostingAccess === opt} onChange={e => setInstallForm(p => ({...p, hasHostingAccess: e.target.value}))} style={{ accentColor: '#A78BFA' }} />
-                          {opt}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hosting Credentials - show only if Yes */}
-                  {installForm.hasHostingAccess === 'Yes' && (
-                    <div style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <p style={{ fontSize: '12px', color: '#A78BFA', margin: 0 }}>🔒 Your credentials are safe and only used for installation.</p>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Hosting Username</label>
-                        <input type="text" placeholder="admin" value={installForm.hostingUser} onChange={e => setInstallForm(p => ({...p, hostingUser: e.target.value}))} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '6px' }}>Hosting Password</label>
-                        <input type="password" placeholder="••••••••" value={installForm.hostingPass} onChange={e => setInstallForm(p => ({...p, hostingPass: e.target.value}))} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '14px', outline: 'none' }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit */}
-                  <button type="submit" disabled={installStatus === 'submitting'} style={{ marginTop: '8px', padding: '14px', borderRadius: '50px', background: 'linear-gradient(135deg, #A78BFA, #818CF8)', color: 'white', border: 'none', fontWeight: '800', fontSize: '15px', cursor: installStatus === 'submitting' ? 'not-allowed' : 'pointer', opacity: installStatus === 'submitting' ? 0.7 : 1, transition: 'all 0.2s' }}>
-                    {installStatus === 'submitting' ? 'Submitting...' : 'Submit Request 🚀'}
+                  <button type="submit" disabled={installStatus === 'submitting'} style={{ marginTop: '12px', padding: '14px', borderRadius: '10px', background: 'linear-gradient(135deg, #E5C158, #D4AF37)', color: 'black', border: 'none', fontWeight: '800', fontSize: '15px', cursor: installStatus === 'submitting' ? 'not-allowed' : 'pointer' }}>
+                    {installStatus === 'submitting' ? 'Submitting...' : 'Submit Installation Request 🚀'}
                   </button>
 
                 </form>
@@ -745,92 +1058,48 @@ export default function Home() {
         </div>
       )}
 
-      {/* ─── Contact Section ─── */}
-
-      <section id="contact" style={{ padding: '100px 6%', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ textAlign: 'center', marginBottom: '80px' }}>
-            <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '14px', color: '#F5F0E1' }}>Ready to automate your growth?</h2>
-            <p style={{ color: '#64748B', fontSize: '17px' }}>Fill out the form below and we'll get back to you within 24 hours.</p>
-          </motion.div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'flex-start' }}>
-            
-            <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px', display: 'flex', gap: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(201,162,39,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E5C158', flexShrink: 0 }}><span style={{ fontSize: '24px' }}>✉️</span></div>
-                <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>Email Us</h3>
-                  <a href="mailto:support@realtypropflow.com" style={{ color: '#E5C158', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>support@realtypropflow.com</a>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px', display: 'flex', gap: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(37,211,102,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#25D366', flexShrink: 0 }}><span style={{ fontSize: '24px' }}>💬</span></div>
-                <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#F1F5F9', marginBottom: '8px' }}>WhatsApp Us</h3>
-                  <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" style={{ color: '#25D366', fontWeight: '600', textDecoration: 'none', fontSize: '15px' }}>+1 (234) 567-890</a>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} style={{ background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '32px', padding: '48px', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-              {formStatus === 'success' ? (
-                <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', padding: '32px', borderRadius: '16px', textAlign: 'center' }}>
-                  <div style={{ width: '64px', height: '64px', background: '#10B981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#000' }}>
-                    <Check size={32} />
-                  </div>
-                  <h3 style={{ fontSize: '20px', color: '#F1F5F9', marginBottom: '8px' }}>Message Sent!</h3>
-                  <p style={{ color: '#94A3B8', fontSize: '15px' }}>Thank you for reaching out. We will be in touch shortly.</p>
-                  <button onClick={() => setFormStatus('idle')} style={{ marginTop: '24px', background: 'none', border: 'none', color: '#E5C158', fontWeight: '600', cursor: 'pointer' }}>Send another message</button>
-                </div>
-              ) : (
-                <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>First Name</label>
-                      <input required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Last Name</label>
-                      <input required type="text" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
-                    </div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Email Address</label>
-                    <input required type="email" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none' }} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94A3B8', marginBottom: '8px' }}>Message</label>
-                    <textarea required rows="4" style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', fontSize: '15px', outline: 'none', resize: 'vertical' }}></textarea>
-                  </div>
-                  <button type="submit" disabled={formStatus === 'submitting'} style={{ marginTop: '12px', padding: '16px', borderRadius: '12px', background: 'linear-gradient(135deg, #C9A227 0%, #E5C158 100%)', color: '#000', border: 'none', fontWeight: '700', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: formStatus === 'submitting' ? 'not-allowed' : 'pointer', opacity: formStatus === 'submitting' ? 0.7 : 1, transition: 'all 0.2s' }}>
-                    {formStatus === 'submitting' ? 'Sending...' : 'Send Message'}
-                  </button>
-                </form>
-              )}
-            </motion.div>
+      {/* ─── CONTACT SECTION ─── */}
+      <section id="contact" style={{ padding: '80px 6%', borderTop: '1px solid rgba(255,255,255,0.06)', background: '#05070A' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: '800', color: 'white', marginBottom: '12px' }}>
+            Have questions before joining?
+          </h2>
+          <p style={{ color: '#94A3B8', fontSize: '16px', marginBottom: '32px' }}>
+            Our real estate AI engineers are available 24/7 to answer questions and help you get started.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <a href="mailto:support@realtypropflow.com" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '14px 28px', borderRadius: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: '#E5C158', textDecoration: 'none', fontWeight: '700', fontSize: '15px' }}>
+              ✉️ support@realtypropflow.com
+            </a>
+            <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '14px 28px', borderRadius: '12px', background: 'rgba(37,211,102,0.1)', border: '1px solid rgba(37,211,102,0.3)', color: '#25D366', textDecoration: 'none', fontWeight: '700', fontSize: '15px' }}>
+              💬 WhatsApp Support
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ─── Footer ─── */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '36px 6%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10, backgroundColor: 'var(--bg-page)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'linear-gradient(135deg, #D4AF37, #E5C158)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Bot size={14} color="white" />
+      {/* ─── FOOTER ─── */}
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '40px 6%', background: '#030508' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/logo-icon.png" alt="RealtyPropFlow Logo" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
+            <span style={{ fontSize: '16px', fontWeight: '900', color: '#FFFFFF' }}>
+              RealtyPropFlow<span style={{ color: '#E5C158' }}>.</span>
+            </span>
           </div>
-          <span style={{ fontSize: '15px', fontWeight: '800', color: '#334155', letterSpacing: '-0.02em' }}>RealtyPropFlow<span style={{ color: 'var(--primary)' }}>.</span></span>
-        </div>
-        <p style={{ color: '#334155', fontSize: '13px' }}>&copy; {new Date().getFullYear()} RealtyPropFlow AI — All rights reserved.</p>
-        <div style={{ display: 'flex', gap: '24px' }}>
-          {[['/how-it-works', 'How it Works'], ['/login', 'Dashboard']].map(([href, label]) => (
-            <Link key={href} href={href} style={{ color: '#475569', fontSize: '13px', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.target.style.color = '#B8C4BC'}
-              onMouseLeave={e => e.target.style.color = '#475569'}>{label}</Link>
-          ))}
+
+          <p style={{ color: '#64748B', fontSize: '13px', margin: 0 }}>
+            &copy; {new Date().getFullYear()} RealtyPropFlow AI Inc. All rights reserved.
+          </p>
+
+          <div style={{ display: 'flex', gap: '24px' }}>
+            <Link href="/pricing" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Pricing ($99)</Link>
+            <Link href="/login" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Login</Link>
+            <Link href="#demo" style={{ color: '#94A3B8', fontSize: '13px', textDecoration: 'none' }}>Live Demo</Link>
+          </div>
         </div>
       </footer>
+
     </div>
   );
 }
-
