@@ -348,7 +348,7 @@ export default function Home() {
               boxShadow: '0 8px 30px rgba(229,193,88,0.3)',
               transition: 'all 0.2s'
             }}>
-              Start 30-Day Free Trial — $99/mo <ArrowRight size={18} />
+              Get Started — $99/mo <ArrowRight size={18} />
             </Link>
 
             <a href="#demo"
@@ -882,7 +882,7 @@ export default function Home() {
                   textDecoration: 'none',
                   boxShadow: '0 4px 20px rgba(229,193,88,0.3)'
                 }}>
-                  Claim Your 30-Day Free Trial →
+                  Get Started Now →
                 </Link>
               </div>
 
@@ -956,7 +956,7 @@ export default function Home() {
               <span style={{ fontSize: '18px', color: '#64748B', fontWeight: '600' }}>/month</span>
             </div>
             <p style={{ fontSize: '13px', color: '#E5C158', fontWeight: '600', marginBottom: '32px' }}>
-              Billed monthly via Paddle • Cancel anytime • 30-Day Free Trial
+              Billed monthly via Paddle • Cancel anytime • No contracts
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left', marginBottom: '36px' }}>
@@ -992,7 +992,7 @@ export default function Home() {
               boxShadow: '0 8px 30px rgba(229,193,88,0.3)',
               transition: 'all 0.2s'
             }}>
-              Start Your 30-Day Free Trial Now →
+              Get Started — $99/mo →
             </Link>
 
             <div style={{ fontSize: '12px', color: '#64748B', marginTop: '16px' }}>
